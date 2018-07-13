@@ -1,5 +1,3 @@
-attach("~/Documents/SageFiles/pAdic_base.sage")
-attach("~/Documents/SageFiles/pAdic_tree.sage")
-attach("~/Documents/SageFiles/pAdic_solver.sage")
-attach("~/Documents/SageFiles/TatesAlgorithm.sage")
-attach("~/Documents/SageFiles/diophantine_tools.sage")
+load("~/Documents/SageFiles/p-adics/loadall.sage")
+load("~/Documents/SageFiles/Tates_algorithm/TatesAlgorithm.sage")
+attach("~/Documents/SageFiles/diophantine_equations/diophantine_tools.sage")
