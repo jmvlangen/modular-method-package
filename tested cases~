@@ -1,0 +1,404 @@
+Equation:
+    a^n + b^n = c^2
+Source:
+    http://www.math.mcgill.ca/darmon/pub/Articles/Research/18.Merel/pub18.pdf
+Assumptions:
+    n prime >= 7
+    (w.l.o.g.) a even and c=1 (mod 4) if a*b even
+    (w.l.o.g.) a=-1 (mod 4) if a*b odd
+Frey curve:
+    Y^2 + X*Y = X^3 + (c-1)/4 * X^2 + a^p / 2^6 X (if ab even)
+    Y^2 = X^3 + 2 * c * X^2 + a^p X (if ab odd)
+Computations:
+    (With all assumptions, case a*b even)
+    Code:
+        DA = DiophantineAnalyzer(['ap','c'])
+        DA.add_restriction(CoprimeRestriction([ap,c]))
+        DA.add_restriction(PolynomialCongruenceRestriction(ap*(c^2-ap), 2))
+        DA.add_restriction(PolynomialPowerRestriction(ap, 7))
+        DA.add_restriction(PolynomialPowerRestriction(c^2-ap, 7))
+        DA.add_restriction(CongruenceRestriction(ap, 0, 2))
+        DA.add_restriction(CongruenceRestriction(c, 1, 4))
+        E = EllipticCurve([1, (c-1)/4, 0, ap/(2^6), 0])
+        answer = DA.compute_conductor(E)
+    Result: (Verified!)
+        2 * Rad_P((1/4096) * ap^2 * (c^2 - ap))
+        where P = {2}
+        where (c, ap) = (1, 0), (5, 0), (9, 0), (13, 0), (17, 0), (21, 0),
+                        (25, 0), (29, 0), (33, 0), (37, 0), (41, 0), (45, 0),
+                        (49, 0), (53, 0), (57, 0), (61, 0), (65, 0), (69, 0),
+                        (73, 0), (77, 0), (81, 0), (85, 0), (89, 0), (93, 0),
+                        (97, 0), (101, 0), (105, 0), (109, 0), (113, 0),
+                        (117, 0), (121, 0), (125, 0) (mod 128)
+    (With assumptions, case a*b odd)
+    Code:
+        DA = DiophantineAnalyzer(['ap','c'])
+        DA.add_restriction(CoprimeRestriction([ap,c]))
+        DA.add_restriction(PolynomialCongruenceRestriction(ap*(c^2-ap), 2, eq=False))
+        DA.add_restriction(PolynomialPowerRestriction(ap, 7))
+        DA.add_restriction(PolynomialPowerRestriction(c^2-ap, 7))
+        DA.add_restriction(CongruenceRestriction(ap, -1, 4))
+        E = EllipticCurve([0, 2*c, 0, ap, 0])
+        answer = DA.compute_conductor(E)
+    Result: (Verified!)
+        2^(5) * Rad_P(ap^2 * (c^2 - ap))
+        where P = {2}
+        where (c, ap) = (0, 3), (2, 3) (mod 4)
+    (Only assumptions about n)
+    Code:
+        DA = DiophantineAnalyzer(['ap','c'])
+        DA.add_restriction(CoprimeRestriction([ap,c]))
+        DA.add_restriction(PolynomialPowerRestriction(ap, 7))
+        DA.add_restriction(PolynomialPowerRestriction(c^2-ap, 7))
+        E = EllipticCurve([0, 2*c, 0, ap, 0])
+        answer = DA.compute_conductor(E, verbose=True)
+    Result:
+        Long computation in step 7
+        
+Equation:
+    a^n + b^n = c^3
+Source:
+    http://www.math.mcgill.ca/darmon/pub/Articles/Research/18.Merel/pub18.pdf
+Assumptions:
+    (w.l.o.g.) a odd and b even if a*b even
+Frey curve:
+    Y^2 + b^p * Y = X^3 - 3/2 * ((c^3)/8 + b^p) * c * X - c^3 * (1/4 * c^3 - 5 * b^p)/8 (if c is even)
+    Y^2 + c * X * Y = X^3 - c^2 * x^2 - 3/2 * c * b^p * X + b^p * (a^p + 5/4 * b^p) (if a*b is even)
+Computations:
+    (Case c even)
+    Code:
+        DA = DiophantineAnalyzer(['bp','c'])
+        DA.add_restriction(CoprimeRestriction([bp,c]))
+        DA.add_restriction(PolynomialPowerRestriction(c^3 - bp, 7))
+        DA.add_restriction(PolynomialPowerRestriction(bp, 7))
+        DA.add_restriction(CongruenceRestriction(c, 0, 2))
+        E = EllipticCurve([0, 0, bp, -3/2 * ((c^3)/8 + bp) * c, -1/8 * c^3 * (1/4 * c^3 - 5 * bp)])
+        answer = DA.compute_conductor(E)
+    Result: (Verified!)
+        3^(e1) * Rad_P(bp * (c^3 - bp)^3)
+        where P = {3}
+        e1 = 2  if (c, bp) = (0, 2), (0, 7), (1, 0), (1, 5), (2, 0),
+                             (2, 4), (3, 2), (3, 7), (4, 0), (4, 5),
+                             (5, 0), (5, 4), (6, 2), (6, 7), (7, 0),
+                             (7, 5), (8, 0), (8, 4) (mod 9)
+	         3  if (c, bp) = (0, 1), (0, 4), (0, 5), (0, 8), (1, 2),
+	                         (1, 8), (2, 1), (2, 7), (3, 1), (3, 4),
+	                         (3, 5), (3, 8), (4, 2), (4, 8), (5, 1),
+	                         (5, 7), (6, 1), (6, 4), (6, 5), (6, 8),
+	                         (7, 2), (7, 8), (8, 1), (8, 7) (mod 9)
+	         1  if (c, bp) = ... (Too long to write efficiently)
+    (Case c odd)
+    Code:
+        DA = DiophantineAnalyzer(['bp','c'])
+        DA.add_restriction(CoprimeRestriction([bp,c]))
+        DA.add_restriction(PolynomialPowerRestriction(c^3 - bp, 7))
+        DA.add_restriction(PolynomialPowerRestriction(bp, 7))
+        DA.add_restriction(CongruenceRestriction(bp, 0, 2))
+        E = EllipticCurve([c, -c^2, 0, -3/2 * c * bp, bp * (c^3 + 1/4 * bp)])
+        answer = DA.compute_conductor(E)
+    Result: (Verified!)
+        3^(e1) * Rad_P(bp * (c^3 - bp)^3)
+        where P = {3}
+        e1 = 2 if (c, bp) = (0, 2), (0, 7), (1, 0), (1, 5), (2, 0),
+                            (2, 4), (3, 2), (3, 7), (4, 0), (4, 5),
+                            (5, 0), (5, 4), (6, 2), (6, 7), (7, 0),
+                            (7, 5), (8, 0), (8, 4) (mod 9)
+	         3 if (c, bp) = (0, 1), (0, 4), (0, 5), (0, 8), (1, 2),
+	                        (1, 8), (2, 1), (2, 7), (3, 1), (3, 4),
+	                        (3, 5), (3, 8), (4, 2), (4, 8), (5, 1),
+	                        (5, 7), (6, 1), (6, 4), (6, 5), (6, 8),
+	                        (7, 2), (7, 8), (8, 1), (8, 7) (mod 9)
+	         1 if (c, bp) = ... (Too long to write efficiently)
+
+Equation:
+    a^4 + b^2 = c^n
+Source:
+    http://www.math.wisc.edu/~ellenber/A4B2Cp.pdf
+Assumptions:
+    (w.l.o.g.) b = 0, 2, 3 (mod 4)
+Frey curve:
+    Y^2 = X^3 + 2 * (1 + i) * a * X^2 + (b + i * a^2) * X (over QQ[i])
+Computations:
+    (Naive test with a, b and c in Z[i])
+    Code:
+        K.<i> = QuadraticField(-1)
+        R = K.ring_of_integers()
+        DA = DiophantineAnalyzer(['a','b'], value_ring=R)
+        DA.add_restriction(CoprimeRestriction([a,b]))
+        DA.add_restriction(PolynomialPowerRestriction(a^4 + b^2, 3))
+        DA.add_restriction(CongruenceRestriction(b, [0,2,3], 4))
+        E = EllipticCurve([0, 2 * (1+i) * a, 0, b + i*a^2, 0])
+        answer = DA.compute_conductor(E)
+    Result:
+        (i + 1)^(e1) * Rad_P(((-i)) * (a^2 + (i)*b) * (a^2 + (-i)*b)^2)
+        where P = {(i + 1)}
+        e1 = 12 if (a, b) = (2*i - 1, 4*i - 2), (2*i - 1, 0),
+                            (4*i - 1, 4*i - 2), (4*i - 1, 0), (3*i, 4*i - 2),
+                            (3*i, 0), (5*i, 4*i - 2), (5*i, 0), (1, 4*i - 2),
+                            (1, 0), (2*i + 1, 4*i - 2), (2*i + 1, 0),
+                            (i + 2, 4*i - 2), (i + 2, 0), (3*i + 2, 4*i - 2),
+                            (3*i + 2, 0) (mod 4)
+             8  if (a, b) = (3*i - 1, 4*i - 1), (5*i - 1, 4*i - 1),
+                            (i + 1, 4*i - 1), (3*i + 1, 4*i - 1) (mod 4)
+             6  if (a, b) = (2*i - 2, 4*i - 1), (4*i - 2, 4*i - 1),
+                            (0, 4*i - 1), (2*i, 4*i - 1) (mod 4)
+    (Smart test with a and b in Z)
+    Code:
+        K.<i> = QuadraticField(-1)
+        R = K.ring_of_integers()
+        DA = DiophantineAnalyzer(['a','b'], value_ring=ZZ)
+        DA.add_restriction(CoprimeRestriction([a,b]))
+        DA.add_restriction(PolynomialPowerRestriction(a^4 + b^2, 3))
+        DA.add_restriction(CongruenceRestriction(b, [0,2,3], 4))
+        E = EllipticCurve([0, 2 * (1+i) * a, 0, b + i*a^2, 0])
+        answer = DA.compute_conductor(E)
+    Result: (Verified!)
+        (i + 1)^(e1) * Rad_P(((-i)) * (a^2 + (i)*b) * (a^2 + (-i)*b)^2)
+        where P = {(i + 1)}
+        e1 = 12 if (a, b) = (1, 0) (mod 2)
+	         6  if (a, b) = (0, 3), (2, 3) (mod 4)
+	         
+Equation:
+    a^13 + b^13 = c^p
+Source:
+    Fermat-type equations of signature (13,13,p) via Hilbert cuspforms
+    Luis Dieulefait - Nuno Freitas
+    Mathematische Annalen (2013) 357:987-1004
+Assumptions:
+    Coprimality
+    degree 12 factor of a^13 + b^13 is not divisible by 13^2
+Frey curve:
+    Y^2 = X^3 + a4 * X + a6, where
+    a4 = (216*w - 2808)*a^4 + (-1728*w + 5616)*a^3*b +
+         (1728*w - 11232)*a^2*b^2 + (-1728*w + 5616)*a*b^3 +
+         (216*w - 2808)*b^4
+    a6 = (-8640*w + 44928)*a^6 + (49248*w - 235872)*a^5*b + \
+         (-129600*w + 471744)*a^4*b^2 + (152928*w - 662688)*a^3*b^3 + \
+         (-129600*w + 471744)*a^2*b^4 + (49248*w - 235872)*a*b^5 + \
+         (-8640*w + 44928)*b^6
+Computations:
+    Code:
+        K.<w> = QuadraticField(13)
+        pi = K.prime_above(13)
+        DA = DiophantineAnalyzer(['a','b'])
+        h0 = (a^13 + b^13).factor()[1][0]
+        DA.add_restriction(CoprimeRestriction([a,b]))
+        DA.add_restriction(PolynomialPowerRestriction(h0, 5, exclude_primes=[pi]))
+        DA.add_restriction(PolynomialCongruenceRestriction(h0, 13^2, eq=False))
+        S = K[a,b]
+        a4 = S((216*w - 2808)*a^4 + \
+               (-1728*w + 5616)*a^3*b + \
+               (1728*w - 11232)*a^2*b^2 + \
+               (-1728*w + 5616)*a*b^3 + \
+               (216*w - 2808)*b^4)
+        a6 = S((-8640*w + 44928)*a^6 + \
+               (49248*w - 235872)*a^5*b + \
+               (-129600*w + 471744)*a^4*b^2 + \
+               (152928*w - 662688)*a^3*b^3 + \
+               (-129600*w + 471744)*a^2*b^4 + \
+               (49248*w - 235872)*a*b^5 + \
+               (-8640*w + 44928)*b^6)
+        E = EllipticCurve([0,0,0,a4,a6])
+        answer = DA.compute_conductor(E)
+    Result: (Not verified!)
+        (-w)^(2) * 2^(e1) * Rad_P((a^6 + (1/2*w - 1/2)*a^5*b + 2*a^4*b^2 +
+                                  (1/2*w + 1/2)*a^3*b^3 + 2*a^2*b^4 +
+                                  (1/2*w - 1/2)*a*b^5 + b^6)^2)
+        where P = {(-w), (-1/2*w - 1/2), 2, (-1/2*w + 1/2)}
+        where (a, b) = (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7),
+                       (0, 8), (0, 9), (0, 10), (0, 11), (0, 12), (1, 0),
+                       (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7),
+                       (1, 8), (1, 9), (1, 10), (1, 11), (1, 12), (2, 0), 
+                       (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7),
+                       (2, 8), (2, 9), (2, 10), (2, 11), (2, 12), (3, 0),
+                       (3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7),
+                       (3, 8), (3, 9), (3, 10), (3, 11), (3, 12), (4, 0),
+                       (4, 1), (4, 2), (4, 3), (4, 4), (4, 5), (4, 6), (4, 7),
+                       (4, 8), (4, 9), (4, 10), (4, 11), (4, 12), (5, 0),
+                       (5, 1), (5, 2), (5, 3), (5, 4), (5, 5), (5, 6), (5, 7),
+                       (5, 8), (5, 9), (5, 10), (5, 11), (5, 12), (6, 0),
+                       (6, 1), (6, 2), (6, 3), (6, 4), (6, 5), (6, 6), (6, 7),
+                       (6, 8), (6, 9), (6, 10), (6, 11), (6, 12), (7, 0),
+                       (7, 1), (7, 2), (7, 3), (7, 4), (7, 5), (7, 6), (7, 7),
+                       (7, 8), (7, 9), (7, 10), (7, 11), (7, 12), (8, 0),
+                       (8, 1), (8, 2), (8, 3), (8, 4), (8, 5), (8, 6), (8, 7),
+                       (8, 8), (8, 9), (8, 10), (8, 11), (8, 12), (9, 0),
+                       (9, 1), (9, 2), (9, 3), (9, 4), (9, 5), (9, 6), (9, 7),
+                       (9, 8), (9, 9), (9, 10), (9, 11), (9, 12), (10, 0),
+                       (10, 1), (10, 2), (10, 3), (10, 4), (10, 5), (10, 6),
+                       (10, 7), (10, 8), (10, 9), (10, 10), (10, 11), (10, 12),
+                       (11, 0), (11, 1), (11, 2), (11, 3), (11, 4), (11, 5),
+                       (11, 6), (11, 7), (11, 8), (11, 9), (11, 10), (11, 11),
+                       (11, 12), (12, 0), (12, 1), (12, 2), (12, 3), (12, 4),
+                       (12, 5), (12, 6), (12, 7), (12, 8), (12, 9), (12, 10),
+                       (12, 11), (12, 12) (mod 13)
+        where (a, b) = (0, 1), (0, 2), (1, 0), (1, 1), 
+                       (1, 2), (2, 0), (2, 1), (2, 2) (mod 3)
+        with e1 = 4 if (a, b) = (1, 1), (1, 2), (2, 1),
+                                (2, 3), (3, 2), (3, 3) (mod 4)
+                  3 if (a, b) = (0, 1), (0, 3), (1, 0),
+                                (1, 3), (3, 0), (3, 1) (mod 4)
+        where (a, b) = (0, 1), (0, 2), (1, 0), (1, 1),
+                       (1, 2), (2, 0), (2, 1), (2, 2) (mod 3)
+    Code:
+        DA = DiophantineAnalyzer(['a','b'])
+        f = a^13 + b^13
+        h = f.factor()[1][0]
+        DA.add_restriction(CoprimeRestriction([a,b]))
+        DA.add_restriction(PolynomialCongruenceRestriction(h, 13^2, eq=False))
+        DA.add_restriction(PolynomialPowerRestriction(h, 5))
+        DA.add_restriction(CongruenceRestriction(b,[1],4))
+        L = CyclotomicField(13)
+        K.<w> = L.subfields(degree=6, name='w')[0][0]
+        g = [gi for gi, e in (K[a,b](f)).factor()]
+        E = []
+        answer = []
+        for i in range(1,len(g)):
+            Ei = getEllipticCurveFromBinaryCubicForm(g[0]*g[1])
+            E.append(Ei)
+            answer.append(DA.compute_conductor(Ei))
+    Result: (Summarized) (all the same conductor)
+        N = (w0^5 - 5*w0^3 + 4*w0)^(2)
+            * (w0^4 + w0^3 - 4*w0^2 - 2*w0 + 2)^(2)
+            * (w0^4 + w0^3 - 4*w0^2 - 2*w0 + 3)^(2)
+            * 2^(e1)
+            * Rad_P((a + b)^2 * ("deg 2 factor")^2)
+        where P = {(w0^5 - 5*w0^3 + 4*w0),            #Prime above 13
+                   (w0^4 + w0^3 - 4*w0^2 - 2*w0 + 2), #Prime above 3
+                   (w0^4 + w0^3 - 4*w0^2 - 2*w0 + 3), #Prime above 3
+                   2}                                 #Only prime above 2
+        with e1 = 0 if a + b = 16 (mod 32)
+                  1 if a + b = 0 (mod 32)
+                  3 if a = 3 (mod 4) and a + b != 16 (mod 16)
+                  4 if a = 0 (mod 2) (a + b = 1, 3 (mod 4)
+                  5 if a = 1 (mod 4) (a + b = 2 (mod 4)
+
+Equation:
+    a^7 + b^7 = c^p
+Assumptions:
+    gcd(a,b) = 1
+    Writing a^7 + b^7 = (a + b) * h(a,b) we have ord_7(h) < 2
+Computations:
+    (Taking a Frey curve over Q associated to h)
+    Code:
+        DA = DiophantineAnalyzer(['a','b'])
+        f = a^7 + b^7
+        h = f.factor()[1][0]
+        hs = polynomial_in_symmetric_terms(h)
+        E0 = getEllipticCurveFromBinaryCubicForm(hs)
+        a_inv = [ai(a^2 + b^2,a*b) for ai in E0.a_invariants()]
+        E = EllipticCurve(a_inv)
+        DA.add_restriction(CoprimeRestriction([a,b]))
+        DA.add_restriction(PolynomialCongruenceRestriction(h, 7^2, eq=False))
+        DA.add_restriction(PolynomialPowerRestriction(h, 5))
+        answer = DA.compute_conductor(E)
+    Result:
+        2^(e1) * 3^(2) * 7^(2) *
+        Rad_P((a^6 - a^5*b + a^4*b^2 - a^3*b^3 + a^2*b^4 - a*b^5 + b^6)^2)
+        where P = {2, 3, 7}
+        with e1 = 2 if (a, b) = (0, 1), (0, 3), (1, 0), (3, 0) (mod 4)
+                  4 if (a, b) = (1, 1), (3, 3) (mod 4)
+                  3 if (a, b) = (1, 2), (1, 3), (2, 1),
+                                (2, 3), (3, 1), (3, 2) (mod 4)
+        where (a, b) = (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1),
+                       (2, 2) (mod 3)
+        where (a, b) = (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (1, 0),
+                       (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (2, 0), (2, 1),
+                       (2, 2), (2, 3), (2, 4), (2, 6), (3, 0), (3, 1), (3, 2),
+                       (3, 3), (3, 5), (3, 6), (4, 0), (4, 1), (4, 2), (4, 4),
+                       (4, 5), (4, 6), (5, 0), (5, 1), (5, 3), (5, 4), (5, 5),
+                       (5, 6), (6, 0), (6, 2), (6, 3), (6, 4), (6, 5),
+                       (6, 6) (mod 7)
+    (Taking a Frey curve over Q[\sqrt{-7}] by taking a degree 3 factor of a^7 + b^7)
+    Code:
+        DA = DiophantineAnalyzer(['a','b'])
+        f = a^7 + b^7
+        h = f.factor()[1][0]
+        DA.add_restriction(CoprimeRestriction([a,b]))
+        DA.add_restriction(PolynomialCongruenceRestriction(h, 7^2, eq=False))
+        DA.add_restriction(PolynomialPowerRestriction(h, 5))
+        K.<w> = QuadraticField(-7)
+        S = K[a,b]
+        fS = S(f)
+        g = fS.factor()[1][0]
+        E = getEllipticCurveFromBinaryCubicForm(g)
+        answer = DA.compute_conductor(E)
+    Result:
+        (1/2*w + 1/2)^(e1) * (-1/2*w + 1/2)^(e2) * (-w)^(2) * 3^(2) *
+            Rad_P((-1) * (a^3 + (-1/2*w - 1/2)*a^2*b + (1/2*w - 1/2)*a*b^2 + b^3)^2)
+        where P = {(1/2*w + 1/2), (-1/2*w + 1/2), (-w), 3}
+        with e1 = 2 if (a, b) = (0, 3), (1, 3), (3, 2) (mod 4)
+                  4 if (a, b) = (0, 1), (1, 2), (2, 1),
+                                (3, 0), (3, 1), (3, 3) (mod 4)
+                  3 if (a, b) = (1, 0), (1, 1), (2, 3) (mod 4)
+        with e2 = 2 if (a, b) = (1, 0), (1, 3), (2, 1) (mod 4)
+                  4 if (a, b) = (0, 1), (1, 1), (2, 3),
+                                (3, 0), (3, 1), (3, 2) (mod 4)
+                  3 if (a, b) = (0, 3), (1, 2), (3, 3) (mod 4)
+        where (a, b) = (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (1, 0),
+                       (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (2, 0), (2, 1),
+                       (2, 2), (2, 3), (2, 4), (2, 6), (3, 0), (3, 1), (3, 2),
+                       (3, 3), (3, 5), (3, 6), (4, 0), (4, 1), (4, 2), (4, 4),
+                       (4, 5), (4, 6), (5, 0), (5, 1), (5, 3), (5, 4), (5, 5),
+                       (5, 6), (6, 0), (6, 2), (6, 3), (6, 4), (6, 5),
+                       (6, 6) (mod 7)
+        where (a, b) = (0, 1), (0, 2), (1, 0), (1, 1),
+                       (1, 2), (2, 0), (2, 1), (2, 2) (mod 3)
+    Code:
+    
+    Result:
+        [3^(2) * (zeta7_2^2 + 2*zeta7_2 - 1)^(2) * 2^(e1) *
+            Rad_P(((-zeta7_2^2)) * (a + b)^2 * (a^2 + (-zeta7_2^2 - zeta7_2 + 1)*a*b + b^2)^2)
+         where P = {3, (zeta7_2^2 + 2*zeta7_2 - 1), 2}
+         where (a, b) = (0, 1), (0, 2), (1, 0), (1, 1),
+                        (1, 2), (2, 0), (2, 1), (2, 2) (mod 3)
+         where (a, b) = (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6),
+                        (1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6),
+                        (2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6),
+                        (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6),
+                        (4, 0), (4, 1), (4, 2), (4, 3), (4, 4), (4, 5), (4, 6),
+                        (5, 0), (5, 1), (5, 2), (5, 3), (5, 4), (5, 5), (5, 6),
+                        (6, 0), (6, 1), (6, 2), (6, 3), (6, 4), (6, 5), (6, 6) (mod 7)
+         with e1 = 4 if (a, b) = (0, 1), (2, 1) (mod 4)
+                   1 if (a, b) = (3, 29), (7, 25), (11, 21), (15, 17),
+                                 (19, 13), (23, 9), (27, 5), (31, 1) (mod 32)
+         ,
+         3^(2) * (zeta7_2^2 + 2*zeta7_2 - 1)^(2) * 2^(e1) *
+            Rad_P(((-zeta7_2 - 2)) * (a + b)^2 * (a^2 + (zeta7_2^2 - 2)*a*b + b^2)^2)
+         where P = {3, (zeta7_2^2 + 2*zeta7_2 - 1), 2}
+         where (a, b) = (0, 1), (0, 2), (1, 0), (1, 1),
+                        (1, 2), (2, 0), (2, 1), (2, 2) (mod 3)
+         where (a, b) = (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6),
+                        (1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6),
+                        (2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6),
+                        (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6),
+                        (4, 0), (4, 1), (4, 2), (4, 3), (4, 4), (4, 5), (4, 6),
+                        (5, 0), (5, 1), (5, 2), (5, 3), (5, 4), (5, 5), (5, 6),
+                        (6, 0), (6, 1), (6, 2), (6, 3), (6, 4), (6, 5), (6, 6) (mod 7)
+         with e1 = 4 if (a, b) = (0, 1), (2, 1) (mod 4)
+                   1 if (a, b) = (3, 29), (7, 25), (11, 21), (15, 17),
+                                 (19, 13), (23, 9), (27, 5), (31, 1) (mod 32)
+         ,
+         3^(2) * (zeta7_2^2 + 2*zeta7_2 - 1)^(2) * 2^(e1) *
+            Rad_P(((zeta7_2^2 + zeta7_2 - 3)) * (a + b)^2 * (a^2 + (zeta7_2)*a*b + b^2)^2)
+         where P = {3, (zeta7_2^2 + 2*zeta7_2 - 1), 2}
+         where (a, b) = (0, 1), (0, 2), (1, 0), (1, 1),
+                        (1, 2), (2, 0), (2, 1), (2, 2) (mod 3)
+         where (a, b) = (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6),
+                        (1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6),
+                        (2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6),
+                        (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6),
+                        (4, 0), (4, 1), (4, 2), (4, 3), (4, 4), (4, 5), (4, 6),
+                        (5, 0), (5, 1), (5, 2), (5, 3), (5, 4), (5, 5), (5, 6),
+                        (6, 0), (6, 1), (6, 2), (6, 3), (6, 4), (6, 5), (6, 6) (mod 7)
+         with e1 = 4 if (a, b) = (0, 1), (2, 1) (mod 4)
+                   1 if (a, b) = (3, 29), (7, 25), (11, 21), (15, 17),
+                                 (19, 13), (23, 9), (27, 5), (31, 1) (mod 32)
+         ]
+
+Equation:
+    (a-b)^4 + a^4 + (a+b)^4 = c^l
+Assumptions:
+    a and b are coprime
+Computations:
+    

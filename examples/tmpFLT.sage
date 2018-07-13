@@ -1,0 +1,8 @@
+DA = DiophantineAnalyzer(['A','B'])
+DA.add_restriction(CoprimeRestriction([A,B]))
+DA.add_restriction(PolynomialPowerRestriction(A,3))
+DA.add_restriction(PolynomialPowerRestriction(B,3))
+DA.add_restriction(PolynomialPowerRestriction(A+B,3))
+DA.add_restriction(PolynomialCongruenceRestriction(A,0,4))
+E = EllipticCurve([0,B-A,0,-A*B,0])
+#DA.compute_conductor(E, verbose=True)

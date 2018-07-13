@@ -1,0 +1,263 @@
+sage: hilbert_symbol(5,2,5)
+-1
+sage: hilbert_symbol(5,2,2)
+-1
+sage: L = CyclotomicField(15)
+sage: L.galois_group()
+Galois group of Cyclotomic Field of order 15 and degree 8
+sage: L.galois_group().gens()
+[(1,2,3,4)(5,6,7,8), (1,5)(2,6)(3,7)(4,8)]
+sage: L.galois_group().gens()[0]^2
+(1,3)(2,4)(5,7)(6,8)
+sage: L.galois_group().gens()[0]^4
+()
+sage: L.galois_group().gens()[0]^2
+(1,3)(2,4)(5,7)(6,8)
+sage: L.subfields()
+
+[
+(Number Field in zeta15_0 with defining polynomial x - 1, Ring morphism:
+  From: Number Field in zeta15_0 with defining polynomial x - 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: 1 |--> 1, None),
+(Number Field in zeta15_1 with defining polynomial x^2 - x + 1, Ring morphism:
+  From: Number Field in zeta15_1 with defining polynomial x^2 - x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_1 |--> zeta15^5 + 1, None),
+(Number Field in zeta15_2 with defining polynomial x^2 - x - 1, Ring morphism:
+  From: Number Field in zeta15_2 with defining polynomial x^2 - x - 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_2 |--> -zeta15^7 + zeta15^3 - zeta15^2 + 1, None),
+(Number Field in zeta15_3 with defining polynomial x^2 - x + 4, Ring morphism:
+  From: Number Field in zeta15_3 with defining polynomial x^2 - x + 4
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_3 |--> zeta15^7 - zeta15^5 + 2*zeta15^4 - zeta15^3 + zeta15^2 + 2*zeta15 - 1, None),
+(Number Field in zeta15_4 with defining polynomial x^4 - x^3 + 2*x^2 + x + 1, Ring morphism:
+  From: Number Field in zeta15_4 with defining polynomial x^4 - x^3 + 2*x^2 + x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_4 |--> zeta15^4 + zeta15, None),
+(Number Field in zeta15_5 with defining polynomial x^4 - x^3 + x^2 - x + 1, Ring morphism:
+  From: Number Field in zeta15_5 with defining polynomial x^4 - x^3 + x^2 - x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_5 |--> -zeta15^6, None),
+(Number Field in zeta15_6 with defining polynomial x^4 - x^3 - 4*x^2 + 4*x + 1, Ring morphism:
+  From: Number Field in zeta15_6 with defining polynomial x^4 - x^3 - 4*x^2 + 4*x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_6 |--> -zeta15^7 + zeta15^6 - zeta15^4 + zeta15^3 - zeta15^2 + zeta15 + 1, None),
+(Number Field in zeta15_7 with defining polynomial x^8 - x^7 + x^5 - x^4 + x^3 - x + 1, Ring morphism:
+  From: Number Field in zeta15_7 with defining polynomial x^8 - x^7 + x^5 - x^4 + x^3 - x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_7 |--> zeta15, Ring morphism:
+  From: Cyclotomic Field of order 15 and degree 8
+  To:   Number Field in zeta15_7 with defining polynomial x^8 - x^7 + x^5 - x^4 + x^3 - x + 1
+  Defn: zeta15 |--> zeta15_7)
+]
+sage: L.subfields().gens()
+---------------------------------------------------------------------------
+AttributeError                            Traceback (most recent call last)
+<ipython-input-221-9136e72813c8> in <module>()
+----> 1 L.subfields().gens()
+
+/local/sage/local/lib/python2.7/site-packages/sage/structure/sequence.pyc in __getattr__(self, name)
+    891             return self.__hash
+    892         else:
+--> 893             raise AttributeError("'Sequence_generic' object has no attribute '%s'"%name)
+    894 seq = Sequence
+    895 
+
+AttributeError: 'Sequence_generic' object has no attribute 'gens'
+sage: L.galois_group().gens()
+[(1,2,3,4)(5,6,7,8), (1,5)(2,6)(3,7)(4,8)]
+sage: gens = L.galois_group().gens()
+sage: gens[0]^2 * gens[1]
+(1,7)(2,8)(3,5)(4,6)
+sage: sigma = gens[0]^2 * gens[1]
+sage: L.subfield?
+sage: R.<x> = QQ[]
+sage: K = NumberField(x^4 - 5*x^2 + 5)
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+<ipython-input-235-52436245ea91> in <module>()
+----> 1 K = NumberField(x**Integer(4) - Integer(5)*x**Integer(2) + Integer(5))
+
+/local/sage/local/lib/python2.7/site-packages/sage/rings/number_field/number_field.pyc in NumberField(polynomial, name, check, names, embedding, latex_name, assume_disc_small, maximize_at_primes, structure)
+    523         return NumberFieldTower(polynomial, names=name, check=check, embeddings=embedding, latex_names=latex_name, assume_disc_small=assume_disc_small, maximize_at_primes=maximize_at_primes, structures=structure)
+    524 
+--> 525     return NumberField_version2(polynomial=polynomial, name=name, check=check, embedding=embedding, latex_name=latex_name, assume_disc_small=assume_disc_small, maximize_at_primes=maximize_at_primes, structure=structure)
+    526 
+    527 class NumberFieldFactory(UniqueFactory):
+
+/local/sage/src/sage/structure/factory.pyx in sage.structure.factory.UniqueFactory.__call__ (/local/sage/src/build/cythonized/sage/structure/factory.c:1749)()
+    360             False
+    361         """
+--> 362         key, kwds = self.create_key_and_extra_args(*args, **kwds)
+    363         version = self.get_version(sage_version)
+    364         return self.get_object(version, key, kwds)
+
+/local/sage/local/lib/python2.7/site-packages/sage/rings/number_field/number_field.pyc in create_key_and_extra_args(self, polynomial, name, check, embedding, latex_name, assume_disc_small, maximize_at_primes, structure)
+    593         """
+    594         if name is None:
+--> 595             raise TypeError("You must specify the name of the generator.")
+    596         name = normalize_names(1, name)
+    597 
+
+TypeError: You must specify the name of the generator.
+sage: K.<a> = NumberField(x^4 - 5*x^2 + 5)
+sage: K.galois_group()
+Galois group of Number Field in a with defining polynomial x^4 - 5*x^2 + 5
+sage: G = K.galois_group()
+sage: G.gens()
+[(1,3,4,2)]
+sage: L.subfields()
+
+[
+(Number Field in zeta15_0 with defining polynomial x - 1, Ring morphism:
+  From: Number Field in zeta15_0 with defining polynomial x - 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: 1 |--> 1, None),
+(Number Field in zeta15_1 with defining polynomial x^2 - x + 1, Ring morphism:
+  From: Number Field in zeta15_1 with defining polynomial x^2 - x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_1 |--> zeta15^5 + 1, None),
+(Number Field in zeta15_2 with defining polynomial x^2 - x - 1, Ring morphism:
+  From: Number Field in zeta15_2 with defining polynomial x^2 - x - 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_2 |--> -zeta15^7 + zeta15^3 - zeta15^2 + 1, None),
+(Number Field in zeta15_3 with defining polynomial x^2 - x + 4, Ring morphism:
+  From: Number Field in zeta15_3 with defining polynomial x^2 - x + 4
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_3 |--> zeta15^7 - zeta15^5 + 2*zeta15^4 - zeta15^3 + zeta15^2 + 2*zeta15 - 1, None),
+(Number Field in zeta15_4 with defining polynomial x^4 - x^3 + 2*x^2 + x + 1, Ring morphism:
+  From: Number Field in zeta15_4 with defining polynomial x^4 - x^3 + 2*x^2 + x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_4 |--> zeta15^4 + zeta15, None),
+(Number Field in zeta15_5 with defining polynomial x^4 - x^3 + x^2 - x + 1, Ring morphism:
+  From: Number Field in zeta15_5 with defining polynomial x^4 - x^3 + x^2 - x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_5 |--> -zeta15^6, None),
+(Number Field in zeta15_6 with defining polynomial x^4 - x^3 - 4*x^2 + 4*x + 1, Ring morphism:
+  From: Number Field in zeta15_6 with defining polynomial x^4 - x^3 - 4*x^2 + 4*x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_6 |--> -zeta15^7 + zeta15^6 - zeta15^4 + zeta15^3 - zeta15^2 + zeta15 + 1, None),
+(Number Field in zeta15_7 with defining polynomial x^8 - x^7 + x^5 - x^4 + x^3 - x + 1, Ring morphism:
+  From: Number Field in zeta15_7 with defining polynomial x^8 - x^7 + x^5 - x^4 + x^3 - x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_7 |--> zeta15, Ring morphism:
+  From: Cyclotomic Field of order 15 and degree 8
+  To:   Number Field in zeta15_7 with defining polynomial x^8 - x^7 + x^5 - x^4 + x^3 - x + 1
+  Defn: zeta15 |--> zeta15_7)
+]
+sage: ls = L.subfields()
+sage: ls[0].degree()
+---------------------------------------------------------------------------
+AttributeError                            Traceback (most recent call last)
+<ipython-input-244-7324048f20bb> in <module>()
+----> 1 ls[Integer(0)].degree()
+
+AttributeError: 'tuple' object has no attribute 'degree'
+sage: for K in ls:
+....:     if K[0].degree() != 4:
+....:         ls.remove(K)
+....:         
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-245-5e65d7dfe563> in <module>()
+      1 for K in ls:
+      2     if K[Integer(0)].degree() != Integer(4):
+----> 3         ls.remove(K)
+      4         
+
+/local/sage/local/lib/python2.7/site-packages/sage/structure/sequence.pyc in remove(self, value)
+    615             [1, 3]
+    616         """
+--> 617         self._require_mutable()
+    618         list.remove(self, value)
+    619 
+
+/local/sage/local/lib/python2.7/site-packages/sage/structure/sequence.pyc in _require_mutable(self)
+    753         """
+    754         if self._is_immutable:
+--> 755             raise ValueError("object is immutable; please change a copy instead.")
+    756 
+    757     def set_immutable(self):
+
+ValueError: object is immutable; please change a copy instead.
+sage: ls
+
+[
+(Number Field in zeta15_0 with defining polynomial x - 1, Ring morphism:
+  From: Number Field in zeta15_0 with defining polynomial x - 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: 1 |--> 1, None),
+(Number Field in zeta15_1 with defining polynomial x^2 - x + 1, Ring morphism:
+  From: Number Field in zeta15_1 with defining polynomial x^2 - x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_1 |--> zeta15^5 + 1, None),
+(Number Field in zeta15_2 with defining polynomial x^2 - x - 1, Ring morphism:
+  From: Number Field in zeta15_2 with defining polynomial x^2 - x - 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_2 |--> -zeta15^7 + zeta15^3 - zeta15^2 + 1, None),
+(Number Field in zeta15_3 with defining polynomial x^2 - x + 4, Ring morphism:
+  From: Number Field in zeta15_3 with defining polynomial x^2 - x + 4
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_3 |--> zeta15^7 - zeta15^5 + 2*zeta15^4 - zeta15^3 + zeta15^2 + 2*zeta15 - 1, None),
+(Number Field in zeta15_4 with defining polynomial x^4 - x^3 + 2*x^2 + x + 1, Ring morphism:
+  From: Number Field in zeta15_4 with defining polynomial x^4 - x^3 + 2*x^2 + x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_4 |--> zeta15^4 + zeta15, None),
+(Number Field in zeta15_5 with defining polynomial x^4 - x^3 + x^2 - x + 1, Ring morphism:
+  From: Number Field in zeta15_5 with defining polynomial x^4 - x^3 + x^2 - x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_5 |--> -zeta15^6, None),
+(Number Field in zeta15_6 with defining polynomial x^4 - x^3 - 4*x^2 + 4*x + 1, Ring morphism:
+  From: Number Field in zeta15_6 with defining polynomial x^4 - x^3 - 4*x^2 + 4*x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_6 |--> -zeta15^7 + zeta15^6 - zeta15^4 + zeta15^3 - zeta15^2 + zeta15 + 1, None),
+(Number Field in zeta15_7 with defining polynomial x^8 - x^7 + x^5 - x^4 + x^3 - x + 1, Ring morphism:
+  From: Number Field in zeta15_7 with defining polynomial x^8 - x^7 + x^5 - x^4 + x^3 - x + 1
+  To:   Cyclotomic Field of order 15 and degree 8
+  Defn: zeta15_7 |--> zeta15, Ring morphism:
+  From: Cyclotomic Field of order 15 and degree 8
+  To:   Number Field in zeta15_7 with defining polynomial x^8 - x^7 + x^5 - x^4 + x^3 - x + 1
+  Defn: zeta15 |--> zeta15_7)
+]
+sage: ls[0]
+
+(Number Field in zeta15_0 with defining polynomial x - 1, Ring morphism:
+   From: Number Field in zeta15_0 with defining polynomial x - 1
+   To:   Cyclotomic Field of order 15 and degree 8
+   Defn: 1 |--> 1, None)
+sage: K = ls[6]
+sage: K = ls[6][0]
+sage: K.galois_group()
+Galois group of Number Field in zeta15_6 with defining polynomial x^4 - x^3 - 4*x^2 + 4*x + 1
+sage: K.galois_group().gens()
+[(1,2,3,4)]
+sage: ls[5][0].galois_group().gens()
+[(1,2,3,4)]
+sage: ls[5][0]
+Number Field in zeta15_5 with defining polynomial x^4 - x^3 + x^2 - x + 1
+sage: L = CyclotomicField(5)
+sage: R.<x> = L[]
+sage: f = x^4 - x^3 - 4*x^2 + 4*x + 1
+sage: f.factor()
+(x^2 + (-zeta5^3 - zeta5^2 - 1)*x + zeta5^3 + zeta5^2 - 1) * (x^2 + (zeta5^3 + zeta5^2)*x - zeta5^3 - zeta5^2 - 2)
+sage: f.roots()
+[]
+sage: K
+Number Field in zeta15_6 with defining polynomial x^4 - x^3 - 4*x^2 + 4*x + 1
+sage: K.discriminant()
+1125
+sage: K.discriminant?
+sage: K.discriminant().factor()
+3^2 * 5^3
+sage: K_beta = K.composite_fields(QuadraticField(30))
+sage: K_beta
+[Number Field in zeta15_6a with defining polynomial x^8 + 2*x^7 - 127*x^6 - 196*x^5 + 5560*x^4 + 5434*x^3 - 98692*x^2 - 40388*x + 589681]
+sage: K_beta = K_beta[0]
+sage: K_beta.discriminant()
+5184000000
+sage: K_beta.discriminant().factor()
+2^12 * 3^4 * 5^6
+sage: K.composite_fields?
+sage: 

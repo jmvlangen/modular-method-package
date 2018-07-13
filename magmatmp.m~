@@ -1,0 +1,11 @@
+for p in PrimesInInterval(5,100) do         
+F := Factorization(p*OK);
+if #F eq 1 then
+P:=F[1,1];
+# Reduction(E,P);
+for f in nfs0 do
+Norm(eps(p) * p + 1 - Coefficient(f[1], p));
+end for;
+"*";
+end if;
+end for;

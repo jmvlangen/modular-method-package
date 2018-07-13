@@ -1,0 +1,92 @@
+class IntegerVariableRestriction:
+    r"""
+    A super class that represents restrictive conditions on variables with values in ZZ
+    """
+    
+    def __init__( self , variables ):
+        self.variables = variables
+    
+    def isPossibleValueOfVariables( self , value ):
+        r"""
+        Check whether certain values are allowed for the variables.
+        
+        This method will check whether the given integer values for the variables
+        satisfy the restrictions on these variables given by this object.
+        
+        INPUT:
+            - ``values`` -- a list of integer values of the same length as the number of variables this object considers.
+        
+        OUTPUT:
+            True -- if the values satisfy the restrictions for the respective variables
+            False -- otherwise
+        """
+        if len(value) != len( variables ):
+            raise TypeError("The length of the list of values (%d) does not match the length of the list of variables (%d)"%(len(value),len(variables)))
+        raise NotImplementedError("An object of type %s does not implement this method"%s(self.__class__) )
+        
+    def getVariables( self ):
+        return copy( self.variables )
+        
+    def getNumberOfVariables( self ):
+        return len( self.variables )
+        
+class ModuloVariableRestriction( IntegerVariableRestriction ):
+    r"""
+    A class that represents a restriction modulo some number N on some variables with values in ZZ
+    """
+    
+    def __init_( self , variables , N , possibleTuples = []):
+        IntegerVariableRestriction.__init__( self , variables )
+        self.N = N
+        self.ZmodN = ZZ.quotient( N )
+        self.ZmodNModule = ZmodN^( self.getNumberOfVariables() )
+        if len( possibleTuples ) == 0:
+            self._setPossibleTuples( ZmodNModule )
+        else:
+            self._setPossibleTuples( possibleTuples )
+        
+    def _setPossibleTuples( self , possibleTuples ):
+        self.possibleTuples = []
+        for possibleTuple in possibleTuples:
+            if not self.ZmodNModule( possibleTuple ) in self.possibleTuples:
+                self.possibleTuples.append( self.ZmodNModule( possibleTuple ) )
+    
+    def getZquotient(self):
+        return self.ZmodN
+    
+    def getZquotientModule( self ):
+        return self.ZmodNModule
+        
+    def isPossibleValueOfVariables( self , value ):
+        if len(value) != len( self.variables ):
+            raise TypeError("The length of the list of values (%d) does not match the length of the list of variables (%d)"%(len(value),len(variables)))
+        return self.ZmodNModule( value ) in self.possibleTuples
+        
+    def getReducedRestriction( self ):
+        if d != 0:
+            for d in reversed( divisors( self.N ) ):
+                if (d^self.getNumberOfVariables()).divides( len( self.possibleTuples ) ):
+                    ZmodNd = Z.quotient( ZZ( self.N / d ) )
+                    ZmodNdModule = ZmodNd^self.getNumberOfVariables()
+                    possibleTuplesModNd = []
+                    for possibleTuple in self.possibleTuples:
+                        if ZmodNdModule( possibleTuple ) not in possibleTuplesModNd:
+                            possibleTuplesModNd.append( ZmodNdModule( possibleTuple ) )
+                    if len( possibleTuplesModNd ) * d^self.getNumberOfVariables() = len( self.possibleTuples ):
+                        return ModuloVariableRestriction( self.variables , self.Nd , possibleTuplesModNd )
+        
+class PolynomialVariableRestriction( IntegerVariableRestriction ):
+    r"""
+    A class that represents a restriction on variables in ZZ enforced by some polynomial equation
+    """
+    
+    def __init_( self , variables , polynomial ):
+        IntegerVariableRestriction.__init__( self , variables )
+        self.polynomialRing = PolynomialRing( ZZ , self.variables )
+        self.polynomial = self.polynomialRing( polynomial )
+        
+    def isPossibleValueOfVariables( self , value ):
+        if len(value) != len( self.variables ):
+            raise TypeError("The length of the list of values (%d) does not match the length of the list of variables (%d)"%(len(value),len(variables)))
+        return self.polynomial( value ) == 0
+        
