@@ -1,0 +1,109 @@
+def smallest_entry_in_column(M, j, mod=0, at_least=0):
+    r"""
+
+    """
+    result = Infinity
+    k0 = -1
+    for i in range(at_least, M.dimensions()[0]):
+        if M[i][j] != 0 and ((mod != 0 and gcd(M[i][j],mod) < result) or
+                             (mod == 0 and abs(M[i][j] < result))):
+            if mod != 0:
+                result = gcd(M[i][j], N)
+            else:
+                result = abs(M[i][j])
+            k0 = i
+    if k0 == -1:
+        print "Zero column!"
+    else:
+        return k0, result
+
+def lower_zero_rows(M):
+    m,n = M.dimensions()
+    for i0 in range(m):
+        if product(M[i][j] == 0 for j in range(n)): # Zero row
+            flag = True
+            for i1 in range(i0+1, m):
+                if not product(M[i][j] == 0 for j in range(n)): # first non-zero row thereafter
+                    flag = False
+                    break
+            if flag: # done
+                break
+            M.swap_rows(i0, i1)
+
+def eliminate_zero_rows(M):
+    m, n = M.dimensions()
+    ls = [i for i in range(m) if product(M[i][j] == 0 for j in range(n))]
+    return M.delete_rows(ls)
+    
+def eliminate_entry_with_row(M, r, j):
+    m, n = M.dimensions()
+    for i in range(m):
+        if i != r:
+            c = -floor(ZZ(M[i][j]) / ZZ(M[r][j]))
+            M.add_multiple_of_row(i, r, c)
+
+def normalize_row_for_entry(M, i, j, mod=0):
+    if mod == 0:
+        if M[i][j] < 0:
+            M.rescale_row(i, -1)
+    else:
+        g = gcd(ZZ(M[i][j]), N)
+        u = Integers(N/g)(ZZ(M[i][j]) / g)
+        for v in range(ZZ(u^(-1)), N, N/g):
+            if gcd(v, N) == 1: # Lift to a unit
+                break
+        v = Integers(N)(v)
+        M.rescale_row(i, v)
+
+### Step 0: Verifying sage's kernel result:
+M0 = M
+m,n = M0.dimensions()
+i = 0
+for j in range(n):
+    result = smallest_entry_in_column(M0, j, at_least=i)
+    if result != None:
+        k = result[0]
+        if i != k:
+            M0.swap_rows(i, k)
+        normalize_row_for_entry(M0, i, j)
+        eliminate_entry_with_row(M0, i, j)
+        M0 = eliminate_zero_rows(M0)
+        print M0.dimensions()[0]
+        i += 1
+m,n = M0.dimensions()
+for i in reversed(range(m)):
+    g = gcd(M0[i])
+    M0 = M0.with_rescaled_row(i, 1/g)
+    j = M0[i].nonzero_positions()[0]
+    eliminate_entry_with_row(M0,i,j)
+print M0
+    
+### Step 1: determine the non-torsion vectors that suffice
+M0 = M
+m,n = M0.dimensions()
+ls_tor = [j for j in range(n) if j % 4 == 0]
+M0 = M0.delete_columns(ls_tor)
+ls_v = M0.right_kernel().basis()
+ls_v = [list(v) for v in ls_v]
+for t in ls_tor:
+    for v in ls_v:
+        v.insert(t, 0)
+matrix_v = matrix(ls_v).transpose()
+
+### Step 2
+MTv = MT * matrix_v.change_ring(Integers(N))
+M0 = matrix([[MT[i][j] for j in ls_tor] + list(MTv[i]) + [VT[i]] for i in range(MT.dimensions()[0])])
+m,n = M0.dimensions()
+i = 0
+for j in range(n):
+    result = smallest_entry_in_column(M0, j, mod=N, at_least=i)
+    if result != None:
+        k = result[0]
+        if i != k:
+            M0.swap_rows(i, k)
+        normalize_row_for_entry(M0, i, j, mod=N)
+        eliminate_entry_with_row(M0, i, j)
+        M0 = eliminate_zero_rows(M0)
+        print M0.dimensions()[0]
+        i += 1
+print M0

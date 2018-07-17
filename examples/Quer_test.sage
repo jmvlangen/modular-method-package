@@ -1,7 +1,3 @@
-### Loading preliminaries
-load("tmp1.sage")
-load("twist.sage")
-
 ### Index looper
 def index_loop(n):
     j = [0]*len(n)
@@ -254,6 +250,14 @@ class Quer_invariants(SageObject):
         return flag
     
     def lambda_of_isogeny(self, phi):
+        """
+        For an isogeny of the form
+        ..MATH:
+
+            (x,y) \mapsto (F(x), yF'(x) / \lambda)
+
+        returns $\lambda$
+        """
         Fx, Fy = phi.rational_maps()
         x,y = Fy.parent().gens()
         R = Fy.parent().base().base()
@@ -262,6 +266,21 @@ class Quer_invariants(SageObject):
         return NumberField(f, names='l').gen()
 
     def lambda_of_isomorphism(self, E1, E2):
+        """
+        For two isomorphic curves $E_1$ and $E_2$,
+        let $u$ be the unique scaling factor such that
+        the isomorphism can be given by
+        ..MATH:
+
+           (x,y) \mapsto (u^2 x, u^3 y)
+
+        then returns 1/u.
+        In this case the equations are of the form
+        ..MATH:
+
+           E_1 : y^2 = x^3 + A x + B
+           E_2 : y^2 = x^3 + u^4 A x + u^6 B
+        """
         E1 = E1.rst_transform(-E1.a2()/3,0,0);
         E2 = E2.rst_transform(-E2.a2()/3,0,0);
         ainv1 = list(E1.a_invariants())
@@ -273,7 +292,7 @@ class Quer_invariants(SageObject):
         for i in range(len(ainv1)):
             if ainv1[i] != 0 and ainv2[i] != 0:
                 k.append(i)
-                u.append(ainv1[i]/ainv2[i])
+                u.append(ainv2[i]/ainv1[i])
             else:
                 u.append(0)
         n = gcd(k)
@@ -284,10 +303,10 @@ class Quer_invariants(SageObject):
         else:
             raise Exception("Could not compute u for some reason.")
         f = un.minpoly()
-        f = f(f.variables()[0]^2)
+        f = f(f.variables()[0]^n)
         f = f.factor()[0][0]
         L.<u> = NumberField(f)
-        return u
+        return 1/u
 
     def _update_isogeny_field(self):
         if not self._is_cached('_Kl'):
@@ -343,7 +362,7 @@ class Quer_invariants(SageObject):
                     l1 = self.lambda_of_isomorphism(E[s].change_ring(yotad),E_t)
                     l2 = self.lambda_of_isogeny(psi.dual())
                     Kl, p1, p2 = composite_field(l1.parent(), l2.parent(), give_maps=True)
-                    self.add_isogeny(s, psi.degree(), Kl(psi.degree()) / (p1(l1) * p2(l2)))
+                    self.add_isogeny(s, psi.degree(), p1(l1) * p2(l2))
         
     def fill_isogenies(self):
         self._init_isogenies()
@@ -613,7 +632,7 @@ class Quer_invariants(SageObject):
 
         return beta
 
-    def c_beta_error(self, method, verbose=True, index=None):
+    def c_beta_error(self, method, verbose=True, index=None, S=[]):
         if not self._is_cached('_c_beta_error'):
             try:
                 self.splitting_map()
@@ -655,7 +674,10 @@ class Quer_invariants(SageObject):
                 return result
             if method == 'congruences':
                 K = index[0].parent().number_field()
-                U = K.unit_group()
+                S1 = []
+                for p in S:
+                    S1.extend(K.primes_above(p))
+                U = K.S_unit_group(S=S1)
                 units = U.gens()
                 orders = [u.order() for u in units]
                 t = min([i for i in range(len(units)) if orders[i] in ZZ])
@@ -1161,109 +1183,3 @@ for i in range(n):
             flag = True
 
 ### tmp2
-def smallest_entry_in_column(M, j, mod=0, at_least=0):
-    result = Infinity
-    k0 = -1
-    for i in range(at_least, M.dimensions()[0]):
-        if M[i][j] != 0 and ((mod != 0 and gcd(M[i][j],mod) < result) or
-                             (mod == 0 and abs(M[i][j] < result))):
-            if mod != 0:
-                result = gcd(M[i][j], N)
-            else:
-                result = abs(M[i][j])
-            k0 = i
-    if k0 == -1:
-        print "Zero column!"
-    else:
-        return k0, result
-
-def lower_zero_rows(M):
-    m,n = M.dimensions()
-    for i0 in range(m):
-        if product(M[i][j] == 0 for j in range(n)): # Zero row
-            flag = True
-            for i1 in range(i0+1, m):
-                if not product(M[i][j] == 0 for j in range(n)): # first non-zero row thereafter
-                    flag = False
-                    break
-            if flag: # done
-                break
-            M.swap_rows(i0, i1)
-
-def eliminate_zero_rows(M):
-    m, n = M.dimensions()
-    ls = [i for i in range(m) if product(M[i][j] == 0 for j in range(n))]
-    return M.delete_rows(ls)
-    
-def eliminate_entry_with_row(M, r, j):
-    m, n = M.dimensions()
-    for i in range(m):
-        if i != r:
-            c = -floor(ZZ(M[i][j]) / ZZ(M[r][j]))
-            M.add_multiple_of_row(i, r, c)
-
-def normalize_row_for_entry(M, i, j, mod=0):
-    if mod == 0:
-        if M[i][j] < 0:
-            M.rescale_row(i, -1)
-    else:
-        g = gcd(ZZ(M[i][j]), N)
-        u = Integers(N/g)(ZZ(M[i][j]) / g)
-        for v in range(ZZ(u^(-1)), N, N/g):
-            if gcd(v, N) == 1: # Lift to a unit
-                break
-        v = Integers(N)(v)
-        M.rescale_row(i, v)
-
-### Step 0: Verifying sage's kernel result:
-M0 = M
-m,n = M0.dimensions()
-i = 0
-for j in range(n):
-    result = smallest_entry_in_column(M0, j, at_least=i)
-     if result != None:
-        k = result[0]
-        if i != k:
-            M0.swap_rows(i, k)
-        normalize_row_for_entry(M0, i, j)
-        eliminate_entry_with_row(M0, i, j)
-        M0 = eliminate_zero_rows(M0)
-        print M0.dimensions()[0]
-        i += 1
-m,n = M0.dimensions()
-for i in reversed(range(m)):
-    g = gcd(M0[i])
-    M0 = M0.with_rescaled_row(i, 1/g)
-    j = M0[i].nonzero_positions()[0]
-    eliminate_entry_with_row(M0,i,j)
-print M0
-    
-### Step 1: determine the non-torsion vectors that suffice
-M0 = M
-m,n = M0.dimensions()
-ls_tor = [j for j in range(n) if j % 4 == 0]
-M0 = M0.delete_columns(ls_tor)
-ls_v = M0.right_kernel().basis()
-ls_v = [list(v) for v in ls_v]
-for t in ls_tor:
-    for v in ls_v:
-        v.insert(t, 0)
-matrix_v = matrix(ls_v).transpose()
-
-### Step 2
-MTv = MT * matrix_v.change_ring(Integers(N))
-M0 = matrix([[MT[i][j] for j in ls_tor] + list(MTv[i]) + [VT[i]] for i in range(MT.dimensions()[0])])
-m,n = M0.dimensions()
-i = 0
-for j in range(n):
-    result = smallest_entry_in_column(M0, j, mod=N, at_least=i)
-    if result != None:
-        k = result[0]
-        if i != k:
-            M0.swap_rows(i, k)
-        normalize_row_for_entry(M0, i, j, mod=N)
-        eliminate_entry_with_row(M0, i, j)
-        M0 = eliminate_zero_rows(M0)
-        print M0.dimensions()[0]
-        i += 1
-print M0
