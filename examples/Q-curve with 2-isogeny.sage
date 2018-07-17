@@ -7,6 +7,25 @@ Q = Quer_invariants(E)
 sigma = K.galois_group().gen()
 Q.add_isogeny(sigma, 2, sqrt_m2)
 
+### Doing the linear algebra
+S = [3,5]
+M, V, MT, VT, N, units = Q.c_beta_error('congruences', verbose=False, S=S)
+M0 = minimal_echelon_form(M)
+A = M0.right_kernel().basis_matrix().transpose()
+M0T = MT * A
+M1T = matrix([list(M0T[i]) + [VT[i]] for i in range(M0T.dimensions()[0])])
+M2T = minimal_echelon_form(M1T, N=N)
+NI = N * matrix.identity(M2T.dimensions()[0])
+M2 = M2T.change_ring(ZZ)
+M3 = matrix([list(M2[i]) + list(NI[i]) for i in range(M2.dimensions()[0])])
+C = M3.right_kernel().basis_matrix().transpose()
+C0 = C[:M0T.dimensions()[1]]
+C1 = C[M0T.dimensions()[1]:M2T.dimensions()[1]]
+v0 = C1.solve_right(vector([-1]))
+V0 = C1.right_kernel().basis_matrix().transpose()
+v1 = A * C0 * v0
+V1 = A * C0 * V0
+
 ### A little searching script
 index_dict = {v : k for k, v in enumerate(Q._c_beta_error_index)}
 Kcomp = Q.complete_field()
