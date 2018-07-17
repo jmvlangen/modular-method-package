@@ -721,7 +721,8 @@ class Quer_invariants(SageObject):
                     big_val.extend(v)
                 return matrix(ZZ, big_mat), vector(ZZ, big_val), \
                        matrix(ZZ.quotient(N), big_tor_mat), \
-                       vector(ZZ.quotient(N), big_tor_val), N
+                       vector(ZZ.quotient(N), big_tor_val), N, \
+                       units
         print "No method", method, "found."
         print "Try 'table', 'relations' or 'congruences'"
     
