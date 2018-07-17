@@ -35,7 +35,7 @@ def smallest_entry_in_column(M, j, N=0, i0=0, give_gcd=False):
     as the index. If the flag give_gcd is set to True, the returned
     value will be a tuple containing the index as the first entry
     and the corresponding gcd as its second value. Note that this
-    gcd will be 0 if i0 >= M.dimensions()[0].
+    gcd will be N if i0 >= M.dimensions()[0].
 
     EXAMPLES:
     
@@ -81,11 +81,11 @@ def smallest_entry_in_column(M, j, N=0, i0=0, give_gcd=False):
         (5, 0)
 
     """
-    gcd_min = 0
+    gcd_min = N
     i_min = i0
     for i in range(i0, M.dimensions()[0]):
         g = gcd(ZZ(M[i][j]), N)
-        if g > 0 and (gcd_min == 0 or g < gcd_min):
+        if g != N and (gcd_min == N or g < gcd_min):
             gcd_min = g
             i_min = i
     if give_gcd:
@@ -330,8 +330,9 @@ def eliminate_entry_with_row(M, i, j):
         [ 1 10]
 
     """
-    m, n = M.dimensions()
-    for i0 in range(m):
+    if M[i][j] == 0:
+        raise ArithmeticError("Can not eliminate rows using 0.")
+    for i0 in range(M.dimensions()[0]):
         if i0 != i:
             c = -floor(ZZ(M[i0][j]) / ZZ(M[i][j]))
             M.add_multiple_of_row(i0, i, c)
@@ -378,9 +379,9 @@ def minimal_echelon_form(M, N=0):
         [ 0  1 19]
     """
     i0 = 0
-    for j in range(n):
+    for j in range(M.dimensions()[1]):
         i, g = smallest_entry_in_column(M, j, N=N, i0=i0, give_gcd=True)
-        if g != 0:
+        if g != N:
             g0 = g + 1 # Make it loop the first time!
             while g < g0: # Loop to make sure we definitely have the smallest g
                 M.swap_rows(i0, i)
