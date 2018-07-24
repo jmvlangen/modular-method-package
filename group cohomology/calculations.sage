@@ -1,18 +1,32 @@
-def function_with_coboundary(G, A, c):
+def function_with_coboundary(G, A, c, action=None):
     r"""
     Gives the function G -> A with coboundary c.
 
     INPUT:
-    - ``G`` -- A finite group
+    - ``G`` -- A finite group or list of its elements
     - ``A`` -- An abelian group with an action of G defined
-               on it, i.e. for each s in G and a in A the
-               operation s(a) should be defined and give an
-               element of A.
+               on it. This may be given as a Sage implementation
+               of a multiplicative abelian group or as a tuple
+               containing in this order: the identity of A,
+               a list of generators of A and a list of the
+               corresponding orders.
     - ``c`` -- A coboundary of G with values in A, given
                as a function with two arguments that returns
                a value in A, i.e. for s and t in G the
                operation c(s,t) should be defined and give
                an element of A.
+    - ``action`` -- An optional dictionary (default: None)
+                    providing the action of G on A. Each
+                    element of this dictionary should be
+                    a key in this dictionary and the
+                    corresponding value should be a matrix
+                    such that the i,j-th entry is the
+                    exponent of the j-th generator in
+                    the image of the action on the i-th
+                    generator of A for this elment of G.
+                    If set to None will use A(s(u)).list()
+                    to determine these matrices for each
+                    s in G and u in A
 
     OUTPUT:
     A function a that given an element of G will return
@@ -21,9 +35,17 @@ def function_with_coboundary(G, A, c):
     for all s and t in G, where * and + are the group
     operations on G and A respectively.
     """
-    gens = A.gens()
+    if isinstance(A, tuple):
+        identity, gens, orders = A
+    else:
+        identity = A.identity()
+        gens = A.gens()
+        orders = [a.order() for a in gens]
     G = list(G)
-    G_on_gens = {i : [A(G[i](u)).list() for u in gens] for i in range(len(G))}
+    if action is None:
+        action = {i : [A(G[i](u)).list() for u in gens] for i in range(len(G))}
+    else:
+        action = {i : action[G[i]] for i in range(len(G))}
 
     # Usefull constants
     w = len(G)^2 * len(gens) # Usefull dimensions
@@ -38,22 +60,22 @@ def function_with_coboundary(G, A, c):
     for i in range(len(G)):
         for j in range(len(G)):
             ij = G_index[G[i] * G[j]]
-            val = A(c(G[i],G[j])).list()
+            val = (c(G[i],G[j])).list()
             for k in range(len(gens)):
                 M[i*x + j*y + k*z][i*y + k*z] += 1 # a(G[i])
                 M[i*x + j*y + k*z][ij*y + k*z] += -1 # -a(G[i]*G[j])
                 for l in range(len(gens)):
-                    M[i*x + j*y + k*z][j*y + l*z] += G_on_gens[i][l][k] # G[i](a(G[j]))
+                    M[i*x + j*y + k*z][j*y + l*z] += action[i][l][k] # G[i](a(G[j]))
                 V[i*x + j*y + k*z] = val[k]
     M = matrix(M)
     V = vector(V).column()
 
     # Changing torsion to one modulus
-    tor_gens = [k for k in range(len(gens)) if gens[k].order() in ZZ]
-    N = lcm(gens[k].order() for k in tor_gens)
+    tor_gens = [k for k in range(len(gens)) if orders[k] in ZZ]
+    N = lcm(orders[k] for k in tor_gens)
     for k in tor_gens:
-        if gens[k].order() < N:
-            g = ZZ(N / gens[k].order())
+        if orders[k] < N:
+            g = ZZ(N / orders[k])
             for i in range(len(G)):
                 for j in range(len(G)):
                     M.rescale_row(i*x + j*y + k*z, g)
@@ -62,16 +84,22 @@ def function_with_coboundary(G, A, c):
     # Seperating torsion
     tor_rows = [i*x + j*y + k*z for i in range(len(G)) for j in range(len(G)) for k in tor_gens]
     MF = M.delete_rows(tor_rows)
-    VF = vector(V.delete_rows(tor_rows))
+    if len(tor_rows) == w:
+        VF = vector(ZZ,0)
+    else:
+        VF = vector(V.delete_rows(tor_rows))
     MT = M.matrix_from_rows(tor_rows)
-    VT = vector(V.matrix_from_rows(tor_rows))
+    if len(tor_rows) == 0:
+        VT = vector(Integers(N),0)
+    else:
+        VT = vector(V.matrix_from_rows(tor_rows))
 
     # Solving and giving the result
     v = solve_integer_problem_with_torsion(MF, VF, MT, VT, N)
     @cached_function
     def alpha(s):
         i = G_index[s]
-        result = A.identity()
+        result = identity
         for k in range(len(gens)):
             result = result * gens[k]^v[i*y + k*z]
         return result

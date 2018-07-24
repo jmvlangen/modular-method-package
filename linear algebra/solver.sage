@@ -37,9 +37,15 @@ def solve_integer_problem_with_torsion(M, V, MT, VT, N, all=False):
     mt, n = MVT.dimensions()
     n = n - 1
     M = MV.delete_columns([n])
-    V = vector(MV[i][n] for i in range(m))
+    if m == 0:
+        V = vector(ZZ, 0)
+    else:
+        V = vector(MV[i][n] for i in range(m))
     MT = MVT.delete_columns([n])
-    VT = vector(MVT[i][n] for i in range(mt))
+    if mt == 0:
+        VT = vector(ZZ, 0)
+    else:
+        VT = vector(MVT[i][n] for i in range(mt))
 
     # Calculation + checking that a solution exists
     M0 = block_matrix(2,2,[M, zero_matrix(m, mt), MT.change_ring(ZZ), diagonal_matrix([N]*mt)])
@@ -54,7 +60,7 @@ def solve_integer_problem_with_torsion(M, V, MT, VT, N, all=False):
             c[j] = c[j] * s
         c.append(t)
     if abs(g) != 1:
-        raise ValueError("The system does not have a solution.")
+        raise ArithmeticError("The system does not have a solution.")
     v0 = -g * B * vector(c)
     v = v0[:n]
     if all:
