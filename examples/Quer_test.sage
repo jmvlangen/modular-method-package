@@ -232,7 +232,7 @@ class Quer_invariants(SageObject):
             return Kd[0]
         else:
             return Kd
-
+        
     def dual_basis(self, a1=None):
         if a1 != None:
             a1 = a1.squarefree_part()
