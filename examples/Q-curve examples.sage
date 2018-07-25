@@ -1,34 +1,40 @@
-# Curves with a 2-isogeny
-def Qcurve_with_2_isogeny(t):
-    K = field_with_root(QQ, t, names='sqrt_t')
-    sqrt_t = sqrt(K(t))
-    E = Qcurve([0,12,0,18*(sqrt_t + 1),0], guessed_degrees=[2])
-    if E.has_cm():
-        raise ValueError("Paramater %s gives a CM ellitpic curve."%t)
-    return E
+### parameter 2 for a 2-isogeny
+E = Qcurve_with_2_isogeny(2)
+print "Curve:", E
+print "Decomposition field:", E.decomposition_field() # Small field!
+Lbeta = E.splitting_image_field()
+print "Coefficient field of associated newform:", Lbeta # Field of the same size!
+print "Splitting character:", E.splitting_character() # Character is trivial
+N = ZZ(sqrt(E.conductor_restriction_of_scalars()))
+print "level of newform:", N.factor()
 
-# Curves with a 3-isogeny
-def Qcurve_with_3_isogeny(t):
-    K = field_with_root(QQ, t, names='sqrt_t')
-    t = K(t)
-    sqrt_t = sqrt(t)
-    a4 = -3 * sqrt_t * (4 + 5*sqrt_t)
-    a6 = 2 * sqrt_t * (2 + 14*sqrt_t + 11*t)
-    E = Qcurve([a4,a6], guessed_degrees=[3])
-    if E.has_cm():
-        raise ValueError("Paramater %s gives a CM ellitpic curve."%t)
-    return E
+cfs = magma.CuspForms(N)
+nfs = magma.Newforms(cfs)
+Em = magma(E)
+LE = Em.LSeries()
 
-# Curves with a 2 & 3-isogeny
-def Qcurve_with_2_3_isogeny(t):
-    t = 2 # Parameter 3, 9/2, 11/3, 25/6, 75/19, 289/72, 675/169, 1089/272, 31211/7803 are CM
-    s = 1 + 2 * t
-    K = composite_field(field_with_root(QQ, t, names='sqrt_t'), field_with_root(QQ, s, names='sqrt_s'))
-    sqrt_t = sqrt(K(t))
-    sqrt_s = sqrt(K(s))
-    a4 = -6*s*t*(5 + 5*sqrt_s + 10*sqrt_t + 5*t + 2*sqrt_s*sqrt_t)
-    a6 = 8 * (sqrt_s*sqrt_t)^3 * (1 + sqrt_t) * (7 + 15*sqrt_s + 14*sqrt_t + 7*t + 6*sqrt_s*sqrt_t)
-    E = Qcurve([a4,a6], guessed_degrees=[2,3])
-    if E.has_cm():
-        raise ValueError("Paramater %s gives a CM ellitpic curve."%t)
-    return E
+nfs0 = []
+for f in nfs:
+    Kf = f[1].BaseField().sage()
+    if Kf.degree() == 2 and Kf.discriminant().squarefree_part() == 2:
+        nfs0.append(f[1])
+print len(nfs0)
+
+candidates = copy(nfs0)
+print len(candidates)
+for p in prime_range(5, 100):
+    remove = []
+    PE = LE.EulerFactor(p)
+    print PE
+    for f in candidates:
+        Pf = Euler_factor_modular_form(f, p)
+        print f.BaseField()
+        print Pf, f.Coefficient(p)
+        if PE != Pf:
+            remove.append(f)
+    for f in remove:
+        candidates.remove(f)
+    if len(candidates) <= 1:
+        break
+    print ""
+print candidates

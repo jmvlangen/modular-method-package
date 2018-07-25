@@ -46,7 +46,7 @@ def _lambda_of_isomorphism(E1, E2):
             u.append(ainv2[i]/ainv1[i])
         else:
             u.append(0)
-            n = gcd(k)
+    n = gcd(k)
     if n in k:
         un = u[n]
     elif n + min(k) in k:
@@ -463,7 +463,7 @@ class Qcurve(EllipticCurve_number_field):
 
     def _first_splitting_character(self):
         N = 1
-        eps_ls = []
+        eps_ls = [DirichletGroup(1)[0]]
         for p in self._xi_pm_primes():
             if self.xi_pm_local(p) == -1:
                 if p == 2:
