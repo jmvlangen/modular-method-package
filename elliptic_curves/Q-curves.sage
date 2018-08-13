@@ -1021,6 +1021,42 @@ class Qcurve(EllipticCurve_number_field):
                 beta_del.remove(beta_ls[j])
         return tuple(result)
 
+    def twist(self, gamma):
+        r"""
+        Gives the twist of this Q-curve by a given element gamma.
+
+        INPUT:
+
+        - ``gamma`` -- An element of a number field.
+
+        OUTPUT:
+        
+        A Q-curve defined over the composite field of the field over which this
+        Q-curve is completely defined and the parent of gamma, that is the
+        twist of this Q-curve by gamma, i.e. if this Q-curve was given by
+        
+        ..MATH::
+
+        E : y^2 = x^3 + a_2 x^2 + a_4 x + a_6
+
+        the twisted Q-curve is given by
+
+        ..MATH::
+        
+        E : y^2 = x^3 + \gamma a_2 x^2 + \gamma^2 a_4 x + \gamma^3 a_6
+        
+        """
+        K_E = self.complete_definition_field()
+        K_gamma = gamma.parent()
+        K, E_map, gamma_map = composite_field(K_E, K_gamma, give_maps=True)
+        gamma = gamma_map(gamma)
+        E_map = E_map * self._to_Kl
+        E = twist_elliptic_curve(self.change_ring(E_map), gamma)
+        l = self.isogeny_lambda
+        d = self.degree_map
+        isogenies = {s : (iota_l(l(s)) * alpha(s), d(s)) for s in G}
+        return Qcurve(E, isogenies=isogenies)
+    
     def decomposable_twist(self):
         r"""
         Gives another Q-curve which restriction of scalars over the decomposition
@@ -1078,21 +1114,22 @@ class Qcurve(EllipticCurve_number_field):
         def alpha(s):
             s = galois_field_change(s, gamma.parent());
             return sqrt(s(gamma) / gamma)
-        # Check to make sure everything is still good
-        for s in G:
-            for t in G:
-                if c_err(s, t) != alpha(s) * s(alpha(t)) * alpha(s*t)^(-1):
-                    raise ValueError("Something went terribly wrong!")
+        # Check to make sure everything is still good (computationally intensive, maybe remove?)
+        def c_check(s, t):
+            return QQ(alpha(s) * s(alpha(t)) / alpha(s*t) / c_err(s,t))
+        def convert(a):
+            if a == 1:
+                return [0]
+            elif a == -1:
+                return [1]
+            else:
+                raise ValueError("%s is not 1 or -1"%a)
+        try:
+            alpha_check = function_with_coboundary(G, (1, [-1], [2], convert), c_check)
+        except ArithmeticError:
+            raise ValueError("Something went terribly wrong!")
 
-        K0 = self.base_ring()
-        Kl = self.complete_definition_field()
-        iota_l = Kl.hom([a.minpoly().change_ring(K).roots()[0][0] for a in Kl.gens()], K)
-        iota = iota_l * self._to_Kl
-        E = twist_elliptic_curve(self.change_ring(iota), gamma)
-        l = self.isogeny_lambda
-        d = self.degree_map
-        isogenies = {s : (iota_l(l(s)) * alpha(s), d(s)) for s in G}
-        return Qcurve(E, isogenies=isogenies)
+        return self.twist(gamma)
 
     def complete_definition_twist(self, roots):
         r"""
