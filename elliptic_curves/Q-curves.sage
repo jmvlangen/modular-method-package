@@ -277,6 +277,27 @@ class Qcurve(EllipticCurve_number_field):
             self._d[sigma] = self._d[galois_field_change(sigma, self.base_ring())]
         return self._d[sigma]
 
+    @cached_method
+    def degree_map_image(self):
+        r"""
+        Gives the image of the degree map in $\Q^*/(\Q^*)^2$
+
+        OUTPUT:
+        
+        A list of squarefree integers such that each value of
+        the degree map is a square times such an integer and
+        all integers in this list differ a square from a value
+        of the degree map.
+        """
+        result = []
+        d = self.degree_map
+        G = self.base_ring().galois_group()
+        for s in G:
+            val = d(s).squarefree_part()
+            if val not in result:
+                result.append(val)
+        return result
+
     def degree_field(self):
         r"""
         Gives the fixed field of the degree map.
@@ -685,6 +706,16 @@ class Qcurve(EllipticCurve_number_field):
         """
         return composite_field(self.complete_definition_field(), self.splitting_field())
 
+    def does_decompose(self):
+        c = self.c
+        c_beta = self.c_splitting_map
+        G = self.decomposition_field().galois_group()
+        for s in G:
+            for t in G:
+                if c(s,t) != c_beta(s,t):
+                    return False
+        return True
+
     def _splitting_map_first_guess(self):
         eps = self.splitting_character(galois=True)
         d = self.degree_map
@@ -699,14 +730,24 @@ class Qcurve(EllipticCurve_number_field):
         G = self.decomposition_field().galois_group()
         def c_err(sigma, tau):
             return QQ(self.c(sigma, tau) / self.c_splitting_map(sigma, tau))
-        action = {g : identity_matrix(1) for g in G}
+        def convert(a):
+            if a == 1:
+                return [0]
+            elif a == -1:
+                return [1]
+            else:
+                raise ValueError("%s is not 1 or -1"%a)
         try:
-            alpha = function_with_coboundary(G, (1, [-1], [2]), c_err, action=action)
+            alpha = function_with_coboundary(G, (1, [-1], [2], convert), c_err)
             beta0 = self._beta
             @cached_function
             def beta(sigma):
                 return beta0(sigma) * alpha(sigma)
             self._beta = beta
+            for sigma in G:
+                for tau in G:
+                    if self.c(sigma, tau) != beta(sigma) * beta(tau) * beta(sigma*tau)^(-1):
+                        raise ValueError("Should be impossible to reach this code!");
         except ArithmeticError:
             print "Warning: The restriction of scalars of this Q-curve over the "+\
                   "decomposition field does not decompose into abelian varieties"+\
@@ -997,7 +1038,11 @@ class Qcurve(EllipticCurve_number_field):
         CG = K.class_group()
         Pgen = [CG(product(K.primes_above(p))) for p in K.discriminant().prime_factors()]
         Pord = [P.order() for P in Pgen]
-        H = [product(Pgen[i]^k[i] for i in range(len(k))) for k in mrange(Pord)]
+        H = []
+        for k in mrange(Pord):
+            CI = product(Pgen[i]^k[i] for i in range(len(k)))
+            if CI not in H:
+                H.append(CI)
         S0 = []
         skip = copy(H)
         for CI in CG:
@@ -1014,7 +1059,30 @@ class Qcurve(EllipticCurve_number_field):
         while gamma == 0:
             x = K.random_element()
             gamma = sum(s(x) / K(alpha(s))^2 for s in G)
-        #TODO: Optimize gamma
+
+        # Minimizing gamma in some sense
+        I = product(P^(floor(e/2)) for P, e in K.ideal(gamma).factor())
+        J = (CG(I)^(-1)).ideal()
+        gamma2 = ((J*I).gens_reduced()[0])^2  # Most of the square part of gamma
+        gamma = gamma / gamma2
+        gamma *= gamma.denominator() # Make kind of integral
+        # Find biggest u s.t. u^k divides the n-k'th coefficient of the minimal polynomial of gamma
+        cn = gamma.minpoly().list()
+        cn.reverse() # Decreasing order
+        n = lcm(i for i in range(1,len(cn)) if cn[i] != 0)
+        un = gcd(cn[i]^(n/i) for i in range(1,len(cn)) if cn[i] != 0)
+        u = product(x^floor(e/n) for x,e in un.factor())
+        gamma = gamma / u # Minimal polynomial has smallest possible integers!
+
+        # Updating alpha to fit the new gamma
+        def alpha(s):
+            s = galois_field_change(s, gamma.parent());
+            return sqrt(s(gamma) / gamma)
+        # Check to make sure everything is still good
+        for s in G:
+            for t in G:
+                if c_err(s, t) != alpha(s) * s(alpha(t)) * alpha(s*t)^(-1):
+                    raise ValueError("Something went terribly wrong!")
 
         K0 = self.base_ring()
         Kl = self.complete_definition_field()
@@ -1025,6 +1093,95 @@ class Qcurve(EllipticCurve_number_field):
         d = self.degree_map
         isogenies = {s : (iota_l(l(s)) * alpha(s), d(s)) for s in G}
         return Qcurve(E, isogenies=isogenies)
+
+    def complete_definition_twist(self, roots):
+        r"""
+        Gives a twist of this curve completely defined over a given field.
+
+        INPUT:
+        
+        - ``roots`` -- A list of rational numbers satisfying the
+          following property: There exists a set of generators of the
+          image of the degree map in $\Q^*/(\Q^*)^2$ such that each
+          element in the list is plus or minus an element in this set.
+        
+        OUTPUT:
+
+        A Qcurve that is a twist of this curve and satisfies
+         - It is defined over the same base field $K$
+         - It is completely defined over $K$ adjoint all roots
+           of the rationals given in roots.
+        """
+        # Calculate all elements generated by absolute roots mod squares and how to obtain them
+        roots_image = {1 : []}
+        for i in range(len(roots)):
+            if abs(roots[i]).squarefree_part() not in roots_image:
+                for b in list(roots_image):
+                    roots_image[abs(roots[i]*b).squarefree_part()] = roots_image[b] + [i]
+
+        # Check if roots is valid:
+        d_image = self.degree_map_image()
+        flag = (len(roots_image) != len(d_image)) # At least enough elements
+        for a in roots: # Check each root plus or minus one associated to d
+            if flag:
+                break
+            flag = abs(a) not in d_image
+        if flag:
+            raise ValueError("The set %s does not give a valid set of roots"%roots)
+
+        # Let's compute the fields and corresponding embeddings
+        Kbase = self.base_ring()
+        Kold = self._Kl
+        Kroots = QQ
+        for a in roots:
+            Kroots = field_with_root(Kroots, a)
+        base_to_old = self._to_Kl
+        Knew, base_to_new, roots_to_new = composite_field(Kbase, Kroots, give_maps=True)
+        Kbig, old_to_big, new_to_big = composite_field(Kold, Knew, give_maps=True)
+        base_to_big = new_to_big * base_to_new
+
+        # The map we want as lambda for the new curve
+        d = self.degree_map
+        @cached_function
+        def mu(s):
+            return sqrt(Knew(product(roots[i] for i in roots_image[d(s).squarefree_part()])))
+
+        # The correction map
+        l = self.isogeny_lambda
+        @cached_function
+        def alpha(s):
+            return new_to_big(mu(s))^2 / old_to_big(l(s))^2
+
+        # The twist parameter
+        gamma = 0
+        while gamma == 0:
+            x = Kbig.random_element()
+            gamma = sum(s(x)/alpha(s) for s in Kbig.galois_group())
+        gamma *= gamma.denominator() # Make element of O_K
+        # Find biggest u s.t. u^k divides the n-k'th coefficient of the minimal polynomial of gamma
+        cn = gamma.minpoly().list()
+        cn.reverse() # Decreasing order
+        n = lcm(i for i in range(1,len(cn)) if cn[i] != 0)
+        un = gcd(cn[i]^(n/i) for i in range(1,len(cn)) if cn[i] != 0)
+        u = product(x^floor(e/n) for x,e in un.factor())
+        gamma = gamma / u # Minimal polynomial has smallest possible integers!
+
+        # Check if we can twist by an element of Kbase
+        gamma_ls = [x for x,e in gamma.minpoly().change_ring(Kbase).roots() if base_to_big(x) == gamma]
+        if len(gamma_ls) > 0:
+            gamma = gamma_ls[0]
+            isogenies = {s : (mu(s), d(s)) for s in Kbase.galois_group()}
+            return Qcurve(twist_elliptic_curve(self, gamma), isogenies=isogenies)
+
+        # General case
+        print "Warning: Chosen twist is not defined over the same field anymore."
+        E = twist_elliptic_curve(self.change_ring(base_to_big), gamma)
+        ainvs = [[x for x,e in a.minpoly().change_ring(Knew).roots() if new_to_big(x) == a] for a in E.a_invariants()]
+        if product(len(a) for a in ainvs) == 0:
+            raise ArithmeticError("The sought twist is not defined over the given field.")
+        ainvs = [a[0] for a in ainvs]
+        isogenies = {s : (mu(s),d(s)) for s in Kbase.galois_group()}
+        return Qcurve(ainvs, isogenies=isogenies)
 
     @cached_method
     def conductor_restriction_of_scalars(self):

@@ -8,8 +8,11 @@ def function_with_coboundary(G, A, c, action=None):
                on it. This may be given as a Sage implementation
                of a multiplicative abelian group or as a tuple
                containing in this order: the identity of A,
-               a list of generators of A and a list of the
-               corresponding orders.
+               a list of generators of A, a list of the
+               corresponding orders and a function that
+               converts an element of A into a list of exponents
+               such that the product of each generator to
+               its respective exponent is the given element.
     - ``c`` -- A coboundary of G with values in A, given
                as a function with two arguments that returns
                a value in A, i.e. for s and t in G the
@@ -24,7 +27,7 @@ def function_with_coboundary(G, A, c, action=None):
                     exponent of the j-th generator in
                     the image of the action on the i-th
                     generator of A for this elment of G.
-                    If set to None will use A(s(u)).list()
+                    If set to None will use s(u)
                     to determine these matrices for each
                     s in G and u in A
 
@@ -36,14 +39,16 @@ def function_with_coboundary(G, A, c, action=None):
     operations on G and A respectively.
     """
     if isinstance(A, tuple):
-        identity, gens, orders = A
+        identity, gens, orders, convert = A
     else:
         identity = A.identity()
         gens = A.gens()
         orders = [a.order() for a in gens]
+        def convert(u):
+            return A(u).list()
     G = list(G)
     if action is None:
-        action = {i : [A(G[i](u)).list() for u in gens] for i in range(len(G))}
+        action = {i : [convert(G[i](u)) for u in gens] for i in range(len(G))}
     else:
         action = {i : action[G[i]] for i in range(len(G))}
 
@@ -60,7 +65,7 @@ def function_with_coboundary(G, A, c, action=None):
     for i in range(len(G)):
         for j in range(len(G)):
             ij = G_index[G[i] * G[j]]
-            val = (c(G[i],G[j])).list()
+            val = convert(c(G[i],G[j]))
             for k in range(len(gens)):
                 M[i*x + j*y + k*z][i*y + k*z] += 1 # a(G[i])
                 M[i*x + j*y + k*z][ij*y + k*z] += -1 # -a(G[i]*G[j])

@@ -30,7 +30,6 @@ def Euler_factor_modular_form(f, p, twists=[1]):
         for F in K.galois_group():
             factor = (1 - F(chip * ap) * T + F(chip^2 * epsp * p) * T^2)
             result = result * factor
-            print factor, result
     if f.parent() == magma:
         return magma(result)
     else:
