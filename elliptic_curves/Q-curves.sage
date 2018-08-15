@@ -1048,13 +1048,17 @@ class Qcurve(EllipticCurve_number_field):
         """
         K_E = self.complete_definition_field()
         K_gamma = gamma.parent()
-        K, E_map, gamma_map = composite_field(K_E, K_gamma, give_maps=True)
+        K, iota, gamma_map = composite_field(K_E, K_gamma, give_maps=True)
         gamma = gamma_map(gamma)
-        E_map = E_map * self._to_Kl
+        E_map = iota * self._to_Kl
         E = twist_elliptic_curve(self.change_ring(E_map), gamma)
         l = self.isogeny_lambda
         d = self.degree_map
-        isogenies = {s : (iota_l(l(s)) * alpha(s), d(s)) for s in G}
+        G = K.galois_group()
+        isogenies = dict()
+        for s in G:
+            L, K_to_L, alpha = field_with_root(K, s(gamma)/gamma, give_embedding=True)
+            isogenies[s] = (K_to_L(iota(l(s))) * alpha, d(s))
         return Qcurve(E, isogenies=isogenies)
     
     def decomposable_twist(self):
