@@ -1,4 +1,4 @@
-def field_with_root(K, a, names='sqrt_a'):
+def field_with_root(K, a, names='sqrt_a', give_embedding=False):
     r"""
     Gets the field extension of K that contains the specified root.
 
@@ -7,21 +7,36 @@ def field_with_root(K, a, names='sqrt_a'):
     - ``K`` -- A number field
     - ``a`` -- An element of the number field K
     - ``names`` -- A string (default: 'sqrt_a') or list thereof
-                   indicating the name(s) to use for the generators
-                   of the bigger field.
+      indicating the name(s) to use for the generators of the
+      bigger field.
+    - ``give_embedding`` -- A boolean (default: False) that
+      indicates whether embeddings of K into this field and
+      a square root of should be returned.
     
     OUPUT:
 
     A number field that contains K and a square root of a. If it is
     an extension of K and not K itself its generators will have the
-    names specified by names.
+    names specified by names. If give_embeddings was set to True, will
+    return a tuple consisting of
+     - the number field as mentioned before
+     - an embedding of K into that number field
+     - a square root of a inside that number field
     """
     a = K(a)
     if a.is_square():
-        return K
+        if give_embedding:
+            return K, K.hom(K), sqrt(a)
+        else:
+            return K
     else:
         R.<x> = K[]
-        return K.extension(x^2 - a, names=names)
+        L = K.extension(x^2 - a, names=names).absolute_field(names=names)
+        if give_embedding:
+            K_to_L = K.hom([a.minpoly().change_ring(L).roots()[0][0] for a in K.gens()], L)
+            return L, K_to_L, sqrt(K_to_L(a))
+        else:
+            return L
 
 def fixed_field(H):
     r"""
