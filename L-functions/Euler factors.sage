@@ -34,20 +34,3 @@ def Euler_factor_modular_form(f, p, twists=[1]):
         return magma(result)
     else:
         return result
-
-### Temporary stuff
-candidates = range(8)
-for p in prime_range(5, 100):
-    i = 0
-    print "-----------", p, "-----------"
-    v = (f.Coefficient(p).sage()) * QQ(chi[1](p))
-    print v
-    for f1 in nfs0:
-        ap = f1.Coefficient(p).sage()
-        for s in ap.parent().galois_group():
-            print s(ap), s(ap) == v
-            if i in candidates and s(ap) != v:
-                candidates.remove(i)
-            i += 1
-    print ""
-print candidates
