@@ -1268,3 +1268,117 @@ class Qcurve(EllipticCurve_number_field):
                 elif what == 'gamma':
                     result[i][j] = gamma
         return result
+
+    def _newform_levels(self, prime=None, alpha=None, beta=None, gamma=None, d=None, N=None):
+        r"""
+        Gives the possible levels of newforms associated to this Q-curve.
+
+        INPUT:
+        
+        - ``prime`` -- A prime number or None (default: None) indicating the exponent
+          of which prime the level should be computed or None for the level itself.
+        - ``alpha`` -- A tuple of non-negative integers (default: None) containing the
+          conductors of the characters associated to the newforms. Will be computed
+          from the splitting characters up to conjugacy if set to None.
+        - ``beta`` -- A tuple of tuples of non-negative integers (default: None)
+          containing at index i, j the conductor of the twist that turns the i-th
+          newform into the j-th newform. Will be computed from the twist characters
+          up to conjugacy if set to None.
+        - ``gamma`` -- A tuple of tuples of non-negative integers (default: None)
+          containing at index i, j the conductor of the product of the twist that
+          turns the i-th newform into the j-th newform and the character of the
+          i-th newform. Will be computed from the twist characters and splitting
+          characters up to conjugacy if set to None
+        - ``d`` -- A tuple of non-negative integers (default: None) containing the
+          respective degrees of the fields in which the newforms have their
+          coefficients.
+        - ``N`` -- A non-negative integer (default: None) giving the conductor of
+          the restriction of scalars of this Q-curve over the decomposition field.
+          Will be computed using the corresponding method if set to None.
+        
+        OUTPUT:
+
+        A list of tuples, each tuple representing one of the options for the levels
+        of the newforms associated to this Q-curve. If a prime was given, these
+        tuples will contain the respective exponent of the given prime for each
+        newform. If no prime was given, they will contain the respective level of
+        each newform.
+        """
+        # Calculate missing stuff:
+        if alpha is None or gamma is None:
+            eps = [character^(-1) for character in self.splitting_character(index='conjugacy')]
+        if beta is None or gamma is None:
+            chi = [character^(-1) for character in self.twist_character(index='conjugacy')]
+        if alpha is None or beta is None or gamma is None:
+            M = lcm(character.modulus() for character in (eps + chi))
+        if alpha is None or gamma is None:
+            eps = [character.extend(M) for character in eps]
+        if beta is None or gamma is None:
+            chi = [character.extend(M) for character in chi]
+        if alpha is None:
+            alpha = tuple(eps[i].conductor() for i in range(len(eps)))
+        if beta is None:
+            beta = tuple(tuple((chi[j] * chi[i]^(-1)).conductor() for j in range(len(eps)))
+                                                                  for i in range(len(eps)))
+        if gamma is None:
+            gamma = tuple(tuple((chi[j] * chi[i]^(-1) * eps[i]).conductor() for j in range(len(eps)))
+                                                                            for i in range(len(eps)))
+        if d is None:
+            d = [Kf.degree() for Kf in self.splitting_image_field(index='conjugacy')]
+        if N is None:
+            N = self.conductor_restriction_of_scalars()
+
+        if prime is None: # Level case
+            level_dict = {}
+            primes = ZZ(N).prime_factors()
+            for p in primes:
+                level_dict[p] = self._newform_levels(prime=p, alpha=alpha, beta=beta,
+                                                     gamma=gamma, d=d, N=N)
+            return [tuple(product(primes[i]^level_dict[primes[i]][x[i]][j] # Specific factor
+                                  for i in range(len(primes))) # All primes
+                                  for j in range(len(d))) # All entries
+                                  for x in mrange([len(level_dict[p]) for p in primes])] # All options
+        
+        else: # prime case
+            alpha = tuple(alpha[i].ord(prime) for i in range(len(alpha)))
+            beta = tuple(tuple(beta[i][j].ord(prime) for j in range(len(beta[i]))) for i in range(len(beta)))
+            gamma = tuple(tuple(gamma[i][j].ord(prime) for j in range(len(gamma[i]))) for i in range(len(gamma)))
+            N = N.ord(prime)
+            # Small cases
+            x_max = max(max(max(beta[i][j] + 1, beta[i][j] + gamma[i][j]) for j in range(len(beta[i])))
+                                                                          for i in range(len(beta)))
+            x_ls = []
+            if sum(d) * x_max >= N: # Only small possibilities
+                for x in mrange([x_max + 1]*len(alpha)): 
+                    candidate = (sum(d[i] * x[i] for i in range(len(d))) == N)
+                    for i in range(len(beta)):
+                        if not candidate:
+                            break
+                        candidate = (alpha[i] <= x[i])
+                        for j in range(len(beta[i])):
+                            if not candidate:
+                                break
+                            if beta[i][j] == 0:
+                                candidate = (x[j] == x[i])
+                            elif x[i] > max(beta[i][j] + 1, beta[i][j] + gamma[i][j]) \
+                                 or (x[i] < max(beta[i][j] + 1, beta[i][j] + gamma[i][j]) and \
+                                     gamma[i][j] >= 2) \
+                                     or (x[i] == 1 and \
+                                         alpha[i] == 1 and \
+                                         beta[i][j] == 1 and \
+                                         gamma[i][j] == 1):
+                                candidate = (x[j] == max(x[i], beta[i][j] + 1, beta[i][j] + gamma[i][j]))
+                            else:
+                                candidate = (x[j] <= max(x[i], beta[i][j] + 1, beta[i][j] + gamma[i][j]))
+                    if candidate:
+                        x_ls.append(tuple(x))
+            elif sum(d).divides(N): # Big possibility
+                x = ZZ(N / sum(d))
+                candidate = True
+                for i in range(len(d)):
+                    if not candidate:
+                        break
+                    candidate = (alpha[i] <= x)
+                if candidate:
+                    x_ls.append(tuple(x for i in range(len(d))))
+            return x_ls
