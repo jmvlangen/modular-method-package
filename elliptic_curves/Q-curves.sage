@@ -1375,3 +1375,158 @@ class Qcurve(EllipticCurve_number_field):
                 if candidate:
                     x_ls.append(tuple(x for i in range(len(d))))
             return x_ls
+
+    @cached_method
+    def newform(self, algorithm='magma', verify=0):
+        r"""
+        Gives the newform associated to this Q-curve.
+
+        INPUT:
+        
+        - ``algorithm`` -- A string that determines which program
+          should be used to do computations. Allowed options are:
+            - 'magma' (default)
+            - 'sage'
+          This program is used for computing newforms and Euler
+          factors of the L-function associated to the curve.
+        - ``verify`` -- A non-negative integer determining what
+          the biggest prime is for which the result should be
+          verified using the Euler factors of L-series.
+
+        OUTPUT:
+
+        A list of tuples such that each tuple contains
+          - a newform such that this curve is a quotient of the abelian
+            variety associated to that newform, i.e. a newform
+            associated to this Q-curve by modularity
+          - A list of Dirichlet character that twist this newform into
+            other newforms, such that the restriction of scalars of this
+            Q-curve over the decomposition field is isogenous (over $\Q$)
+            to the product of the abelian varieties associated to the
+            twists of the first newform by the given characters.
+
+        NOTE:
+        
+        The newforms associated to a Q-curve are not unique. Not
+        only are all their galois conjugates also associated,
+        also twists of the newform are associated to the same
+        curve. On the other hand, all curves isogenous to this
+        Q-curve are associated to the same collection of newforms.
+        """
+        if not self.does_decompose():
+            raise ValueError("Can not compute newform if the restriction of scalars does not decompose.")
+
+        # Getting this curve over the decomposition field as E
+        Kl = self.complete_definition_field()
+        to_Kl = self._to_Kl
+        K = self.decomposition_field()
+        iota = Kl.hom([a.minpoly().change_ring(K).roots()[0][0] for a in Kl.gens()], K)
+        E = self.change_ring(iota * to_Kl)
+        
+        levels = self._newform_levels()
+        twists_base = self.twist_character('conjugacy')
+        # Find a common base for all twists
+        M = lcm(chi.modulus() for chi in twists_base)
+        twists_base = [chi.extend(M)^(-1) for chi in twists_base]
+        eps_ls = [(eps^(-1)).primitive_character() for eps in self.splitting_character('conjugacy')]  # characters of newform
+        Lbeta_ls = self.splitting_image_field('conjugacy') # coefficient fields
+
+        use_magma = (algorithm == 'magma')
+        if not use_magma and algorithm != 'sage':
+            raise ValueError("%s is not a valid algorithm to use."%algorithm)
+
+        candidates = []
+        max_level = 1 # Keeps track of the lcm of all N considered
+                      # the primes in these will be excluded in checking
+                      # the Euler factors.
+        for k in range(len(levels)):
+            i_min, N = min(enumerate(levels[k]), key=(lambda x: x[1])) #newform with smallest level
+            max_level = lcm(N, max_level)
+            chi = twists_base[i_min]
+            twists = [chi_j * chi^(-1) for chi_j in twists_base] # twists relative to i_min
+            eps = eps_ls[i_min]
+            Lbeta = Lbeta_ls[i_min]
+            expected_matches = sum(eps_ls[i] == eps and levels[k][i] == N for i in range(len(levels[k])))
+
+            if use_magma:
+                Dm = magma.DirichletGroup(eps.conductor())
+                for eps_m in Dm.Elements():
+                    candidate = True
+                    for i in range(1, eps.conductor()+1):
+                        i = ZZ(i)
+                        candidate = (eps(i) == eps_m(i))
+                        if not candidate: # Not the right one
+                            break
+                    if candidate: # Found the right one
+                        break
+                eps_m = magma.DirichletGroup(N)(eps_m) # Right level
+                cfs = magma.CuspForms(eps_m)
+                nfs = magma.Newforms(cfs)
+                nfs = [f[1] for f in nfs]
+                E = magma(E)
+            else:
+                nfs = Newforms(eps.extend(N), names='a')
+
+            # See if the coefficient field matches good enough to be a candidate
+            for f in nfs:
+                if f.parent() == magma:
+                    Kf = f.BaseField().sage()
+                else:
+                    Kf = f.base_ring()
+                if Kf.degree() == Lbeta.degree() and \
+                   Kf.discriminant() == Lbeta.discriminant():
+                    candidates.append((f, twists, N, eps))
+
+        valid_options = []
+        for k in range(len(levels)):
+            option = {}
+            for i in range(len(levels[k])):
+                key = (levels[k][i], eps_ls[i])
+                if key in option:
+                    option[key] += 1
+                else:
+                    option[key] = 1
+            valid_options.append(option)
+
+        def is_submultiset(small, big):
+            for key in small:
+                if key not in big or small[key] > big[key]:
+                    return False
+            return True
+        
+        def valid_candidates(candidates):
+            if len(candidates) > len(eps_ls):
+                return False
+            sub_option = {}
+            for f, twists, N, eps in candidates:
+                key = (N, eps)
+                if key in sub_option:
+                    sub_option[key] += 1
+                else:
+                    sub_option[key] = 1
+            return any(is_submultiset(sub_option, option) for option in valid_options)
+                    
+        p = 1
+        while p.divides(max_level):
+            p = next_prime(p)
+        while p < verify or not valid_candidates(candidates):
+            if use_magma:
+                P_E = E.EulerFactor(p).sage()
+            else:
+                P_E = Euler_factor_elliptic_curve(E, p)
+            remove = []
+            for f, twists, N, eps in candidates:
+                P_f = Euler_factor_modular_form(f, p, twists=twists)
+                if P_f.parent() == magma:
+                    P_f = P_f.sage()
+                if P_f.list() != P_E.list():
+                    remove.append((f, twists, N, eps))
+
+            for tmp in remove:
+                candidates.remove(tmp)
+
+            p = next_prime(p)
+            while p.divides(max_level):
+                p = next_prime(p)
+
+        return [(f, twists) for f, twists, N, eps in candidates]
