@@ -90,25 +90,21 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
         
          - ``curve`` -- An elliptic curve over some number field or any
-                        input that would create such a curve when passed
-                        to the constructor EllipticCurve. This curve will
-                        be taken over the minimal galois extension of its
-                        base field.
+           input that would create such a curve when passed to the constructor
+           EllipticCurve. This curve will be taken over the minimal galois
+           extension of its base field.
          - ``isogenies`` -- A dictionary (default: {}) with as keys elements
-                            of the galois group of the base field of the
-                            Q-curve and as values data of the corresponding
-                            isogeny from the galois conjugate of this Q-curve
-                            to itself. This data can be either an isogeny
-                            as a Sage object or a tuple of an algebraic integer
-                            (defined as an element of some number field) and
-                            a strictly positive integer, which are respectively
-                            the $\lambda$ such that the isogeny is
-                            $z \mapsto \lambda z$ on the complex numbers and
-                            the degree of the isogeny.
+           of the galois group of the base field of the Q-curve and as values
+           data of the corresponding isogeny from the galois conjugate of this
+           Q-curve to itself. This data can be either an isogeny as a Sage
+           object or a tuple of an algebraic integer (defined as an element of
+           some number field) and a strictly positive integer, which are
+           respectively the $\lambda$ such that the isogeny is
+           $z \mapsto \lambda z$ on the complex numbers and the degree of the
+           isogeny.
          - ``guessed_degrees`` -- A list (default: []) of strictly positive
-                                  integers indicating possible degrees of
-                                  isogenies from galois conjugates of this
-                                  curve to itself.
+           integers indicating possible degrees of isogenies from galois
+           conjugates of this curve to itself.
         """
         self._init_curve(curve)
         self._init_isogenies()
@@ -155,15 +151,30 @@ class Qcurve(EllipticCurve_number_field):
 
     # Isogeny related stuff
     def _init_isogenies(self):
-        self._l = dict()
-        self._d = dict()
-        self._Kl = self.base_ring()
-        self._to_Kl = self._Kl.hom(self._Kl)
+        r"""
+        Initializes the isogeny data.
+        """
+        self._l = dict() # $\lambda$'s of isogenies.
+        self._d = dict() # degrees of isogenies.
+        self._Kl = self.base_ring() # Common definition field of the $\lambda$'s
+        self._to_Kl = self._Kl.hom(self._Kl) # Map from the base field of the elliptic curve.
+        # Initialize the trivial isogeny that is there.
         e = self._Kl.galois_group().identity()
-        self._l[e] = QQ(1)
+        self._l[e] = QQ(1) 
         self._d[e] = 1
 
     def _add_isogeny(self, sigma, phi):
+        r"""
+        Adds an isogeny to the stored isogeny data.
+
+        INPUT:
+
+        - ``sigma`` -- A galois homomorphism of the field over which this
+          Q-curve is defined.
+        - ``phi`` -- An isogeny from the galois conjugate of this curve by
+          sigma to this curve itself or a tuple of the corresponding
+          $\lambda$ and degree of such an isogeny.
+        """
         if isinstance(phi, tuple):
             self._l[sigma], self._d[sigma] = phi
             self._update_isogeny_field()
@@ -171,6 +182,9 @@ class Qcurve(EllipticCurve_number_field):
             self._add_isogeny(sigma, (_lambda_of_isogeny(phi), phi.degree()))
 
     def _update_isogeny_field(self):
+        r"""
+        Updates the field over which all isogenies are defined
+        """
         G = list(self.base_ring().galois_group())
         for i in range(len(G)):
             if G[i] in self._l and self._l[G[i]] != None and self._l[G[i]].parent() != self._Kl:
@@ -188,6 +202,9 @@ class Qcurve(EllipticCurve_number_field):
                     self._l[s] = clos(self._l[s])
 
     def _fill_isogenies(self):
+        r"""
+        Attempts to fill in missing isogenies by combining known ones.
+        """
         G = self.base_ring().galois_group()
         Kl = self._Kl
         for s in G:
@@ -205,6 +222,9 @@ class Qcurve(EllipticCurve_number_field):
         return flag
 
     def _add_isogenies_of_degree(self, degree):
+        r"""
+        Attempts to find isogenies of a given degree.
+        """
         G = self.base_ring().galois_group()
         fd = self.torsion_polynomial(degree)
         Kd, yotad = fd.splitting_field(names='a'+str(degree), map=True)
@@ -322,10 +342,9 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
 
          - ``a1`` -- Optional parameter (default: None). If
-                     set to a non-square integer which square
-                     root is part of the degree field, will
-                     ensure that this is the first entry of
-                     the first list returned.
+           set to a non-square integer which square root is
+           part of the degree field, will ensure that this is
+           the first entry of the first list returned.
 
         OUTPUT:
         
@@ -377,7 +396,7 @@ class Qcurve(EllipticCurve_number_field):
         OUTPUT:
 
         The value
-        ..MATH::
+        .. MATH::
 
             \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot lambda_{\sigma \tau}^{-1}
 
@@ -403,7 +422,7 @@ class Qcurve(EllipticCurve_number_field):
         OUTPUT:
 
         The sign of
-        ..MATH::
+        .. MATH::
 
             \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot lambda_{\sigma \tau}^{-1}
 
@@ -426,7 +445,7 @@ class Qcurve(EllipticCurve_number_field):
         OUTPUT:
 
         The absolute value of
-        ..MATH::
+        .. MATH::
 
             \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot lambda_{\sigma \tau}^{-1}
 
@@ -454,6 +473,12 @@ class Qcurve(EllipticCurve_number_field):
     def _xi_pm_primes(self):
         r"""
         Gives the primes at which the $\xi_\pm$ might locally not be 1
+        
+        OUTPUT:
+
+        A list of prime numbers, such that all primes at which xi_pm
+        is locally not trivial are contained in this list. This list
+        may contain more primes as well, but not less.
         """
         result = lcm([lcm(h) for h in self.xi_pm()]).prime_factors()
         if 2 not in result:
@@ -500,6 +525,19 @@ class Qcurve(EllipticCurve_number_field):
          0 - the splitting character as a dirichlet character
          1 - the fixed field of that splitting character
          2 - the splitting character as a galois character on its fixed field
+
+        INPUT:
+
+        - ``i`` -- The index of the splitting character for which data should
+          be retrieved. This may also be a list of such indices or one of the
+          special keywords 'all', for all splitting characters, or 'conjugacy',
+          for all splitting characters up to conjugacy.
+        - ``j`` -- The index of the data to be retrieved.
+
+        OUTPUT:
+        
+        The specified data for each index given in i, formatted according
+        to how i was formatted.
         """
         if not self._is_cached('_eps') or 0 not in self._eps:
             self._eps = dict()
@@ -531,27 +569,22 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
 
         - ``index`` -- The index (default: 0) of the splitting
-                       character to return. Accepted values are
-                       non-negative integers smaller than
-                       the total amount of splitting maps
-                       or one of the special values:
-                        'all' : for a tuple of all splitting
-                                characters
-                        'conjugacy' : for a tuple of splitting
-                                      characters, one for each
-                                      conjugacy class of
-                                      splitting maps.
-                       Also accepts tuples of accepted values
-                       including tuples themselves.
+          character to return. Accepted values are non-negative
+          integers smaller than the total amount of splitting maps
+          or one of the special values:
+          - 'all' : for a tuple of all splitting characters
+          - 'conjugacy' : for a tuple of splitting characters, one
+            for each conjugacy class of splitting maps.
+          Also accepts tuples of accepted values including tuples
+          themselves.
         - ``galois`` -- A boolean (default: False) indicating
-                        whether the splitting characters
-                        should be given as galois or dirichlet
-                        characters.
+          whether the splitting characters should be given as
+          galois or dirichlet characters.
 
         OUTPUT:
 
         Returns the splitting character of the given index, given
-        as a galois character of galois is set to True or as a
+        as a galois character if galois is set to True or as a
         Dirichlet character otherwise. If the index was 'all'
         or 'conjugacy' will return a tuple of such characters
         corresponding to the corresponding tuple of indices. If
@@ -570,19 +603,14 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
 
         - ``index`` -- The index (default: 0) of the splitting
-                       character of which this should be the
-                       fixed field. Accepted values are
-                       non-negative integers smaller than
-                       the total amount of splitting characters
-                       or one of the special values:
-                        'all' : corresponding to all splitting
-                                characters
-                        'conjugacy' : corresponding to splitting
-                                      characters, one for each
-                                      conjugacy class of
-                                      splitting maps.
-                       Also accepts tuples of accepted values
-                       including tuples themselves.
+          field to return. Accepted values are non-negative
+          integers smaller than the total amount of splitting maps
+          or one of the special values:
+          - 'all' : for a tuple of all splitting fields
+          - 'conjugacy' : for a tuple of splitting fields, one
+            for each conjugacy class of splitting maps.
+          Also accepts tuples of accepted values including tuples
+          themselves.
 
         OUTPUT:
 
@@ -595,6 +623,19 @@ class Qcurve(EllipticCurve_number_field):
         return self._splitting_character_data(index, 1)
 
     def _splitting_image_field(self, eps, Keps):
+        r"""
+        Computes the image field of a splitting map.
+        
+        INPUT:
+
+        - ``eps`` -- The corresponding dirichlet character.
+        - ``Keps`` -- The fixed field of eps as a galois character.
+
+        OUTPUT:
+        
+        The field in which the corresponding splitting map
+        takes values.
+        """
         if isinstance(eps, tuple):
             return tuple(self._splitting_image_field(eps[i], Keps[i]) for i in range(len(eps)))
         b = None
@@ -620,24 +661,20 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
 
         - ``index`` -- The index (default: 0) of the splitting
-                       map of the wanted splitting field. Accepted
-                       values are non-negative integers smaller
-                       than the total amount of splitting maps
-                       or one of the special values:
-                        'all' : for a tuple of all splitting
-                                fields
-                        'conjugacy' : for a tuple of splitting
-                                      fields, one for each
-                                      conjugacy class of
-                                      splitting maps.
-                       Also accepts tuples of accepted values
-                       including tuples themselves.
+          map whose image field to give. Accepted values are non-negative
+          integers smaller than the total amount of splitting maps
+          or one of the special values:
+          - 'all' : for a tuple of all splitting characters
+          - 'conjugacy' : for a tuple of splitting characters, one
+            for each conjugacy class of splitting maps.
+          Also accepts tuples of accepted values including tuples
+          themselves.
 
         OUTPUT:
 
-        Returns the splitting field of the splitting map of the
+        Returns the image field of the splitting map of the
         given index. If the index was 'all' or 'conjugacy' will
-        return a tuple of such characters corresponding to the
+        return a tuple of such fields corresponding to the
         corresponding tuple of indices. If the given index was a
         tuple will return a tuple of outputs on each entry of this 
         tuple in the same order.
@@ -660,29 +697,21 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
 
         - ``index`` -- The index (default: 0) of the splitting
-                       map corresponding to this splitting
-                       field. Accepted values are non-negative
-                       integers smaller than the total amount
-                       of splitting maps or one of the special
-                       values:
-                        'all' : for a tuple of all splitting
-                                characters
-                        'conjugacy' : for a tuple of splitting
-                                      characters, one for each
-                                      conjugacy class of
-                                      splitting maps.
-                       Also accepts tuples of accepted values
-                       including tuples themselves.
-        - ``galois`` -- A boolean (default: False) indicating
-                        whether the splitting characters
-                        should be given as galois or dirichlet
-                        characters.
+          map corresponding to this splitting field. Accepted
+          values are non-negative integers smaller than the
+          total amount of splitting maps or one of the special
+          values:
+          - 'all' : for a tuple of all splitting maps
+          - 'conjugacy' : for a tuple of splitting maps, one for
+            each conjugacy class of splitting maps.
+          Also accepts tuples of accepted values  including
+          tuples themselves.
 
         OUTPUT:
 
         Returns the splitting field corresponding to the
         splitting map of the given index. If the index was 'all'
-        or 'conjugacy' will return a tuple of such characters
+        or 'conjugacy' will return a tuple of such fields
         corresponding to the corresponding tuple of indices. If
         the given index was a tuple will return a tuple of outputs
         on each entry of this tuple in the same order.
@@ -705,6 +734,18 @@ class Qcurve(EllipticCurve_number_field):
         return composite_field(self.complete_definition_field(), self.splitting_field())
 
     def does_decompose(self):
+        r"""
+        Determines whether this Q-curve decomposes over its
+        decomposition field.
+
+        OUTPUT:
+        
+        - True, if the restriction of scalars of this Q-curve over
+          the decomposition field is isogeneous over $\Q$ to the
+          product of $\Q$-simple, non-$\Q$-isogeneous abelian
+          varieties of $GL_2$-type.
+        - False, otherwise.
+        """
         c = self.c
         c_beta = self.c_splitting_map
         G = self.decomposition_field().galois_group()
@@ -715,6 +756,9 @@ class Qcurve(EllipticCurve_number_field):
         return True
 
     def _splitting_map_first_guess(self):
+        r"""
+        Gives a naive guess of a splitting map.
+        """
         eps = self.splitting_character(galois=True)
         d = self.degree_map
         Lbeta = self.splitting_image_field()
@@ -723,6 +767,10 @@ class Qcurve(EllipticCurve_number_field):
         return beta
 
     def _first_splitting_map(self):
+        r"""
+        Computes a splitting map corresponding to the first
+        splitting character.
+        """
         self._beta = self._splitting_map_first_guess()
         G = self.decomposition_field().galois_group()
         def c_err(sigma, tau):
@@ -752,6 +800,10 @@ class Qcurve(EllipticCurve_number_field):
         return self._beta
 
     def _indexed_splitting_map(self, i):
+        r"""
+        Computes the i-th splitting map from the first splitting
+        map and the corresponding twist.
+        """
         beta0 = self.splitting_map()
         Lbeta0 = self.splitting_image_field()
         chi = self.twist_character(i, galois=True)
@@ -770,24 +822,20 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
 
         - ``index`` -- The index (default: 0) of the splitting
-                       map to return. Accepted values are
-                       non-negative integers smaller than
-                       the total amount of splitting maps
-                       or one of the special values:
-                        'all' : for a tuple of all splitting
-                                maps
-                        'conjugacy' : for a tuple of splitting
-                                      maps, one for each
-                                      conjugacy class of
-                                      splitting maps.
-                       Also accepts tuples of accepted values
-                       including tuples themselves.
+          map to return. Accepted values are non-negative
+          integers smaller than the total amount of splitting
+          maps or one of the special values:
+          - 'all' : for a tuple of all splitting maps
+          - 'conjugacy' : for a tuple of splitting maps, one
+            for each conjugacy class of splitting maps.
+          Also accepts tuples of accepted values including
+          tuples themselves.
 
         OUTPUT:
 
         Returns the splitting map of the given index. If the
         index was 'all' or 'conjugacy' will return a tuple of
-        such characters corresponding to the corresponding
+        such maps corresponding to the corresponding
         tuple of indices. If the given index was a tuple will
         return a tuple of outputs on each entry of this tuple
         in the same order.
@@ -809,7 +857,8 @@ class Qcurve(EllipticCurve_number_field):
         r"""
         Evaluates the coboundary of a splitting map of this Q-curve.
 
-        Note that this is independent of the chosen splitting map.
+        .. NOTE::
+        This is independent of the chosen splitting map.
        
         INPUT:
         
@@ -819,7 +868,7 @@ class Qcurve(EllipticCurve_number_field):
         OUTPUT:
         
         The value
-        ..MATH::
+        .. MATH::
 
             \beta(\sigma) \cdot \beta(\tau) \cdot \beta(\sigma \tau)^{-1}
 
@@ -836,8 +885,8 @@ class Qcurve(EllipticCurve_number_field):
 
         OUTPUT:
         
-        Gives a list of non-square integers such that the field
-        of complete definition $\Q$ adjoint all roots of these
+        Gives a list of squarefree integers such that the field
+        of complete definition is $\Q$ adjoint all roots of these
         integers. Furthermore this list has minimal length in
         this regard.
         """
@@ -878,6 +927,9 @@ class Qcurve(EllipticCurve_number_field):
         return self._N
 
     def _init_twist_characters(self):
+        r"""
+        Computes all the twist characters to start with.
+        """
         N = self.cyclotomic_order()
         ker = self._ker
         D = DirichletGroup(N)
@@ -895,9 +947,21 @@ class Qcurve(EllipticCurve_number_field):
         r"""
         Keeps track of the twist characters, storing for each splitting
         map the following data
-         0) The dirichlet character which twists the default splitting
-            map into this one.
-         1) The same character as a galois character.
+         0 - The dirichlet character which twists the first splitting
+             map into this one.
+         1 - The same character as a galois character.
+
+        INPUT:
+
+        - ``i`` -- The index of the twist character for which to retrieve
+          the data. This may also be a tuple of accepted values or one of
+          the special keywords 'all', for all of them, or 'conjugacy', for
+          all of them up to conjugacy.
+        - ``j`` -- The index of the data to be retrieved.
+
+        OUTPUT:
+        
+        The requested data for all indices in i.
         """
         if not self._is_cached('_chi'):
             self._init_twist_characters()
@@ -920,27 +984,24 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
 
         - ``index`` -- The index (default: 0) of the splitting
-                       map to which this twist should correspond.
-                       Accepted values are non-negative integers 
-                       smaller than the total amount of splitting
-                       maps or one of the special values:
-                        'all' : for a tuple of all splitting
-                                characters
-                        'conjugacy' : for a tuple of splitting
-                                      characters, one for each
-                                      conjugacy class of
-                                      splitting maps.
-                       Also accepts tuples of accepted values
-                       including tuples themselves.
+          map to which this twist should correspond. Accepted
+          values are non-negative integers smaller than the
+          total amount of splitting maps or one of the special
+          values:
+          - 'all' : for a tuple of all twist characters
+          - 'conjugacy' : for a tuple of twist characters, one
+            for each conjugacy class of splitting maps.
+          Also accepts tuples of accepted values including
+          tuples themselves.
         - ``galois`` -- A boolean (default: False) indicating
-                        whether the twist character should be
-                        given as galois or dirichlet characters.
+          whether the twist character should be given as galois
+          or dirichlet characters.
 
         OUTPUT:
 
-        Returns the character such that twisting the default
+        Returns the character such that twisting the first
         splitting map by this character gives the splitting
-        map of the given index. This twist character isgiven
+        map of the given index. This twist character is given
         as a galois character if galois is set to True or as a
         Dirichlet character otherwise. If the index was 'all'
         or 'conjugacy' will return a tuple of such characters
@@ -961,9 +1022,8 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
 
         - ``count_conjugates`` -- A boolean (default: True)
-                                  indicating whether conjugate
-                                  splitting maps should be
-                                  counted seperately.
+          indicating whether conjugate splitting maps should
+          be counted seperately.
 
         OUTPUT:
         
@@ -971,7 +1031,7 @@ class Qcurve(EllipticCurve_number_field):
         Q-curve defined over its decomposition field. If the
         flag count_conjugates is set to False, will return
         the number of conjugacy classes of such splitting
-        maps.
+        maps instead.
         """
         if count_conjugates:
             if not self._is_cached('_chi'):
@@ -983,8 +1043,8 @@ class Qcurve(EllipticCurve_number_field):
     @cached_method
     def _conjugacy_determination(self):
         r"""
-        Gives a tuple of indices that contains for each class
-        of splitting maps the index of exactly one element
+        Gives a tuple of indices that contains for each conjugacy
+        class of splitting maps the index of exactly one element
         thereof.
         """
         beta_ls = self.splitting_map("all")
@@ -1030,13 +1090,13 @@ class Qcurve(EllipticCurve_number_field):
         Q-curve is completely defined and the parent of gamma, that is the
         twist of this Q-curve by gamma, i.e. if this Q-curve was given by
         
-        ..MATH::
+        .. MATH::
 
         E : y^2 = x^3 + a_2 x^2 + a_4 x + a_6
 
         the twisted Q-curve is given by
 
-        ..MATH::
+        .. MATH::
         
         E : y^2 = x^3 + \gamma a_2 x^2 + \gamma^2 a_4 x + \gamma^3 a_6
         
@@ -1063,9 +1123,9 @@ class Qcurve(EllipticCurve_number_field):
 
         OUTPUT:
         
-        A Qcurve which is a twist of this curve and has the same decomposition
+        A Q-curve which is a twist of this curve and has the same decomposition
         field. When taking the restriction of scalars of this curve over
-        the decomposition field the resulting abelian variety is isognenous
+        the decomposition field the resulting abelian variety is isogenous
         to a product of Q-simple, non-Q-isogenous abelian varieties of
         GL_2-type.
         """
@@ -1143,7 +1203,7 @@ class Qcurve(EllipticCurve_number_field):
         
         OUTPUT:
 
-        A Qcurve that is a twist of this curve and satisfies
+        A Q-curve that is a twist of this curve and satisfies
          - It is defined over the same base field $K$
          - It is completely defined over $K$ adjoint all roots
            of the rationals given in roots.
@@ -1220,7 +1280,7 @@ class Qcurve(EllipticCurve_number_field):
     @cached_method
     def conductor_restriction_of_scalars(self):
         r"""
-        Gives the conductor of the restriction of scalars.
+        Gives the conductor of the restriction of scalars of this Q-curve.
 
         OUTPUT:
 
@@ -1232,35 +1292,6 @@ class Qcurve(EllipticCurve_number_field):
         iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
         # Proposition 1 of Milne, On the arithmetic of Abelian varieties
         return self.change_ring(iota).conductor().absolute_norm() * K.discriminant()^2
-    
-    @cached_method
-    def level_table(self, prime=None, what='max'):
-        eps_ls = [eps^(-1) for eps in self.splitting_character(index='conjugacy')]
-        chi_ls = [chi^(-1) for chi in self.twist_character(index='conjugacy')]
-        result = [0] * len(eps_ls)
-        for i in range(len(eps_ls)):
-            result[i] = [0] * len(chi_ls)
-            eps = eps_ls[i]
-            chi0 = chi_ls[i]
-            for j in range(len(chi_ls)):
-                N = lcm([eps.modulus(), chi_ls[j].modulus(), chi0.modulus()])
-                chi = chi_ls[j].extend(N) * chi0.extend(N)^(-1)
-                eps_chi = eps.extend(N) * chi
-                if prime is None:
-                    beta = chi.conductor()
-                    gamma = eps_chi.conductor()
-                    maxlevel = lcm(beta*product(beta.prime_factors()), beta*gamma)
-                else:
-                    beta = chi.conductor().ord(prime)
-                    gamma = eps_chi.conductor().ord(prime)
-                    maxlevel = max(beta + 1, beta + gamma)
-                if what == 'max':
-                    result[i][j] = maxlevel
-                elif what == 'beta':
-                    result[i][j] = beta
-                elif what == 'gamma':
-                    result[i][j] = gamma
-        return result
 
     def _newform_levels(self, prime=None, alpha=None, beta=None, gamma=None, d=None, N=None):
         r"""
@@ -1388,10 +1419,10 @@ class Qcurve(EllipticCurve_number_field):
             - 'magma' (default)
             - 'sage'
           This program is used for computing newforms and Euler
-          factors of the L-function associated to the curve.
+          factors of the L-series associated to the curve.
         - ``verify`` -- A non-negative integer determining what
           the biggest prime is for which the result should be
-          verified using the Euler factors of L-series.
+          verified using the Euler factors of the L-series.
 
         OUTPUT:
 
@@ -1530,3 +1561,51 @@ class Qcurve(EllipticCurve_number_field):
                 p = next_prime(p)
 
         return [(f, twists) for f, twists, N, eps in candidates]
+
+    def _repr_(self):
+        """
+        String representation of a Q-curve.
+
+        REMARK:
+
+        This is a direct copy from the code included
+        in EllipticCurve_number_field
+        """
+        b = self.ainvs()
+        a = [z._coeff_repr() for z in b]
+        s = "Q-curve defined by "
+        s += "y^2 "
+        if a[0] == "-1":
+            s += "- x*y "
+        elif a[0] == '1':
+            s += "+ x*y "
+        elif b[0]:
+            s += "+ %s*x*y "%a[0]
+        if a[2] == "-1":
+            s += "- y "
+        elif a[2] == '1':
+            s += "+ y "
+        elif b[2]:
+            s += "+ %s*y "%a[2]
+        s += "= x^3 "
+        if a[1] == "-1":
+            s += "- x^2 "
+        elif a[1] == '1':
+            s += "+ x^2 "
+        elif b[1]:
+            s += "+ %s*x^2 "%a[1]
+        if a[3] == "-1":
+            s += "- x "
+        elif a[3] == '1':
+            s += "+ x "
+        elif b[3]:
+            s += "+ %s*x "%a[3]
+        if a[4] == '-1':
+            s += "- 1 "
+        elif a[4] == '1':
+            s += "+ 1 "
+        elif b[4]:
+            s += "+ %s "%a[4]
+        s = s.replace("+ -","- ")
+        s += "over %s"%self.base_ring()
+        return s
