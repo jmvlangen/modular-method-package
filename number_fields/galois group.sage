@@ -85,7 +85,6 @@ def galois_field_change(sigma, K):
     M, L_to_M, K_to_M = composite_field(L, K, give_maps=True)
     return galois_field_restrict(galois_field_extend(sigma, M, embedding=L_to_M), K, embedding=K_to_M)
 
-@cached_function
 def cyclotomic_galois_isomorphism(s, N=None):
     r"""
     Realizes the isomorphism between the galois group of a cyclotomic field and $\Z/N\Z^*$

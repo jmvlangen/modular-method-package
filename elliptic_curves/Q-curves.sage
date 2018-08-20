@@ -135,7 +135,6 @@ class Qcurve(EllipticCurve_number_field):
         ainvs = [iota(a) for a in curve.a_invariants()]
         EllipticCurve_number_field.__init__(self, Kgal, ainvs)
 
-    @cached_method
     def galois_conjugate(self, sigma):
         r"""
         Gives the galois conjugate of this curve.
@@ -365,7 +364,6 @@ class Qcurve(EllipticCurve_number_field):
                         break
         return ai, di
     
-    @cached_method
     def c(self, sigma, tau):
         r"""
         The value of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2 \to \Q^*$
@@ -720,7 +718,6 @@ class Qcurve(EllipticCurve_number_field):
         eps = self.splitting_character(galois=True)
         d = self.degree_map
         Lbeta = self.splitting_image_field()
-        @cached_function
         def beta(sigma):
             return sqrt(Lbeta(d(sigma) * eps(sigma)))
         return beta
@@ -740,7 +737,6 @@ class Qcurve(EllipticCurve_number_field):
         try:
             alpha = function_with_coboundary(G, (1, [-1], [2], convert), c_err)
             beta0 = self._beta
-            @cached_function
             def beta(sigma):
                 return beta0(sigma) * alpha(sigma)
             self._beta = beta
@@ -762,7 +758,6 @@ class Qcurve(EllipticCurve_number_field):
         Lchi = self.twist_character(i).base_ring()
         L = composite_field(Lbeta0, Lchi)
         Lbeta = self.splitting_image_field(i)
-        @cached_function
         def beta(sigma):
             return Lbeta(L(beta0(sigma)) * L(chi(sigma)))
         return beta
@@ -1183,13 +1178,11 @@ class Qcurve(EllipticCurve_number_field):
 
         # The map we want as lambda for the new curve
         d = self.degree_map
-        @cached_function
         def mu(s):
             return sqrt(Knew(product(roots[i] for i in roots_image[d(s).squarefree_part()])))
 
         # The correction map
         l = self.isogeny_lambda
-        @cached_function
         def alpha(s):
             return new_to_big(mu(s))^2 / old_to_big(l(s))^2
 
