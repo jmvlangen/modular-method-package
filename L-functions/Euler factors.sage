@@ -15,8 +15,8 @@ def Euler_factor_modular_form(f, p, twists=[1]):
     or as a sage polynomial otherwise.
     """
     if f.parent() == magma:
-        K = f.BaseField().sage()
         ap = f.Coefficient(p).sage()
+        K = ap.parent()
         epsp = f.DirichletCharacter()(p).sage()
     else:
         K = f.base_ring()
