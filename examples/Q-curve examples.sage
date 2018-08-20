@@ -242,27 +242,103 @@ for N in N_ls:
     else:
         print "No corresponding newform found at this level"
     
-### Tests
-print roots_in_field(Lbeta)
-for i in range(len(nfs)):
-    Kf = nfs[i+1][1].BaseField().sage()
-    if Kf.degree() == 4:
-        print i
-        print Kf.degree()
-        print roots_in_field(Kf)
-        print ""
+### Case -1:
+E = Qcurve_with_2_isogeny(-1)
+E = E.decomposable_twist()
 
-### 2
+Lbeta_ls = E.splitting_image_field('conjugacy')
+print "newform coefficient fields:", Lbeta_ls # Two times, of degree 4!
+print "Possible levels of the newform:"
+N_ls = E._newform_levels()
+for N in N_ls:
+    print N
+
+twists0 = E.twist_character('conjugacy')
+M = lcm(chi.modulus() for chi in twists0)
+twists0 = [chi.extend(M) for chi in twists0]
+for N in N_ls:
+    i_min = min(enumerate(N), key=(lambda x : x[1]))[0] # newform with smallest level
+    print "level of newform:", N[i_min].factor()
+    chi = twists0[i_min]
+    twists = [chi_j * chi^(-1) for chi_j in twists0]
+    eps = E.splitting_character('conjugacy')[i_min]
+    Dm = magma.DirichletGroup(eps.conductor())
+    for eps_m in Dm.Elements():
+        candidate = True
+        for i in range(1, eps.conductor()+1):
+            i = ZZ(i)
+            candidate = (eps(i) == eps_m(i))
+            if not candidate: # Not the right one
+                break
+        if candidate: # Found the right one
+            break
+    eps_m = magma.DirichletGroup(N[i_min])(eps_m)
+    print "character:", eps_m
+    Lbeta = Lbeta_ls[i_min]
+    print "Coefficient field:", Lbeta
+
+    Em = magma(E)
+    try:
+        f = nfs[1][1]
+        if f.parent() != magma or f.DirichletCharacter() != eps_m:
+            raise TypeError("Not the right object.")
+    except (NameError, IndexError, TypeError):
+        cfs = magma.CuspForms(eps_m)
+        nfs = magma.Newforms(cfs)
+        print "Newforms calculated!"
+
+    nfs0 = []
+    for f in nfs:
+        Kf = f[1].BaseField().sage()
+        if Kf.degree() == Lbeta.degree() and \
+           Kf.discriminant() == Lbeta.discriminant():
+            nfs0.append(f[1])
+
+    candidates = copy(nfs0)
+    for p in prime_range(1, 100):
+        if not p.divides(N[i_min]):
+            print p
+            remove = []
+            PE = Em.EulerFactor(p)
+            print PE
+            for f in candidates:
+                Pf = Euler_factor_modular_form(f, p, twists=twists)
+                if PE != Pf:
+                    print Pf
+                    # remove.append(f)
+                else:
+                    print Pf, "*"
+            for f in remove:
+                candidates.remove(f)
+            if len(candidates) <= 1:
+                break
+            print ""
+
+    if len(candidates) >= 1 and all(Em.EulerFactor(p) == Euler_factor_modular_form(candidates[0], p, twists=twists) for p in prime_range(1000) if not p.divides(N[i_min])):
+        f = candidates[0]
+        print "Associated newform:", f
+        print "Verified for primes up to 1000!"
+        break
+    else:
+        print "No corresponding newform found at this level"
+
+### Tests
+bad_primes = []
 for p in prime_range(1, 100):
-    if True: #not p.divides(N[i_min]):
+    if not p.divides(N[i_min]):
+        count = 0
         print p
+        remove = []
         PE = Em.EulerFactor(p)
         print PE
         for f in nfs0:
             Pf = Euler_factor_modular_form(f, p, twists=twists)
-            if PE == Pf:
-                print Pf, "*"
-            else:
+            if PE != Pf:
                 print Pf
+                # remove.append(f)
+            else:
+                print Pf, "*"
+                count += 1
+        if count == 0:
+            bad_primes.append(p)
         print ""
-
