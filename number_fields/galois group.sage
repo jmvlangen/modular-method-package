@@ -15,6 +15,29 @@ def galois_field_extend(sigma, K, embedding=None):
 
     An element tau of the galois group of K, such that tau
     restricted to K0 is sigma.
+
+    EXAMPLES::
+
+    Simple example::
+
+        sage: K = QuadraticField(2)
+        sage: L = CyclotomicField(8)
+        sage: sigma = K.galois_group().gen()
+        sage: tau = galois_field_extend(sigma, L); tau
+        (1,3)(2,4)
+        sage: tau.parent()
+        Galois group of Cyclotomic Field of order 8 and degree 4
+        sage: galois_field_restrict(tau, K) == sigma
+        True
+
+    Note that the extension is not unique::
+
+        sage: K = QuadraticField(2)
+        sage: L = CyclotomicField(8)
+        sage: tau = L.galois_group()[3]
+        sage: sigma = galois_field_restrict(tau, K)
+        sage: galois_field_extend(sigma, L) == tau
+        False
     """
     Gsmall = sigma.parent()
     Ksmall = Gsmall.number_field()
@@ -46,6 +69,16 @@ def galois_field_restrict(sigma, K, embedding=None):
     
     An element tau of the galois group of K such that sigma and tau
     acts the same on elements of K.
+
+    EXAMPLE::
+
+        sage: K = QuadraticField(3)
+        sage: L = CyclotomicField(24)
+        sage: tau = L.galois_group().gens()[0]
+        sage: sigma = galois_field_restrict(tau, K); sigma
+        (1,2)
+        sage: sigma.parent()
+        Galois group of Number Field in a with defining polynomial x^2 - 3
     """
     Gsmall = K.galois_group()
     Ksmall = Gsmall.number_field()
@@ -80,6 +113,31 @@ def galois_field_change(sigma, K):
     is some galois homomorphism mu on K0 K that acts the same as
     sigma on K0 and the same as tau on K. Note that if K0 and K have
     no common subfield, sigma and tau might not have anything in common.
+
+    EXAMPLES:
+
+    Can convert from a very complicated field to a very simple one::
+
+        sage: K = QuadraticField(10)
+        sage: L = CyclotomicField(120)
+        sage: tau = L.galois_group()[5]; tau
+        (1,6,3,8)(2,7,4,5)(9,14,11,16)(10,15,12,13)(17,22,19,24)(18,23,20,21)(25,30,27,32)(26,31,28,29)
+        sage: sigma = galois_field_change(tau, K); sigma
+        (1,2)
+        sage: sigma.parent()
+        Galois group of Number Field in a with defining polynomial x^2 - 10
+
+    Can also be used on two totally unrelated fields, but the result
+    can be totally unexpected::
+
+        sage: K = QuadraticField(2)
+        sage: L = QuadraticField(3)
+        sage: sigma = K.galois_group().gen(); sigma
+        (1,2)
+        sage: tau = galois_field_change(sigma, L); tau
+        ()
+        sage: tau.parent()
+        Galois group of Number Field in a with defining polynomial x^2 - 3
     """
     L = sigma.parent().number_field()
     M, L_to_M, K_to_M = composite_field(L, K, give_maps=True)
@@ -113,6 +171,32 @@ def cyclotomic_galois_isomorphism(s, N=None):
         K and instead of s a galois homomorphism on $\Q(\zeta_N)$
         that has a common extension to the composite field of K and
         $\Q(\zeta_N)$
+
+    EXAMPLES:
+
+    Converting from an integer to a galois homomorphism::
+
+        sage: sigma = cyclotomic_galois_isomorphism(3, N=8); sigma
+        (1,4)(2,3)
+        sage: sigma.parent()
+        Galois group of Cyclotomic Field of order 8 and degree 4
+
+    Converting from a galois homomorphism to the corresponding
+    integer::
+
+        sage: L = CyclotomicField(30)
+        sage: sigma = L.galois_group()[2]; sigma
+        (1,3)(2,4)(5,7)(6,8)
+        sage: cyclotomic_galois_isomorphism(sigma)
+        19
+
+    If the modulus is given can convert from a galois homomorphism
+    over any field::
+
+        sage: K = QuadraticField(5)
+        sage: sigma = K.galois_group().gen()
+        sage: cyclotomic_galois_isomorphism(sigma, N=5)
+        2
     """
     if s in ZZ:
         if N is None:

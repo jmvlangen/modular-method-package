@@ -200,7 +200,9 @@ def unit_for_scaling(a, b, N=0):
 
     Note that a and b must differ by a unit modulo N ::
 
-        sage: unit_for_scaling(294, 1248, N = 1728)
+        sage: unit_for_scaling(294, 1248, N=1728)
+        Traceback (most recent call last)
+        ...
         ArithmeticError: There is not a unit u modulo 1728 such that 294 * u == 1248 modulo 1728
     """
     g = gcd(ZZ(a),N)
@@ -260,6 +262,8 @@ def normalize_row(M, i, j, val=0, N=0):
         [ 1 -2  0]
         [ 0  3  0]
         sage: normalize_row(M, 1, 1, val=1); M
+        Traceback (most recent call last)
+        ...
         ArithmeticError: There is not a unit u modulo 0 such that 3 * u == 1 modulo 0
 
     Modulo some number there is more possibilities ::

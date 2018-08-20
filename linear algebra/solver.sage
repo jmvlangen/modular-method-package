@@ -22,6 +22,26 @@ def solve_integer_problem_with_torsion(M, V, MT, VT, N, all=False):
     and as the second entry an n x n0 matrix A such that the map
     $y \mapsto v + A y$ maps n0 vectors with integer coefficients
     surjectively to the set of all solutions to the system.
+
+    EXAMPLES::
+
+    Let's find all pairs of integers that sum to 2018 and have the
+    same last digit, i.e. congruent modulo 10::
+
+        sage: M = matrix([1,1]); M
+        [1 1]
+        sage: V = vector([2018]); V
+        (2018)
+        sage: MT = matrix([1,-1]); MT
+        [ 1 -1]
+        sage: VT = vector([0]); VT
+        (0)
+        sage: N = 10
+        sage: solve_integer_problem_with_torsion(M, V, MT, VT, N, all=True)
+        (
+                    [ 5]
+        (-1, 2019), [-5]
+        )
     """
 
     # Make sure the rings are right
@@ -69,6 +89,6 @@ def solve_integer_problem_with_torsion(M, V, MT, VT, N, all=False):
         M0 = MV0.delete_columns([n0])
         A0 = M0.right_kernel().basis_matrix().transpose()
         A = A0[:n]
-        return (v, A0)
+        return (v, A)
     else:
         return v

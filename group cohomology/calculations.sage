@@ -5,31 +5,27 @@ def function_with_coboundary(G, A, c, action=None):
     INPUT:
     - ``G`` -- A finite group or list of its elements
     - ``A`` -- An abelian group with an action of G defined
-               on it. This may be given as a Sage implementation
-               of a multiplicative abelian group or as a tuple
-               containing in this order: the identity of A,
-               a list of generators of A, a list of the
-               corresponding orders and a function that
-               converts an element of A into a list of exponents
-               such that the product of each generator to
-               its respective exponent is the given element.
+      on it. This may be given as a Sage implementation of a
+      multiplicative abelian group or as a tuple containing
+      in this order:
+      - the identity of A,
+      - a list of generators of A,
+      - a list of the corresponding orders, and
+      - a function that converts an element of A into a list
+        of exponents such that the product of each generator
+        to its respective exponent is the given element.
     - ``c`` -- A coboundary of G with values in A, given
-               as a function with two arguments that returns
-               a value in A, i.e. for s and t in G the
-               operation c(s,t) should be defined and give
-               an element of A.
+      as a function with two arguments that returns a value
+      in A, i.e. for s and t in G the operation c(s,t) should
+      be defined and give an element of A.
     - ``action`` -- An optional dictionary (default: None)
-                    providing the action of G on A. Each
-                    element of this dictionary should be
-                    a key in this dictionary and the
-                    corresponding value should be a matrix
-                    such that the i,j-th entry is the
-                    exponent of the j-th generator in
-                    the image of the action on the i-th
-                    generator of A for this elment of G.
-                    If set to None will use s(u)
-                    to determine these matrices for each
-                    s in G and u in A
+      providing the action of G on A. Each element of G
+      should be a key in this dictionary and the corresponding
+      value should be a matrix such that the i,j-th entry is
+      the exponent of the j-th generator in the image of the
+      action on the i-th generator of A for this elment of G.
+      If set to None will use s(u) to determine these matrices
+      for each s in G and u in A
 
     OUTPUT:
     A function a that given an element of G will return
