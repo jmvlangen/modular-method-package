@@ -1475,7 +1475,7 @@ class Qcurve(EllipticCurve_number_field):
             expected_matches = sum(eps_ls[i] == eps and levels[k][i] == N for i in range(len(levels[k])))
 
             if use_magma:
-                Dm = magma.DirichletGroup(eps.conductor())
+                Dm = magma.DirichletGroup(eps.conductor(), magma(eps.base_ring()))
                 for eps_m in Dm.Elements():
                     candidate = True
                     for i in range(1, eps.conductor()+1):
@@ -1485,7 +1485,9 @@ class Qcurve(EllipticCurve_number_field):
                             break
                     if candidate: # Found the right one
                         break
-                eps_m = magma.DirichletGroup(N)(eps_m) # Right level
+                if not candidate:
+                    raise ValueError("No matching magma dirichlet character for %s"%candidate)
+                eps_m = magma.DirichletGroup(N, magma(eps.base_ring()))(eps_m) # Right level
                 cfs = magma.CuspForms(eps_m)
                 nfs = magma.Newforms(cfs)
                 nfs = [f[1] for f in nfs]
@@ -1555,7 +1557,7 @@ class Qcurve(EllipticCurve_number_field):
             while p.divides(max_level):
                 p = next_prime(p)
 
-        return [(f, twists) for f, twists, N, eps in candidates]
+        return candidates[0][0], candidates[0][1]
 
     def _repr_(self):
         """
