@@ -914,16 +914,11 @@ class Qcurve(EllipticCurve_number_field):
         completely contained in $\Q(\zeta_N)$.
         """
         if not self._is_cached('_N') or not self._is_cached('_ker'):
-            ai = self._Kl_roots()
-            eps_ls = [self.splitting_character()]
-            eps_ls.extend([character_for_root(a) for a in ai])
-            N = lcm([eps.modulus() for eps in eps_ls])
-            ker_ls = [set(eps.extend(N).kernel()) for eps in eps_ls]
-            ker = ker_ls[0]
-            for i in range(1,len(ker_ls)):
-                ker = ker.intersection(ker_ls[i])
+            K = self.decomposition_field()
+            N = K.conductor(check_abelian=True)
             self._N = N
-            self._ker = list(ker)
+            self._ker = [n for n in range(N) if gcd(n, N) == 1 \
+                         and galois_field_change(cyclotomic_galois_isomorphism(n, N=N), K).is_one()]
         return self._N
 
     def _init_twist_characters(self):
