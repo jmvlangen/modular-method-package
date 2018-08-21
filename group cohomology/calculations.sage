@@ -33,6 +33,27 @@ def function_with_coboundary(G, A, c, action=None):
         a(s) + s(a(t)) - a(s*t) == c(s,t)
     for all s and t in G, where * and + are the group
     operations on G and A respectively.
+
+    EXAMPLES:
+
+    A typical example is the case where we have the galois
+    group of a field act on the group of units::
+
+        sage: K = QuadraticField(3)
+        sage: U = K.unit_group()
+        sage: G = K.galois_group()
+        sage: def c(s, t):
+        ....:     if s == G.identity():
+        ....:         return U.gens()[1]
+        ....:     else:
+        ....:         return U.gens()[1]^(-1)
+        ....:     
+        sage: alpha = function_with_coboundary(G, U, c)
+        sage: for s in G:
+        ....:     print alpha(s)
+        ....:     
+        u1
+        1
     """
     if isinstance(A, tuple):
         identity, gens, orders, convert = A
