@@ -1506,8 +1506,8 @@ class Qcurve(EllipticCurve_number_field):
                     Kf = f.BaseField().sage()
                 else:
                     Kf = f.base_ring()
-                if Kf.degree() == Lbeta.degree() and \
-                   Kf.discriminant() == Lbeta.discriminant():
+                if Kf.absolute_degree() == Lbeta.absolute_degree() and \
+                   Kf.absolute_discriminant() == Lbeta.absolute_discriminant():
                     candidates.append((f, twists, N, eps))
 
         valid_options = []
