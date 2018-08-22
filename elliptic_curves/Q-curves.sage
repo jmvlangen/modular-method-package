@@ -680,7 +680,7 @@ class Qcurve(EllipticCurve_number_field):
         tuple in the same order.
         """
         eps = self.splitting_character(index)
-        Keps = self.splitting_field(index)
+        Keps = self.splitting_character_field(index)
         return self._splitting_image_field(eps, Keps)
 
     def _splitting_field(self, Keps):
@@ -1462,13 +1462,13 @@ class Qcurve(EllipticCurve_number_field):
             raise ValueError("%s is not a valid algorithm to use."%algorithm)
 
         candidates = []
-        max_level = 1 # Keeps track of the lcm of all N considered
-                      # the primes in these will be excluded in checking
-                      # the Euler factors.
+        max_level = lcm(lcm(tmp) for tmp in levels)
+        # Keeps track of the lcm of all N considered
+        # the primes in these will be excluded in checking
+        # the Euler factors.
         done_cases = []
         for k in range(len(levels)):
             i_min, N = min(enumerate(levels[k]), key=(lambda x: x[1])) #newform with smallest level
-            max_level = lcm(N, max_level)
             chi = twists_base[i_min]
             twists = [chi_j * chi^(-1) for chi_j in twists_base] # twists relative to i_min
             eps = eps_ls[i_min]
