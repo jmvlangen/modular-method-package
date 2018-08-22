@@ -16,16 +16,25 @@ def Euler_factor_modular_form(f, p, twists=[1]):
     """
     if f.parent() == magma:
         ap = f.Coefficient(p).sage()
-        K = ap.parent()
         epsp = f.DirichletCharacter()(p).sage()
     else:
-        K = f.base_ring()
         ap = f.coefficient(p)
         epsp = f.character()(p)
+    K, map1, map2 = composite_field(ap.parent(), epsp.parent().fraction_field(), give_maps=True)
+    ap = map1(ap)
+    epsp = map2(epsp)
     R.<T> = K[]
     result = R.one()
     if twists[0] not in ZZ:
-        twists = [K(chi(p)) for chi in twists]
+        twist_vals = []
+        for chi in twists:
+            K, map1, map2 = composite_field(K, chi(p).parent(), give_maps=True)
+            ap = map1(ap)
+            epsp = map1(epsp)
+            for i in range(len(twist_vals)):
+                twist_vals[i] = map1(twist_vals[i])
+            twist_vals.append(map2(chi(p)))
+        twists = twist_vals
     for chip in twists:
         for F in K.galois_group():
             factor = (1 - F(chip * ap) * T + F(chip^2 * epsp * p) * T^2)

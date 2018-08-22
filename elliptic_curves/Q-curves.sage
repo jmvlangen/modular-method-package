@@ -1033,7 +1033,7 @@ class Qcurve(EllipticCurve_number_field):
                 self._init_twist_characters()
             return len(self._chi)
         else:
-            return len(self._conjugacy_determination)
+            return len(self._conjugacy_determination())
 
     @cached_method
     def _conjugacy_determination(self):
@@ -1465,6 +1465,7 @@ class Qcurve(EllipticCurve_number_field):
         max_level = 1 # Keeps track of the lcm of all N considered
                       # the primes in these will be excluded in checking
                       # the Euler factors.
+        done_cases = []
         for k in range(len(levels)):
             i_min, N = min(enumerate(levels[k]), key=(lambda x: x[1])) #newform with smallest level
             max_level = lcm(N, max_level)
@@ -1472,7 +1473,11 @@ class Qcurve(EllipticCurve_number_field):
             twists = [chi_j * chi^(-1) for chi_j in twists_base] # twists relative to i_min
             eps = eps_ls[i_min]
             Lbeta = Lbeta_ls[i_min]
-            expected_matches = sum(eps_ls[i] == eps and levels[k][i] == N for i in range(len(levels[k])))
+            expected_matches = sum(eps_ls[i] in eps.galois_orbit() and
+                                   levels[k][i] == N for i in range(len(levels[k])))
+            if (N, eps.galois_orbit(), Lbeta) in done_cases: # Prevent getting the same newform twice.
+                continue
+            done_cases.append((N, eps.galois_orbit(), Lbeta))
 
             if use_magma:
                 Dm = magma.DirichletGroup(eps.conductor(), magma(eps.base_ring()))
@@ -1509,7 +1514,7 @@ class Qcurve(EllipticCurve_number_field):
         for k in range(len(levels)):
             option = {}
             for i in range(len(levels[k])):
-                key = (levels[k][i], eps_ls[i])
+                key = (levels[k][i], eps_ls[i].galois_orbit()[0])
                 if key in option:
                     option[key] += 1
                 else:
@@ -1527,7 +1532,7 @@ class Qcurve(EllipticCurve_number_field):
                 return False
             sub_option = {}
             for f, twists, N, eps in candidates:
-                key = (N, eps)
+                key = (N, eps.galois_orbit()[0])
                 if key in sub_option:
                     sub_option[key] += 1
                 else:
