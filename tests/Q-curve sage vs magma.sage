@@ -13,8 +13,13 @@ E.splitting_image_field('conjugacy');
 ### 2-isogeny parameter 3 - level 1536 = 2^9 * 3
 E = Qcurve_with_2_isogeny(3)
 E = E.decomposable_twist()
-%time f_m, twists = E.newform(algorithm='magma') # 7.84 s
-%time f, twists = E.newform(algorithm='sage') # 1449 s (24 min)
+# Even the playing field:
+E.decomposition_field();
+E.splitting_character('conjugacy');
+E.twist_character('conjugacy');
+E.splitting_image_field('conjugacy');
+%time f_m, twists = E.newform(algorithm='magma') # 4.92 s
+%time f, twists = E.newform(algorithm='sage') # 1350 s (22.5 min)
 
 ### 2-isogeny parameter -1 - level 512 = 2^9
 E = Qcurve_with_2_isogeny(-1)
