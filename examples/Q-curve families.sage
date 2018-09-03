@@ -21,7 +21,7 @@ def Qcurve_with_3_isogeny(t):
 
 # Curves with a 2 & 3-isogeny
 def Qcurve_with_2_3_isogeny(t):
-    t = 2 # Parameter 3, 9/2, 11/3, 25/6, 75/19, 289/72, 675/169, 1089/272, 31211/7803 are CM
+    # Parameter 1, 3, 9/2, 11/3, 25/6, 75/19, 289/72, 675/169, 1089/272, 31211/7803 are CM
     s = 1 + 2 * t
     K = composite_field(field_with_root(QQ, t, names='sqrt_t'), field_with_root(QQ, s, names='sqrt_s'))
     sqrt_t = sqrt(K(t))
