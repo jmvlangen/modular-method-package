@@ -733,6 +733,7 @@ class Qcurve(EllipticCurve_number_field):
         """
         return composite_field(self.complete_definition_field(), self.splitting_field())
 
+    @cached_method
     def does_decompose(self):
         r"""
         Determines whether this Q-curve decomposes over its
@@ -917,8 +918,10 @@ class Qcurve(EllipticCurve_number_field):
             K = self.decomposition_field()
             N = K.conductor(check_abelian=True)
             self._N = N
+            L.<zeta> = CyclotomicField(N)
+            a = K.gen().minpoly().change_ring(L).roots()[0][0]
             self._ker = [n for n in range(N) if gcd(n, N) == 1 \
-                         and galois_field_change(cyclotomic_galois_isomorphism(n, N=N), K).is_one()]
+                         and a == sum(ai * zeta^(i*n) for (i,ai) in enumerate(a.list()))]
         return self._N
 
     def _init_twist_characters(self):
@@ -1125,7 +1128,7 @@ class Qcurve(EllipticCurve_number_field):
         GL_2-type.
         """
         K = self.decomposition_field()
-        CG = K.class_group()
+        CG = K.class_group(proof=False)
         Pgen = [CG(product(K.primes_above(p))) for p in K.discriminant().prime_factors()]
         Pord = [P.order() for P in Pgen]
         H = []
@@ -1141,7 +1144,7 @@ class Qcurve(EllipticCurve_number_field):
                 skip.extend([CI * h for h in H])
         S = [P for I in S0 for P in I.prime_factors()]
         G = K.galois_group()
-        US = K.S_unit_group(S=S)
+        US = K.S_unit_group(proof=False, S=S)
         def c_err(sigma, tau):
             return US(self.c(sigma, tau) / self.c_splitting_map(sigma, tau))
         alpha = function_with_coboundary(G, US, c_err)
@@ -1224,8 +1227,8 @@ class Qcurve(EllipticCurve_number_field):
         Kbase = self.base_ring()
         Kold = self._Kl
         Kroots = QQ
-        for a in roots:
-            Kroots = field_with_root(Kroots, a)
+        for i, a in enumerate(roots):
+            Kroots = field_with_root(Kroots, a, names=('sqrt_a'+str(i)))
         base_to_old = self._to_Kl
         Knew, base_to_new, roots_to_new = composite_field(Kbase, Kroots, give_maps=True)
         Kbig, old_to_big, new_to_big = composite_field(Kold, Knew, give_maps=True)
