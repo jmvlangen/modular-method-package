@@ -6,4 +6,4 @@ load("~/Documents/SageFiles/group cohomology/loadall.sage")
 load("~/Documents/SageFiles/number_fields/loadall.sage")
 load("~/Documents/SageFiles/L-functions/loadall.sage")
 load("~/Documents/SageFiles/diophantine_equations/conditions.sage")
-attach("~/Documents/SageFiles/diophantine_equations/diophantine_tools.sage")
+
