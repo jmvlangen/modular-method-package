@@ -28,7 +28,7 @@ def Qcurve_with_2_3_isogeny(t):
     sqrt_s = sqrt(K(s))
     a4 = -6*s*t*(5 + 5*sqrt_s + 10*sqrt_t + 5*t + 2*sqrt_s*sqrt_t)
     a6 = 8 * (sqrt_s*sqrt_t)^3 * (1 + sqrt_t) * (7 + 15*sqrt_s + 14*sqrt_t + 7*t + 6*sqrt_s*sqrt_t)
-    E = Qcurve([a4,a6], guessed_degrees=[2,3])
+    E = Qcurve([a4,a6], guessed_degrees=[2,3,6])
     if E.has_cm():
         raise ValueError("Paramater %s gives a CM elliptic curve."%t)
     return E
