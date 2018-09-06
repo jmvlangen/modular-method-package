@@ -4,7 +4,7 @@ class Condition(SageObject):
     """
     
     def __init__(self, variables):
-       self._vars = list(variables)
+       self._vars = tuple(variables)
         
     def variables(self):
         return self._vars
@@ -154,7 +154,10 @@ class CongruenceCondition(Condition):
             if i < len(self._vals) - 1:
                 result += ", "
         result += " (mod "
-        result += (self._mod._repr_short() if hasattr(self._mod, '_repr_short') else str(self._mod))
+        if hasattr(self._mod, '_repr_short'):
+            result += self._mod._repr_short()
+        else:
+            result += str(self._mod)
         result += ")"
         return result
         
