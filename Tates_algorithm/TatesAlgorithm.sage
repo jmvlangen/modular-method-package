@@ -26,70 +26,12 @@ AUTHORS:
 
 from sage.structure.sage_object import SageObject
 
-from sage.schemes.elliptic_curves.ell_local_data import EllipticCurveLocalData
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol_class
 
 from sage.all import Infinity
 
 from sage.schemes.elliptic_curves.ell_generic import EllipticCurve_generic
-
-class ParametrizedLocalData(EllipticCurveLocalData):
-    
-    def __init__(self,
-                 conductor_valuation,
-                 discriminant_valuation,
-                 kodaira_symbol,
-                 tamagawa_number,
-                 reduction_type,
-                 elliptic_curve,
-                 pAdic_tree):
-        self._set_elliptic_curve(elliptic_curve)
-        self._set_pAdic_tree(pAdic_tree)
-        self._fp = conductor_valuation
-        self._val_disc = discriminant_valuation
-        if isinstance(kodaira_symbol, KodairaSymbol_class):
-            self._KS = kodaira_symbol
-        else:
-            self._KS = KodairaSymbol(kodaira_symbol)
-        self._cp = tamagawa_number
-        self._reduction_type = reduction_type
-        
-    def _set_elliptic_curve(self, elliptic_curve):
-        self._Emin = elliptic_curve
-        self._Emin_reduced = elliptic_curve
-        
-    def _set_pAdic_tree(self, pAdic_tree):
-        self._param_vals = pAdic_tree
-        self._pAdics = self._param_vals.pAdics()
-        self._prime = self._pAdics.prime_ideal()
-        
-    def parameter_values(self):
-        return self._param_tree
-    
-    def pAdics(self):
-        return self._pAdics
-        
-    def same_local_model(self, other):
-        return isinstance(other, EllipticCurveLocalData) and \
-        self.prime() == other.prime() and \
-        self.kodaira_symbol() == other.kodaira_symbol() and \
-        self.conductor_valuation() == other.conductor_valuation() and \
-        self.tamagawa_number() == other.tamagawa_number()
-        
-    def same_elliptic_data(self, other):
-        return self.same_local_model(other) and \
-        self.minimal_model == other.minimal_model()
-    
-    def __eq__(self, other):
-        return isinstance(other, ParametrizedLocalData) and \
-        self.same_elliptic_data(other) and \
-        self.parameter_values() == other.parameter_values()
-        
-    def __ne__(self, other):
-        return not isinstance(other, ParametrizedLocalData) or \
-        not self.same_elliptic_data(other) or \
-        self.parameter_values() != other.parameter_values()
         
 def _least_power(poly_list, pAdics):
     result = Infinity
@@ -767,7 +709,7 @@ def _tate_calculate_n(E, S, pAdics, T, case, result=[], **kwds):
     return result
     
 def _tate_finish(case, restrictions, result=[], variables=None, **kwds):
-    tree = pAdicTree(root=case['T'], variables=variables)
+    tree = pAdicTree(variables=variables, root=case['T'])
     if len(restrictions) == 0:
         f = case['f']
         if f == 0:
@@ -779,13 +721,13 @@ def _tate_finish(case, restrictions, result=[], variables=None, **kwds):
                 red_type = -1
         else:
             red_type = 0
-        result.append(ParametrizedLocalData(f,
-                                            case['vDelta'],
-                                            KodairaSymbol(case['KS']),
-                                            case['c'],
-                                            red_type,
-                                            case['E0'],
-                                            tree))
+        myresult = FreyCurveLocalData(case['E0'],
+                                      case['T'].pAdics().prime_ideal(),
+                                      f,
+                                      case['vDelta'],
+                                      KodairaSymbol(case['KS']),
+                                      case['c'],
+                                      red_type)
     else:
         myresult = []
         for r in restrictions:
@@ -797,8 +739,7 @@ def _tate_finish(case, restrictions, result=[], variables=None, **kwds):
                 myresult.append(KodairaSymbol(case['KS']))
             if r == 'minimal_model':
                 myresult.append(case['E0'])
-        myresult.append(tree)
-        result.append(myresult)
+    result.append((myresult, tree))
     return result
     
 def _should_calculate_vDelta(case, restrictions):
@@ -831,29 +772,18 @@ def _should_calculate_c(case, restrictions):
 def _tate_cleanup(cases):
     result = []
     for case in cases:
-        if isinstance(case, ParametrizedLocalData):
-            flag = True
-            for case0 in result:
-                if case.same_elliptic_data(case0):
-                    case0.parameter_values().root().merge(case.parameter_values().root())
-                    flag = False
-                    break
-            if flag:
-                result.append(case)
-        elif isinstance(case, list):
-            n = len(case)
-            flag = True
-            for case0 in result:
-                if isinstance(case0, list) and len(case0) == n and \
-                   case0[0:n-1] == case[0:n-1]:
-                    case0[-1].root().merge(case[-1].root())
-                    flag = False
-                    break
-            if flag:
-                result.append(case)
-        else: #Don't know what to do with this case! Should not occur.
-            result.append(case)
-    return result
+        flag = True
+        for case0 in result:
+            if case0[0] == case[0]:
+                # We can merge here to prevent unneccesary copying.
+                # Since we would discard both old trees anyways this
+                # is not a problem.
+                case0[1].pAdic_tree()._root.merge(case[1]._root)
+                flag = False
+                break
+        if flag:
+            result.append((case[0], TreeCondition(case[1])))
+    return ConditionalValue(result)
 
 def _check_elliptic_curve(E):
    if not isinstance(E, EllipticCurve_generic):
@@ -893,15 +823,10 @@ def _init__initial_values(initial_values, pAdics, variables, coPrimality):
     if not pAdics.is_extension_of(initial_values.pAdics()):
         raise ValueError("%s does not extend the p-adics of %s."%(pAdics,
                                                                   initial_values))
-    if coPrimality not in ZZ or coPrimality < 0 \
-                             or coPrimality > len(variables):
-        raise ValueError("The argument coPrimality is not well-defined.")
-    if coPrimality > 0:
-        initial_values.apply_coprimality_restriction(coPrimality=coPrimality)
     return initial_values
     
 def _init__cases(T, E):
-    firstCase = dict(next_step=1, T=T.root().copy(), E=E, E0=E)
+    firstCase = dict(next_step=1, T=T.root(), E=E, E0=E)
     return [firstCase], []
     
 def _init__str_list(str_list):
@@ -914,8 +839,8 @@ def _init__str_list(str_list):
     
 def performTatesAlgorithm(elliptic_curve, coefficient_ring=None, 
                           pAdics=None, base_ring=None, prime=None,
-                          initial_values=None, coPrimality=0,
-                          verbose=False, precision_cap=20, only_calculate=[]):
+                          initial_values=None, verbose=False,
+                          precision_cap=20, only_calculate=[]):
     r"""
     Performs Tate's Algorithm on an elliptic curve dependant on
     parameters.
@@ -958,16 +883,6 @@ def performTatesAlgorithm(elliptic_curve, coefficient_ring=None,
       elliptic curve. If not given, this will be initialized by
       this function.
       
-    - ``coPrimality`` -- A non-negative integer (default: 0).
-      This option can be set to an integer n if it is known
-      that the parameters are n-wise coprime, where n is the
-      value of this parameter. The initial values for the
-      parameters will then be set up such that no n parameters
-      are simultaneously divisible by the given prime. If an
-      initial case was set with the argument ``initial_values``
-      then this argument is ignored. This argument can at most
-      be the number of parameters.
-      
     - ``verbose`` -- A boolean value (default: False). If set
       to True the program will print information about the steps
       it is performing and will ask its subfunctions to do the same.
@@ -976,7 +891,7 @@ def performTatesAlgorithm(elliptic_curve, coefficient_ring=None,
       This argument determines the highest precision that will be
       used for the approximation of the parameters. Note that
       setting this too low might result in inaccurate results, for
-      which a warning will appear if this is the cases. Setting
+      which a warning will appear if this is the case. Setting
       this argument too high might result in endless and slow
       computations.
     
@@ -1018,7 +933,7 @@ def performTatesAlgorithm(elliptic_curve, coefficient_ring=None,
     pAdics = _init__pAdics(pAdics, base_ring, prime, coefficient_ring)
     S = _init__polynomial_ring(coefficient_ring, pAdics)
     variables = _init__variables(S)
-    T = _init__initial_values(initial_values, pAdics, variables, coPrimality)
+    T = _init__initial_values(initial_values, pAdics, variables)
     newCases, doneCases = _init__cases(T, elliptic_curve)
     only_calculate = _init__str_list(only_calculate)
     

@@ -179,8 +179,8 @@ print f # Not tried, way too big
 ### 2,3-isogeny parameter 1
 # CM-curve
 
-### 3-isogeny parameter 2
-E = Qcurve_with_3_isogeny(-6)
+### 2,3-isogeny parameter 2
+E = Qcurve_with_2_3_isogeny(2)
 E = E.decomposable_twist() # Takes too long!
 if (7^5).divides(E.conductor_restriction_of_scalars()):
     E = E.twist(QQ(5))
@@ -188,18 +188,18 @@ f, twists = E.newform()
 print f.Level() # 
 print f #
 
-### 3-isogeny parameter 3
+### 2,3-isogeny parameter 3
 # CM-curve
 
-### 3-isogeny parameter -1
+### 2,3-isogeny parameter -1
 # Not a Q-curve!
 
-### 3-isogeny parameter -2
-E = Qcurve_with_3_isogeny(-1)
+### 2,3-isogeny parameter -2
+E = Qcurve_with_2_3_isogeny(-2)
 E = E.complete_definition_twist([-2,-3])
 E = E.decomposable_twist()
 f, twists = E.newform()
 print f.Level() # 2304 = 2^8 * 3^2
 print f # q + 1/3335808*(-81*a^7 - 20*a^6 + 306*a^5 - 26616*a^4 - 152604*a^3 - 1406256*a^2 - 6279048*a + 2817760)*q^5 + 1/130560*(-4*a^7 + 3*a^6 - 1434*a^4 - 5904*a^3 - 70908*a^2 - 356800*a + 170568)*q^7 + 1/1308160*(5*a^7 - 24*a^6 - 246*a^5 + 2400*a^4 + 1244*a^3 - 58848*a^2 + 77816*a - 3780864)*q^11 + O(q^12)
 
-### 3-isogeny parameter -3
+### 2,3-isogeny parameter -3

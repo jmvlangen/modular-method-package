@@ -170,6 +170,41 @@ class pAdicBase(SageObject):
             
         """
         return self._P
+
+    def prime_below(self, R):
+        r"""
+        Gives the prime that lies below the prime of this
+        pAdicBase.
+
+        INPUT:
+        
+        - ``R`` -- A subring of the number field of this
+          pAdicBase.
+
+        OUTPUT:
+
+        A prime of the ring of fractions of R that lies
+        below the prime stored in this pAdicBase.
+        """
+        K = R.field_of_fractions()
+        L = self.number_field()
+        Q = self.prime_ideal()
+        if L is QQ:
+            p = Q.gens()[0]
+        else:
+            p = Q.smallest_integer()
+        if K == QQ:
+            return p
+        ls = K.gen().minpoly().change_ring(L).roots()
+        if len(ls) < 1:
+            raise ValueError("%s is not a subring of %s"%(R,
+                                                          L))
+        iota = K.hom([ls[0][0]], L)
+        for P in K.primes_above(p):
+            PL = L.ideal([iota(g) for g in P.gens()])
+            if Q in L.primes_above(PL):
+                return P
+        raise ValueError("No prime in %s lies below %s"%(K, Q))
         
     def uniformizer(self):
         r"""

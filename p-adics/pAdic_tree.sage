@@ -105,7 +105,7 @@ class pAdicNode(SageObject):
           be the root of a p-adic tree.
         - ``children`` -- A pAdicNodeCollection or None
           (default: None). If it is a pAdicNodeCollection it
-          should be the collection of childrren of this node. If
+          should be the collection of children of this node. If
           it is None it will be initialized as an empty or full
           connection depending on the argument ``full``
         - ``pAdics`` -- A pAdicBase object or None (default:None).
@@ -1661,13 +1661,12 @@ class pAdicTree(SageObject):
     level `l` in this tree describes the value of
     `(x_1, \ldots, x_n)` modulo `P^l`, where `P` is the prime
     ideal asssociated to the p-adics of this tree.
-    
-    Besides storing this data, the pAdicTree has options to
-    manipulate this data, for example by limiting it to roots
-    of certain polynomials or by reordering the variables.
-    Furthermore this object can perform set theoretic
-    operations on trees, interpreting them as subsets of a
-    p-adic space.
+
+    The tree stored in a p-Adic tree should be considered to
+    be immutable and this data structure should also be
+    treated as such. Any methods in this class that would
+    give a different tree perform their operations on a copy
+    of this tree.
     
     ..SEEALSO:
         
@@ -1711,7 +1710,7 @@ class pAdicTree(SageObject):
             raise ValueError("Must specify names of variables")
         if not hasattr(variables, '__iter__'):
             variables = [variables]
-        variables = list(variables)
+        self._variables = tuple(variables)
         
         if root is None:           
             if pAdics is None:
@@ -1731,47 +1730,38 @@ class pAdicTree(SageObject):
         if width != self._root.width:
             raise ValueError("The width must be equal to that of the root.")
         if width != len(variables):
-            raise ValueError("The width must be equal to the number of variables.")
-            
-        self._polynomial_ring = PolynomialRing(root.pAdics().number_field(),
-                                               width, variables)
+            raise ValueError("The width must be equal to the number of variables.")            
                                                
     def _repr_(self):
         return ("pAdic tree over %s\n"%self.pAdics().number_field()) + \
         ("for the prime %s\n"%self.pAdics().prime_ideal()) + \
-        ("and the variables %s."%(self._polynomial_ring.gens(),))
-            
-    def fill(self):
-        r"""
-        Fills the tree such that it becomes full.
-        
-        This changes the root of this tree to a full node.
-        """
-        self._root = pAdicNode(pAdics=self.pAdics(), full=True,
-                               width=self._polynomial_ring.ngens())
+        ("and the variables %s."%(self._variables,))
     
-    def empty(self):
-        r"""
-        Makes the tree empty.
-        
-        This changes the root of this tree to an empty node.
-        """
-        self._root = pAdicNode(pAdics=self.pAdics(), full=False,
-                               width=self._polynomial_ring.ngens())
-        
     def root(self):
         r"""
         Returns the root of this tree.
+
+        NOTE:
+        
+        To make sure the internal structure of the tree can not be
+        modified, this returns a copy of the root rather than the
+        root itself.
         
         OUTPUT:
         
-        The unique level 0 pAdicNode in this tree.
+        A copy of the unique level 0 pAdicNode in this tree.
         """
-        return self._root
+        return self._root.copy()
         
     def nodes_at_level(self, level):
         r"""
         Gives a list of the nodes in this tree at a certain level.
+
+        NOTE:
+
+        Will return the nodes as part of a tree that is a copy of
+        the one stored in this pAdicTree, to prevent accidental
+        modification of the internal structure of this tree.
         
         INPUT:
         
@@ -1786,7 +1776,7 @@ class pAdicTree(SageObject):
         
             :func:`pAdicNode.children_at_level`
         """
-        return self._root.children_at_level(level)
+        return self.root().children_at_level(level)
         
     def pAdics(self):
         r"""
@@ -1796,60 +1786,47 @@ class pAdicTree(SageObject):
         The pAdicBase object corresponding to this node.
         """
         return self._root.pAdics()
-        
-    def polynomial_ring(self):
-        r"""
-        Returns a polynomial ring over the variables in
-        this tree.
-        
-        OUTPUT:
-        
-        A polynomial ring over self.pAdics().number_field()
-        with as variables self.variables()
-        """
-        return self._polynomial_ring
-        
+                
     def variables(self):
         r"""
         Gives the variables associated to this p-adic tree.
         
         OUTPUT:
         
-        A list of variables associated to this tree.
-        They are ordered as they are ordered in this tree.
+        A tuple of names of the variables associated to this
+        tree. They are ordered as they are ordered in this tree.
         """
-        return list(self._polynomial_ring.gens())
-    
-    def variable_names(self):
-        r"""
-        Gives the names of the variables associated to this
-        p-adic tree.
-        
-        OUTPUT:
-        
-        A list of which the n-th entry is the name of
-        the n-th variable of this tree, as returned by
-        :func:`variables`.
-        """
-        return list(self._polynomial_ring.variable_names())
+        return self._variables
         
     def add_variables(self, variables):
         r"""
-        Adds a (list of) variable(s) to this tree.
+        Adds a (list) of variable(s) to this tree.
         
-        Variables will be added only if they are not
-        already associated with this tree. The new
-        variables will be after the already existing
-        variables in this object, in the order they
-        were given. The new variables will be assumed
-        to have all possible values and the nodes in
-        this tree will be changed accordingly.
+        Will construct a new tree that is the same
+        as this one, but with any new variables given
+        added at the end. Any given variable will
+        only be added if it did not already exist
+        in the current tree. The order of the newly
+        added variables will remain the same. Newly
+        added variables will be assumed to attain
+        any possible value.
         
         INPUT:
         
         - ``variables`` -- An iterable object of
-          variables, i.e. generators of some polynomial
-          ring, that should be added to this tree.
+          names for variables. These should be unique
+          strings.
+
+        OUTPUT:
+  
+        A pAdicTree with the following characteristics:
+         - The variables of this tree are in this order:
+           the variables of this tree in order and then
+           any variables given in variables that are not
+           already part of this tree in order.
+         - For each value associated to the variables
+           in this tree there are all the possible values
+           for the variables in the returned tree.
         """
         if not hasattr(variables, '__iter__'):
             variables = [variables]
@@ -1857,19 +1834,18 @@ class pAdicTree(SageObject):
         for var in variables:
             if var not in new_variables:
                 new_variables.append(var)
-        self._polynomial_ring = PolynomialRing(self.pAdics().number_field(),
-                                               new_variables)
-                                               
-        self._root = self._root.extend(len(variables))
+        return pAdicTree(variables=new_variables,
+                         root=self.root().extend_variables(len(new_variables)))
         
     def remove_variables(self, variables):
         r"""
         Removes a (list of) variable(s) from this tree.
         
-        Variables will only be removed if they were
-        associated to this tree in this tree beforehand.
-        The remaining variables in this tree will remain
-        in the order they were before.
+        Will return a tree that is this tree with all
+        the given variables removed from them. Variables
+        are only removed if they were part of this tree
+        to begin with. The order of the remaining
+        variables will be the same as in this tree.
         
         The nodes in this tree will be changed accordingly,
         assuming that removing these variables corresponds
@@ -1884,35 +1860,49 @@ class pAdicTree(SageObject):
         INPUT:
         
         - ``variables`` -- An iterable object containing
-          the variables that have to be removed.
+          the names of the variables that have to be removed.
+
+        OUTPUT:
+
+        A pAdicTree satisfying the following:
+         - Its variables are the same as those in this tree
+           except for the ones among the given variables.
+           Furthermore their order is the same as it is in
+           this tree.
+         - The values associated to these variables are all
+           those for which there exist a value in this tree
+           in which the same variables have that value.
         """
         if not hasattr(variables, '__iter__'):
             variables = [variables]
         all_variables = self.variables()
-        variables_to_keep = all_variables
+        variables_to_keep = list(all_variables)
         for var in variables:
-            variables_to_keep.remove(var)       
+            if var in variables_to_keep:
+                variables_to_keep.remove(var)     
         indices = [all_variables.index(var) for var in variables_to_keep]
-        self._polynomial_ring = PolynomialRing(self.pAdics().number_field(),
-                                               variables_to_keep)
-        self._root = self._root.limit_variables(indices)
+        return pAdicTree(variables=variables_to_keep,
+                         root=self.root().limit_variables(indices))
         
     def resort_variables(self, variables):
         r"""
         Resorts the variables in this tree.
 
-        Changes the order of the variables in this pAdicTree
-        to correspond to a given order given by the user,
-        specified by an ordered list of the variables.
-        
+        Gives a pAdicTree with the same variables as in this
+        tree, except that the ordering is the same as the
+        ordering given.
+
         INPUT:
 
-        - ``variables`` -- An iterable object, e.g. list, containing the variables
-                           of this pAdicTree. The variables should be in the
-                           order that they have to be in after this method is done.
+        - ``variables`` -- A iterable object, containing
+          the names of the variables in this tree exactly
+          ones and ordered in the preferred ordering.
 
-        EXAMPLES:
+        OUTPUT:
 
+        A pAdicTree with as variables those given in the
+        same order as they are given. These variables are
+        given the same values as they had in this tree.
         """
         if not hasattr(variables, '__iter__'):
             variables = [variables]
@@ -1925,181 +1915,208 @@ class pAdicTree(SageObject):
                            for i in range(self._root.width)]
         except ValueError:
             raise ValueError("The variables %s and %s do not correspond 1 to 1."%(variables, myvars))
-        self._polynomial_ring = PolynomialRing(self.pAdics().number_field(),
-                                               variables)
-        self.root().resort_coefficients(permutation)
+        return pAdicTree(variables=variables,
+                         root=self.root().resort_coefficients(permutation))
         
     def change_variables_to(self, variables, ignore_order=False):
         r"""
-        Changes the variables to a given set of new variables.
-        This includes removing variables not given,
-        add additional variables given and
-        resort variables as given (unless ignore_order is True).
+        Changes the variables to a given set of variables.
+
+        Performs the actions of adding, removing and reordering
+        variables to obtain a pAdicTree with variables matching
+        the given argument variables.
+
+        INPUT
+
+        - ``variables`` -- An iterable object of names of
+          variables. These are the variables the final tree
+          should have in the order it should have them.
+        - ``ignore_order`` -- A boolean (default: False)
+          indicating whether the order of the variables
+          should be ignored.
+
+        OUTPUT:
+
+        A pAdicTree satisfying the following properties:
+         - The variables of the returned tree are those
+           specified in the argument variables. If
+           ignore_order was set to False they are also
+           in the same order.
+         - The values of the returned tree are such that
+           any variable that was not in the original tree
+           can have any possible value and any variable
+           that was part of the original tree can only have
+           values for which there was an appropiate value
+           in the original tree.
         """
         if not hasattr(variables, '__iter__'):
             variables = [variables]
-        variables = list(variables)
+        variables = tuple(variables)
         varSet = Set(variables)
         myVarSet = Set(self.variables())
         removeSet = myVarSet - varSet
+        result = self
         if removeSet.cardinality() > 0:
-            self.remove_variables(removeSet)
+            result = result.remove_variables(removeSet)
         addSet = varSet - myVarSet
         if addSet.cardinality() > 0:
-            self.add_variables(addSet)
+            result = result.add_variables(addSet)
         if not ignore_order and self.variables() != variables:
-            self.resort_variables(variables)
-        
-    def apply_polynomial_restriction(self, polynomial, pAdics=None,
-                                     precision=20, verbose=False):
-        r"""
-        Restricts the entries in this tree to those being roots
-        of a given polynomial
-        """
-        myvars = list(self.variables())
-        variables = []
-        for var in polynomial.variables():
-            if var not in variables:
-                variables.append(var)
-        for var in myvars:
-            if var not in variables:
-                variables.append(var)
-        self.change_variables_to(variables)
-        if pAdics is None:
-            pAdics = self.pAdics()
-        S = PolynomialRing(pAdics.number_field(), variables)
-        polynomial = S(polynomial)
-        self._root, Tno = find_pAdicRoots(polynomial,
-                                          pAdics = pAdics,
-                                          variables=self.variables(),
-                                          value_tree=self._root,
-                                          precision=precision,
-                                          verbose=verbose)
-        self.change_variables_to(myvars)
-                                          
-    def apply_polynomial_anti_restriction(self, polynomial, pAdics=None,
-                                          precision=20, verbose=False):
-        r"""
-        Restricts the entries in this tree to those NOT being roots
-        of a given polynomial
-        """
-        myvars = list(self.variables())
-        variables = []
-        for var in polynomial.variables():
-            if var not in variables:
-                variables.append(var)
-        for var in myvars:
-            if var not in variables:
-                variables.append(var)
-        self.change_variables_to(variables)
-        if pAdics is None:
-            pAdics = self.pAdics()
-        S = PolynomialRing(pAdics.number_field(), variables)
-        polynomial = S(polynomial)
-        Tyes, self._root = find_pAdicRoots(polynomial,
-                                           pAdics = pAdics,
-                                           variables=self.variables(),
-                                           value_tree=self._root,
-                                           precision=precision,
-                                           verbose=verbose)
-        self.change_variables_to(myvars)
-                                          
-    def apply_congruence_restriction(self, variable, values, modulo):
-        r"""
-        Restricts the entries in this tree to those for which a
-        given variable satistifies a given congruence relation.
-        """
-        power = self.pAdics().valuation(modulo)
-        if power > 0:
-            index = self.variables().index(variable)
-            R = self.pAdics().quotient_ring(power)
-            if not hasattr(values, '__iter__'):
-                values = [values]
-            values = [R(value) for value in values]
-            for node in self.nodes_at_level(power):
-                if node.quotient_tuple()[index] not in values:
-                    node.remove()
-                
-    def apply_congruence_anti_restriction(self, variable, values, modulo):
-        r"""
-        Restricts the entries in this tree to those for which a
-        given variable DOES NOT satistify a given congruence relation.
-        """
-        power = self.pAdics().valuation(modulo)
-        if power > 0:
-            index = self.variables().index(variable)
-            R = self.pAdics().quotient_ring(power)
-            if not hasattr(values, '__iter__'):
-                values = [values]
-            values = [R(value) for value in values]
-            for node in self.nodes_at_level(power):
-                if node.quotient_tuple()[index] in values:
-                    node.remove()
-                
-    def apply_coprimality_restriction(self, variables=None, coPrimality=2):
-        if variables is None:
-            variables = self.variables()
-        all_vars = self.variables()
-        indices = [all_vars.index(var) for var in variables]
-        for node in self.nodes_at_level(1):
-            cfs_all = node.quotient_tuple()
-            cfs_list = [cfs_all[i] for i in indices]
-            if _count_zeroes(cfs_list) >= coPrimality:
-                node.remove()
-                            
-    def apply_coprimality_anti_restriction(self, variables=None, coPrimality=2):
-        if variables is None:
-            variables = self.variables()
-        all_vars = self.variables()
-        indices = [all_vars.index(var) for var in variables]
-        for node in self.nodes_at_level(1):
-            cfs_all = node.quotient_tuple()
-            cfs_list = [cfs_all[i] for i in indices]
-            if _count_zeroes(cfs_list) < coPrimality:
-                node.remove()
-                
+            result = result.resort_variables(variables)
+        return result
+
+    @cached_method
     def give_as_congruence_condition(self):
-        m = self.root().minimum_full_level()
-        values = []
+        m = self._root.minimum_full_level()
+        values = [node.representative() for node in self._root.children_at_level(m)]
         modulus = self.pAdics().prime_ideal()^m
-        for node in self.nodes_at_level(m):
-            values.append(node.representative())
         values.sort()
         return values, modulus
         
     def _check_similar_tree(self, other):
+        r"""
+        Checks whether two trees have the same pAdics.
+
+        INPUT:
+
+        - ``other`` -- Some object.
+
+        OUTPUT:
+
+        TRUE - If object is a pAdicTree using the same
+               pAdicBase as this pAdicTree.
+        FALSE - In all other cases.
+
+        """
         if not isinstance(other, pAdicTree):
             raise ValueError("The argument %s is not a pAdicTree."%(other,))
         if self.pAdics() != other.pAdics():
             raise ValueError("The two trees don't have the same pAdics.")
         
     def _get_similar_trees(self, other):
+        r"""
+        Turns two trees into trees with the same variables.
+
+        INPUT:
+
+        - ``other`` - A pAdicTree using the same pAdicBase
+          object as this pAdicTree.
+
+        OUTPUT:
+
+        A tuple of pAdicTree's with the same variables and
+        pAdics. The first has the same values for the variables
+        as this tree, whilst the second has the same values for
+        the variables in the pAdicTree other. The variables
+        are the union of the sets of variables of both these
+        original trees.
+        """
         self._check_similar_tree(self, other)
-        T1 = self.copy()
-        T2 = other.copy()
-        variables = Set(self.variables() + other.variables())
-        variables = list(variables)
-        T1.change_variables_to(variables)
-        T2.change_variables_to(variables)
-        return T1, T2
+        variables = list(self.variables())
+        for var in other.variables():
+            if var not in variables:
+                variables.append(var)
+        return self.change_variables_to(variables), \
+               other.change_variables_to(variables)
         
     def copy(self):
-        return pAdicTree(variables=self.variables(), root=self.root().copy())
+        r"""
+        Makes a copy of this pAdicTree.
+
+        OUTPUT:
+
+        A pAdicTree that contains the same variables
+        and values as this pAdicTree.
+        """
+        return pAdicTree(variables=self.variables(), root=self.root())
         
     def union(self, other):
+        r"""
+        Gives the union of two pAdicTree's.
+
+        INPUT:
+
+        - ``other`` -- A pAdicTree using the same
+          pAdicBase as this pAdicTree.
+
+        OUTPUT:
+
+        A pAdicTree satisfying the following properties
+        - The pAdics of that tree are the same as those
+          for this tree.
+        - The variables of that tree are the union of the
+          variables of this tree and the given tree other.
+        - For each value in that tree, there is either a
+          value in this tree which assigns the same values
+          to the same variables or a value in the given tree
+          other which assigns the same values to the same
+          variables.
+        """
         T1, T2 = self._get_similar_trees(other)
-        T1.root().merge(T2.root())
-        return T1
+        return pAdicTree(variables=T1.variables(), root=T1.root().merge(T2.root()))
         
     def intersection(self, other):
+        r"""
+        Gives the intersection of two pAdicTree's.
+
+        INPUT:
+
+        - ``other`` -- A pAdicTree using the same
+          pAdicBase as this pAdicTree.
+
+        OUTPUT:
+
+        A pAdicTree satisfying the following properties
+        - The pAdics of that tree are the same as those
+          for this tree.
+        - The variables of that tree are the union of the
+          variables of this tree and the given tree other.
+        - For each value in that tree, there is both a
+          value in this tree which assigns the same values
+          to the same variables and a value in the given tree
+          other which assigns the same values to the same
+          variables.
+        """
         T1, T2 = self._get_similar_trees(other)
-        T1.root().limit_to(T2.root())
-        return T1
+        return pAdicTree(variables=T1.variables(), root=T1.root().limit_to(T2.root()))
         
     def difference(self, other):
+        r"""
+        Gives the difference of two pAdicTree's.
+
+        INPUT:
+
+        - ``other`` -- A pAdicTree using the same
+          pAdicBase as this pAdicTree.
+
+        OUTPUT:
+
+        A pAdicTree satisfying the following properties
+        - The pAdics of that tree are the same as those
+          for this tree.
+        - The variables of that tree are the union of the
+          variables of this tree and the given tree other.
+        - For each value in that tree, there is  a value in
+          this tree which assigns the same values to the
+          same variables and not a value in the given tree
+          other which assigns the same values to the same
+          variables.
+        """
         T1, T2 = self._get_similar_trees(other)
-        T1.root().cut(T2.root())
-        return T1
+        return pAdicTree(variables=T1.variables(), root=T1.root().cut(T2.root()))
         
     def complement(self):
+        r"""
+        Gives the complement of this pAdicTree.
+
+        OUTPUT:
+
+        A pAdicTree satisfying the following properties
+        - The pAdics of that tree are the same as those
+          for this tree.
+        - The variables of that tree are the same as those
+          of this tree.
+        - For each value not in this tree, there is a value
+          in the returned tree and vice versa.
+        """
         return pAdicTree(variables=self.variables(), root=self.root().complement())
