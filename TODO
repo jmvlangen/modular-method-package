@@ -1,0 +1,40 @@
++ In AndCondition fix problem with _repr_ printing the left wrong
++ In FreyCurve fix not reading a PolynomialRing correctly
++ In FreyCurve.primes_of_possible_additive_reduction:
+   TypeError: resultant for non-homogeneous polynomials is not supported
++ In FreyCurve.primes_of_possible_additive_reduction:
+   TypeError: object of type 'generator' has no len()
++ In FreyCurve.primes_of_possible_additive_reduction:
+   Print warning also in case K == QQ
++ In FreyCurve.conductor_exponent:
+   NameError: global name '_initial_tree' is not defined
++ In pAdicBase.prime_below:
+   AttributeError: 'sage.rings.integer_ring.IntegerRing_class' object has no attribute 'field_of_fractions'
+   field_of_fractions must be fraction_field everywhere!
++ In FreyCurve._initial_tree or Condition.pAdicTree:
+   TypeError: pAdic_tree() got multiple values for keyword argument 'pAdic_tree'
++ In PolynomialCondition.pAdic_tree:
+   NameError: global name 'variables' is not defined
++ In PolynomialCondition.pAdic_tree:
+   ValueError: variable name 'bp' appears more than once
++ In pAdicTree._get_similar_tree:
+   TypeError: _check_similar_tree() takes exactly 2 arguments (3 given)
++ In pAdicTree._get_similar_tree:
+   ValueError: At least the argument prime must be set.
+   merge, cut and limit_to do not return a node
++ In pAdicNode._limit_to:
+   maximum recursion depth exceeded
++ in performTatesAlgorithm:
+   TypeError: _init__initial_values() takes exactly 4 arguments (3 given)
++ in ConditionalExpression:
+   <repr(<__main__.ConditionalExpression at 0x7f1af8f85890>) failed: TypeError: 'sage.misc.cachefunc.CachedMethodCallerNoArgs' object is not iterable>
+  in TreeCondition:
+     missing brackets for T.give_as_congruence_condition()
++ In FreyCurve.conductor:
+   Only return the conductor
++ In pAdicNode:
+   Make weakreferences for correct garbage collection
++ In TreeCondition:
+    Make a custom length _repr_ method
++ in FreyCurve._initial_tree:
+    Do we pass the right ring?

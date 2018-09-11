@@ -186,7 +186,7 @@ class pAdicBase(SageObject):
         A prime of the ring of fractions of R that lies
         below the prime stored in this pAdicBase.
         """
-        K = R.field_of_fractions()
+        K = R.fraction_field()
         L = self.number_field()
         Q = self.prime_ideal()
         if L is QQ:

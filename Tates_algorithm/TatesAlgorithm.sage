@@ -814,7 +814,7 @@ def _init__polynomial_ring(coefficient_ring, pAdics):
 def _init__variables(polynomial_ring):
     return list(polynomial_ring.gens())
     
-def _init__initial_values(initial_values, pAdics, variables, coPrimality):
+def _init__initial_values(initial_values, pAdics, variables):
     if initial_values is None:
         initial_values = pAdicTree(pAdics=pAdics, full=True,
                                    variables=variables)

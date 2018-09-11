@@ -17,7 +17,7 @@ class FreyCurve(EllipticCurve_generic):
     curve and the variables represent the values of the
     solution.
     """
-    def __init__(self, curve, solution_ring=ZZ, conversion=None, condition=None):
+    def __init__(self, curve, parameter_ring=ZZ, conversion=None, condition=None):
         r"""
         Constructor of a Frey curve
 
@@ -27,7 +27,7 @@ class FreyCurve(EllipticCurve_generic):
           polynomial ring or any argument that would produce
           such a curve when passed to the constructor
           EllipticCurve. This will become the Frey curve.
-        - ``solution_ring`` -- A ring (default: ZZ) that
+        - ``parameter_ring`` -- A ring (default: ZZ) that
           has a natural map into the base ring of the
           polynomial ring over which this elliptic curve
           is defined. This is the ring in which the variables
@@ -50,17 +50,17 @@ class FreyCurve(EllipticCurve_generic):
         if not isinstance(curve, EllipticCurve_generic):
             curve = EllipticCurve(curve)
         S = curve.base_ring()
-        if not is_PolynomialRing(S) or is_MpolynomialRing(S):
+        if not (is_PolynomialRing(S) or is_MPolynomialRing(S)):
             raise ValueError("The coefficient ring %s is not a polynomial ring."%S)
         base = S.base_ring()
         EllipticCurve_generic.__init__(self, S, curve.a_invariants())
-        self._R = solution_ring
+        self._R = parameter_ring
         if conversion is None:
-            conversion = base.coerce_map_from(solution_ring)
+            conversion = base.coerce_map_from(parameter_ring)
         if conversion is None:
-            conversion = base.convert_map_from(solution_ring)
+            conversion = base.convert_map_from(parameter_ring)
         if conversion is None:
-            conversion = Hom(solution_ring, base).an_element()
+            conversion = Hom(parameter_ring, base).an_element()
         self._R_to_base = conversion
         self._condition = condition
 
@@ -92,6 +92,17 @@ class FreyCurve(EllipticCurve_generic):
         """
         return self.base().gens()
 
+    def parameter_ring(self):
+        r"""
+        Gives the ring in which the parameters can take values.
+
+        OUTPUT:
+
+        A ring in which the parameters of this Frey curve take
+        values. 
+        """
+        return self._R
+
     @cached_method
     def primes_of_possible_additive_reduction(self):
         r"""
@@ -114,14 +125,17 @@ class FreyCurve(EllipticCurve_generic):
         if K.is_subring(QQ):
             if n == 1:
                 return QQ(c4.resultant(D)).numerator().prime_factors()
-            elif n == 2:
+            elif n == 2 and c4.is_homogeneous() and D.is_homogeneous():
                 return QQ(c4.macaulay_resultant(D)).numerator().prime_factors()
             else:
                 N = lcm(lcm(QQ(c).denominator() for c in c4.coefficients()),
                         lcm(QQ(c).denominator() for c in D.coefficients()))
-                M = gcd(gcd(ZZ(c) for c in (N * c4).coefficients()),
-                        gcd(ZZ(c) for c in (N * D).coefficients()))
-                return QQ(M/N).numerator().prime_factors()
+                M = gcd(gcd([ZZ(c) for c in (N * c4).coefficients()]),
+                        gcd([ZZ(c) for c in (N * D).coefficients()]))
+                result = QQ(M/N).numerator().prime_factors()
+                print "Warning: Assuming that %s and %s "%(c4,D) + \
+                      "are coprime outside %s."%(tuple(result),)
+                return result
         if n == 1:
             return K.ideal(c4.resultant(D)).prime_factors()
         elif n == 2 and c4.is_homogeneous() and D.is_homogeneous():
@@ -154,9 +168,8 @@ class FreyCurve(EllipticCurve_generic):
         A pAdicTree containing all the possible values of the
         the parameters in the completion at the given prime.
         """
-        pAdics = pAdicBase(self.definition_ring(), prime)
         Tfull = pAdicTree(variables=self.parameters(),
-                          prime=pAdics.prime_below(self._R))
+                          pAdics=pAdicBase(self._R, prime))
         return self._condition.pAdic_tree(pAdic_tree=Tfull, verbose=verbose)
 
     @cached_method(key=lambda self, prime, verbose, precision_cap: (prime, precision_cap))
@@ -187,12 +200,16 @@ class FreyCurve(EllipticCurve_generic):
         pAdics = pAdicBase(self.definition_ring(), prime)
         Tp = _initial_tree(pAdics.prime_below(self._R),
                            verbose=verbose)
-        return performTatesAlgorithm(self,
-                                     initial_values=Tp,
-                                     coefficient_ring=self.base(),
-                                     pAdics=pAdics,
-                                     verbose=verbose,
-                                     precision_cap=precision_cap)
+        result = performTatesAlgorithm(self,
+                                       initial_values=Tp,
+                                       coefficient_ring=self.base(),
+                                       pAdics=pAdics,
+                                       verbose=verbose,
+                                       precision_cap=precision_cap)
+        if len(result) == 1:
+            return result[0][0]
+        else:
+            return result
 
     @cached_method(key=lambda self, prime, verbose, precision_cap: (prime, precision_cap))
     def minimal_model(self, prime, verbose=False, precision_cap=20):
@@ -239,13 +256,17 @@ class FreyCurve(EllipticCurve_generic):
         pAdics = pAdicBase(self.definition_ring(), prime)
         Tp = _initial_tree(pAdics.prime_below(self._R),
                            verbose=verbose)
-        return performTatesAlgorithm(self,
-                                     initial_values=Tp,
-                                     coefficient_ring=self.base(),
-                                     pAdics=pAdics,
-                                     verbose=verbose,
-                                     precision_cap=precision_cap,
-                                     only_calculate=['minimal_model'])
+        result = performTatesAlgorithm(self,
+                                       initial_values=Tp,
+                                       coefficient_ring=self.base(),
+                                       pAdics=pAdics,
+                                       verbose=verbose,
+                                       precision_cap=precision_cap,
+                                       only_calculate=['minimal_model'])
+        if len(result) == 1:
+            return result[0][0][0]
+        else:
+            return ConditionalValue([(val[0], con) for val, con in result])
 
     @cached_method(key=lambda self, prime, verbose, precision_cap: (prime, precision_cap))
     def kodaira_symbol(self, prime, verbose=False, precision_cap=20):
@@ -292,13 +313,17 @@ class FreyCurve(EllipticCurve_generic):
         pAdics = pAdicBase(self.definition_ring(), prime)
         Tp = _initial_tree(pAdics.prime_below(self._R),
                            verbose=verbose)
-        return performTatesAlgorithm(self,
-                                     initial_values=Tp,
-                                     coefficient_ring=self.base(),
-                                     pAdics=pAdics,
-                                     verbose=verbose,
-                                     precision_cap=precision_cap,
-                                     only_calculate=['minimal_model'])
+        result = performTatesAlgorithm(self,
+                                       initial_values=Tp,
+                                       coefficient_ring=self.base(),
+                                       pAdics=pAdics,
+                                       verbose=verbose,
+                                       precision_cap=precision_cap,
+                                       only_calculate=['minimal_model'])
+        if len(result) == 1:
+            return result[0][0][0]
+        else:
+            return ConditionalValue([(val[0], con) for val, con in result])
     
     @cached_method(key=lambda self, prime, verbose, precision_cap: (prime, precision_cap))
     def conductor_exponent(self, prime, verbose=False, precision_cap=20):
@@ -340,18 +365,25 @@ class FreyCurve(EllipticCurve_generic):
                         break
                 if flag:
                     result.append((data.conductor_valuation(), T))
-            return ConditionalValue(result)
+            if len(result) == 1:
+                return result[0]
+            else:
+                return ConditionalValue(result)
         
         pAdics = pAdicBase(self.definition_ring(), prime)
-        Tp = _initial_tree(pAdics.prime_below(self._R),
-                           verbose=verbose)
-        return performTatesAlgorithm(self,
-                                     initial_values=Tp,
-                                     coefficient_ring=self.base(),
-                                     pAdics=pAdics,
-                                     verbose=verbose,
-                                     precision_cap=precision_cap,
-                                     only_calculate=['conductor'])
+        Tp = self._initial_tree(pAdics.prime_below(self._R),
+                                verbose=verbose)
+        result = performTatesAlgorithm(self,
+                                       initial_values=Tp,
+                                       coefficient_ring=self.base(),
+                                       pAdics=pAdics,
+                                       verbose=verbose,
+                                       precision_cap=precision_cap,
+                                       only_calculate=['conductor'])
+        if(len(result) == 1):
+            return result[0][0][0]
+        else:
+            return ConditionalValue([(val[0], con) for val,con in result])
 
     def conductor(self, additive_primes=None, verbose=False,
                   precision_cap=20):
@@ -385,8 +417,7 @@ class FreyCurve(EllipticCurve_generic):
         result = product(P^self.conductor_exponent(P, verbose=verbose,
                                                  precision_cap=precision_cap)
                          for P in additive_primes)
-        result *= "Rad_P( " + str(self.discriminant().factor()) + " )"
-        return result, additive_primes
+        return ConditionalExpression(['*','\cdot',2], result, "Rad_P( " + str(self.discriminant().factor()) + " )")
         
 class FreyCurveLocalData(EllipticCurveLocalData):    
     def __init__(self, elliptic_curve, prime,

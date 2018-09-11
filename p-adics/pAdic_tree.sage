@@ -15,6 +15,7 @@ AUTHORS:
 - Joey van Langen (2018-07-13): initial version
 
 """
+import weakref
 
 # ****************************************************************************
 #       Copyright (C) 2018 Joey van Langen <j.m.van.langen@outlook.com>
@@ -151,7 +152,7 @@ class pAdicNode(SageObject):
             else:
                 raise ValueError("The argument coefficients is not a tuple.")
         elif isinstance(parent, pAdicNode):
-            self._parent = parent
+            self._parent = weakref.ref(parent)
             self._pAdics = parent.pAdics()
             self.width = parent.width
             if coefficients is None:
@@ -223,7 +224,7 @@ class pAdicNode(SageObject):
         
         """
         self._check_similar_node(parent)
-        self._parent = parent
+        self._parent = weakref.ref(parent)
         #reset variables that are not correct after changing the parent
         self._update_sub_tree()
         
@@ -251,7 +252,9 @@ class pAdicNode(SageObject):
         A pAdicNode object that is the parent of this node
         or None if it has no parent.
         """
-        return self._parent
+        if self._parent is None:
+            return None
+        return self._parent()
         
     def is_root(self):
         r"""
@@ -848,6 +851,10 @@ class pAdicNode(SageObject):
         Only for internal use. For limiting use func:`limit_to`
         instead.
         """
+        if self.is_full():
+            self.children = other.children.copy()
+            self.children.update_parent(self)
+            return
         removal_list = []
         for child in self.children:
             if other.children.contains(child.coefficients):
@@ -954,9 +961,11 @@ class pAdicNodeCollection(SageObject):
         if parent is None and pAdics is None:
             raise ValueError("Should specify pAdics.")
         if isinstance(parent, pAdicNode):
+            self._parent = weakref.ref(parent)
             self._pAdics = parent.pAdics()
             self.width = parent.width
         elif parent is None:
+            self._parent = None
             if isinstance(pAdics, pAdicBase):
                 self._pAdics = pAdics
             else:
@@ -968,7 +977,6 @@ class pAdicNodeCollection(SageObject):
         else:
             raise ValueError("%s is not a pAdicNode"%parent)
         self._dict = {}
-        self.parent = parent
         
     def update_parent(self, parent):
         r"""
@@ -983,7 +991,7 @@ class pAdicNodeCollection(SageObject):
           as its collection of children.
         """
         self._check_pAdic_node(parent)
-        self.parent = parent
+        self._parent = weakref.ref(parent)
         for v in self._dict.itervalues():
             v._set_parent(parent)
             
@@ -1025,6 +1033,18 @@ class pAdicNodeCollection(SageObject):
         this collection.
         """
         return self._pAdics
+
+    def parent(self):
+        r"""
+        Gives the parent of the nodes in this collection.
+        
+        OUTPUT:
+        A pAdicNode object that is the parent of the nodes
+        in this collection or None if they have no parent.
+        """
+        if self._parent is None:
+            return None
+        return self._parent()
                
     def add(self, node):
         r"""
@@ -1044,8 +1064,8 @@ class pAdicNodeCollection(SageObject):
             raise ValueError("A node like %s already exists: %s"%(node,
                                                self._dict[node.coefficients]))
         self._dict[node.coefficients] = node
-        if not self.parent is None:
-            node._set_parent(self.parent)
+        if not self.parent() is None:
+            node._set_parent(self.parent())
         
     def contains(self, coefficients):
         r"""
@@ -1360,8 +1380,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
             raise ValueError("A node like %s already exists."%(node,))
         self._dict[node.coefficients] = node
         self._removed.remove(node.coefficients)
-        if not self.parent is None:
-            node._set_parent(self.parent)
+        if not self.parent() is None:
+            node._set_parent(self.parent())
         
     def contains(self, coefficients):
         r"""
@@ -1401,7 +1421,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
         if coefficients in self._removed:
             raise ValueError("No node with coefficients %s exists."&(coefficients,))
         if coefficients not in self._dict:
-            self._dict[coefficients] = pAdicNode(parent=self.parent,
+            self._dict[coefficients] = pAdicNode(parent=self.parent(),
                                                  coefficients=coefficients,
                                                  full=True,
                                                  pAdics=self.pAdics(),
@@ -1710,7 +1730,7 @@ class pAdicTree(SageObject):
             raise ValueError("Must specify names of variables")
         if not hasattr(variables, '__iter__'):
             variables = [variables]
-        self._variables = tuple(variables)
+        self._variables = tuple(str(v) for v in variables)
         
         if root is None:           
             if pAdics is None:
@@ -2011,7 +2031,7 @@ class pAdicTree(SageObject):
         are the union of the sets of variables of both these
         original trees.
         """
-        self._check_similar_tree(self, other)
+        self._check_similar_tree(other)
         variables = list(self.variables())
         for var in other.variables():
             if var not in variables:
@@ -2053,7 +2073,9 @@ class pAdicTree(SageObject):
           variables.
         """
         T1, T2 = self._get_similar_trees(other)
-        return pAdicTree(variables=T1.variables(), root=T1.root().merge(T2.root()))
+        T = T1.root()
+        T.merge(T2.root())
+        return pAdicTree(variables=T1.variables(), root=T)
         
     def intersection(self, other):
         r"""
@@ -2078,7 +2100,9 @@ class pAdicTree(SageObject):
           variables.
         """
         T1, T2 = self._get_similar_trees(other)
-        return pAdicTree(variables=T1.variables(), root=T1.root().limit_to(T2.root()))
+        T = T1.root()
+        T.limit_to(T2.root())
+        return pAdicTree(variables=T1.variables(), root=T)
         
     def difference(self, other):
         r"""
@@ -2103,7 +2127,9 @@ class pAdicTree(SageObject):
           variables.
         """
         T1, T2 = self._get_similar_trees(other)
-        return pAdicTree(variables=T1.variables(), root=T1.root().cut(T2.root()))
+        T = T1.root()
+        T.cut(T2.root())
+        return pAdicTree(variables=T1.variables(), root=T)
         
     def complement(self):
         r"""

@@ -193,11 +193,14 @@ class PolynomialCondition(Condition_base):
                 big_vars.append(var)
         K = pAdics.number_field()
         K0 = self.polynomial().parent().base()
-        iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
-        S = PolynomialRing(K, variables)
+        if K0.is_subring(QQ):
+            iota = K0.hom(K)
+        else:
+            iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
+        S = PolynomialRing(K, big_vars)
         Tyes, Tno = find_pAdicRoots(S(self.polynomial().change_ring(iota)),
                                     pAdics = pAdics,
-                                    variables=big_vars,
+                                    variables=[S(v) for v in pAdic_tree.variables()],
                                     value_tree=pAdic_tree.root(),
                                     precision=precision,
                                     verbose=verbose)
@@ -505,7 +508,7 @@ class CoprimeCondition(Condition_base):
             pAdics = pAdic_tree.pAdics()
         T = pAdic_tree.root()
         tree_vars = pAdic_tree.variables()
-        indices = tupel(tree_vars.index(var) for var in self.variables() if var in tree_vars)
+        indices = tuple(tree_vars.index(var) for var in self.variables() if var in tree_vars)
         for node in T.children_at_level(1):
             if sum(c == 0 for i,c in enumerate(node.quotient_tuple()) if i in indices) >= self._n:
                 node.remove()
@@ -526,10 +529,10 @@ class CoprimeCondition(Condition_base):
         if self._n == 0:
             return "true"
         if self._n == 1:
-            return "%s are units."%(self.variables(),)
+            return "%s are units"%(self.variables(),)
         if self._n == 2:
-            return "%s are pairwise coprime."%(self.variables(),)
-        return "%s are %s-wise coprime."%(self.variables(),
+            return "%s are pairwise coprime"%(self.variables(),)
+        return "%s are %s-wise coprime"%(self.variables(),
                                           self._n)
         
     def _latex_(self):
@@ -597,7 +600,7 @@ class NotCondition(Condition_base):
         complement of that tree within the given pAdicTree as
         its second argument.
         """
-        TY, TN = self._other.pAdic_tree(self, complement=True, **kwds)
+        TY, TN = self._other.pAdic_tree(complement=True, **kwds)
         if complement:
             return TN, TY
         else:
@@ -724,12 +727,12 @@ class AndCondition(Condition_base):
                                    full=True)
         if pAdics is None:
             pAdics = pAdic_tree.pAdics()
-        T1 = self._left.pAdic_tree(self, pAdic_tree=pAdic_tree,
+        T1 = self._left.pAdic_tree(pAdic_tree=pAdic_tree,
                                    pAdics=pAdics, complement=False,
                                    **kwds)
-        T2 = self._right.pAdic_tree(self, pAdic_tree=pAdic_tree,
-                                   pAdics=pAdics, complement=False,
-                                   **kwds)
+        T2 = self._right.pAdic_tree(pAdic_tree=pAdic_tree,
+                                    pAdics=pAdics, complement=False,
+                                    **kwds)
         T = T1.intersection(T2)
         if complement:
             return T, pAdic_tree.difference(T)
@@ -741,7 +744,7 @@ class AndCondition(Condition_base):
         right_str = right_str[0].lower() + right_str[1:]
         left_str = self._left._repr_()
         if left_str.endswith('.'):
-            left_str = right_str[:-1]
+            left_str = left_str[:-1]
         return left_str + " and " + right_str
 
     def _repr_short(self):
@@ -821,10 +824,10 @@ class OrCondition(Condition_base):
                                    full=True)
         if pAdics is None:
             pAdics = pAdic_tree.pAdics()
-        T1 = self._left.pAdic_tree(self, pAdic_tree=pAdic_tree,
+        T1 = self._left.pAdic_tree(pAdic_tree=pAdic_tree,
                                    pAdics=pAdics, complement=False,
                                    **kwds)
-        T2 = self._right.pAdic_tree(self, pAdic_tree=pAdic_tree,
+        T2 = self._right.pAdic_tree(pAdic_tree=pAdic_tree,
                                    pAdics=pAdics, complement=False,
                                    **kwds)
         T = T1.union(T2)
@@ -838,7 +841,7 @@ class OrCondition(Condition_base):
         right_str = right_str[0].lower() + right_str[1:]
         left_str = self._left._repr_()
         if left_str.endswith('.'):
-            left_str = right_str[:-1]
+            left_str = left_str[:-1]
         return left_str + " or " + right_str
 
     def _repr_short(self):
@@ -916,43 +919,60 @@ class TreeCondition(Condition_base):
         else:
             return result
 
-    def _repr_(self):
-        if l == 0:
-            return "The condition that always holds"
-        values, modulus = self._T.give_as_congruence_condition
-        if has_attr(modulus, 'is_principal') and modulus.is_principal():
-            modulus = modulus.gens_reduced()[0]
-        l = len(self.variables())
-        result = "The condition that " + \
-                 str(self.variables() if l > 1 else self.variables()[0]) + \
-                 " == "
-        for i, value in enumerate(values):
-            if i > 0:
-                result += ", "
-            result += str(value if l > 1 else value[0])
-        result += " modulo " + \
-                  (modulus._repr_short() if hasattr(modulus, '_repr_short') else str(modulus))
-        return result
-               
-    def _repr_short(self):
+    def _repr_len(self, max_item=50, max_char=1000):
+        r"""
+        Gives a string representation of this Condition of at
+        most a given length
+
+        INPUT:
+
+        - ``max_item`` -- A non-negative integer (default: 10)
+          indicating the maximal number of items to be included
+          in this representation.
+        - ``max_char`` -- A non-negative integer (default: 200)
+          giving the maximal number of character to be used in
+          the string representation of this object.
+        """
         l = len(self.variables())
         if l == 0:
             return "true"
-        values, modulus = self._T.give_as_congruence_condition
-        if has_attr(modulus, 'is_principal') and modulus.is_principal():
+        values, modulus = self._T.give_as_congruence_condition()
+        if hasattr(modulus, 'is_principal') and modulus.is_principal():
             modulus = modulus.gens_reduced()[0]
+        if len(values) <= max_item:
+            result = str(self.variables() if l > 1 else self.variables()[0]) + \
+                     " == "
+            for i, value in enumerate(values):
+                if len(result) > max_char:
+                    break
+                if i > 0:
+                    result += ", "
+                result += str(value if l > 1 else value[0])
+            result += " mod " + \
+                  (modulus._repr_short() if hasattr(modulus, '_repr_short') else str(modulus))
+            if len(result) <= max_char:
+                return result
         return str(self.variables() if l > 1 else self.variables()[0]) + \
                " is 1 of " + \
                str(len(values)) + \
                " possibilities mod " + \
                (modulus._repr_short() if hasattr(modulus, '_repr_short') else str(modulus))
+        
+    def _repr_(self):
+        result = "The condition that " + self._repr_len()
+        result.replace("true", "always holds")
+        result.replace("mod", "modulo")
+        return result
+               
+    def _repr_short(self):
+        return self._repr_len(max_item=10, max_char=40)
 
     def _latex_(self):
         l = len(self.variables())
         if l == 0:
             return "\\top"
         values, modulus = self._T.give_as_congruence_condition
-        if has_attr(modulus, 'is_principal') and modulus.is_principal():
+        if hasattr(modulus, 'is_principal') and modulus.is_principal():
             modulus = modulus.gens_reduced()[0]
         result = latex(self.variables() if l > 1 else self.variables()[0]) + \
                  " = "
@@ -1057,10 +1077,13 @@ class ConditionalValue(SageObject):
         return ConditionalExpression(('^','^',4.5), other, self)
 
     def __iter__(self):
-        return zip(self._vals, self._con)
+        return iter(zip(self._vals, self._con))
 
     def __len__(self):
         return len(self._vals)
+
+    def __getitem__(self, index):
+        return (self._vals[index], self._con[index])
 
 class ConditionalExpression(SageObject):
     r"""
@@ -1105,17 +1128,18 @@ class ConditionalExpression(SageObject):
     def _repr_(self):
         vals = []
         result = self._repr_info(vals, 0)
-        result += "\n where \n"
-        front_space = ceil(ZZ(len(vals)).log(10)) + 5
-        for i, val in enumerate(vals):
-            for j, line in enumerate(val._repr_lines()):
-                if i + j > 0:
-                    result += "\n"
-                r = ""
-                if j == 0:
-                    r += "n" + str(i) + " ="
-                result += r + " "*(front_space-len(r)) + \
-                          line
+        if len(vals) > 0:
+            result += "\n where \n"
+            front_space = ceil(ZZ(len(vals)).log(10)) + 5
+            for i, val in enumerate(vals):
+                for j, line in enumerate(val._repr_lines()):
+                    if i + j > 0:
+                        result += "\n"
+                    r = ""
+                    if j == 0:
+                        r += "n" + str(i) + " ="
+                    result += r + " "*(front_space-len(r)) + \
+                              line
         return result
 
     def _latex_side(self, side, vals, bracket_level):
