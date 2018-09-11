@@ -1,4 +1,5 @@
 # Some examples:
+load('~/Documents/SageFiles/examples/Q-curve families.sage')
 
 ### 2-isogeny parameter 1
 # Singular
