@@ -119,6 +119,16 @@ class Qcurve(EllipticCurve_number_field):
         if not flag:
             raise ValueError("There is not sufficient isogeny information to make %s a Q-curve"%curve)
 
+    def definition_field(self):
+        r"""
+        Gives the field over which this Q-curve is defined.
+
+        OUTPUT:
+
+        The number field over which this Q-curve is defined.
+        """
+        return self.base_ring()
+    
     def _init_curve(self, curve):
         if not isinstance(curve, EllipticCurve_number_field):
             curve = EllipticCurve(curve)
@@ -150,7 +160,7 @@ class Qcurve(EllipticCurve_number_field):
         closure of Q as sigma. This will be an elliptic curve and not
         returned as a Q-curve
         """
-        sigma = galois_field_change(sigma, self.base_ring())
+        sigma = galois_field_change(sigma, self.definition_field())
         return conjugate_curve(self, sigma)
 
     # Isogeny related stuff
@@ -160,7 +170,7 @@ class Qcurve(EllipticCurve_number_field):
         """
         self._l = dict() # $\lambda$'s of isogenies.
         self._d = dict() # degrees of isogenies.
-        self._Kl = self.base_ring() # Common definition field of the $\lambda$'s
+        self._Kl = self.definition_field() # Common definition field of the $\lambda$'s
         self._to_Kl = self._Kl.hom(self._Kl) # Map from the base field of the elliptic curve.
         # Initialize the trivial isogeny that is there.
         e = self._Kl.galois_group().identity()
@@ -189,7 +199,7 @@ class Qcurve(EllipticCurve_number_field):
         r"""
         Updates the field over which all isogenies are defined
         """
-        G = list(self.base_ring().galois_group())
+        G = list(self.definition_field().galois_group())
         for i in range(len(G)):
             if G[i] in self._l and self._l[G[i]] != None and self._l[G[i]].parent() != self._Kl:
                 self._Kl, old_to_new, i_to_new = composite_field(self._Kl, self._l[G[i]].parent(), give_maps=True)
@@ -209,7 +219,7 @@ class Qcurve(EllipticCurve_number_field):
         r"""
         Attempts to fill in missing isogenies by combining known ones.
         """
-        G = self.base_ring().galois_group()
+        G = self.definition_field().galois_group()
         Kl = self._Kl
         for s in G:
             for t in G:
@@ -229,7 +239,7 @@ class Qcurve(EllipticCurve_number_field):
         r"""
         Attempts to find isogenies of a given degree.
         """
-        G = self.base_ring().galois_group()
+        G = self.definition_field().galois_group()
         fd = self.torsion_polynomial(degree)
         Kd, yotad = fd.splitting_field(names='a'+str(degree), map=True)
         Ed = self.change_ring(yotad)
@@ -266,7 +276,7 @@ class Qcurve(EllipticCurve_number_field):
         conjugate of this curve to itself. The galois conjugate is one
         obtained by conjugating with an extension of sigma.
         """
-        return self._l[galois_field_change(sigma, self.base_ring())]
+        return self._l[galois_field_change(sigma, self.definition_field())]
 
     def complete_definition_field(self):
         r"""
@@ -296,7 +306,7 @@ class Qcurve(EllipticCurve_number_field):
         by conjugating with an extension of the given galois homomorphism
         sigma.
         """
-        return self._d[galois_field_change(sigma, self.base_ring())]
+        return self._d[galois_field_change(sigma, self.definition_field())]
 
     @cached_method
     def degree_map_image(self):
@@ -312,7 +322,7 @@ class Qcurve(EllipticCurve_number_field):
         """
         result = []
         d = self.degree_map
-        G = self.base_ring().galois_group()
+        G = self.definition_field().galois_group()
         for s in G:
             val = d(s).squarefree_part()
             if val not in result:
@@ -331,7 +341,7 @@ class Qcurve(EllipticCurve_number_field):
         """
         Kerd = []
         d = self.degree_map
-        G = self.base_ring().galois_group()
+        G = self.definition_field().galois_group()
         for s in G:
             if d(s).is_square():
                 Kerd.append(s)
@@ -1193,7 +1203,7 @@ class Qcurve(EllipticCurve_number_field):
             raise ValueError("The set %s does not give a valid set of roots"%roots)
 
         # Let's compute the fields and corresponding embeddings
-        Kbase = self.base_ring()
+        Kbase = self.definition_field()
         Kold = self._Kl
         Kroots = QQ
         for i, a in enumerate(roots):
@@ -1244,7 +1254,7 @@ class Qcurve(EllipticCurve_number_field):
         The conductor of the restriction of scalars of this curve
         over the decomposition field.
         """
-        K0 = self.base_ring()
+        K0 = self.definition_field()
         K = self.decomposition_field()
         iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
         # Proposition 1 of Milne, On the arithmetic of Abelian varieties
@@ -1571,5 +1581,5 @@ class Qcurve(EllipticCurve_number_field):
         elif b[4]:
             s += "+ %s "%a[4]
         s = s.replace("+ -","- ")
-        s += "over %s"%self.base_ring()
+        s += "over %s"%self.definition_field()
         return s

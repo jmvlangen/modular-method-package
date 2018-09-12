@@ -6,6 +6,8 @@ from sage.schemes.elliptic_curves.ell_local_data import EllipticCurveLocalData
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol_class
 
+from sage.rings.number_field.number_field import is_NumberField
+
 class FreyCurve(EllipticCurve_generic):
     r"""
     A Frey-curve.
@@ -385,6 +387,14 @@ class FreyCurve(EllipticCurve_generic):
         else:
             return ConditionalValue([(val[0], con) for val,con in result])
 
+    def base_extend(self, R):
+        if hasattr(R, 'domain'):
+            if R.domain() == self.definition_ring():
+                def F(x):
+                    x.change_ring(R)
+                R = F
+        return EllipticCurve_general.base_extend(self, R)
+
     def conductor(self, additive_primes=None, verbose=False,
                   precision_cap=20):
         r"""
@@ -458,3 +468,100 @@ class FreyCurveLocalData(EllipticCurveLocalData):
     def __ne__(self, other):
         return not isinstance(other, ParametrizedLocalData) or \
         not self.same_elliptic_data(other)
+
+class FreyQCurve(FreyCurve, Qcurve):
+    r"""
+    A Frey curve that is a Q-curve over some number field
+    """
+    def __init__(self, curve, parameter_ring=ZZ, conversion=None, condition=None, isogenies={}):
+        r"""
+        Initializes a Frey-Q-curve.
+
+        This initialization calls the initialization of both
+        the Qcurve and the FreyCurve class. Note however
+        that for the Qcurve class the parameter guessed degrees
+        is always set to zero as there is no good way to guess
+        isogenies of a Frey curve of a given degree.
+
+        The method _init_curve inside the class Qcurve is
+        overwritten by this class's method, hence when the
+        initialization of Qcurve is called, this method is
+        called instead. This tricks the Qcurve class into
+        thinking that this class is in fact defined over
+        a number field even though it is not.
+
+        INPUT:
+
+        - ``curve`` -- An elliptic curve defined over some
+          polynomial ring over a number field or any argument that
+          would produce such a curve when passed to the
+          constructor EllipticCurve. This curve will be taken
+          over a polynomial ring over the minimal galois
+          extension of its base field and will become the
+          Frey Q-curve.
+        - ``parameter_ring`` -- A ring (default: ZZ) that
+          has a natural map into the base ring of the
+          polynomial ring over which this elliptic curve
+          is defined. This is the ring in which the variables
+          of the polynomial ring over which this curve is
+          defined can take values.
+        - ``conversion`` -- A map (default: None) from the
+          solution ring to the base ring of the polynomial
+          ring over which the coefficients of this curve
+          are defined. If set to None, will attempt to find
+          such a map by trying in this order maps given by:
+           - coerce_map_from
+           - convert_map_from
+           - Hom( , ).an_element()
+        - ``condition`` -- A Condition object or None
+          (default: None) giving a condition which must hold
+          on the variables in this Frey-curve. If set to
+          None will assume that all values for these variables
+          are possible instead.
+         - ``isogenies`` -- A dictionary (default: {}) with as keys elements
+           of the galois group of the base field of the Q-curve and as values
+           data of the corresponding isogeny from the galois conjugate of this
+           Q-curve to itself. This data can be either an isogeny as a Sage
+           object or a tuple of an algebraic integer (defined as an element of
+           some number field) and a strictly positive integer, which are
+           respectively the $\lambda$ such that the isogeny is
+           $z \mapsto \lambda z$ on the complex numbers and the degree of the
+           isogeny.
+        """
+        FreyCurve.__init__(self, curve, parameter_ring=parameter_ring,
+                           conversion=conversion, condition=condition)
+        Qcurve.__init__(self, curve, isogenies=isogenies)
+
+    def _init_curve(self, curve):
+        r"""
+        Initializes the curve of this Frey Q-curve.
+
+        This overwrites the method _init_curve inside the
+        class Qcurve. Note that most things have already
+        been initialized by the class FreyCurve at this point,
+        but we initialize again to make sure the following
+        conditions are satisfied:
+        - The curve is defined over a polynomial ring over some
+          number field.
+        - The number field is a galois field. If not it will be
+          replaced by its galois closure.
+        """
+        K = self.definition_field()
+        if not is_NumberField(K):
+            raise ValueError("The ring %s is not a number field."%(K,))
+        if not K.is_galois():
+            Kgal = K.galois_closure(names=K.variable_name() + 'g')
+            iota = K.hom([a.minpoly().change_ring(Kgal).roots()[0][0] for a in K.gens()], Kgal)
+            ainvs = [a.change_ring(iota) for a in curve.a_invariants]
+            S = self.base().change_ring(Kgal)
+            EllipticCurve_generic.__init__(self, S, ainvs)
+
+    def definition_field(self):
+        r"""
+        Gives the field over which this Frey Q-curve is defined.
+
+        OUTPUT:
+
+        The number field over which this Frey Q-curve is defined.
+        """
+        return self.definition_ring()
