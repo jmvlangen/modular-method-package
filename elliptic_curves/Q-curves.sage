@@ -1090,6 +1090,39 @@ class Qcurve(EllipticCurve_number_field):
                 beta_del.remove(beta_ls[j])
         return tuple(result)
 
+    def _isogeny_data(self, K):
+        r"""
+        Gives the isogeny data of this curve over a given field.
+
+        INPUT:
+
+        - ``K`` -- A number field that is an extension of the
+                   definition field of this Q-curve.
+
+        OUTPUT:
+
+        A dictionary of which the keys are the elements of the
+        galois group of K, and the value for each element sigma
+        is a tuple containing the lambda and the degree of the
+        isogeny from the conjugate of this curve by sigma to
+        itself, in that order.
+        """
+        G = K.galois_group()
+        l = self.isogeny_lambda
+        d = self.degree_map
+        return {s: (l(galois_field_change(s, K)),
+                    d(galois_field_change(s, K))) for s in G}
+
+    def base_extend(self, R):
+        result = EllipticCurve_number_field.base_extend(self, R)
+        if isinstance(result, EllipticCurve_number_field):
+            K = self.definition_field()
+            L = result.base_ring()
+            r = K.gen().minpoly().change_ring(L).roots()
+            if len(r) > 0:
+                return Qcurve(result, isogenies=self._isogeny_data(L))
+        return result
+
     def twist(self, gamma):
         r"""
         Gives the twist of this Q-curve by a given element gamma.

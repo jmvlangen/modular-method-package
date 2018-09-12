@@ -393,7 +393,16 @@ class FreyCurve(EllipticCurve_generic):
                 def F(x):
                     x.change_ring(R)
                 R = F
-        return EllipticCurve_general.base_extend(self, R)
+        result = EllipticCurve_general.base_extend(self, R)
+        if ( (is_PolynomialRing(result.base_ring()) or
+              is_MPolynomialRing(result.base_ring())) and
+             ([str(v) for v in result.base_ring().variables()] ==
+              [str(v) for v in self.parameters()])):
+            return FreyCurve(result,
+                             parameter_ring=self._R,
+                             conversion=self._R_to_base,
+                             condition=self._condition)
+        return result
 
     def conductor(self, additive_primes=None, verbose=False,
                   precision_cap=20):
