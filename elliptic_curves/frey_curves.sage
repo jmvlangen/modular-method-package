@@ -478,6 +478,55 @@ class FreyCurveLocalData(EllipticCurveLocalData):
         return not isinstance(other, ParametrizedLocalData) or \
         not self.same_elliptic_data(other)
 
+    def _repr_(self):
+        """
+        String representation of a Frey curve.
+
+        REMARK:
+
+        This is a direct copy from the code included
+        in EllipticCurve_number_field
+        """
+        b = self.ainvs()
+        a = [z._coeff_repr() for z in b]
+        s = "Frey curve defined by "
+        s += "y^2 "
+        if a[0] == "-1":
+            s += "- x*y "
+        elif a[0] == '1':
+            s += "+ x*y "
+        elif b[0]:
+            s += "+ %s*x*y "%a[0]
+        if a[2] == "-1":
+            s += "- y "
+        elif a[2] == '1':
+            s += "+ y "
+        elif b[2]:
+            s += "+ %s*y "%a[2]
+        s += "= x^3 "
+        if a[1] == "-1":
+            s += "- x^2 "
+        elif a[1] == '1':
+            s += "+ x^2 "
+        elif b[1]:
+            s += "+ %s*x^2 "%a[1]
+        if a[3] == "-1":
+            s += "- x "
+        elif a[3] == '1':
+            s += "+ x "
+        elif b[3]:
+            s += "+ %s*x "%a[3]
+        if a[4] == '-1':
+            s += "- 1 "
+        elif a[4] == '1':
+            s += "+ 1 "
+        elif b[4]:
+            s += "+ %s "%a[4]
+        s = s.replace("+ -","- ")
+        s += "over %s "%(self.definition_ring(),)
+        s += "with parameters %s"%(self.parameters(),)
+        return s
+
 class FreyQCurve(FreyCurve, Qcurve):
     r"""
     A Frey curve that is a Q-curve over some number field
@@ -574,3 +623,65 @@ class FreyQCurve(FreyCurve, Qcurve):
         The number field over which this Frey Q-curve is defined.
         """
         return self.definition_ring()
+
+    def base_extend(self, R):
+        result = FreyCurve.base_extend(self, R)
+        if (isinstance(result, FreyCurve) and
+            is_NumberField(result.definition_ring())):
+            K = self.definition_field()
+            L = result.definition_ring()
+            r = K.gen().minpoly().change_ring(L).roots()
+            if len(r) > 0:
+                return FreyQCurve(result,
+                                  isogenies=self._isogeny_data(L),
+                                  )
+        return result
+
+    def _repr_(self):
+        """
+        String representation of a Frey Q-curve.
+
+        REMARK:
+
+        This is a direct copy from the code included
+        in EllipticCurve_number_field
+        """
+        b = self.ainvs()
+        a = [z._coeff_repr() for z in b]
+        s = "Frey Q-curve defined by "
+        s += "y^2 "
+        if a[0] == "-1":
+            s += "- x*y "
+        elif a[0] == '1':
+            s += "+ x*y "
+        elif b[0]:
+            s += "+ %s*x*y "%a[0]
+        if a[2] == "-1":
+            s += "- y "
+        elif a[2] == '1':
+            s += "+ y "
+        elif b[2]:
+            s += "+ %s*y "%a[2]
+        s += "= x^3 "
+        if a[1] == "-1":
+            s += "- x^2 "
+        elif a[1] == '1':
+            s += "+ x^2 "
+        elif b[1]:
+            s += "+ %s*x^2 "%a[1]
+        if a[3] == "-1":
+            s += "- x "
+        elif a[3] == '1':
+            s += "+ x "
+        elif b[3]:
+            s += "+ %s*x "%a[3]
+        if a[4] == '-1':
+            s += "- 1 "
+        elif a[4] == '1':
+            s += "+ 1 "
+        elif b[4]:
+            s += "+ %s "%a[4]
+        s = s.replace("+ -","- ")
+        s += "over %s "%(self.definition_ring(),)
+        s += "with parameters %s"%(self.parameters(),)
+        return s
