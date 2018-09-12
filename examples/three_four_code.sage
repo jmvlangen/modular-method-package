@@ -1,3 +1,16 @@
+K.<w> = QuadraticField(30)
+R.<a,b> = ZZ[]
+f = (a-b)^4 + a^4 + (a+b)^4
+C = CoprimeCondition([a,b]) & PowerCondition(f, 5)
+G = K.galois_group()
+
+### The curves
+Lm2.<sqrtm2> = QuadraticField(-2)
+E1 = FreyQCurve([0, -40*b, 0, -20*(w*a^2 - 10*b^2 + 2*w*b^2),0],
+                condition=C,
+                isogenies={G[0]: (QQ(1),1), G[1]: (sqrtm2,2)})
+
+### Old code: Do not use!
 load('/home/jln224/Documents/SageFiles/tmp1.sage')
 
 ### Initializing elliptic curves
