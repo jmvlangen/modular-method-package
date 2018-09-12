@@ -266,9 +266,7 @@ class Qcurve(EllipticCurve_number_field):
         conjugate of this curve to itself. The galois conjugate is one
         obtained by conjugating with an extension of sigma.
         """
-        if sigma not in self._l:
-            self._l[sigma] = self._l[galois_field_change(sigma, self.base_ring())]
-        return self._l[sigma]
+        return self._l[galois_field_change(sigma, self.base_ring())]
 
     def complete_definition_field(self):
         r"""
@@ -298,9 +296,7 @@ class Qcurve(EllipticCurve_number_field):
         by conjugating with an extension of the given galois homomorphism
         sigma.
         """
-        if sigma not in self._d:
-            self._d[sigma] = self._d[galois_field_change(sigma, self.base_ring())]
-        return self._d[sigma]
+        return self._d[galois_field_change(sigma, self.base_ring())]
 
     @cached_method
     def degree_map_image(self):
@@ -761,11 +757,7 @@ class Qcurve(EllipticCurve_number_field):
         c = self.c
         c_beta = self.c_splitting_map
         G = self.decomposition_field().galois_group()
-        for s in G:
-            for t in G:
-                if c(s,t) != c_beta(s,t):
-                    return False
-        return True
+        return all(c(s,t) == c_beta(s,t) for s in G for t in G)
 
     def _splitting_map_first_guess(self):
         r"""
@@ -802,10 +794,9 @@ class Qcurve(EllipticCurve_number_field):
             def beta(sigma):
                 return beta0(sigma) * alpha(sigma)
             self._beta = beta
-            for sigma in G:
-                for tau in G:
-                    if self.c(sigma, tau) != beta(sigma) * beta(tau) * beta(sigma*tau)^(-1):
-                        raise ValueError("Should be impossible to reach this code!");
+            self.c_splitting_map.clear_cache() # Delete values of previous beta
+            if not self.does_decompose():
+                raise ValueError("Should be impossible to reach this code!");
         except ArithmeticError:
             print "Warning: The restriction of scalars of this Q-curve over the "+\
                   "decomposition field does not decompose into abelian varieties"+\
