@@ -131,6 +131,10 @@ class Qcurve(EllipticCurve_number_field):
         ainvs = [iota(a) for a in curve.a_invariants()]
         EllipticCurve_number_field.__init__(self, Kgal, ainvs)
 
+    def _galois_cache_key(self, sigma):
+        return str(sigma), sigma.parent().number_field()
+        
+    @cached_method(key=_galois_cache_key)
     def galois_conjugate(self, sigma):
         r"""
         Gives the galois conjugate of this curve.
@@ -241,6 +245,7 @@ class Qcurve(EllipticCurve_number_field):
                     Kl, p1, p2 = composite_field(l1.parent(), l2.parent(), give_maps=True)
                     self._add_isogeny(s, (p1(l1) * p2(l2), psi.degree()))
 
+    @cached_method(key=_galois_cache_key)
     def isogeny_lambda(self, sigma):
         r"""
         Returns the $\lambda$ of the isogeny from the sigma conjugate 
@@ -261,9 +266,7 @@ class Qcurve(EllipticCurve_number_field):
         conjugate of this curve to itself. The galois conjugate is one
         obtained by conjugating with an extension of sigma.
         """
-        if sigma not in self._l:
-            self._l[sigma] = self._l[galois_field_change(sigma, self.base_ring())]
-        return self._l[sigma]
+        return self._l[galois_field_change(sigma, self.base_ring())]
 
     def complete_definition_field(self):
         r"""
@@ -276,6 +279,7 @@ class Qcurve(EllipticCurve_number_field):
         """
         return self._Kl
 
+    @cached_method(key=_galois_cache_key)
     def degree_map(self, sigma):
         r"""
         Gives the degree of an isogeny from the sigma galois conjugate
@@ -292,9 +296,7 @@ class Qcurve(EllipticCurve_number_field):
         by conjugating with an extension of the given galois homomorphism
         sigma.
         """
-        if sigma not in self._d:
-            self._d[sigma] = self._d[galois_field_change(sigma, self.base_ring())]
-        return self._d[sigma]
+        return self._d[galois_field_change(sigma, self.base_ring())]
 
     @cached_method
     def degree_map_image(self):
@@ -382,7 +384,12 @@ class Qcurve(EllipticCurve_number_field):
                         di[i] = d(sigma)
                         break
         return ai, di
+
+    def _galois_cache_key2(self, sigma, tau):
+        return (self._galois_cache_key(sigma),
+                self._galois_cache_key(tau))
     
+    @cached_method(key=_galois_cache_key2)
     def c(self, sigma, tau):
         r"""
         The value of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2 \to \Q^*$
@@ -750,11 +757,7 @@ class Qcurve(EllipticCurve_number_field):
         c = self.c
         c_beta = self.c_splitting_map
         G = self.decomposition_field().galois_group()
-        for s in G:
-            for t in G:
-                if c(s,t) != c_beta(s,t):
-                    return False
-        return True
+        return all(c(s,t) == c_beta(s,t) for s in G for t in G)
 
     def _splitting_map_first_guess(self):
         r"""
@@ -763,6 +766,7 @@ class Qcurve(EllipticCurve_number_field):
         eps = self.splitting_character(galois=True)
         d = self.degree_map
         Lbeta = self.splitting_image_field()
+        @cached_function(key=lambda s: (str(s), s.parent().number_field()))
         def beta(sigma):
             return sqrt(Lbeta(d(sigma) * eps(sigma)))
         return beta
@@ -786,13 +790,13 @@ class Qcurve(EllipticCurve_number_field):
         try:
             alpha = function_with_coboundary(G, (1, [-1], [2], convert), c_err)
             beta0 = self._beta
+            @cached_function(key=lambda s: (str(s), s.parent().number_field()))
             def beta(sigma):
                 return beta0(sigma) * alpha(sigma)
             self._beta = beta
-            for sigma in G:
-                for tau in G:
-                    if self.c(sigma, tau) != beta(sigma) * beta(tau) * beta(sigma*tau)^(-1):
-                        raise ValueError("Should be impossible to reach this code!");
+            self.c_splitting_map.clear_cache() # Delete values of previous beta
+            if not self.does_decompose():
+                raise ValueError("Should be impossible to reach this code!");
         except ArithmeticError:
             print "Warning: The restriction of scalars of this Q-curve over the "+\
                   "decomposition field does not decompose into abelian varieties"+\
@@ -811,6 +815,7 @@ class Qcurve(EllipticCurve_number_field):
         Lchi = self.twist_character(i).base_ring()
         L = composite_field(Lbeta0, Lchi)
         Lbeta = self.splitting_image_field(i)
+        @cached_function(key=lambda s: (str(s), s.parent().number_field()))
         def beta(sigma):
             return Lbeta(L(beta0(sigma)) * L(chi(sigma)))
         return beta
@@ -854,6 +859,7 @@ class Qcurve(EllipticCurve_number_field):
             return tuple(self.splitting_map(index=ii[0]) for ii in self._conjugacy_determination())
         raise Exception("Invalid index %s"%index)
 
+    @cached_method(key=_galois_cache_key2)
     def c_splitting_map(self, sigma, tau):
         r"""
         Evaluates the coboundary of a splitting map of this Q-curve.
@@ -1199,6 +1205,7 @@ class Qcurve(EllipticCurve_number_field):
 
         # The map we want as lambda for the new curve
         d = self.degree_map
+        @cached_function(key=lambda s: (str(s), s.parent().number_field()))
         def mu(s):
             return sqrt(Knew(product(roots[i] for i in roots_image[d(s).squarefree_part()])))
 

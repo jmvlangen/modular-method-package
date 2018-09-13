@@ -1,3 +1,4 @@
+@cached_function(key=lambda s, K, e: (str(s), s.parent().number_field(), K))
 def galois_field_extend(sigma, K, embedding=None):
     r"""
     Finds the extension of a galois homomorphism to a bigger field.
@@ -52,6 +53,7 @@ def galois_field_extend(sigma, K, embedding=None):
             return tau
     raise Exception("No corresponding galois action found for %s."%sigma)
 
+@cached_function(key=lambda s, K, e: (str(s), s.parent().number_field(), K))
 def galois_field_restrict(sigma, K, embedding=None):
     r"""
     Finds the restriction of a galois homomorphism to a smaller field.
@@ -93,6 +95,7 @@ def galois_field_restrict(sigma, K, embedding=None):
             return tau
     raise Exception("No corresponding galois action found for %s."%tau)
 
+@cached_function(key=lambda s, K: (str(s), s.parent().number_field(), K))
 def galois_field_change(sigma, K):
     r"""
     Changes a Galois homomorphism to one on a specified field
@@ -143,6 +146,8 @@ def galois_field_change(sigma, K):
     M, L_to_M, K_to_M = composite_field(L, K, give_maps=True)
     return galois_field_restrict(galois_field_extend(sigma, M, embedding=L_to_M), K, embedding=K_to_M)
 
+@cached_function(key=lambda s, N: ((0, s, N) if s in ZZ else
+                                   (str(s), s.parent().number_field(), N)))
 def cyclotomic_galois_isomorphism(s, N=None):
     r"""
     Realizes the isomorphism between the galois group of a cyclotomic field and $\Z/N\Z^*$

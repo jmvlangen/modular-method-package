@@ -43,7 +43,6 @@ def solve_integer_problem_with_torsion(M, V, MT, VT, N, all=False):
         (-1, 2019), [-5]
         )
     """
-
     # Make sure the rings are right
     M = M.change_ring(ZZ)
     V = V.change_ring(ZZ)

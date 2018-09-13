@@ -1,4 +1,5 @@
 # Some examples:
+load('~/Documents/SageFiles/examples/Q-curve families.sage')
 
 ### 2-isogeny parameter 1
 # Singular
@@ -181,7 +182,7 @@ print f # Not tried, way too big
 
 ### 2,3-isogeny parameter 2
 E = Qcurve_with_2_3_isogeny(2)
-E = E.decomposable_twist() # Takes too long!
+E = E.decomposable_twist() # Takes about 1.6 hours
 if (7^5).divides(E.conductor_restriction_of_scalars()):
     E = E.twist(QQ(5))
 f, twists = E.newform()
