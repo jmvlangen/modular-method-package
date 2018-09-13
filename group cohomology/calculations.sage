@@ -1,3 +1,5 @@
+from sage.rings.number_field.number_field import is_NumberField
+
 def function_with_coboundary(G, A, c, action=None):
     r"""
     Gives the function G -> A with coboundary c.
@@ -126,3 +128,45 @@ def function_with_coboundary(G, A, c, action=None):
             result = result * gens[k]^v[i*y + k*z]
         return result
     return alpha
+
+def hilbert90(K, f):
+    r"""
+    Explicitly computes an element that proves Hilbert 90
+    for a given function.
+
+    Let K be a galois number field K and f be a function
+    from the galois group of K to the non-zero elements
+    of K. If for any s,t in that galois group f satisfies
+    f(s) * s(f(t)) == f(s*t), then by Hilbert 90 there
+    exists a non-zero element a of K such that for any
+    s in the galois group we have f(s) = s(a)/a
+
+    INPUT:
+
+    - ``K`` -- A galois number field.
+    - ``f`` -- A function from the galois group of K
+      to the non-zero elements of K, such that for any
+      two automorphisms s and t of K we have
+      f(s) * s(f(t)) == f(s*t).
+
+    OUTPUT:
+    
+    A non-zero element a of K such that for any
+    automorphism s of K we have s(a) = f(s)*a.
+    Furthermore this element is minimal in norm
+    among such elements.
+    """
+    if not (is_NumberField(K) and K.is_galois()):
+        raise ValueError("%s is not a galois number field."%(K,))
+    while K.base() ~= QQ:
+        K = K.absolute_field(names=[str(g) for g in K.gens()])
+    G = K.galois_group()
+    a = 0
+    for b in K.power_basis():
+        if a ~= 0:
+            break
+        a = sum(s(b)/K(f(s)) for s in G)
+    if a == 0:
+        raise ValueError("%s is not a valid function for Hilbert 90."%(f,))
+    n = product(p^(floor(e/K.degree())) for p, e in a.absolute_norm().factor())
+    return a/n

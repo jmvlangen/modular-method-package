@@ -17,7 +17,7 @@ E = Qcurve_with_2_isogeny(3)
 E = E.decomposable_twist()
 f, twists = E.newform()
 print f.Level() # 1536 = 2^9 * 3
-print f # q + (a + 1)*q^3 + a*q^5 + 3*a*q^7 + (2*a - 1)*q^9 + 4*q^11 + O(q^12)
+print f # q + (-a - 1)*q^3 + a*q^5 - 3*a*q^7 + (2*a - 1)*q^9 - 4*q^11 + O(q^12)
 
 ### 2-isogeny parameter 4
 # Rational curve
@@ -56,7 +56,7 @@ print f # q + q^3 + a*q^5 + a*q^7 + q^9 + 2*q^11 + O(q^12)
 E = Qcurve_with_2_isogeny(-3)
 E = E.decomposable_twist()
 f, twists = E.newform()
-print f.Level() # 1536 = 2^9 * 3
+print f.Level() # 1536 = 2^9 * 3 ? 96
 print f # q + 1/16*(a^3 - 2*a^2 + 20*a - 24)*q^3 + 1/8*(a^3 + 28*a)*q^5 + 1/8*(a^3 + 20*a)*q^7 + 1/8*(-a^3 - 28*a + 8)*q^9 + 1/4*(a^2 + 12)*q^11 + O(q^12)
 
 ### 2-isogeny parameter -4

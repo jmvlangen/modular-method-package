@@ -1148,44 +1148,7 @@ class Qcurve(EllipticCurve_number_field):
         def c_err(sigma, tau):
             return US(self.c(sigma, tau) / self.c_splitting_map(sigma, tau))
         alpha = function_with_coboundary(G, US, c_err)
-        gamma = 0
-        while gamma == 0:
-            x = K.random_element()
-            gamma = sum(s(x) / K(alpha(s))^2 for s in G)
-
-        # Minimizing gamma in some sense
-        I = product(P^(floor(e/2)) for P, e in K.ideal(gamma).factor())
-        J = (CG(I)^(-1)).ideal()
-        gamma2 = ((J*I).gens_reduced()[0])^2  # Most of the square part of gamma
-        gamma = gamma / gamma2
-        gamma *= gamma.denominator() # Make kind of integral
-        # Find biggest u s.t. u^k divides the n-k'th coefficient of the minimal polynomial of gamma
-        cn = gamma.minpoly().list()
-        cn.reverse() # Decreasing order
-        n = lcm(i for i in range(1,len(cn)) if cn[i] != 0)
-        un = gcd(cn[i]^(n/i) for i in range(1,len(cn)) if cn[i] != 0)
-        u = product(x^floor(e/n) for x,e in un.factor())
-        gamma = gamma / u # Minimal polynomial has smallest possible integers!
-
-        # Updating alpha to fit the new gamma
-        def alpha(s):
-            s = galois_field_change(s, gamma.parent());
-            return sqrt(s(gamma) / gamma)
-        # Check to make sure everything is still good (computationally intensive, maybe remove?)
-        def c_check(s, t):
-            return QQ(alpha(s) * s(alpha(t)) / alpha(s*t) / c_err(s,t))
-        def convert(a):
-            if a == 1:
-                return [0]
-            elif a == -1:
-                return [1]
-            else:
-                raise ValueError("%s is not 1 or -1"%a)
-        try:
-            alpha_check = function_with_coboundary(G, (1, [-1], [2], convert), c_check)
-        except ArithmeticError:
-            raise ValueError("Something went terribly wrong!")
-
+        gamma = hilbert90(K, alpha)
         return self.twist(gamma)
 
     def complete_definition_twist(self, roots):
@@ -1245,18 +1208,7 @@ class Qcurve(EllipticCurve_number_field):
             return new_to_big(mu(s))^2 / old_to_big(l(s))^2
 
         # The twist parameter
-        gamma = 0
-        while gamma == 0:
-            x = Kbig.random_element()
-            gamma = sum(s(x)/alpha(s) for s in Kbig.galois_group())
-        gamma *= gamma.denominator() # Make element of O_K
-        # Find biggest u s.t. u^k divides the n-k'th coefficient of the minimal polynomial of gamma
-        cn = gamma.minpoly().list()
-        cn.reverse() # Decreasing order
-        n = lcm(i for i in range(1,len(cn)) if cn[i] != 0)
-        un = gcd(cn[i]^(n/i) for i in range(1,len(cn)) if cn[i] != 0)
-        u = product(x^floor(e/n) for x,e in un.factor())
-        gamma = gamma / u # Minimal polynomial has smallest possible integers!
+        gamma = hilbert90(Kbig, alpha)
 
         # Check if we can twist by an element of Kbase
         gamma_ls = [x for x,e in gamma.minpoly().change_ring(Kbase).roots() if base_to_big(x) == gamma]
