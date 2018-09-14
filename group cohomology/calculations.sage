@@ -163,7 +163,7 @@ def hilbert90(K, f):
     G = K.galois_group()
     a = 0
     for b in K.power_basis():
-        if a ~= 0:
+        if a != 0:
             break
         a = sum(s(b)/K(f(s)) for s in G)
     if a == 0:
