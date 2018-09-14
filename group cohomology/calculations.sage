@@ -158,7 +158,7 @@ def hilbert90(K, f):
     """
     if not (is_NumberField(K) and K.is_galois()):
         raise ValueError("%s is not a galois number field."%(K,))
-    while K.base() ~= QQ:
+    while K.base() != QQ:
         K = K.absolute_field(names=[str(g) for g in K.gens()])
     G = K.galois_group()
     a = 0
