@@ -1047,34 +1047,34 @@ class ConditionalValue(SageObject):
         return result
 
     def __add__(self, other):
-        return ConditionalExpression(('+','+',0), self, other)
+        return ConditionalExpression(ConditionalExpression.SUM_OPERATOR, self, other)
 
     def __radd__(self, other):
-        return ConditionalExpression(('+','+',0), other, self)
+        return ConditionalExpression(ConditionalExpression.SUM_OPERATOR, other, self)
 
     def __sub__(self, other):
-        return ConditionalExpression(('-','-',0.5), self, other)
+        return ConditionalExpression(ConditionalExpression.MINUS_OPERATOR, self, other)
 
     def __rsub__(self, other):
-        return ConditionalExpression(('-','-',0.5), other, self)
+        return ConditionalExpression(ConditionalExpression.MINUS_OPERATOR, other, self)
 
     def __mul__(self, other):
-        return ConditionalExpression(('*','\cdot',2), self, other)
+        return ConditionalExpression(ConditionalExpression.PRODUCT_OPERATOR, self, other)
 
     def __rmul__(self, other):
-        return ConditionalExpression(('*','\cdot',2), other, self)
+        return ConditionalExpression(ConditionalExpression.PRODUCT_OPERATOR, other, self)
 
     def __div__(self, other):
-        return ConditionalExpression(('/','/',2.5), self, other)
+        return ConditionalExpression(ConditionalExpression.DIVISION_OPERATOR, self, other)
 
     def __rdiv__(self, other):
-        return ConditionalExpression(('/','/',2.5), other, self)
+        return ConditionalExpression(ConditionalExpression.DIVISION_OPERATOR, other, self)
 
     def __pow__(self, other):
-        return ConditionalExpression(('^','^',4.5), self, other)
+        return ConditionalExpression(ConditionalExpression.EXPONENT_OPERATOR, self, other)
 
     def __rpow__(self, other):
-        return ConditionalExpression(('^','^',4.5), other, self)
+        return ConditionalExpression(ConditionalExpression.EXPONENT_OPERATOR, other, self)
 
     def __iter__(self):
         return iter(zip(self._vals, self._con))
@@ -1086,6 +1086,11 @@ class ConditionalValue(SageObject):
         return (self._vals[index], self._con[index])
 
 class ConditionalExpression(SageObject):
+    SUM_OPERATOR = ('+', '+', 0)
+    MINUS_OPERATOR = ('-', '-', 0.5)
+    PRODUCT_OPERATOR = ('*', '\cdot', 2)
+    DIVISION_OPERATOR = ('/','/', 2.5)
+    EXPONENT_OPERATOR = ('^', '^', 4.5)
     r"""
     An expression containing conditional values.
     """
@@ -1106,6 +1111,126 @@ class ConditionalExpression(SageObject):
         self._left = left
         self._right = right
 
+    def left(self):
+        r"""
+        Gives the left side of this expression.
+
+        A ConditionalExpression consists of a left and
+        a right side seperated by some operator.
+
+        OUTPUT:
+
+        The left side of this expression.
+        """
+        return self._left
+
+    def operator(self):
+        r"""
+        Gives the operator of this expression.
+
+        A ConditionalExpression consists of a left and
+        a right side seperated by some operator.
+
+        OUTPUT:
+
+        The left side of this expression.
+        """
+        return self._op
+
+    def right(self):
+        r"""
+        Gives the right side of this expression.
+
+        A ConditionalExpression consists of a left and
+        a right side seperated by some operator.
+
+        OUTPUT:
+
+        The right side of this expression.
+        """
+        return self._right
+
+    def _factor_side(self, side):
+        r"""
+        Factors a side. See meth::factor for details.
+        """
+        if isinstance(side, ConditionalExpression):
+            return side.factors()
+        if hasattr(side, 'factor'):
+            F = side.factor()
+            result = {f: e for f,e in F}
+            if hasattr(F, 'unit') and F.unit() != 1:
+                result[F.unit()] = 1
+            return result
+        return {side: 1}
+    
+    def factors(self):
+        r"""
+        Gives the factors in this expression and their exponents.
+
+        The factoring will work as follows:
+        - If the operator is a PRODUCT_OPERATOR will factor left
+          and right and combine both by taking the union of the
+          factors of left and right and taking as the exponent
+          the sum of the exponents if the factor appeared at both
+          sides or the exponent of the side it appeared on otherwise.
+        - If the operator is a DIVISION_OPERATOR will factor left
+          and right and combine both by taking the union of the
+          factors of left and right and taking as exponents the
+          exponent of that factor in left minus the exponent of
+          that factor in right. If the factor appeared only on
+          the left will take the corresponding exponent instead
+          and if the factor only appeared on the right will take
+          0 minus the corresponding exponent instead.
+        - If the operator is a EXPONENT_OPERATOR will factor left
+          and take all those factors. The exponent of each factor
+          will be the corresponding exponent in left times the
+          right side.
+        - If the operator is anything else, will return this as
+          the only factor and 1 as the exponent.
+        - When factoring a side, will use the method factors if
+          the side is a ConditionalExponent, will attempt to
+          use the method factor if it is any other object with
+          such a method and in any other case will assume that
+          side to be the factor with exponent 1. If the method
+          factor is used and the resulting object has a method
+          unit, the result of this method will be added as a
+          factor with respective exponent 1 unless it is 1
+          itself.
+
+        OUTPUT:
+
+        A dictionary containing as keys the factors of this
+        expression and as values their corresponding exponents.
+        Note that these factors and exponents could be any
+        type of expression that could normally appear in a
+        conditional expression.
+        """
+        if self._op == ConditionalExpression.PRODUCT_OPERATOR:
+            result = self._factor_side(self._left)
+            extra = self._factor_side(self._right)
+            for f in extra:
+                if f in result:
+                    result[f] = result[f] + extra[f]
+                else:
+                    result[f] = extra[f]
+            return result
+        if self._op == ConditionalExpression.DIVISION_OPERATOR:
+            result = self._factor_side(self._left)
+            extra = self._factor_side(self._right)
+            for f in extra:
+                if f in result:
+                    result[f] = result[f] - extra[f]
+                else:
+                    result[f] = 0 - extra[f]
+            return result
+        if self._op == ConditionalExpression.EXPONENT_OPERATOR:
+            result = self._factor_side(self._left)
+            for f in result:
+                result[f] = result[f] * self._right
+            return result
+        return {self: 1}
+
     def _repr_side(self, side, vals, bracket_level):
         if isinstance(side, ConditionalExpression):
             return side._repr_info(vals, bracket_level)
@@ -1113,6 +1238,79 @@ class ConditionalExpression(SageObject):
             vals.append(side)
             return "n" + str(len(vals) - 1)
         return str(side)
+
+    def _operation_on(left, right):
+        r"""
+        Performs the operation of this expression on two values.
+
+        Depending on the operation will do the following
+        - If the operation is SUM_OPERATION will return the sum
+          of left plus right
+        - If the operation is MINUS_OPERATION will return left
+          minus right.
+        - If the operation is PRODUCT_OPERATION will return the
+          product of left with right.
+        - If the operation is DIVISION_OPERATION will return
+          left divided by right.
+        - If the operation is EXPONENT_OPERATION will return
+          left to the power right
+        - If the operation is anything else will return a
+          ValueError.
+        """
+        if self._op == ConditionalExpression.SUM_OPERATION:
+            return left + right
+        if self._op == ConditionalExpression.MINUS_OPERATION:
+            return left - right
+        if self._op == ConditionalExpression.PRODUCT_OPERATION:
+            return left * right
+        if self._op == ConditionalExpression.DIVISION_OPERATION:
+            return left / right
+        if self._op == ConditionalExpression.EXPONENT_OPERATION:
+            return left ^ right
+        raise ValueError('Can not evaluate operation %s'%(self._op,))
+    
+    def value(self):
+        r"""
+        Turns this conditional expression into a conditional value.
+
+        Attempts to turn this conditional expression into a conditional
+        value by taking for each conditional value in the expression
+        a list of possible combinations of their conditions as the
+        conditions for the resulting conditional value. For each of
+        these conditions will substitute the appropiate value
+        for each conditional value in this expression and evaluate
+        the expression assigning the result as the corresponding
+        value of the resulting conditional value.
+
+        OUTPUT:
+
+        A ConditionalValue or some element that has exactly the same
+        values as this expression on every choice of parameters.
+        """
+        left = self._left
+        if isinstance(left, ConditionalExpression):
+            left = left.value()
+        right = self._right
+        if isinstance(right, ConditionalExpression):
+            right = right.value()
+        if isinstance(left, ConditionalValue):
+            result = []
+            for val_l, con_l in left:
+                if isinstance(right, ConditionalValue):
+                    for val_r, con_r in right:
+                        result.append((self._operation_on(val_l, val_r),
+                                       con_l & con_r))
+                else:
+                    result.append((self._operation_on(val_l, right),
+                                   con_l))
+            return ConditionalValue(result)
+        if isinstance(right, ConditionalValue):
+            result = []
+            for val, con in right:
+                result.append((self._operation_on(left, val),
+                               con_r))
+            return result
+        return self._operation_on(left, right)
         
     def _repr_info(self, vals, bracket_level):
         result = ""
@@ -1173,31 +1371,31 @@ class ConditionalExpression(SageObject):
         return result
 
     def __add__(self, other):
-        return ConditionalExpression(('+','+',0), self, other)
+        return ConditionalExpression(ConditionalExpression.SUM_OPERATOR, self, other)
 
     def __radd__(self, other):
-        return ConditionalExpression(('+','+',0), other, self)
+        return ConditionalExpression(ConditionalExpression.SUM_OPERATOR, other, self)
 
     def __sub__(self, other):
-        return ConditionalExpression(('-','-',0.5), self, other)
+        return ConditionalExpression(ConditionalExpression.MINUS_OPERATOR, self, other)
 
     def __rsub__(self, other):
-        return ConditionalExpression(('-','-',0.5), other, self)
+        return ConditionalExpression(ConditionalExpression.MINUS_OPERATOR, other, self)
 
     def __mul__(self, other):
-        return ConditionalExpression(('*','\cdot',2), self, other)
+        return ConditionalExpression(ConditionalExpression.PRODUCT_OPERATOR, self, other)
 
     def __rmul__(self, other):
-        return ConditionalExpression(('*','\cdot',2), other, self)
+        return ConditionalExpression(ConditionalExpression.PRODUCT_OPERATOR, other, self)
 
     def __div__(self, other):
-        return ConditionalExpression(('/','/',2.5), self, other)
+        return ConditionalExpression(ConditionalExpression.DIVISION_OPERATOR, self, other)
 
     def __rdiv__(self, other):
-        return ConditionalExpression(('/','/',2.5), other, self)
+        return ConditionalExpression(ConditionalExpression.DIVISION_OPERATOR, other, self)
 
     def __pow__(self, other):
-        return ConditionalExpression(('^','^',4.5), self, other)
+        return ConditionalExpression(ConditionalExpression.EXPONENT_OPERATOR, self, other)
 
     def __rpow__(self, other):
-        return ConditionalExpression(('^','^',4.5), other, self)
+        return ConditionalExpression(ConditionalExpression.EXPONENT_OPERATOR, other, self)

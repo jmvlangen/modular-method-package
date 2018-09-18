@@ -1,6 +1,7 @@
 from sage.schemes.elliptic_curves.ell_generic import EllipticCurve_generic
 from sage.rings.polynomial.polynomial_ring import is_PolynomialRing
 from sage.rings.polynomial.multi_polynomial_ring_base import is_MPolynomialRing
+from sage.rings.morphism import RingHomomorphism_from_base
 
 from sage.schemes.elliptic_curves.ell_local_data import EllipticCurveLocalData
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol
@@ -644,11 +645,190 @@ class FreyQcurve(FreyCurve, Qcurve):
             L = result.definition_ring()
             r = K.gen().minpoly().change_ring(L).roots()
             if len(r) > 0:
-                return FreyQCurve(result,
+                return FreyQcurve(result,
                                   isogenies=self._isogeny_data(L),
-                                  )
+                                  parameter_ring=result._R,
+                                  conversion=result._R_to_base,
+                                  condition=result._condition)
         return result
 
+    def twist(self, gamma):
+        r"""
+        Gives the twist of this Frey Q-curve by a given element gamma.
+
+        INPUT:
+
+        - ``gamma`` -- An element of a number field.
+
+        OUTPUT:
+        
+        A Frey Q-curve defined over the composite field of the field over
+        which this Frey Q-curve is completely defined and the parent of
+        gamma, that is the twist of this Q-curve by gamma, i.e. if this
+        Frey Q-curve was given by
+        
+        .. MATH::
+
+        E : y^2 = x^3 + a_2 x^2 + a_4 x + a_6
+
+        the twisted Q-curve is given by
+
+        .. MATH::
+        
+        E : y^2 = x^3 + \gamma a_2 x^2 + \gamma^2 a_4 x + \gamma^3 a_6
+        
+        """
+        K_E = self.complete_definition_field()
+        K_gamma = gamma.parent()
+        K, iota, gamma_map = composite_field(K_E, K_gamma, give_maps=True)
+        gamma = gamma_map(gamma)
+        E_map = iota * self._to_Kl
+        E = twist_elliptic_curve(self.change_ring(E_map), gamma)
+        l = self.isogeny_lambda
+        d = self.degree_map
+        G = K.galois_group()
+        isogenies = dict()
+        for s in G:
+            L, K_to_L, alpha = field_with_root(K, s(gamma)/gamma, give_embedding=True)
+            isogenies[s] = (K_to_L(iota(l(s))) * alpha, d(s))
+        return FreyQcurve(E, isogenies=isogenies,
+                          parameter_ring=self._R,
+                          conversion=self._R_to_base,
+                          condition=self._condition)
+
+    @cached_method
+    def conductor_restriction_of_scalars(self, additive_primes=None,
+                                         verbose=False, precision_cap=20):
+        r"""
+        Gives the conductor of the restriction of scalars of this Frey Q-curve.
+
+        Note that since this is a Frey curve, the solution might depend on the
+        parameter so the outcome will be a conditional expression that contains
+        a factor expressed as a string since it can not be explicitly computed.
+
+        INPUT:
+
+        - ``bad_primes`` -- An iterable containing prime ideals
+          or prime numbers, if the decomposition field is QQ, that
+          contains all the primes at which this curve, over the
+          decomposition field, can have additive reduction and all
+          the primes at which the decomposition field ramifies. If
+          set to None will compute this by using the method
+          primes_of_possible_additive_reduction and by computing
+          the ramified primes of the decomposition field.
+        - ``verbose`` -- A boolean (default: False) indicating
+          whether additional information should be printed
+          during computation. If set to True will print
+          information about the current step of computation
+          during the computation.
+        - ``precision_cap`` A strictly positive integer
+          (default: 20) giving the maximal precision level to be
+          used in p-Adic arithmetic.
+
+        OUTPUT:
+
+        The conductor of the restriction of scalars of this curve over the
+        decomposition field. This will be a conditional expression containing
+        on the left side a (conditional) expression of the part of the
+        conductor coming from primes in additive_primes, whilst the right hand
+        side is a string describing how to compute the part of the conductor
+        coming from primes coprime to the primes in additivie_primes. The
+        latter contains the operator Rad_P which refers to taking the radical
+        of an expression ignoring those primes in additive_primes.
+        """
+        K0 = self.definition_field()
+        K = self.decomposition_field()
+        if additive_primes is None:
+            additive_primes = copy(self.primes_of_possible_additive_reduction())
+            for p in K.discriminant().prime_factors():
+                for P in K.primes_above(p):
+                    if P.ramification_index() > 1 and P not in additive_primes:
+                        additive_primes.append(P)
+        if K0 != K:
+            iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
+            E = self.change_ring(iota)
+        else:
+            E = self
+        # Proposition 1 of Milne, On the arithmetic of Abelian varieties
+        N = E.conductor(additive_primes=additive_primes,
+                        verbose=verbose,
+                        precision_cap=precision_cap)
+        additive_part = N.left()
+        Dsqr = K.discriminant()^2
+        if isinstance(additive_part, ConditionalExpression):
+            additive_factors = N.left().factors()
+            left_factors = {p: e * factors[f] for f in factors for p,e in f.absolute_norm().factor()}
+            for p, e in Dsqr.factor():
+                if p in left_factors:
+                    left_factors[p] = left_factors[p] + e
+                else:
+                    left_factors[p] = e
+            left = Dsqr.unit() * product(p^e for p,e in left_factors.iteritems())
+        else:
+            left = additive_part.absolute_norm() * Dsqr
+        return ConditionalExpression(N.operator(),
+                                     left,
+                                     "Norm(" + N.right() +")")
+
+    def _newform_levels(self, N=None, **kwds):
+        r"""
+        Gives the possible levels of newforms associated to this Frey Q-curve.
+
+        NOTE:
+
+        These newforms are computed using only finitely many information which can
+        be supplied by the user through the parameter N. Otherwise the information
+        will be limited to the left side of the expression returned by
+        conductor_restriction_of scalars.
+
+        For Frey curves this is sufficient information, since level lowering results
+        often imply that a newform of the level mentioned above should exist. Note
+        that this is however not checked nor proved by this code, hence the user
+        should verify this themself and supply a different N if necessary.
+
+        INPUT:
+        
+        - ``prime`` -- A prime number or None (default: None) indicating the exponent
+          of which prime the level should be computed or None for the level itself.
+        - ``alpha`` -- A tuple of non-negative integers (default: None) containing the
+          conductors of the characters associated to the newforms. Will be computed
+          from the splitting characters up to conjugacy if set to None.
+        - ``beta`` -- A tuple of tuples of non-negative integers (default: None)
+          containing at index i, j the conductor of the twist that turns the i-th
+          newform into the j-th newform. Will be computed from the twist characters
+          up to conjugacy if set to None.
+        - ``gamma`` -- A tuple of tuples of non-negative integers (default: None)
+          containing at index i, j the conductor of the product of the twist that
+          turns the i-th newform into the j-th newform and the character of the
+          i-th newform. Will be computed from the twist characters and splitting
+          characters up to conjugacy if set to None
+        - ``d`` -- A tuple of non-negative integers (default: None) containing the
+          respective degrees of the fields in which the newforms have their
+          coefficients.
+        - ``N`` -- A non-negative integer (default: None) or ConditionalValue with
+          such values giving the conductor of the restriction of scalars of this
+          Q-curve over the decomposition field. Will be computed using the
+          corresponding method if set to None, in which case only the non-radical
+          part of the resulting ConditionalExpression will be used.
+        
+        OUTPUT:
+
+        A list of tuples, each tuple representing one of the options for the levels
+        of the newforms associated to this Q-curve. If a prime was given, these
+        tuples will contain the respective exponent of the given prime for each
+        newform. If no prime was given, they will contain the respective level of
+        each newform.
+
+        If the argument N was a ConditionalValue will return a list of tuples
+        each of which contain a list as described above as their first entry
+        and a condition for which this list is relevant as their second entry.
+        """
+        if N is None:
+            N = self.conductor_restriction_of_scalars().left()
+        if isinstance(N, ConditionalValue):
+            return [(self._newform_levels(N=Ni, **kwds), con) for Ni, con in N]
+        return Qcurve._newform_levels(self, N=N, **kwds)
+        
     def _repr_(self):
         """
         String representation of a Frey Q-curve.

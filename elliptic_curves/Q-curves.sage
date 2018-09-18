@@ -1292,9 +1292,12 @@ class Qcurve(EllipticCurve_number_field):
         """
         K0 = self.definition_field()
         K = self.decomposition_field()
-        iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
-        # Proposition 1 of Milne, On the arithmetic of Abelian varieties
-        return self.change_ring(iota).conductor().absolute_norm() * K.discriminant()^2
+        if K0 != K:
+            iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
+            # Proposition 1 of Milne, On the arithmetic of Abelian varieties
+            return self.change_ring(iota).conductor().absolute_norm() * K.discriminant()^2
+        else:
+            return self.conductor().absolute_norm() * K.discriminant()^2
 
     def _newform_levels(self, prime=None, alpha=None, beta=None, gamma=None, d=None, N=None):
         r"""
