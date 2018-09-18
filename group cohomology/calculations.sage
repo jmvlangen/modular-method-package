@@ -153,20 +153,27 @@ def hilbert90(K, f):
     
     A non-zero element a of K such that for any
     automorphism s of K we have s(a) = f(s)*a.
-    Furthermore this element is minimal in norm
-    among such elements.
+    Furthermore this element has the minimal
+    integral norm among such elements.
     """
     if not (is_NumberField(K) and K.is_galois()):
         raise ValueError("%s is not a galois number field."%(K,))
     while K.base() != QQ:
         K = K.absolute_field(names=[str(g) for g in K.gens()])
     G = K.galois_group()
+    if not all(f(s) * s(f(t)) == f(s*t) for s in G for t in G):
+        raise ValueError("%s is not a valid function for Hilbert 90."%(f,))
     a = 0
     for b in K.power_basis():
         if a != 0:
             break
         a = sum(s(b)/K(f(s)) for s in G)
     if a == 0:
-        raise ValueError("%s is not a valid function for Hilbert 90."%(f,))
-    n = product(p^(floor(e/K.degree())) for p, e in a.absolute_norm().factor())
+        raise ArithmeticError("Disproved Hilbert 90")
+    I = a.numerator_ideal()
+    J = a.denominator_ideal()
+    d = I.smallest_integer()
+    m = (K.ideal(d)*J*I^(-1)).smallest_integer()    
+    n = d / m # Biggest rational such that a is an integral
+              # element times that element.
     return a/n
