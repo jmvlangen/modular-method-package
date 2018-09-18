@@ -135,11 +135,14 @@ class Qcurve(EllipticCurve_number_field):
         if not isinstance(curve, EllipticCurve_number_field):
             raise ValueError("%s can not be a Q-curve"%curve)
         K = curve.base_ring()
-        Kgal = K.galois_closure(names=K.variable_name() + 'g')
-        G = Kgal.galois_group()
-        iota = K.hom([a.minpoly().change_ring(Kgal).roots()[0][0] for a in K.gens()], Kgal)
-        ainvs = [iota(a) for a in curve.a_invariants()]
-        EllipticCurve_number_field.__init__(self, Kgal, ainvs)
+        if not K.is_galois():
+            Kgal = K.galois_closure(names=K.variable_name() + 'g')
+            G = Kgal.galois_group()
+            iota = K.hom([a.minpoly().change_ring(Kgal).roots()[0][0] for a in K.gens()], Kgal)
+            ainvs = [iota(a) for a in curve.a_invariants()]
+            EllipticCurve_number_field.__init__(self, Kgal, ainvs)
+        else:
+            EllipticCurve_number_field.__init__(self, K, curve.a_invariants())
 
     def _galois_cache_key(self, sigma):
         return str(sigma), sigma.parent().number_field()
@@ -242,7 +245,7 @@ class Qcurve(EllipticCurve_number_field):
         G = self.definition_field().galois_group()
         fd = self.torsion_polynomial(degree)
         Kd, yotad = fd.splitting_field(names='a'+str(degree), map=True)
-        Ed = self.change_ring(yotad)
+        Ed = EllipticCurve_number_field.base_extend(self, yotad)
         for g,e in fd.change_ring(yotad).factor():
             psi = Ed.isogeny(g)
             E_t = psi.codomain()
@@ -1110,8 +1113,8 @@ class Qcurve(EllipticCurve_number_field):
         G = K.galois_group()
         l = self.isogeny_lambda
         d = self.degree_map
-        return {s: (l(galois_field_change(s, K)),
-                    d(galois_field_change(s, K))) for s in G}
+        return {s: (l(galois_field_change(s, self.definition_field())),
+                    d(galois_field_change(s, self.definition_field()))) for s in G}
 
     def base_extend(self, R):
         result = EllipticCurve_number_field.base_extend(self, R)
@@ -1197,7 +1200,7 @@ class Qcurve(EllipticCurve_number_field):
         def c_err(sigma, tau):
             return US(self.c(sigma, tau) / self.c_splitting_map(sigma, tau))
         alpha = function_with_coboundary(G, US, c_err)
-        gamma = hilbert90(K, alpha)
+        gamma = hilbert90(K, lambda s: alpha(s)^2)
         return self.twist(gamma)
 
     def complete_definition_twist(self, roots):

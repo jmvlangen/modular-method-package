@@ -172,7 +172,10 @@ class FreyCurve(EllipticCurve_generic):
         """
         Tfull = pAdicTree(variables=self.parameters(),
                           pAdics=pAdicBase(self._R, prime))
-        return self._condition.pAdic_tree(pAdic_tree=Tfull, verbose=verbose)
+        if self._condition is None:
+            return Tfull
+        else:
+            return self._condition.pAdic_tree(pAdic_tree=Tfull, verbose=verbose)
 
     @cached_method(key=lambda self, prime, verbose, precision_cap: (prime, precision_cap))
     def local_data(self, prime, verbose=False, precision_cap=20):
@@ -388,16 +391,18 @@ class FreyCurve(EllipticCurve_generic):
             return ConditionalValue([(val[0], con) for val,con in result])
 
     def base_extend(self, R):
-        if hasattr(R, 'domain'):
-            if R.domain() == self.definition_ring():
-                def F(x):
-                    x.change_ring(R)
-                R = F
-        result = EllipticCurve_general.base_extend(self, R)
+        if (hasattr(R, 'domain') and
+            R.domain() == self.definition_ring()):
+            dom = self.base_ring()
+            codom = dom.change_ring(R.codomain())
+            F = RingHomomorphism_from_base(dom.Hom(codom), R)
+            result = EllipticCurve_generic.base_extend(self, F)
+        else:
+            result = EllipticCurve_generic.base_extend(self, R)
         if ( (is_PolynomialRing(result.base_ring()) or
               is_MPolynomialRing(result.base_ring())) and
-             ([str(v) for v in result.base_ring().variables()] ==
-              [str(v) for v in self.parameters()])):
+             (result.base_ring().variable_names() ==
+              tuple(str(v) for v in self.parameters()))):
             return FreyCurve(result,
                              parameter_ring=self._R,
                              conversion=self._R_to_base,
@@ -429,7 +434,14 @@ class FreyCurve(EllipticCurve_generic):
 
         A conditional expression that gives the conductor of
         this Frey curve for each possible value of the
-        parameters on which it depends.
+        parameters on which it depends. The left side of this
+        expression is some expression that gives the part of
+        the conductor at all the primes given in additive_primes,
+        whilst the right side is a string describing how to
+        compute the part of the conductor that is coprime to
+        those primes. The latter contains the operator Rad_P
+        which refers to taking the radical of an expression
+        ignoring those primes in additive_primes.
         """
         if additive_primes is None:
             additive_primes = self.primes_of_possible_additive_reduction()
@@ -527,7 +539,7 @@ class FreyCurveLocalData(EllipticCurveLocalData):
         s += "with parameters %s"%(self.parameters(),)
         return s
 
-class FreyQCurve(FreyCurve, Qcurve):
+class FreyQcurve(FreyCurve, Qcurve):
     r"""
     A Frey curve that is a Q-curve over some number field
     """
