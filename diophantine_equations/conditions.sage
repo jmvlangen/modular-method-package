@@ -311,14 +311,19 @@ class CongruenceCondition(PolynomialCondition):
         pAdics that divides the modulus given in this
         Condition.
         If complement is set to True will also give the
-        complement of this tree in the given tree as a 
-        second return value.
+        complement of this tree or the same tree if the
+        prime in the given pAdics does not divide the
+        modulus.
         """
         precision = pAdics.valuation(self.modulus())
-        return PolynomialCondition.pAdic_tree(self, pAdic_tree=pAdic_tree,
-                                              pAdics=pAdics, complement=complement,
-                                              verbose=verbose, precision=precision,
-                                              **kwds)
+        result = PolynomialCondition.pAdic_tree(self, pAdic_tree=pAdic_tree,
+                                                pAdics=pAdics, complement=complement,
+                                                verbose=verbose, precision=precision,
+                                                **kwds)
+        if complement and precision == 0:
+            return result[0], result[0]
+        else:
+            return result
     
     def _repr_(self):
         mod = self.modulus()
