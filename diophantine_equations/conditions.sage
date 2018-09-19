@@ -1042,7 +1042,20 @@ class ConditionalValue(SageObject):
             if not isinstance(c, Condition_base):
                 raise ValueError("%s is not a condition"%(c,))
 
+    def no_value(self):
+        r"""
+        Tells if this conditional value does not attain any value.
+
+        OUTPUT:
+
+        True - If this condition does not contain any possible value.
+        False - If this condition contains at least one value.
+        """
+        return len(self._vals) == 0
+
     def _repr_lines(self):
+        if self.no_value():
+            return []
         result = [str(val) for val in self._vals]
         l = max(len(r) for r in result) + 1
         result = [r +
@@ -1053,6 +1066,8 @@ class ConditionalValue(SageObject):
         return result
     
     def _repr_(self):
+        if self.no_value():
+            return "Conditional value with no possible value."
         lines = self._repr_lines()
         result = ""
         for i, line in enumerate(lines):
@@ -1062,12 +1077,16 @@ class ConditionalValue(SageObject):
         return result
 
     def _latex_lines(self):
+        if self.no_value():
+            return []
         return [latex(val) +
                 "& \\text{ if }" +
                 latex(self._con[i])
                 for i, val in enumerate(self._vals)]
     
     def _latex_(self):
+        if self.no_value():
+            return "\\text{Conditional value with no possible value.}"
         result = "\\left\\{ \\begin{array}{lr}\n"
         for i, line in enumerate(self._latex_lines()):
             if i > 0:
@@ -1360,7 +1379,13 @@ class ConditionalExpression(SageObject):
             result += "\n where \n"
             front_space = ceil(ZZ(len(vals)).log(10)) + 5
             for i, val in enumerate(vals):
-                for j, line in enumerate(val._repr_lines()):
+                lines = val._repr_lines()
+                if len(lines) == 0:
+                    if i > 0:
+                        result += "\n"
+                    result += "n" + str(i) + " ="
+                    result += " no possible value"
+                for j, line in enumerate(lines):
                     if i + j > 0:
                         result += "\n"
                     r = ""
