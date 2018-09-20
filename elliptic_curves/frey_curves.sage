@@ -818,17 +818,17 @@ class FreyQcurve(FreyCurve, Qcurve):
         """
         K0 = self.definition_field()
         K = self.decomposition_field()
-        if additive_primes is None:
-            additive_primes = copy(self.primes_of_possible_additive_reduction())
-            for p in K.discriminant().prime_factors():
-                for P in K.primes_above(p):
-                    if P.ramification_index() > 1 and P not in additive_primes:
-                        additive_primes.append(P)
         if K0 != K:
             iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
             E = self.change_ring(iota)
         else:
             E = self
+        if additive_primes is None:
+            additive_primes = copy(E.primes_of_possible_additive_reduction())
+            for p in K.discriminant().prime_factors():
+                for P in K.primes_above(p):
+                    if P.ramification_index() > 1 and P not in additive_primes:
+                        additive_primes.append(P)
         # Proposition 1 of Milne, On the arithmetic of Abelian varieties
         N = E.conductor(additive_primes=additive_primes,
                         verbose=verbose,
