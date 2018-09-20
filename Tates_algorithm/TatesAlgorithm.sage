@@ -102,7 +102,7 @@ def get_number_of_roots_cases(poly_list, pAdics, T, name, general_case,
     F = pAdics.residue_field()
     S.<x> = F[]
     child_list = T.children_at_level(n)
-    if verbose:
+    if verbose > 0:
         print "Checking irreducibility in %d cases"%len(child_list)
     for child in child_list:
         coeff_list = [F(poly(child.representative())) for poly in poly_list]
@@ -152,7 +152,7 @@ def _tate_step_2_transformation(E, S, pAdics, T, E0, verbose=False, result=[],
     
     level = _determine_level([S(E.a1()), S(E.a2()), S(E.a3()), S(E.a4()),
                               S(E.a6())], pAdics, T, 1)
-    if verbose:
+    if verbose > 0:
         print "Determining singular point for %d cases"%(T.count_children_at_level(level),)
     for node in T.children_at_level(level):
         # Isolating the singular point x,y
@@ -206,7 +206,7 @@ def _tate_step_2_transformation(E, S, pAdics, T, E0, verbose=False, result=[],
             Tn.merge(node, from_root=True)
             replaceCases[singularPoint] = Tn
     
-    if verbose:
+    if verbose > 0:
         print "Performing transformation for %d cases"%(len(replaceCases),)
     for (point,Tn) in replaceCases.iteritems():
         xn = F.lift(point[0])
@@ -267,7 +267,7 @@ def _tate_step_6_transformation(E, S, pAdics, T, E0, verbose=False, result=[],
         half = (F(2)^(-1))
         
         level = _determine_level([a1, a31], pAdics, T, 1)
-        if verbose:
+        if verbose > 0:
             print "Determining necessary transformation for %d cases"%(T.count_children_at_level(level),)
         for node in T.children_at_level(level):
             alpha = -half * F(a1(node.representative()))
@@ -292,7 +292,7 @@ def _tate_step_6_transformation(E, S, pAdics, T, E0, verbose=False, result=[],
         a62 = S(E.a6()/(pi^2))
         
         level = _determine_level([a2, a62], pAdics, T, 1)
-        if verbose:
+        if verbose > 0:
             print "Determining necessary transformation for %d cases"%T.count_children_at_level(level)
         for node in T.children_at_level(level):
             alphaSqrd = -F(a2(node.representative()))
@@ -307,7 +307,7 @@ def _tate_step_6_transformation(E, S, pAdics, T, E0, verbose=False, result=[],
                 Tn.merge(node, from_root=True)
                 changeDict[alphaBetaPair] = Tn
                 
-    if verbose:
+    if verbose > 0:
         print "Performing %d transformations"%len(changeDict)
     for (alphaBetaPair, Tn) in changeDict.iteritems():
         En = E.rst_transform(0, F.lift(alphaBetaPair[0]),F.lift(alphaBetaPair[1]) * pi)
@@ -396,7 +396,7 @@ def _tate_step_7sub_transformation(E, S, pAdics, T, E0, n, verbose=False,
                 a3k = S(E.a3()/(pi^k))
                 level = _determine_level([a3k], pAdics, T, 1)
       
-    if verbose:
+    if verbose > 0:
         print "Determining necessary transformation for %d cases"%T.count_children_at_level(level)
     for node in T.children_at_level(level):
         if n == 1:
@@ -435,7 +435,7 @@ def _tate_step_7sub_transformation(E, S, pAdics, T, E0, n, verbose=False,
             Tn.merge(node, from_root=True)
             changeDict[change] = Tn
             
-    if verbose:
+    if verbose > 0: 
         print "Performing %d transformations."%len(changeDict)
     for (change, Tn) in changeDict.iteritems():
         if n==1:
@@ -480,7 +480,7 @@ def _tate_step_8_transformation(E, S, pAdics, T, E0, verbose=False, result=[],
         changeDict = dict()
         a63 = S(E.a6()/(pi^3))
         level = _determine_level([a63], pAdics, T, 1)
-        if verbose:
+        if verbose > 0:
             print "Determining necessary transformation for %d cases"%T.count_children_at_level(level)
         for node in T.children_at_level(level):
             cube = F(a63(node.representative()))
@@ -492,7 +492,7 @@ def _tate_step_8_transformation(E, S, pAdics, T, E0, verbose=False, result=[],
                 Tn.merge(node, from_root=True)
                 changeDict[change] = Tn
         
-        if verbose:
+        if verbose > 0:
             print "Performing %d transformations."%len(changeDict)
         for (change, Tn) in changeDict.iteritems():
             En = E.rst_transform(-pi * F.lift(change), 0, 0)
@@ -531,7 +531,7 @@ def _tate_step_9_transformation(E, S, pAdics, T, E0, verbose=False, result=[],
         changeDict = dict()
         a64 = S(E.a6()/(pi^4))
         level = _determine_level([a64], pAdics, T, 1)
-        if verbose:
+        if verbose > 0:
             print "Determining necessary transformation for %d cases"%T.count_children_at_level(level)
         for node in T.children_at_level(level):
             square = -F(a64(node.representative()))
@@ -543,7 +543,7 @@ def _tate_step_9_transformation(E, S, pAdics, T, E0, verbose=False, result=[],
                 Tn.merge(node, from_root=True)
                 changeDict[change] = Tn
         
-        if verbose:
+        if verbose > 0:
             print "Performing %d transformations."%len(changeDict)
         for (change, Tn) in changeDict.iteritems():
             En = E.rst_transform(0, 0, -pi^2 * F.lift(change))
@@ -572,7 +572,7 @@ def _tate_step_10(E, S, pAdics, T, E0, **kwds):
                                    case_big, case_small, **kwds)
                                
 def _tate_step_11(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
-    if verbose:
+    if verbose > 0:
         print "Performing final transformation and restarting the algorithm."
     pi = pAdics.uniformizer()
     a1 = S(E.a1()/pi)
@@ -883,9 +883,18 @@ def performTatesAlgorithm(elliptic_curve, coefficient_ring=None,
       elliptic curve. If not given, this will be initialized by
       this function.
       
-    - ``verbose`` -- A boolean value (default: False). If set
-      to True the program will print information about the steps
-      it is performing and will ask its subfunctions to do the same.
+    - ``verbose`` -- A boolean value or an integer (default: False).
+      When set to True or any value larger then zero will print
+      comments to stdout about the computations being done whilst
+      busy. If set to False or 0 will not print such comments. If
+      set to any negative value will also prevent the printing of
+      any warnings.
+      If this method calls any method that accepts an argument
+      verbose will pass this argument to it. If such a method
+      fulfills a minor task within this method and the argument
+      verbose was larger than 0, will instead pass 1 less than the
+      given argument. This makes it so a higher value will print
+      more details about the computation than a lower one.
       
     - ``precision_cap`` -- A non-negative integer (default: 20).
       This argument determines the highest precision that will be
@@ -944,126 +953,136 @@ def performTatesAlgorithm(elliptic_curve, coefficient_ring=None,
         for case in cases:
             if case.has_key('next_step'):
                 if case['next_step'] == 1:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 1"
                     _tate_step_1(case['E'], S, pAdics, case['T'], case['E0'],
                                  variables=variables, result=newCases,
-                                 verbose=verbose, precision_cap=precision_cap)
+                                 verbose=(verbose-1 if verbose>0 else verbose),
+                                 precision_cap=precision_cap)
                 elif case['next_step'] == 2:         
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 2 transformation"  
                     _tate_step_2_transformation(case['E'], S, pAdics, case['T'],
                                                 case['E0'],
                                                 variables=variables,
                                                 result=newCases,
-                                                verbose=verbose,
+                                                verbose=(verbose-1 if verbose>0 else verbose),
                                                 precision_cap=precision_cap)
                 elif case['next_step'] == 2 + 1/2:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 2"
                     _tate_step_2(case['E'], S, pAdics, case['T'], case['E0'],
                                  variables=variables, result=newCases,
-                                 verbose=verbose, precision_cap=precision_cap)
+                                 verbose=(verbose-1 if verbose>0 else verbose),
+                                 precision_cap=precision_cap)
                 elif case['next_step'] == 3:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 3"
                     _tate_step_3(case['E'], S, pAdics, case['T'], case['E0'],
                                  variables=variables, result=newCases,
-                                 verbose=verbose, precision_cap=precision_cap)
+                                 verbose=(verbose-1 if verbose>0 else verbose),
+                                 precision_cap=precision_cap)
                 elif case['next_step'] == 4:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 4"
                     _tate_step_4(case['E'], S, pAdics, case['T'], case['E0'],
                                  variables=variables, result=newCases,
-                                 verbose=verbose, precision_cap=precision_cap)
+                                 verbose=(verbose-1 if verbose>0 else verbose),
+                                 precision_cap=precision_cap)
                 elif case['next_step'] == 5:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 5"
                     _tate_step_5(case['E'], S, pAdics, case['T'], case['E0'],
                                  variables=variables, result=newCases,
-                                 verbose=verbose, precision_cap=precision_cap)
+                                 verbose=(verbose-1 if verbose>0 else verbose),
+                                 precision_cap=precision_cap)
                 elif case['next_step'] == 6:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 6 transformation"
                     _tate_step_6_transformation(case['E'], S, pAdics, case['T'],
                                                 case['E0'],
                                                 variables=variables,
                                                 result=newCases,
-                                                verbose=verbose,
+                                                verbose=(verbose-1 if verbose>0 else verbose),
                                                 precision_cap=precision_cap)
                 elif case['next_step'] == 6 + 1/2:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 6"
                     _tate_step_6(case['E'], S, pAdics, case['T'], case['E0'],
                                  variables=variables, result=newCases,
-                                 verbose=verbose, precision_cap=precision_cap)
+                                 verbose=(verbose-1 if verbose>0 else verbose),
+                                 precision_cap=precision_cap)
                 elif case['next_step'] == 7:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 7"
                     _tate_step_7(case['E'], S, pAdics, case['T'], case['E0'],
                                  case, only_calculate, variables=variables,
-                                 result=newCases, verbose=verbose,
+                                 result=newCases, verbose=(verbose-1 if verbose>0 else verbose),
                                  precision_cap=precision_cap)
                 elif case['next_step'] in QQ and case['next_step'] < 8:
                     n , b = decodeQuotient( case['next_step'] - 7 )
                     if b == 0:
-                        if verbose:
+                        if verbose > 0:
                             print "Performing Step 7sub transformation"
                         _tate_step_7sub_transformation(case['E'], S, pAdics, case['T'],
                                                        case['E0'], n,
                                                        variables=variables,
                                                        result=newCases,
-                                                       verbose=verbose,
+                                                       verbose=(verbose-1 if verbose>0 else verbose),
                                                        precision_cap=precision_cap)
                     else:
-                        if verbose:
+                        if verbose > 0:
                             print "Performing Step 7sub"
                         _tate_step_7sub(case['E'], S, pAdics, case['T'], case['E0'], n,
                                         variables=variables, result=newCases,
-                                        verbose=verbose,
+                                        verbose=(verbose-1 if verbose>0 else verbose),
                                         precision_cap=precision_cap)
                 elif case['next_step'] == 8:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 8 transformation"
                     _tate_step_8_transformation(case['E'], S, pAdics, case['T'],
                                                 case['E0'],
                                                 variables=variables,
                                                 result=newCases,
-                                                verbose=verbose,
+                                                verbose=(verbose-1 if verbose>0 else verbose),
                                                 precision_cap=precision_cap)
                 elif case['next_step'] == 8 + 1/2:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 8"
                     _tate_step_8(case['E'], S, pAdics, case['T'], case['E0'],
                                  variables=variables, result=newCases,
-                                 verbose=verbose, precision_cap=precision_cap)
+                                 verbose=(verbose-1 if verbose>0 else verbose),
+                                 precision_cap=precision_cap)
                 elif case['next_step'] == 9:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 9 transformation"
                     _tate_step_9_transformation(case['E'], S, pAdics, case['T'],
                                                 case['E0'],
                                                 variables=variables,
                                                 result=newCases,
-                                                verbose=verbose,
+                                                verbose=(verbose-1 if verbose>0 else verbose),
                                                 precision_cap=precision_cap)
                 elif case['next_step'] == 9 + 1/2:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 9"
                     _tate_step_9(case['E'], S, pAdics, case['T'], case['E0'],
                                  variables=variables, result=newCases,
-                                 verbose=verbose, precision_cap=precision_cap)
+                                 verbose=(verbose-1 if verbose>0 else verbose),
+                                 precision_cap=precision_cap)
                 elif case['next_step'] == 10:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 10"
                     _tate_step_10(case['E'], S, pAdics, case['T'], case['E0'],
                                  variables=variables, result=newCases,
-                                 verbose=verbose, precision_cap=precision_cap)
+                                 verbose=(verbose-1 if verbose>0 else verbose),
+                                 precision_cap=precision_cap)
                 elif case['next_step'] == 11:
-                    if verbose:
+                    if verbose > 0:
                         print "Performing Step 11"
                     _tate_step_11(case['E'], S, pAdics, case['T'], case['E0'],
-                                 variables=variables, result=newCases,
-                                 verbose=verbose, precision_cap=precision_cap)
+                                  variables=variables, result=newCases,
+                                  verbose=(verbose-1 if verbose>0 else verbose),
+                                  precision_cap=precision_cap)
                 else:
                     print "Unknown step number %s requested"%case['next_step']
             elif _should_calculate_vDelta(case, only_calculate):

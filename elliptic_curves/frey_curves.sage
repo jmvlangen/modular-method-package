@@ -162,9 +162,21 @@ class FreyCurve(EllipticCurve_generic):
         - ``prime`` -- A (maximal) prime ideal of the ring in
           which the parameters take value or any generator
           thereof if it is principal.
-        - ``verbose`` -- A boolean (default: False) indicating
-          whether additional information should be printed
-          during computation.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
         
         OUTPUT:
 
@@ -189,9 +201,21 @@ class FreyCurve(EllipticCurve_generic):
           curve is defined over a subring of QQ or a maximal ideal
           of the ring of integers if it is defined over a subring
           of a number field.
-        - ``verbose`` -- A boolean (default: False) indicating
-          whether additional information should be printed
-          during computation.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
         - ``precision_cap`` A strictly positive integer
           (default: 20) giving the maximal precision level to be
           used in p-Adic arithmetic.
@@ -205,7 +229,7 @@ class FreyCurve(EllipticCurve_generic):
         """
         pAdics = pAdicBase(self.definition_ring(), prime)
         Tp = _initial_tree(pAdics.prime_below(self._R),
-                           verbose=verbose)
+                           verbose=(verbose-1 if verbose>0 else verbose))
         result = performTatesAlgorithm(self,
                                        initial_values=Tp,
                                        coefficient_ring=self.base(),
@@ -228,9 +252,21 @@ class FreyCurve(EllipticCurve_generic):
           curve is defined over a subring of QQ or a maximal ideal
           of the ring of integers if it is defined over a subring
           of a number field.
-        - ``verbose`` -- A boolean (default: False) indicating
-          whether additional information should be printed
-          during computation.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
         - ``precision_cap`` A strictly positive integer
           (default: 20) giving the maximal precision level to be
           used in p-Adic arithmetic.
@@ -261,7 +297,7 @@ class FreyCurve(EllipticCurve_generic):
             
         pAdics = pAdicBase(self.definition_ring(), prime)
         Tp = _initial_tree(pAdics.prime_below(self._R),
-                           verbose=verbose)
+                           verbose=(verbose-1 if verbose>0 else verbose))
         result = performTatesAlgorithm(self,
                                        initial_values=Tp,
                                        coefficient_ring=self.base(),
@@ -285,9 +321,21 @@ class FreyCurve(EllipticCurve_generic):
           curve is defined over a subring of QQ or a maximal ideal
           of the ring of integers if it is defined over a subring
           of a number field.
-        - ``verbose`` -- A boolean (default: False) indicating
-          whether additional information should be printed
-          during computation.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
         - ``precision_cap`` A strictly positive integer
           (default: 20) giving the maximal precision level to be
           used in p-Adic arithmetic.
@@ -318,7 +366,7 @@ class FreyCurve(EllipticCurve_generic):
         
         pAdics = pAdicBase(self.definition_ring(), prime)
         Tp = _initial_tree(pAdics.prime_below(self._R),
-                           verbose=verbose)
+                           verbose=(verbose-1 if verbose>0 else verbose))
         result = performTatesAlgorithm(self,
                                        initial_values=Tp,
                                        coefficient_ring=self.base(),
@@ -342,9 +390,21 @@ class FreyCurve(EllipticCurve_generic):
           curve is defined over a subring of QQ or a maximal ideal
           of the ring of integers if it is defined over a subring
           of a number field.
-        - ``verbose`` -- A boolean (default: False) indicating
-          whether additional information should be printed
-          during computation.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
         - ``precision_cap`` A strictly positive integer
           (default: 20) giving the maximal precision level to be
           used in p-Adic arithmetic.
@@ -378,7 +438,7 @@ class FreyCurve(EllipticCurve_generic):
         
         pAdics = pAdicBase(self.definition_ring(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R),
-                                verbose=verbose)
+                                verbose=(verbose-1 if verbose>0 else verbose))
         result = performTatesAlgorithm(self,
                                        initial_values=Tp,
                                        coefficient_ring=self.base(),
@@ -422,11 +482,21 @@ class FreyCurve(EllipticCurve_generic):
           contains all the primes at which this curve can have
           additive reduction. If set to None will compute this
           by using the method primes_of_possible_additive_reduction
-        - ``verbose`` -- A boolean (default: False) indicating
-          whether additional information should be printed
-          during computation. If set to True will print
-          information about the current step of computation
-          during the computation.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
         - ``precision_cap`` A strictly positive integer
           (default: 20) giving the maximal precision level to be
           used in p-Adic arithmetic.
@@ -716,11 +786,21 @@ class FreyQcurve(FreyCurve, Qcurve):
           set to None will compute this by using the method
           primes_of_possible_additive_reduction and by computing
           the ramified primes of the decomposition field.
-        - ``verbose`` -- A boolean (default: False) indicating
-          whether additional information should be printed
-          during computation. If set to True will print
-          information about the current step of computation
-          during the computation.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
         - ``precision_cap`` A strictly positive integer
           (default: 20) giving the maximal precision level to be
           used in p-Adic arithmetic.
