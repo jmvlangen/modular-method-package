@@ -903,7 +903,7 @@ class Qcurve(EllipticCurve_number_field):
                          for ii in self._conjugacy_determination())
         raise Exception("Invalid index %s"%index)
 
-    @cached_method(key=_galois_cache_key2(self, s, t))
+    @cached_method(key=_galois_cache_key2)
     def c_splitting_map(self, sigma, tau):
         r"""
         Evaluates the coboundary of a splitting map of this Q-curve.
