@@ -7,6 +7,7 @@ do
     file=${path##*/}
     name=${file%.sage}
     output="./results/${name}.log"
+    echo "Running ${file}"
     touch "${output}"
     /usr/bin/time -v -o "${timetmp}" sage "${path}" &> "${output}"
     echo '' >> "${output}"
