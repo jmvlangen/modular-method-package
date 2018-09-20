@@ -163,11 +163,21 @@ class PolynomialCondition(Condition_base):
         - ``precision`` -- A strictly positive integer
           (default: 20) giving up to what precision the
           resulting tree should be found.
-        - ``verbose`` -- A boolean (default: False)
-          which indicates whether this method and
-          underlying method should print information
-          about the ongoing computation. This will be
-          done if set to True.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
 
         OUTPUT:
 
@@ -276,11 +286,21 @@ class CongruenceCondition(PolynomialCondition):
         - ``complement`` -- A boolean (default: False)
           determining whether the complement of the result
           should be returned.
-        - ``verbose`` -- A boolean (default: False)
-          which indicates whether this method and
-          underlying method should print information
-          about the ongoing computation. This will be
-          done if set to True.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
 
         OUTPUT:
 
@@ -369,11 +389,21 @@ class PowerCondition(PolynomialCondition):
         - ``complement`` -- A boolean (default: False)
           determining whether the complement of the result
           should be returned.
-        - ``verbose`` -- A boolean (default: False)
-          which indicates whether this method and
-          underlying method should print information
-          about the ongoing computation. This will be
-          done if set to True.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
 
         OUTPUT:
 

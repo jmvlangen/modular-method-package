@@ -77,9 +77,17 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
       means that the function finds all p-adic values that form a root
       modulo P^n where P is the prime ideal over which we do p-adics.
       
-    - ``verbose`` -- A boolean value (default: True). When set to True
-      this function will print informative information about the steps
-      it is doing.  
+    - ``verbose`` -- A boolean value or an integer (default: False).
+      When set to True or any value larger then zero will print comments
+      to stdout about the computations being done whilst busy. If set
+      to False or 0 will not print such comments. If set to any negative
+      value will also prevent the printing of any warnings.
+      If this method calls any method that accepts an argument verbose
+      will pass this argument to it. If such a method fulfills a minor
+      task within this method and the argument verbose was larger than
+      0, will instead pass 1 less than the given argument. This makes it
+      so a higher value will print more details about the computation
+      than a lower one.
       
     - ``give_list`` -- A boolean value (default: False). When set to
       True the result of this function will be a list of trees. A
@@ -124,12 +132,19 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
     polynomial, least_power = _modify_polynomial(polynomial, pAdics, variables)
     multiplicity = pAdics.extension_multiplicity(value_tree.pAdics())
     precision, var_precision = _init_precision(precision, precision_cap,
-                                               least_power, multiplicity)
+                                               least_power, multiplicity,
+                                               verbose)
     polynomial_derivatives = _init_derivatives(polynomial, variables)
+
+    if verbose > 0:
+        print "Finding roots of %s modulo %s^%s."(polynomial,
+                                                  pAdics.prime_ideal()._repr_short(),
+                                                  precision)
        
     result = _find_pAdicRoots(polynomial, polynomial_derivatives, value_tree,
                               precision, var_precision, multiplicity, pAdics,
-                              verbose=verbose, give_list=give_list,
+                              verbose=(verbose-1 if verbose > 0 else verbose),
+                              give_list=give_list,
                               quit_on_empty=give_list)
     if give_list:
         return result, least_power
@@ -137,7 +152,7 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
         return result
 
 def _pAdic_fill_in_check(f, T, prec, pAdics, verbose=False):
-    if verbose:
+    if verbose > 0:
         print "Checking for roots at level 1"
     Tno = pAdicNode(pAdics=T.pAdics(), width=T.width)
     for node in T.children_at_level(1):
@@ -159,13 +174,13 @@ def _pAdic_convert_function(pAdics1, pAdics2, step_size):
     return result
         
 def _pAdic_hensel_check(f, fder, T, level, step_size, pAdics, verbose=False):
-    if verbose:
+    if verbose > 0:
         print "Checking for roots at level %d"%level
     Tyes = pAdicNode(pAdics=T.pAdics(), width=T.width)
     phi = _pAdic_convert_function(pAdics, T.pAdics(), step_size)
     F = T.pAdics().residue_field()
     pi = T.pAdics().uniformizer()
-    if verbose:
+    if verbose > 1:
         print "Start loop of %d cycles"%T.count_children_at_level(level-1)
     for node in T.children_at_level(level - 1):
         fa = phi(f(node.representative())/(pi^(level-1)))
@@ -280,13 +295,13 @@ def _modify_polynomial(polynomial, pAdics, variables):
         polynomial = pAdics.uniformizer()^(-least_power) * polynomial
     return polynomial, least_power
            
-def _init_precision(precision, precision_cap, least_power, multiplicity):
+def _init_precision(precision, precision_cap, least_power, multiplicity, verbose):
     if not precision in ZZ:
         raise ValueError("The precision should be an integer, not %s."%(precision,))
     if not precision_cap in ZZ:
         raise ValueError("The precision cap should be an integer, not %s"%(precision_cap,))
     precision = precision - least_power
-    if precision > multiplicity * precision_cap:
+    if precision > multiplicity * precision_cap and verbose >= 0:
         precision = multiplicity * precision_cap
         print "Warning: Lowering precision on root to %d to accomodate for precision_cap on variables"%(precision+least_power)
     if precision < 0:

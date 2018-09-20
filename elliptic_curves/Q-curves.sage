@@ -66,7 +66,7 @@ class Qcurve(EllipticCurve_number_field):
     def _is_cached(self, var):
         return hasattr(self, var) and getattr(self, var) != None
 
-    def __init__(self, curve, isogenies={}, guessed_degrees=[]):
+    def __init__(self, curve, isogenies={}, guessed_degrees=[], verbose=False):
         r"""
         Constructor of a Q-curve
 
@@ -105,6 +105,17 @@ class Qcurve(EllipticCurve_number_field):
          - ``guessed_degrees`` -- A list (default: []) of strictly positive
            integers indicating possible degrees of isogenies from galois
            conjugates of this curve to itself.
+        - ``verbose`` -- A boolean value or an integer (default: False). When
+          set to True or any value larger then zero will print comments to
+          stdout about the computations being done whilst busy. If set to
+          False or 0 will not print such comments. If set to any negative
+          value will also prevent the printing of any warnings.
+          If this method calls any method that accepts an argument verbose
+          will pass this argument to it. If such a method fulfills a minor
+          task within this method and the argument verbose was larger than 0,
+          will instead pass 1 less than the given argument. This makes it so
+          a higher value will print more details about the computation than a
+          lower one.
         """
         self._init_curve(curve)
         self._init_isogenies()
@@ -112,7 +123,7 @@ class Qcurve(EllipticCurve_number_field):
             self._add_isogeny(sigma, phi)
         flag = self._fill_isogenies()
         for d in guessed_degrees:
-            self._add_isogenies_of_degree(d)
+            self._add_isogenies_of_degree(d, verbose=verbose)
             flag = self._fill_isogenies()
             if flag:
                 break
@@ -238,7 +249,7 @@ class Qcurve(EllipticCurve_number_field):
                 return flag
         return flag
 
-    def _add_isogenies_of_degree(self, degree):
+    def _add_isogenies_of_degree(self, degree, verbose=False):
         r"""
         Attempts to find isogenies of a given degree.
         """
@@ -252,7 +263,8 @@ class Qcurve(EllipticCurve_number_field):
             j_t = E_t.j_invariant()
             for s in G:
                 if yotad(self.galois_conjugate(s).j_invariant()) == j_t:
-                    print "Degree %s isogeny found for"%degree, s
+                    if verbose > 0:
+                        print "Degree %s isogeny found for"%degree, s
                     l1 = _lambda_of_isomorphism(self.galois_conjugate(s).change_ring(yotad),E_t)
                     l2 = _lambda_of_isogeny(psi.dual())
                     Kl, p1, p2 = composite_field(l1.parent(), l2.parent(), give_maps=True)
@@ -767,6 +779,8 @@ class Qcurve(EllipticCurve_number_field):
           varieties of $GL_2$-type.
         - False, otherwise.
         """
+        if not self._is_cached("_beta"):
+            self.splitting_map(verbose=-1)
         c = self.c
         c_beta = self.c_splitting_map
         G = self.decomposition_field().galois_group()
@@ -784,7 +798,7 @@ class Qcurve(EllipticCurve_number_field):
             return sqrt(Lbeta(d(sigma) * eps(sigma)))
         return beta
 
-    def _first_splitting_map(self):
+    def _first_splitting_map(self, verbose=False):
         r"""
         Computes a splitting map corresponding to the first
         splitting character.
@@ -811,10 +825,11 @@ class Qcurve(EllipticCurve_number_field):
             if not self.does_decompose():
                 raise ValueError("Should be impossible to reach this code!");
         except ArithmeticError:
-            print "Warning: The restriction of scalars of this Q-curve over the "+\
-                  "decomposition field does not decompose into abelian varieties"+\
-                  " of GL_2-type. Pleas use the method decomposable_twist to "+\
-                  "find a twist that does."
+            if verbose >= 0:
+                print "Warning: The restriction of scalars of this Q-curve over the "+\
+                      "decomposition field does not decompose into abelian varieties"+\
+                      " of GL_2-type. Pleas use the method decomposable_twist to "+\
+                      "find a twist that does."
         return self._beta
 
     def _indexed_splitting_map(self, i):
@@ -833,8 +848,8 @@ class Qcurve(EllipticCurve_number_field):
             return Lbeta(L(beta0(sigma)) * L(chi(sigma)))
         return beta
 
-    @cached_method
-    def splitting_map(self, index=0):
+    @cached_method(key=lambda self, i, v: i)
+    def splitting_map(self, index=0, verbose=False):
         r"""
         Gives a splitting map of this Q-curve.
 
@@ -849,6 +864,21 @@ class Qcurve(EllipticCurve_number_field):
             for each conjugacy class of splitting maps.
           Also accepts tuples of accepted values including
           tuples themselves.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
 
         OUTPUT:
 
@@ -860,19 +890,20 @@ class Qcurve(EllipticCurve_number_field):
         in the same order.
         """
         if hasattr(index, "__iter__"):
-            return tuple(self.splitting_map(i) for i in index)
+            return tuple(self.splitting_map(i, verbose=verbose) for i in index)
         if index in ZZ:
             if index == 0:
-                return self._first_splitting_map()
+                return self._first_splitting_map(verbose=verbose)
             else:
                 return self._indexed_splitting_map(index)
         if index == 'all':
-            return self.splitting_map(tuple(range(self.number_of_splitting_maps())))
+            return self.splitting_map(tuple(range(self.number_of_splitting_maps())), verbose=verbose)
         if index == 'conjugacy':
-            return tuple(self.splitting_map(index=ii[0]) for ii in self._conjugacy_determination())
+            return tuple(self.splitting_map(index=ii[0], verbose=verbose)
+                         for ii in self._conjugacy_determination())
         raise Exception("Invalid index %s"%index)
 
-    @cached_method(key=_galois_cache_key2)
+    @cached_method(key=_galois_cache_key2(self, s, t))
     def c_splitting_map(self, sigma, tau):
         r"""
         Evaluates the coboundary of a splitting map of this Q-curve.
@@ -884,6 +915,21 @@ class Qcurve(EllipticCurve_number_field):
         
         - ``sigma`` -- A galois homomorphism of a number field.
         - ``tau`` -- A galois homomorphism of a number field.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
 
         OUTPUT:
         
@@ -896,7 +942,7 @@ class Qcurve(EllipticCurve_number_field):
         $\tau$ galois extensions to $\bar{\Q}$ of sigma and tau respectively.
         """
         if not self._is_cached('_beta'):
-            self.splitting_map();
+            self.splitting_map(verbose=verbose);
         return QQ(self._beta(sigma) * self._beta(tau) * self._beta(sigma*tau)^(-1))
 
     def _Kl_roots(self):
