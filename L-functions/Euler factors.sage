@@ -70,7 +70,7 @@ def _Euler_factor_elliptic_curve_local(E, P, R):
         return R.one() - x
     else:
         aP = NP + 1 - E.reduction(P).count_points()
-        return R.one() - aP * x + NP * x^2
+        return R.one() - aP * x^e + NP * x^(2*e)
 
 def _Euler_factor_elliptic_curve_local_QQ(E, p, R):
     r"""
