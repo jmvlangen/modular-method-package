@@ -831,7 +831,7 @@ class Qcurve(EllipticCurve_number_field):
             if verbose >= 0:
                 print "Warning: The restriction of scalars of this Q-curve over the "+\
                       "decomposition field does not decompose into abelian varieties"+\
-                      " of GL_2-type. Pleas use the method decomposable_twist to "+\
+                      " of GL_2-type. Use the method decomposable_twist to "+\
                       "find a twist that does."
         return self._beta
 
@@ -1237,6 +1237,8 @@ class Qcurve(EllipticCurve_number_field):
         to a product of Q-simple, non-Q-isogenous abelian varieties of
         GL_2-type.
         """
+        if self.does_decompose():
+            return self
         K = self.decomposition_field()
         CG = K.class_group(proof=False)
         Pgen = [CG(product(K.primes_above(p))) for p in K.discriminant().prime_factors()]
