@@ -539,15 +539,16 @@ class Qcurve(EllipticCurve_number_field):
 
     def _first_splitting_character(self):
         N = 1
-        eps_ls = [DirichletGroup(1)[0]]
+        L = CyclotomicField(lcm(euler_phi(p) for p in self._xi_pm_primes()))
+        eps_ls = [DirichletGroup(1, base_ring=L)[0]]
         for p in self._xi_pm_primes():
             if self.xi_pm_local(p) == -1:
                 if p == 2:
                     N *= 4
-                    eps_ls.append(DirichletGroup(4).gen())
+                    eps_ls.append(DirichletGroup(4, base_ring=L).gen())
                 else:
                     N *= p
-                    eps_ls.append(DirichletGroup(p).gen())
+                    eps_ls.append(DirichletGroup(p, base_ring=L).gen())
         return product([eps_p.extend(N) for eps_p in eps_ls]).primitive_character()
 
     def _splitting_character_data(self, i, j):
@@ -581,7 +582,9 @@ class Qcurve(EllipticCurve_number_field):
                 eps0 = self._eps[0][0]
                 chi = self.twist_character(i).primitive_character()
                 N = lcm(eps0.conductor(),chi.conductor())
-                self._eps[i] = [(eps0.extend(N) * chi.extend(N)^2).primitive_character()]
+                L = composite_field(eps0.base_ring(), chi.base_ring())
+                D = DirichletGroup(N, base_ring=L)
+                self._eps[i] = [(D(eps0) * D(chi)^2).primitive_character()]
             if j >= 1 and len(self._eps[i]) < 2:
                 self._eps[i].append(dirichlet_fixed_field(self._eps[i][0]))
             if j >= 2 and len(self._eps[i]) < 3:
@@ -998,12 +1001,10 @@ class Qcurve(EllipticCurve_number_field):
         D = DirichletGroup(N)
         self._chi = []
         for chi in D:
-            flag = True
             for x in ker:
                 if chi(x) != 1:
-                    flag = False
                     break
-            if flag:
+            else:
                 self._chi.append([chi])
 
     def _twist_character_data(self, i, j):
@@ -1398,16 +1399,22 @@ class Qcurve(EllipticCurve_number_field):
         each newform.
         """
         # Calculate missing stuff:
+        eps = []
+        chi = []
         if alpha is None or gamma is None:
             eps = [character^(-1) for character in self.splitting_character(index='conjugacy')]
         if beta is None or gamma is None:
             chi = [character^(-1) for character in self.twist_character(index='conjugacy')]
         if alpha is None or beta is None or gamma is None:
             M = lcm(character.modulus() for character in (eps + chi))
+            L = QQ
+            for character in eps + chi:
+                L = composite_field(L, character.base_ring())
+            D = DirichletGroup(M, base_ring=L)
         if alpha is None or gamma is None:
-            eps = [character.extend(M) for character in eps]
+            eps = [D(character) for character in eps]
         if beta is None or gamma is None:
-            chi = [character.extend(M) for character in chi]
+            chi = [D(character) for character in chi]
         if alpha is None:
             alpha = tuple(eps[i].conductor() for i in range(len(eps)))
         if beta is None:
