@@ -1251,8 +1251,14 @@ class Qcurve(EllipticCurve_number_field):
             if CI not in skip and CI^2 in H:
                 S0.append(CI.ideal())
                 skip.extend([CI * h for h in H])
-        S = [P for I in S0 for P in I.prime_factors()]
         G = K.galois_group()
+        S = []
+        for I in S0:
+            for P in I.prime_factors():
+                for s in G:
+                    sP = s(P)
+                    if sP not in S:
+                        S.append(sP)
         US = K.S_unit_group(proof=False, S=S)
         def c_err(sigma, tau):
             return US(self.c(sigma, tau) / self.c_splitting_map(sigma, tau))
