@@ -856,13 +856,17 @@ class FreyQcurve(FreyCurve, Qcurve):
         Dsqr = K.discriminant()^2
         if isinstance(additive_part, ConditionalExpression):
             additive_factors = N.left().factors()
-            left_factors = {p: e * factors[f] for f in factors for p,e in f.absolute_norm().factor()}
-            for p, e in Dsqr.factor():
+            left_factors = {p: e * additive_factors[f] for f in additive_factors for p,e in f.absolute_norm().factor()}
+            disc_factors = Dsqr.factor()
+            for p, e in disc_factors:
                 if p in left_factors:
                     left_factors[p] = left_factors[p] + e
                 else:
                     left_factors[p] = e
-            left = Dsqr.unit() * product(p^e for p,e in left_factors.iteritems())
+            if hasattr(disc_factors, 'unit') and disc_factors.unit() != 1:
+                left = Dsqr.factor().unit() * product(p^e for p,e in left_factors.iteritems())
+            else:
+                left = product(p^e for p,e in left_factors.iteritems())
         else:
             left = additive_part.absolute_norm() * Dsqr
         return ConditionalExpression(N.operator(),
