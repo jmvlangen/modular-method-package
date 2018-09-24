@@ -1293,7 +1293,7 @@ class ConditionalExpression(SageObject):
             return "n" + str(len(vals) - 1)
         return str(side)
 
-    def _operation_on(left, right):
+    def _operation_on(self, left, right):
         r"""
         Performs the operation of this expression on two values.
 
@@ -1311,15 +1311,15 @@ class ConditionalExpression(SageObject):
         - If the operation is anything else will return a
           ValueError.
         """
-        if self._op == ConditionalExpression.SUM_OPERATION:
+        if self._op == ConditionalExpression.SUM_OPERATOR:
             return left + right
-        if self._op == ConditionalExpression.MINUS_OPERATION:
+        if self._op == ConditionalExpression.MINUS_OPERATOR:
             return left - right
-        if self._op == ConditionalExpression.PRODUCT_OPERATION:
+        if self._op == ConditionalExpression.PRODUCT_OPERATOR:
             return left * right
-        if self._op == ConditionalExpression.DIVISION_OPERATION:
+        if self._op == ConditionalExpression.DIVISION_OPERATOR:
             return left / right
-        if self._op == ConditionalExpression.EXPONENT_OPERATION:
+        if self._op == ConditionalExpression.EXPONENT_OPERATOR:
             return left ^ right
         raise ValueError('Can not evaluate operation %s'%(self._op,))
     
@@ -1362,8 +1362,8 @@ class ConditionalExpression(SageObject):
             result = []
             for val, con in right:
                 result.append((self._operation_on(left, val),
-                               con_r))
-            return result
+                               con))
+            return ConditionalValue(result)
         return self._operation_on(left, right)
         
     def _repr_info(self, vals, bracket_level):
