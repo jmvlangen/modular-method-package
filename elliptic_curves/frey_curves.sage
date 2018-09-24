@@ -924,6 +924,8 @@ class FreyQcurve(FreyCurve, Qcurve):
         """
         if N is None:
             N = self.conductor_restriction_of_scalars().left()
+        if isinstance(N, ConditionalExpression):
+            N = N.value()
         if isinstance(N, ConditionalValue):
             return [(self._newform_levels(N=Ni, **kwds), con) for Ni, con in N]
         return Qcurve._newform_levels(self, N=N, **kwds)
