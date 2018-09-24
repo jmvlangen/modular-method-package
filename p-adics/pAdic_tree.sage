@@ -1790,13 +1790,18 @@ class pAdicTree(SageObject):
           
         OUTPUT:
         
-        A list of all nodes at level `level` that are in this tree.
+        A tuple consisting of
+        - A list of copies of all nodes at level `level` that are
+          in this tree.
+        - The root of the tree that is a copy of this one. This
+          must be assigned a value for the tree to keep existing.
         
         ..SEEALSO:
         
             :func:`pAdicNode.children_at_level`
         """
-        return self.root().children_at_level(level)
+        T = self.root()
+        return T.children_at_level(level), T
         
     def pAdics(self):
         r"""
