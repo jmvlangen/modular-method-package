@@ -516,10 +516,21 @@ class FreyCurve(EllipticCurve_generic):
         """
         if additive_primes is None:
             additive_primes = self.primes_of_possible_additive_reduction()
-        result = product(P^self.conductor_exponent(P, verbose=verbose,
-                                                 precision_cap=precision_cap)
-                         for P in additive_primes)
-        return ConditionalExpression(['*','\cdot',2], result, "Rad_P( " + str(self.discriminant().factor()) + " )")
+        result = 1
+        for P in additive_primes:
+            factor = P^self.conductor_exponent(P, verbose=verbose,
+                                               precision_cap=precision_cap)
+            if result == 1:
+                result = factor
+            elif isinstance(factor, ConditionalExpression):
+                result = ConditionalExpression(ConditionalExpression.PRODUCT_OPERATOR,
+                                               result,
+                                               factor)
+            else:
+                result = result * factor
+        return ConditionalExpression(ConditionalExpression.PRODUCT_OPERATOR,
+                                     result,
+                                     "Rad_P( " + str(self.discriminant().factor()) + " )")
         
 class FreyCurveLocalData(EllipticCurveLocalData):    
     def __init__(self, elliptic_curve, prime,
@@ -931,7 +942,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         if isinstance(N, ConditionalExpression):
             N = N.value()
         if isinstance(N, ConditionalValue):
-            return [(self._newform_levels(N=Ni, **kwds), con) for Ni, con in N]
+            return ConditionalValue([(self._newform_levels(N=Ni, **kwds), con) for Ni, con in N])
         return Qcurve._newform_levels(self, N=N, **kwds)
         
     def _repr_(self):

@@ -1264,24 +1264,27 @@ class ConditionalExpression(SageObject):
             result = self._factor_side(self._left)
             extra = self._factor_side(self._right)
             for f in extra:
-                if f in result:
+                if f in result and result[f] != 0:
                     result[f] = result[f] + extra[f]
-                else:
+                elif extra[f] != 0:
                     result[f] = extra[f]
             return result
         if self._op == ConditionalExpression.DIVISION_OPERATOR:
             result = self._factor_side(self._left)
             extra = self._factor_side(self._right)
             for f in extra:
-                if f in result:
+                if f in result and result[f] != 0:
                     result[f] = result[f] - extra[f]
-                else:
+                elif extra[f] != 0:
                     result[f] = 0 - extra[f]
             return result
         if self._op == ConditionalExpression.EXPONENT_OPERATOR:
             result = self._factor_side(self._left)
             for f in result:
-                result[f] = result[f] * self._right
+                if result[f] == 1:
+                    result[f] = self._right
+                elif self._right != 1:
+                    result[f] = result[f] * self._right
             return result
         return {self: 1}
 
@@ -1291,6 +1294,8 @@ class ConditionalExpression(SageObject):
         if isinstance(side, ConditionalValue):
             vals.append(side)
             return "n" + str(len(vals) - 1)
+        if hasattr(side, "_repr_short"):
+            return side._repr_short()
         return str(side)
 
     def _operation_on(self, left, right):
