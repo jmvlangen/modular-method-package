@@ -782,18 +782,21 @@ class FreyQcurve(FreyCurve, Qcurve):
             for s in Kmin.galois_group():
                 l, d = isogenies[galois_field_change(s, K)]
                 isogenies_min[s] = (Kmin(l), d)
-            ainvs = {a.change_ring(Kmin) for a in ainvs}
-            conversion = (K_E.hom([a.minpoly().change_ring(Kmin).roots()[0][0]
-                                  for a in K_E.gens()], Kmin) *
-                          self_to_Kl * self._R_to_base)
+            ainvs = [a.change_ring(Kmin) for a in ainvs]
+            im_gens = K_E.gens()[0].minpoly().change_ring(Kmin).roots()
+            if len(im_gens) > 0:
+                conversion = (K_E.hom([im_gens[0][0]], Kmin) *
+                              self_to_Kl * self._R_to_base)
+            else:
+                conversion = None
             return FreyQcurve(ainvs, isogenies=isogenies_min,
                               parameter_ring=self._R,
                               conversion=conversion,
                               condition=self._condition)
-        conversion = E_map * self._condition
+        conversion = E_map * self._R_to_base
         return FreyQcurve(ainvs, isogenies=isogenies,
                           parameter_ring=self._R,
-                          conversion=self._R_to_base,
+                          conversion=conversion,
                           condition=self._condition)
 
     @cached_method

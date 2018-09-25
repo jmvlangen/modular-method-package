@@ -1224,6 +1224,7 @@ class Qcurve(EllipticCurve_number_field):
             ainvs = [Kmin(a) for a in ainvs]
             return Qcurve(ainvs, isogenies=isogenies_min)
         return Qcurve(ainvs, isogenies=isogenies)
+    
     def decomposable_twist(self):
         r"""
         Gives another Q-curve which restriction of scalars over the decomposition
