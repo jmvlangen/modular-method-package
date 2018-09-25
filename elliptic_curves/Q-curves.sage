@@ -1203,6 +1203,7 @@ class Qcurve(EllipticCurve_number_field):
         gamma = gamma_map(gamma)
         E_map = iota * self._to_Kl
         E = twist_elliptic_curve(self.change_ring(E_map), gamma)
+        ainvs = E.a_invariants()
         l = self.isogeny_lambda
         d = self.degree_map
         G = K.galois_group()
@@ -1210,8 +1211,18 @@ class Qcurve(EllipticCurve_number_field):
         for s in G:
             L, K_to_L, alpha = field_with_root(K, s(gamma)/gamma, give_embedding=True)
             isogenies[s] = (K_to_L(iota(l(s))) * alpha, d(s))
-        return Qcurve(E, isogenies=isogenies)
-    
+        H = [t for t in G if (all(t(isogenies[s][0]) == isogenies[s][0] for s in G) and
+                              all(t(a) == a for a in ainvs))]
+        Kmin = fixed_field(H)
+        if Kmin != K:
+            isogenies_min = {}
+            G = Kmin.galois_group()
+            for s in Kmin.galois_group():
+                l, d = isogenies[galois_field_change(s, K)]
+                isogenies_min[s] = (Kmin(l), d)
+            ainvs = [Kmin(a) for a in ainvs]
+            return Qcurve(ainvs, isogenies=isogenies_min)
+        return Qcurve(ainvs, isogenies=isogenies)
     def decomposable_twist(self):
         r"""
         Gives another Q-curve which restriction of scalars over the decomposition
@@ -1247,7 +1258,7 @@ class Qcurve(EllipticCurve_number_field):
             return US(self.c(sigma, tau) / self.c_splitting_map(sigma, tau))
         alpha = function_with_coboundary(G, US, c_err)
         gamma = hilbert90(K, lambda s: alpha(s)^2)
-        return self.twist(gamma)
+        return self.twist(gamma) # twist will do the minimization of the field!
 
     def complete_definition_twist(self, roots):
         r"""

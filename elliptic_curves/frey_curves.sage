@@ -754,6 +754,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         gamma = gamma_map(gamma)
         E_map = iota * self._to_Kl
         E = twist_elliptic_curve(self.change_ring(E_map), gamma)
+        ainvs = E.a_invariants()
         l = self.isogeny_lambda
         d = self.degree_map
         G = K.galois_group()
@@ -761,7 +762,25 @@ class FreyQcurve(FreyCurve, Qcurve):
         for s in G:
             L, K_to_L, alpha = field_with_root(K, s(gamma)/gamma, give_embedding=True)
             isogenies[s] = (K_to_L(iota(l(s))) * alpha, d(s))
-        return FreyQcurve(E, isogenies=isogenies,
+        H = [t for t in G if (all(t(isogenies[s][0]) == isogenies[s][0] for s in G) and
+                              all(t(c) == c for a in ainvs for c in a.coefficients()))]
+        Kmin = fixed_field(H)
+        if Kmin != K:
+            isogenies_min = {}
+            G = Kmin.galois_group()
+            for s in Kmin.galois_group():
+                l, d = isogenies[galois_field_change(s, K)]
+                isogenies_min[s] = (Kmin(l), d)
+            ainvs = {a.change_ring(Kmin) for a in ainvs}
+            conversion = (K_E.hom([a.minpoly().change_ring(Kmin).roots()[0][0]
+                                  for a in K_E.gens()], Kmin) *
+                          self_to_Kl * self._R_to_base)
+            return FreyQcurve(ainvs, isogenies=isogenies_min,
+                              parameter_ring=self._R,
+                              conversion=conversion,
+                              condition=self._condition)
+        conversion = E_map * self._condition
+        return FreyQcurve(ainvs, isogenies=isogenies,
                           parameter_ring=self._R,
                           conversion=self._R_to_base,
                           condition=self._condition)
