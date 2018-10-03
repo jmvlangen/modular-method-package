@@ -23,3 +23,16 @@ print ""; print E2._newform_levels()
 # []                                                               if ('a', 'b') == (1, 0) mod 2 and ('a', 'b') == (1, 1) mod 2
 # []                                                               if ('a', 'b') == (1, 1) mod 2 and ('a', 'b') == (1, 0) mod 2
 # [(11520, 11520, 57600, 57600), (57600, 57600, 11520, 11520)]     if ('a', 'b') == (1, 1) mod 2 and ('a', 'b') == (1, 1) mod 2
+
+### Computing newspaces
+eps = E1.splitting_character()
+# eps = E2.splitting_character() # Note that they are in fact the same!!!
+Dm = magma.DirichletGroup(eps.conductor(), magma(eps.base_ring()))
+for eps_m in Dm.Elements():
+    if (eps_m(11) == eps(11) and eps_m(7) == eps(7)): # 11 -> -1 , 7 -> zeta4, conductor 15
+        break
+
+cfs1 = magma.CuspForms(magma.DirichletGroup(15360, magma(eps.base_ring()))(eps_m))
+cfs21 = magma.CuspForms(magma.DirichletGroup(11520, magma(eps.base_ring()))(eps_m))
+cfs22 = magma.CuspForms(magma.DirichletGroup(23040, magma(eps.base_ring()))(eps_m))
+
