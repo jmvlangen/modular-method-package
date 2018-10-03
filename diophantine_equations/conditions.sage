@@ -1464,3 +1464,44 @@ class ConditionalExpression(SageObject):
 
     def __rpow__(self, other):
         return ConditionalExpression(ConditionalExpression.EXPONENT_OPERATOR, other, self)
+
+def apply_to_conditional_value(function, value, singleton=False):
+    r"""
+    Applies a function to a conditional value.
+
+    INPUT:
+    
+    - ``function`` -- Any function
+    - ``value`` -- Any value that is accepted by the
+      given function as an input or a ConditionalValue
+      that contains such values.
+    - ``singleton`` -- A boolean value (default: False)
+      indicating whether a ConditionalValue with only
+      one possibility should be returned.
+
+    OUTPUT:
+
+    The function evaluated on the given value. If the
+    given value was a ConditionalValue this means the function
+    is evaluated on every value in the ConditionalValue
+    producing a new ConditionalValue of possible outcomes.
+    Conditions which produce the same outcome will be combined
+    using the OrCondition. If the resulting ConditionalValue
+    would have only one possibility and singleton is set to
+    False, will return the value of that single possibility
+    instead of the whole ConditionalValue.
+    """
+    if isinstance(value, ConditionalValue):
+        result = {}
+        for val, con in value:
+            f_val = function(val)
+            if f_val in result:
+                result[f_val] = (result[f_val] | con)
+            else:
+                result[f_val] = con
+        if not singleton and len(result) == 1:
+            return result.keys()[0]
+        else:
+            return ConditionalValue(list(result.iteritems()))
+    else:
+        return function(value)    
