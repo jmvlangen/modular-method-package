@@ -171,6 +171,22 @@ class pAdicBase(SageObject):
         """
         return self._P
 
+    def prime(self):
+        r"""
+        Returns the prime associated to these p-adics.
+
+        OUTPUT:
+
+        The prime ideal associated to these p-adics if the
+        associated number field is not \Q. Otherwise simply
+        the prime number that generates that prime ideal.
+        """
+        P = self.prime_ideal()
+        if self._R == ZZ:
+            return P.gens()[0]
+        else:
+            return P
+
     def prime_below(self, R):
         r"""
         Gives the prime that lies below the prime of this
@@ -205,6 +221,24 @@ class pAdicBase(SageObject):
             if Q in L.primes_above(PL):
                 return P
         raise ValueError("No prime in %s lies below %s"%(K, Q))
+
+    def pAdics_below(self, R):
+        r"""
+        Gives the p-Adics that lies below this one.
+
+        INPUT:
+
+        - ``R`` -- A subring of the number field of this
+          pAdicBase.
+
+        OUTPUT:
+
+        A pAdicBase object over the ring of fractions of R
+        such that its prime lies below the prime stored in
+        this pAdicBase.
+        """
+        return pAdicBase(R.fraction_field(),
+                         self.prime_below(R))
         
     def uniformizer(self):
         r"""

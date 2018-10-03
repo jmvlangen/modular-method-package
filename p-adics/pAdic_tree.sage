@@ -1991,12 +1991,26 @@ class pAdicTree(SageObject):
         return result
 
     @cached_method
+    def get_values_at_level(self, level):
+        r"""
+        Gives the values in this tree at a given level.
+
+        INPUT:
+
+        - ``level`` -- A non-negative integer.
+
+        OUTPUT:
+
+        A list which contains for each node at the given level
+        its representative.
+        """
+        return [node.representative() for node in self._root.childer_at_level(m)].sort()
+
+    @cached_method
     def give_as_congruence_condition(self):
         m = self._root.minimum_full_level()
-        values = [node.representative() for node in self._root.children_at_level(m)]
         modulus = self.pAdics().prime_ideal()^m
-        values.sort()
-        return values, modulus
+        return self.get_values_at_level(m), modulus
         
     def _check_similar_tree(self, other):
         r"""
