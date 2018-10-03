@@ -678,19 +678,11 @@ def _tate_calculate_c(E, S, pAdics, T, case, result=[], **kwds):
         elif KS.startswith('I0'): #II
             case['c'] = 1
         else: #In
-            if case.has_key('roots'):
-                if case['roots'] > 0:
-                    case['c'] = case['vDelta']
-                    case['split'] = True
-                else:
-                    case['c'] = (1 if is_odd(case['vDelta']) else 2)
-                    case['split'] = False
+            if case['split']:
+                case['c'] = case['vDelta']
             else:
-                return get_number_of_roots_cases([S(1),
-                                                  S(E.a1()),
-                                                  S(-E.a2())],
-                                                 pAdics, T, 'roots', case,
-                                                 result=result, **kwds)
+                case['c'] = (1 if is_odd(case['vDelta']) else 2)
+
     result.append(case)
     return result
     
@@ -707,6 +699,19 @@ def _tate_calculate_n(E, S, pAdics, T, case, result=[], **kwds):
         case['KS'] = KS.replace('n', str(case['vDelta']))
     result.append(case)
     return result
+
+def _tate_calculate_split(E, S, pAdics, T, case, result=[], **kwds):
+    if case.has_key('roots'):
+        if case['roots'] > 0:
+            case['split'] = True
+        else:
+            case['split'] = False
+    else:
+        return get_number_of_roots_cases([S(1),
+                                          S(E.a1()),
+                                          S(-E.a2())],
+                                         pAdics, T, 'roots', case,
+                                         result=result, **kwds)
     
 def _tate_finish(case, restrictions, result=[], variables=None, **kwds):
     tree = pAdicTree(variables=variables, root=case['T'])
@@ -733,6 +738,17 @@ def _tate_finish(case, restrictions, result=[], variables=None, **kwds):
         for r in restrictions:
             if r == 'conductor':
                 myresult.append(case['f'])
+            if r == 'reduction_type':
+                f = case['f']
+                if f == 0:
+                    myresult.append(None)
+                elif f == 1:
+                    if case['split']:
+                        my_result.append(1)
+                    else:
+                        my_result.append(-1)
+                else:
+                    my_result.append(0)
             if r == 'discriminant':
                 myresult.append(case['vDelta'])
             if r == 'type':
@@ -758,12 +774,19 @@ def _should_calculate_m(case, restrictions):
 def _should_calculate_f(case, restrictions):
     return not case.has_key('f') and \
            ((len(restrictions) == 0) or
-            ('conductor' in restrictions))
+            ('conductor' in restrictions) or
+            ('reduction_type' in restrictions))
 
 def _should_calculate_n(case, restrictions):
     return case['KS'].count('n') > 0 and \
            ((len(restrictions) == 0) or
             ('type' in restrictions))
+
+def _should_calculate_split(case, restrictions):
+    return (case['f'] == 1 and
+            not case.has_key('split') and
+            (_should_calculate_c(case, restrictions) or
+             'reduction_type' in restrictions))
 
 def _should_calculate_c(case, restrictions):
     return not case.has_key('c') and \
@@ -909,6 +932,9 @@ def performTatesAlgorithm(elliptic_curve, coefficient_ring=None,
       algorithm only calculates a certain quantity or quantities.
       Possible values are:
         - 'conductor' > Only calculate the conductor exponent
+        - 'reduction_type' > Only calculate the reduction type, i.e.
+          good, split multiplicative, non-split multiplicative or
+          additive, returned as None, 1, -1 or 0 respectively.
         - 'discriminant' > Only calculate the valuation of the
                            discriminant
         - 'type' > Only calculate the Kodaira Symbol
@@ -1102,6 +1128,10 @@ def performTatesAlgorithm(elliptic_curve, coefficient_ring=None,
                 _tate_calculate_n(case['E'], S, pAdics, case['T'], case,
                                   variables=variables, result=newCases,
                                   verbose=verbose, precision_cap=precision_cap)
+            elif _should_calculate_split(case, only_calculate):
+                _tate_calculate_split(case['E'], S, pAdics, case['T'], case,
+                                      variables=variables, result=newCases,
+                                      verbose=verbose, precision_cap=precision_cap)
             elif _should_calculate_c(case, only_calculate):
                 _tate_calculate_c(case['E'], S, pAdics, case['T'], case,
                                   variables=variables, result=newCases,
