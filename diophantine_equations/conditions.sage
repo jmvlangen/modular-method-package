@@ -948,11 +948,16 @@ class TreeCondition(Condition_base):
                                    full=True)
         if pAdics is None:
             pAdics = pAdic_tree.pAdics()
-        result = self._T.intersection(pAdic_tree).change_variables(pAdic_tree.variables())
-        if complement:
-            return result, pAdic_tree.difference(result)
+        if pAdics == self._T.pAdics():
+            result = self._T.intersection(pAdic_tree).change_variables_to(pAdic_tree.variables())
+            if complement:
+                return result, pAdic_tree.difference(result)
+            else:
+                return result
+        elif complement:
+            return pAdic_tree, pAdic_tree
         else:
-            return result
+            return pAdic_tree
 
     def _repr_len(self, max_item=50, max_char=1000):
         r"""

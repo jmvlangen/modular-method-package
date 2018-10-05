@@ -706,6 +706,8 @@ def _tate_calculate_split(E, S, pAdics, T, case, result=[], **kwds):
             case['split'] = True
         else:
             case['split'] = False
+        result.append(case)
+        return result
     else:
         return get_number_of_roots_cases([S(1),
                                           S(E.a1()),
@@ -744,11 +746,11 @@ def _tate_finish(case, restrictions, result=[], variables=None, **kwds):
                     myresult.append(None)
                 elif f == 1:
                     if case['split']:
-                        my_result.append(1)
+                        myresult.append(1)
                     else:
-                        my_result.append(-1)
+                        myresult.append(-1)
                 else:
-                    my_result.append(0)
+                    myresult.append(0)
             if r == 'discriminant':
                 myresult.append(case['vDelta'])
             if r == 'type':

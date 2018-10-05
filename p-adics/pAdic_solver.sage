@@ -137,9 +137,9 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
     polynomial_derivatives = _init_derivatives(polynomial, variables)
 
     if verbose > 0:
-        print "Finding roots of %s modulo %s^%s."(polynomial,
-                                                  pAdics.prime_ideal()._repr_short(),
-                                                  precision)
+        print "Finding roots of %s modulo %s^%s."%(polynomial,
+                                                   pAdics.prime_ideal()._repr_short(),
+                                                   precision)
        
     result = _find_pAdicRoots(polynomial, polynomial_derivatives, value_tree,
                               precision, var_precision, multiplicity, pAdics,

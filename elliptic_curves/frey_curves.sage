@@ -195,9 +195,10 @@ class FreyCurve(EllipticCurve_generic):
         if condition is None:
             return Tfull
         else:
-            return condition.pAdic_tree(pAdic_tree=Tfull, verbose=verbose)
+            return condition.pAdic_tree(pAdic_tree=Tfull, verbose=verbose,
+                                        precision_cap=precision_cap)
 
-    @cached_method(key=lambda s, p, c, v, pc: (p, v, pc))
+    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
     def local_data(self, prime, condition=None, verbose=False, precision_cap=20):
         r"""
         Gives a minimal model of this curve at a given prime.
@@ -240,9 +241,9 @@ class FreyCurve(EllipticCurve_generic):
         Frey curve.
         """
         pAdics = pAdicBase(self.definition_ring(), prime)
-        Tp = _initial_tree(pAdics.prime_below(self._R),
-                           condition=condition,
-                           verbose=(verbose-1 if verbose>0 else verbose))
+        Tp = self._initial_tree(pAdics.prime_below(self._R),
+                                condition=condition,
+                                verbose=(verbose-1 if verbose>0 else verbose))
         result = performTatesAlgorithm(self,
                                        initial_values=Tp,
                                        coefficient_ring=self.base(),
@@ -301,9 +302,9 @@ class FreyCurve(EllipticCurve_generic):
             return apply_to_conditional_value(lambda x: x.minimal_model(),
                                               local_data)
         pAdics = pAdicBase(self.definition_ring(), prime)
-        Tp = _initial_tree(pAdics.prime_below(self._R),
-                           condition,
-                           verbose=(verbose-1 if verbose>0 else verbose))
+        Tp = self._initial_tree(pAdics.prime_below(self._R),
+                                condition,
+                                verbose=(verbose-1 if verbose>0 else verbose))
         result = performTatesAlgorithm(self,
                                        initial_values=Tp,
                                        coefficient_ring=self.base(),
@@ -364,9 +365,9 @@ class FreyCurve(EllipticCurve_generic):
                                               local_data)
         
         pAdics = pAdicBase(self.definition_ring(), prime)
-        Tp = _initial_tree(pAdics.prime_below(self._R),
-                           condition=condition,
-                           verbose=(verbose-1 if verbose>0 else verbose))
+        Tp = self._initial_tree(pAdics.prime_below(self._R),
+                                condition=condition,
+                                verbose=(verbose-1 if verbose>0 else verbose))
         result = performTatesAlgorithm(self,
                                        initial_values=Tp,
                                        coefficient_ring=self.base(),
@@ -498,7 +499,8 @@ class FreyCurve(EllipticCurve_generic):
         pAdics = pAdicBase(self.definition_ring(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R),
                                 condition=condition,
-                                verbose=(verbose-1 if verbose>0 else verbose))
+                                verbose=(verbose-1 if verbose>0 else verbose),
+                                precision_cap=precision_cap)
         result = performTatesAlgorithm(self,
                                        initial_values=Tp,
                                        coefficient_ring=self.base(),
@@ -752,7 +754,7 @@ class FreyCurve(EllipticCurve_generic):
                                        condition=condition,
                                        precision_cap=precision_cap)
         return apply_to_conditional_value(lambda x: (x == -1), red_type)
-p
+
     def has_multiplicative_reduction(self, prime, condition=None, verbose=False, precision_cap=20):
         r"""
         Tells whether this curve has multiplicative reduction at a given prime.
@@ -838,13 +840,17 @@ p
         a_invs = [a(tuple(self._R_to_base(val) for val in values)) for a in self.a_invariants()]
         return EllipticCurve(a_invs)
 
-    def conductor(self, additive_primes=None, verbose=False,
+    def conductor(self, condition=None, additive_primes=None, verbose=False,
                   precision_cap=20):
         r"""
         Computes the possible conductors of this Frey curve.
 
         INPUT:
 
+        - ``condition`` -- A Condition or None (default:
+          None) giving the condition that the parameters of
+          this Frey curve should satisfy. If set to None will
+          use the condition stored in this FreyCurve instead.
         - ``additive_primes`` -- An iterable containing prime ideals
           or prime numbers, if the field of definition is QQ, that
           contains all the primes at which this curve can have
@@ -886,7 +892,7 @@ p
             additive_primes = self.primes_of_possible_additive_reduction()
         result = 1
         for P in additive_primes:
-            factor = P^self.conductor_exponent(P, verbose=verbose,
+            factor = P^self.conductor_exponent(P, condition=condition, verbose=verbose,
                                                precision_cap=precision_cap)
             if result == 1:
                 result = factor
@@ -902,9 +908,9 @@ p
 
     def _trace_of_frobenius(self, pAdics, red_type, condition, verbose, precision_cap):
         T = condition.pAdic_tree(pAdics=pAdics.pAdics_below(self._R),
-                                 verbose=(verbose-1 if verbose > 0 else verbose)
+                                 verbose=(verbose-1 if verbose > 0 else verbose),
                                  precision_cap=precision_cap).root()
-        Fp = len(pAdics.residue_field()) + 1
+        Fp = len(pAdics.residue_field())
         if red_type is None:
             result = {}
             for N in T.children_at_level(1):
@@ -915,6 +921,7 @@ p
                     result[ap] = pAdicNode(pAdics=N.pAdics(),
                                            width=N.width)
                 result[ap].merge(N)
+            return result
         elif red_type == 1 or red_type == -1:
             return {red_type*(len(pAdics.residue_field()) + 1): T}
         else:
@@ -977,7 +984,7 @@ p
         If this would depend on the parameters will return a
         ConditionalValue of options instead.
         """
-        pAdics = pAdicBase(self.definition_field(), prime)
+        pAdics = pAdicBase(self.definition_ring(), prime)
         if condition is None:
             condition = self._condition
         red_type = self.reduction_type(prime, condition=condition,
@@ -1003,11 +1010,12 @@ p
         if len(result) == 1:
             return result[0][0]
         else:
-            return ConditionalValue([a, TreeCondition(pAdicTree(variables=self.parameters(),
-                                                                root=T))
-                                     for a, T in result])
+            return ConditionalValue([(a, TreeCondition(pAdicTree(variables=self.parameters(),
+                                                                root=T)))
+                                     for a, T in result.iteritems()])
 
-    def _newforms(self, level, conditon=None, algorithm='sage'):
+    def _newforms(self, level, condition, additive_primes,
+                  algorithm, prime_cap, verbose):
         r"""
         Computes the possible newforms of a given level.
 
@@ -1020,27 +1028,78 @@ p
 
         - ``level`` -- A strictly postive integer giving the level of the
           newforms which should be associated to this Frey curve.
-        - ``condition`` -- A Condition giving the restrictions on the
-          parameters on this Frey curve that should be considered. By default
-          this will be set to the condition associated to this FreyCurve.
+        
         - ``algorithm`` -- The algorithm to be used to compute the modular
           forms of the given level. Possible options are
             'sage' -- to use the native sage implementation
             'magma' -- to use magma to compute the newforms
         """
+        if algorithm == 'sage':
+            use_magma = False
+        elif algorithm == 'magma':
+            use_magma = True
+        else:
+            raise ValueError("%s is not a valid algorithm."%(algorithm,))
+        if use_magma:
+            cfs = magma.CuspForms(level)
+            nfs = magma.Newforms(cfs)
+            nfs = [(f[1], 0) for f in nfs]
+        else:
+            nfs = [(f, 0) for f in Newforms(level)]
+        p = 1
+        while len(nfs) > 0 and p < prime_cap:
+            nfs_old = nfs
+            nfs = []
+            p = next_prime(p)
+            while p in additive_primes:
+                p = next_prime(p)
+            for f, B in nfs_old:
+                if use_magma:
+                    apf = f.Coefficient(p).sage()
+                else:
+                    apf = f.coefficient(p)
+                K = apf.parent()
+                apE = self.trace_of_frobenius(p, condition=condition,
+                                              verbose=(verbose - 1 if verbose > 0 else -1),
+                                              precision_cap=1)
+                if isinstance(apE, ConditionalValue):
+                    apE_ls = [val for val, con in apE]
+                else:
+                    apE_ls = [apE]
+                if K == QQ:
+                    Bnew = ZZ(p * product(apE - apf for apE in apE_ls))
+                else:
+                    Bnew = ZZ(p * product((apE - apf).absolute_norm() for apE in apE_ls))
+                B = gcd(B, Bnew)
+                if B != 1:
+                    nfs.append((f, B))
+        return [(f, ('all' if B == 0 else B.prime_factors())) for f, B in nfs]
 
-    def newforms(self, additive_primes=None, verbose=False, precision_cap=20):
+    @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap:
+                   ((self._condition if c is None else c), add, prime_cap, prec_cap))
+    def newforms(self, condition=None, additive_primes=None, algorithm='sage',
+                 prime_cap=50, verbose=False, precision_cap=20):
         r"""
         Computes the newforms that could be associated to this Frey curve.
 
         This only works if the Frey curve is defined over \Q.
 
         INPUT:
+        - ``condition`` -- A Condition giving the restrictions on the
+          parameters on this Frey curve that should be considered. By default
+          this will be set to the condition associated to this FreyCurve.
         - ``additive_primes`` -- An iterable containing prime ideals
           or prime numbers, if the field of definition is QQ, that
           contains all the primes at which this curve can have
           additive reduction. If set to None will compute this
           by using the method primes_of_possible_additive_reduction
+        - ``algorithm`` -- One of the following values
+          'sage' -- to use sage to compute newforms (default)
+          'magma' -- to use magma to compute newforms
+        - ``prime_cap`` -- A strictly positive integer (default: 50)
+          that gives a cap on the size of primes for which the
+          traces of frobenius of this curve and a newform should
+          be compared.
         - ``verbose`` -- A boolean value or an integer
           (default: False). When set to True or any value
           larger then zero will print comments to stdout
@@ -1062,19 +1121,48 @@ p
 
         OUTPUT:
 
-        A list of newforms???
+        A list consisting of pairs with as first entry a newform
+        that has a mod-l representation that has traces of frobenius
+        that could match the traces of frobenius of this curve for
+        all primes, different from l, that are not in additive_primes
+        up to the given prime_cap. The second entry is a list of all
+        prime numbers l for which this is true.
+        
+        If the level of the newform might depend on a choice of parameters
+        will instead give a conditional value wherein each value is of
+        the form above and each condition corresponds to a single possible
+        level.
         """
-        if self.definition_field() != QQ:
+        if self.definition_ring() != QQ:
             raise ValueError("Can only find newforms associated to Frey curves over the rationals.")
+        if additive_primes is None:
+            additive_primes = self.primes_of_possible_additive_reduction()
         N = self.conductor(additive_primes=additive_primes,
+                           condition=condition,
                            verbose=verbose,
-                           precision_cap=precision_cap).left().value()
+                           precision_cap=precision_cap).left()
+        if isinstance(N, ConditionalExpression):
+            N = N.value()
+        if condition is None:
+            condition = self._condition
         if isinstance(N, ConditionalValue):
-            return ConditionalValue([self._newforms(level=val,
-                                                    condition=con)
-                                     for val, con in N])
+            result = []
+            for val, con in N:
+                answer = self._newforms(val, con & condition, additive_primes,
+                                        algorithm, prime_cap, verbose)
+                if len(answer) > 0:
+                    result.append((answer, con))
+            if len(result) > 0:
+                return ConditionalValue(result)
+            else:
+                return None
         else:
-            return self._newforms(level=val)
+            result =  self._newforms(N, condition, additive_primes,
+                                     algorithm, prime_cap, verbose)
+            if len(result) > 0:
+                return result
+            else:
+                return None
         
 class FreyCurveLocalData(EllipticCurveLocalData):    
     def __init__(self, elliptic_curve, prime,
@@ -1242,7 +1330,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         - The number field is a galois field. If not it will be
           replaced by its galois closure.
         """
-        K = self.definition_field()
+        K = self.definition_ring()
         if not is_NumberField(K):
             raise ValueError("The ring %s is not a number field."%(K,))
         if not K.is_galois():

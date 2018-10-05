@@ -2004,7 +2004,9 @@ class pAdicTree(SageObject):
         A list which contains for each node at the given level
         its representative.
         """
-        return [node.representative() for node in self._root.childer_at_level(m)].sort()
+        result = [node.representative() for node in self._root.children_at_level(level)]
+        result.sort()
+        return result
 
     @cached_method
     def give_as_congruence_condition(self):
