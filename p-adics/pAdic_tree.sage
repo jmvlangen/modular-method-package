@@ -916,6 +916,9 @@ class pAdicNode(SageObject):
         return not isinstance(other, pAdicNode) \
                or self.pAdics() != other.pAdics() \
                or self.children != other.children
+
+    def __hash__(self):
+        return hash((self.coefficients, self.children))
         
 class pAdicNodeCollection(SageObject):
     r"""
@@ -1338,6 +1341,9 @@ class pAdicNodeCollection(SageObject):
         
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(tuple(self._dict.itervalues()))
             
 class pAdicNodeCollection_inverted(pAdicNodeCollection):
     r"""
@@ -1661,6 +1667,9 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
         
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((tuple(self._removed), tuple(self._dict.itervalues())))
 
 class pAdicTree(SageObject):
     r"""
@@ -2167,3 +2176,6 @@ class pAdicTree(SageObject):
           in the returned tree and vice versa.
         """
         return pAdicTree(variables=self.variables(), root=self.root().complement())
+
+    def _cache_key(self):
+        return self.variables(), self._root

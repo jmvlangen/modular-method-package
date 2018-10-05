@@ -151,8 +151,8 @@ class FreyCurve(EllipticCurve_generic):
                   "are coprime outside %s."%(tuple(P._repr_short() for P in result),)
             return result
 
-    @cached_method(lambda s, p, c, v: (p, c))
-    def _initial_tree(self, prime, condition=None, verbose=False):
+    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
+    def _initial_tree(self, prime, condition=None, verbose=False, precision_cap=20):
         r"""
         Gives the tree of possible values of the parameters for
         a given prime.
@@ -255,7 +255,7 @@ class FreyCurve(EllipticCurve_generic):
         else:
             return result
 
-    @cached_method(key=lambda s, p, c, v, pc: (p, v, pc))
+    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
     def minimal_model(self, prime, condition=None, verbose=False, precision_cap=20):
         r"""
         Gives a minimal model of this curve at a given prime.
@@ -317,7 +317,7 @@ class FreyCurve(EllipticCurve_generic):
         else:
             return ConditionalValue([(val[0], con) for val, con in result])
 
-    @cached_method(key=lambda s, p, c, v, pc: (p, v, pc))
+    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
     def kodaira_symbol(self, prime, condition=None, verbose=False, precision_cap=20):
         r"""
         Gives the kodaira symbol of the reduction at a given prime.
@@ -380,7 +380,7 @@ class FreyCurve(EllipticCurve_generic):
         else:
             return ConditionalValue([(val[0], con) for val, con in result])
     
-    @cached_method(key=lambda s, p, c, v, pc: (p, v, pc))
+    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
     def conductor_exponent(self, prime, condition=None, verbose=False, precision_cap=20):
         r"""
         Gives the conductor exponent at a given prime.
@@ -443,7 +443,7 @@ class FreyCurve(EllipticCurve_generic):
         else:
             return ConditionalValue([(val[0], con) for val,con in result])
 
-    @cached_method(key=lambda s, p, c, v, pc: (p, v, pc))
+    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
     def reduction_type(self, prime, condition=None, verbose=False, precision_cap=20):
         r"""
         Gives the reduction type of this curve at a given type.

@@ -232,6 +232,9 @@ class PolynomialCondition(Condition_base):
     def _latex_(self):
         return latex(self.polynomial()) + " = " + latex(0)
 
+    def _cache_key(self):
+        return 'TreeCondition', self.polynomial()
+
 class CongruenceCondition(PolynomialCondition):
     r"""
     Defines a congruence that should hold for a given polynomial.
@@ -340,6 +343,9 @@ class CongruenceCondition(PolynomialCondition):
     def _latex_(self):
         return latex(self.polynomial()) + " = " + latex(0) + \
             "\\text{ (mod }" + latex(self.modulus()) + "\\text{)}"
+
+    def _cache_key(self):
+        return 'CongruenceCondition', self.polynomial(), self.modulus()
 
 class PowerCondition(PolynomialCondition):
     r"""
@@ -469,6 +475,9 @@ class PowerCondition(PolynomialCondition):
             "x_{" + self._x_str()[1:] + "}" + \
             "^{n_{" + self._n_str()[1:] + "}}"
 
+    def _cache_key(self):
+        return 'PowerCondition', self.polynomial(), self.least_exponent()
+
 class CoprimeCondition(Condition_base):
     r"""
     Defines the condition of variables being n-wise coprime.
@@ -578,6 +587,9 @@ class CoprimeCondition(Condition_base):
         if self._n == 2:
             return latex(self.variables()) + "\\text{ are pairwise coprime}"
         return latex(self.variables()) + "\\text{ are $" + str(self._n) + "$-wise coprime.}"
+
+    def _cache_key(self):
+        return 'CoprimeCondition', self.variables(), self._n
 
 class NotCondition(Condition_base):
     r"""
@@ -692,6 +704,9 @@ class NotCondition(Condition_base):
         s = s.replace('<tmp>', '\\bot')
         return s
 
+    def _cache_key(self):
+        return 'NotCondition', self._other
+
 class AndCondition(Condition_base):
     r"""
     The condition that both conditions hold.
@@ -787,6 +802,9 @@ class AndCondition(Condition_base):
         
     def _latex_(self):
         return self._left._latex_() + " \\wedge " + self._right._latex_()
+
+    def _cache_key(self):
+        return 'AndCondition', self._left, self._right
 
 class OrCondition(Condition_base):
     r"""
@@ -884,6 +902,9 @@ class OrCondition(Condition_base):
         
     def _latex_(self):
         return self._left._latex_() + " \\vee " + self._right._latex_()
+
+    def _cache_key(self):
+        return 'OrCondition', self._left, self._right
 
 class TreeCondition(Condition_base):
     r"""
@@ -1025,6 +1046,9 @@ class TreeCondition(Condition_base):
                   "\\text{)}"
         return result
 
+    def _cache_key(self):
+        return 'TreeCondition', self._T
+
 class ConditionalValue(SageObject):
     r"""
     Some value that depends on some condition.
@@ -1143,6 +1167,9 @@ class ConditionalValue(SageObject):
 
     def __getitem__(self, index):
         return (self._vals[index], self._con[index])
+
+    def _cache_key(self):
+        return tuple((val, 'if', con) for val, con in self)
 
 class ConditionalExpression(SageObject):
     SUM_OPERATOR = ('+', '+', 0)
