@@ -1,7 +1,7 @@
 ### Merel 1
-# equation: a^n + b^n = c^n
+# equation: a^n + b^n = 2*c^n
 # source: http://www.math.mcgill.ca/darmon/pub/Articles/Research/18.Merel/pub18.pdf
-R.<ap, cp> = ZZ[]
+R.<ap, cp> = QQ[]
 C = (CoprimeCondition([ap,cp]) &
      PowerCondition(ap, 7) & # ap = a^p
      PowerCondition(2*cp - ap, 7) & # bp = b^p
@@ -15,12 +15,16 @@ print E.conductor()
 # n0 = 5 if ('ap', 'cp') == (3, 1), (3, 3) mod 4
 #      1 if ('ap', 'cp') is 1 of 8 possibilities mod 32
 # (agrees with article)
+print E.newforms()
+# [(q - 2*q^5 + O(q^6), 'all')] if ('ap', 'cp') == (3, 1), (3, 3) mod 4
+# (corresponds to the trivial solution (1, 1, 1))
+# (agrees with article)
 
 ### Merel 2
 # equation: a^n + b^n = c^2
 # source: http://www.math.mcgill.ca/darmon/pub/Articles/Research/18.Merel/pub18.pdf
 # case: a*b even
-R.<ap, c> = ZZ[]
+R.<ap, c> = QQ[]
 C = (CoprimeCondition([ap,c]) &
      PowerCondition(ap, 7) & # ap = a^p
      PowerCondition(c^2 - ap, 7) & # bp = b^p
@@ -31,12 +35,15 @@ E = FreyCurve([1, (c - 1)/4, 0, ap / 2^6, 0], # Y^2 + X*Y = X^3 + (c-1)/4 * X^2 
 print E.conductor()
 # Rad_P( (1/4096) * ap^2 * (c^2 - ap) )
 # (agrees with article)
+print E.newforms()
+# None
+# (agrees with article)
 
 ### Merel 3
 # equation: a^n + b^n = c^2
 # source: http://www.math.mcgill.ca/darmon/pub/Articles/Research/18.Merel/pub18.pdf
 # case: a*b odd
-R.<ap, c> = ZZ[]
+R.<ap, c> = QQ[]
 C = (CoprimeCondition([ap,c]) &
      PowerCondition(ap, 7) & # ap = a^p
      PowerCondition(c^2 - ap, 7) & # bp = b^p
@@ -46,12 +53,16 @@ E = FreyCurve([0, 2*c, 0, ap, 0], # Y^2 = X^3 + 2 * c * X^2 + a^p X
 print E.conductor()
 # 32*Rad_P( 2^6 * ap^2 * (c^2 - ap) )
 # (agrees with article)
+print E.newforms()
+# [(q - 2*q^5 + O(q^6), 'all')]
+# (corresponds to the trivial solution (1, -1, 0))
+# (agrees with article)
 
 ### Merel 4
 # equation: a^n + b^n = c^3
 # source: http://www.math.mcgill.ca/darmon/pub/Articles/Research/18.Merel/pub18.pdf
 # case: c even
-R.<bp, c> = ZZ[]
+R.<bp, c> = QQ[]
 C = (CoprimeCondition([bp,c]) &
      PowerCondition(c^3 - bp, 7) & # ap = a^p
      PowerCondition(bp, 7) & # bp = b^p
@@ -70,7 +81,7 @@ print E.conductor(verbose=True)
 # equation: a^n + b^n = c^3
 # source: http://www.math.mcgill.ca/darmon/pub/Articles/Research/18.Merel/pub18.pdf
 # case: a*b even
-R.<bp, c> = ZZ[]
+R.<bp, c> = QQ[]
 C = (CoprimeCondition([bp,c]) &
      PowerCondition(c^3 - bp, 7) & # ap = a^p
      PowerCondition(bp, 7) & # bp = b^p
@@ -91,7 +102,7 @@ print E.conductor(verbose=True)
 # source: http://www.math.wisc.edu/~ellenber/A4B2Cp.pdf
 K.<i> = QuadraticField(-1)
 R = K.ring_of_integers()
-S.<a,b> = ZZ[]
+S.<a,b> = QQ[]
 C = (CoprimeCondition([a,b]) &
      PowerCondition(a^4 + b^2, 3) & # a^4 + b^2 = c^p
      ~CongruenceCondition(b-1, 4)) # b != 1 mod 4
