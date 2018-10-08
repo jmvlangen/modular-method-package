@@ -21,7 +21,6 @@ print E.newforms()
 # [(q - 2*q^5 + O(q^6), 'all')] if ('ap', 'cp') == (3, 1), (3, 3) mod 4
 # (corresponds to the trivial solution (1, 1, 1))
 # (agrees with article)
-del E
 
 ### Merel 2
 # equation: a^n + b^n = c^2
