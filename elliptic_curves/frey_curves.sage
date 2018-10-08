@@ -1008,7 +1008,7 @@ class FreyCurve(EllipticCurve_generic):
                     result[a] = T
         
         if len(result) == 1:
-            return result[0][0]
+            return list(result)[0]
         else:
             return ConditionalValue([(a, TreeCondition(pAdicTree(variables=self.parameters(),
                                                                 root=T)))
@@ -1047,12 +1047,14 @@ class FreyCurve(EllipticCurve_generic):
         else:
             nfs = [(f, 0) for f in Newforms(level)]
         p = 1
-        while len(nfs) > 0 and p < prime_cap:
+        while len(nfs) > 0:
             nfs_old = nfs
             nfs = []
             p = next_prime(p)
             while p in additive_primes:
                 p = next_prime(p)
+            if p > prime_cap:
+                break
             for f, B in nfs_old:
                 if use_magma:
                     apf = f.Coefficient(p).sage()
