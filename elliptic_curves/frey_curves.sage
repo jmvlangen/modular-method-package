@@ -1040,6 +1040,8 @@ class FreyCurve(EllipticCurve_generic):
             use_magma = True
         else:
             raise ValueError("%s is not a valid algorithm."%(algorithm,))
+        if verbose > 0:
+            print "Computing newforms of level %s"%(level,)
         if use_magma:
             cfs = magma.CuspForms(level)
             nfs = magma.Newforms(cfs)
@@ -1048,13 +1050,15 @@ class FreyCurve(EllipticCurve_generic):
             nfs = [(f, 0) for f in Newforms(level)]
         p = 1
         while len(nfs) > 0:
-            nfs_old = nfs
-            nfs = []
             p = next_prime(p)
             while p in additive_primes:
                 p = next_prime(p)
             if p > prime_cap:
                 break
+            if verbose > 0:
+                print "Comparing traces of frobenius at %s for %s possible candidates."%(p, len(nfs))
+            nfs_old = nfs
+            nfs = []
             for f, B in nfs_old:
                 if use_magma:
                     apf = f.Coefficient(p).sage()
