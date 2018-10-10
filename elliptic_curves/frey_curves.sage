@@ -228,7 +228,7 @@ class FreyCurve(EllipticCurve_generic):
           argument. This makes it so a higher value will
           print more details about the computation than a
           lower one.
-        - ``precision_cap`` A strictly positive integer
+        - ``precision_cap`` -- A strictly positive integer
           (default: 20) giving the maximal precision level to be
           used in p-Adic arithmetic.
 

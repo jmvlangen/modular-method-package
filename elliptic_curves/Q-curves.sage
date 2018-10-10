@@ -1567,7 +1567,7 @@ class Qcurve(EllipticCurve_number_field):
                 Dm = magma.DirichletGroup(eps.conductor(), magma(eps.base_ring()))
                 for eps_m in Dm.Elements():
                     candidate = True
-                    for i in range(1, eps.conductor()+1):
+                    for i in Integers(eps.conductor()).unit_gens():
                         i = ZZ(i)
                         candidate = (eps(i) == eps_m(i))
                         if not candidate: # Not the right one
