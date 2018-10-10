@@ -1108,20 +1108,10 @@ class FreyCurve(EllipticCurve_generic):
             'sage' -- to use the native sage implementation
             'magma' -- to use magma to compute the newforms
         """
-        if algorithm == 'sage':
-            use_magma = False
-        elif algorithm == 'magma':
-            use_magma = True
-        else:
-            raise ValueError("%s is not a valid algorithm."%(algorithm,))
         if verbose > 0:
             print "Computing newforms of level %s"%(level,)
-        if use_magma:
-            cfs = magma.CuspForms(level)
-            nfs = magma.Newforms(cfs)
-            nfs = [(f[1], 0) for f in nfs]
-        else:
-            nfs = [(f, 0) for f in Newforms(level)]
+        nfs = [(f,0) for f in get_newforms(level, algorithm=algorithm)]
+        
         p = 1
         while len(nfs) > 0:
             p = next_prime(p)
@@ -1131,23 +1121,19 @@ class FreyCurve(EllipticCurve_generic):
                 break
             if verbose > 0:
                 print "Comparing traces of frobenius at %s for %s possible candidates."%(p, len(nfs))
+            apE = self.trace_of_frobenius(p, condition=condition,
+                                          verbose=(verbose - 1 if verbose > 0 else -1),
+                                          precision_cap=1)
+            if isinstance(apE, ConditionalValue):
+                apE_ls = [val for val, con in apE]
+            else:
+                apE_ls = [apE]
             nfs_old = nfs
             nfs = []
             for f, B in nfs_old:
-                if use_magma:
-                    apf = f.Coefficient(p).sage()
-                else:
-                    apf = f.coefficient(p)
-                K = apf.parent()
-                apE = self.trace_of_frobenius(p, condition=condition,
-                                              verbose=(verbose - 1 if verbose > 0 else -1),
-                                              precision_cap=1)
-                if isinstance(apE, ConditionalValue):
-                    apE_ls = [val for val, con in apE]
-                else:
-                    apE_ls = [apE]
-                if K == QQ:
-                    Bnew = ZZ(p * product(apE - apf for apE in apE_ls))
+                apf = f.trace_of_frobenius(p)
+                if apf in QQ:
+                    Bnew = ZZ(p * product(apE - QQ(apf) for apE in apE_ls))
                 else:
                     Bnew = ZZ(p * product((apE - apf).absolute_norm() for apE in apE_ls))
                 B = gcd(B, Bnew)
@@ -1687,12 +1673,6 @@ class FreyQcurve(FreyCurve, Qcurve):
         Internal function,
         see newforms for more information.
         """
-        if algorithm == 'sage':
-            use_magma = False
-        elif algorithm == 'magma':
-            use_magma = True
-        else:
-            raise ValueError("%s is not a valid algorithm."%(algorithm,))
         nfs = []
         done_levels = []
         characters = [(eps^(-1)).primitive_character()
@@ -1703,37 +1683,12 @@ class FreyQcurve(FreyCurve, Qcurve):
                                         self.splitting_image_field('conjugacy')),
                                     key=lambda x: x[0])
             if (level, eps, Lbeta) in done_levels:
-                continue #Already computed, continue on with the next
+                continue # Already computed, continue on with the next
             if verbose > 0:
                 print "Computing newforms of level %s and character %s"%(level, eps)
-            if use_magma:
-                Dm = magma.DirichletGroup(eps.conductor(), magma(eps.base_ring()))
-                for eps_m in Dm.elements():
-                    candidate = True
-                    for i in eps.parent().unit_gens():
-                        i = ZZ(i)
-                        candidate = (eps(i) == eps_m(i))
-                        if not candidate: # Note the right one
-                            break
-                    if candidate: # Found the right one
-                        break
-                if not candidate:
-                    raise ValueError("No matching magma dirichlet character for %s"%(candidate,))
-                eps_m = magma.DirichletGroup(level, magma(eps.base_ring()))(eps_m) # Right level
-                cfs = magma.CuspForms(eps_m)
-                nfs = magma.Newforms(cfs)
-                for f in nfs:
-                    f = f[1]
-                    Kf = f.BaseField().sage()
-                    roots = Lbeta.gen().minpoly().change_ring(Kf).roots()
-                    if len(roots > 0):
-                        nfs.append((f, Lbeta.hom([roots[0][0]], Kf), 0))
-            else:
-                for f in Newforms(eps.extend(level)):
-                    Kf = f.base_ring()
-                    roots = Lbeta.gen().minpoly().change_ring(Kf).roots()
-                    if len(roots > 0):
-                        nfs.append((f, Lbeta.hom([roots[0][0]], Kf), 0))
+            nfs.extend([(f,0) for f in get_newforms(level, character=eps,
+                                                    algorithm=algorithm,
+                                                    minimal_coeffs=Lbeta)])
             done_levels.append((level, eps, Lbeta))
 
         bad_primes = []
@@ -1751,27 +1706,23 @@ class FreyQcurve(FreyCurve, Qcurve):
                 p = next_prime(p)
             if p > prime_cap:
                 break
-            P = KE.prime_above(p)
             if verbose > 0:
                 print "Comparing traces of frobenius at %s for %s possible candidates."%(p, len(nfs))
+            P = KE.prime_above(p)
+            apE = self.trace_of_frobenius_power(P, P.ramification_index(),
+                                                condition=condition,
+                                                verbose=(verbose - 1 if verbose > 0 else -1),
+                                                precision_cap=1)
+            if isinstance(apE, ConditionalValue):
+                aPE_ls = [val for val, con in aPE]
+            else:
+                aPE_ls = [apE]
             nfs_old = nfs
             nfs = []
             for f, B in nfs_old:
-                # TODO actual stuff!!!
-                if use_magma:
-                    apf = f.Coefficient(p).sage()
-                else:
-                    apf = f.coefficient(p)
-                Kf = apf.parent()
-                aPE = self.trace_of_frobenius(P, condition=condition,
-                                              verbose=(verbose - 1 if verbose > 0 else -1),
-                                              precision_cap=1)
-                if isinstance(apE, ConditionalValue):
-                    aPE_ls = [val for val, con in aPE]
-                else:
-                    aPE_ls = [apE]
-                if K == QQ:
-                    Bnew = ZZ(p * product(apE - apf for apE in apE_ls))
+                apf = f.trace_of_frobenius(p, power=KE.degree())
+                if apf in QQ:
+                    Bnew = ZZ(p * product(apE - QQ(apf) for apE in apE_ls))
                 else:
                     Bnew = ZZ(p * product((apE - apf).absolute_norm() for apE in apE_ls))
                 B = gcd(B, Bnew)
