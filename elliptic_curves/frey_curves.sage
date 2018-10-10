@@ -1014,6 +1014,80 @@ class FreyCurve(EllipticCurve_generic):
                                                                 root=T)))
                                      for a, T in result.iteritems()])
 
+    @cached_method
+    def _power_trace_formula(self, n):
+        R.<x,y> = QQ[]
+        f = x^n + y^n
+        return polynomial_to_symmetric(f)
+
+    def trace_of_frobenius_power(self, prime, power, condition=None, verbose=False, precision_cap=20):
+        r"""
+        Computes the trace of a power of frobenius acting on this curve.
+
+        If the elliptic curve has good reduction at the given prime,
+        for every prime number l not divisible by the prime the l-adic
+        representation is unramified at the prime and the trace of
+        frobenius to the given power is given by this function.
+
+        If the elliptic curve has multiplicative reduction at the given
+        prime, for every prime number l not divisible by the prime,
+        the mod-l representation is unramified at the prime if and only
+        if the valuation of the discriminant is divisible by l. In this
+        case this function returns the trace of frobenius to the given power
+        in such a case, but does not check whether the valuation of the
+        discriminant is divisible by l.
+
+        If the elliptic curve has additive reduction, will raise a
+        ValueError since the trace of frobenius is not well-defined
+        in that case.
+
+        INPUT:
+
+        - ``prime`` -- A prime of the number field over which this
+          frey curve is defined. This may be a maximal ideal of the
+          ring of integers of that field or a prime number if it is
+          the field \Q.
+        - ``power`` -- A strictly positive integer giving to which
+          power the frobenius element should be raised.
+        - ``condition`` -- A Condition or None (default: None)
+          giving a condition that the parameters in this curve should
+          satisfy. If set to None will use the default condition
+          stored in this Frey curve.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
+        - ``precision_cap`` A strictly positive integer
+          (default: 20) giving the maximal precision level to be
+          used in p-Adic arithmetic.
+
+        OUTPUT:
+
+        The trace of frobenius to the given power under the
+        l-adic or mod-l reprentation assuming that they are
+        unramified.
+        If this would depend on the parameters will return a
+        ConditionalValue of options instead.
+        """
+        pAdics = pAdicBase(self.definition_ring(), prime)
+        D = len(pAdics.residue_field())
+        T = self.trace_of_frobenius(prime, condition=condition,
+                                    verbose=verbose,
+                                    precision_cap=precision_cap)
+        result = self._power_trace_formula(power)
+        return apply_to_conditional_value(lambda t: result(t, D), T)
+
     def _newforms(self, level, condition, additive_primes,
                   algorithm, prime_cap, verbose):
         r"""
@@ -1535,7 +1609,8 @@ class FreyQcurve(FreyCurve, Qcurve):
                                      left,
                                      "Norm(" + N.right() +")")
 
-    def _newform_levels(self, N=None, **kwds):
+    def _newform_levels(self, N=None, additive_primes=None, condition=None,
+                        verbose=False, precision_cap=20, **kwds):
         r"""
         Gives the possible levels of newforms associated to this Frey Q-curve.
 
@@ -1575,26 +1650,240 @@ class FreyQcurve(FreyCurve, Qcurve):
           Q-curve over the decomposition field. Will be computed using the
           corresponding method if set to None, in which case only the non-radical
           part of the resulting ConditionalExpression will be used.
+        - ``condition`` -- A Condition giving the restrictions on the
+          parameters on this Frey curve that should be considered. By default
+          this will be set to the condition associated to this FreyCurve.
         
         OUTPUT:
 
         A list of tuples, each tuple representing one of the options for the levels
-        of the newforms associated to this Q-curve. If a prime was given, these
-        tuples will contain the respective exponent of the given prime for each
-        newform. If no prime was given, they will contain the respective level of
-        each newform.
+        of the newforms associated to this Q-curve. The n-th entry of such a tuple
+        will correspond to the factor of the decomposition of scalars associated
+        to the n-th splitting map obtained from splitting_map('conjugacy').
+        If a prime was given, these tuples will contain the respective exponent
+        of the given prime for each newform. If no prime was given, they will
+        contain the respective level of each newform.
 
         If the argument N was a ConditionalValue will return a list of tuples
         each of which contain a list as described above as their first entry
         and a condition for which this list is relevant as their second entry.
         """
+        if condition is None:
+            condition = self._condition
         if N is None:
-            N = self.conductor_restriction_of_scalars().left()
+            N = self.conductor_restriction_of_scalars(additive_primes=additive_primes,
+                                                      condition=condition,
+                                                      verbose=verbose,
+                                                      precision_cap=precision_cap).left()
         if isinstance(N, ConditionalExpression):
             N = N.value()
         if isinstance(N, ConditionalValue):
             return ConditionalValue([(self._newform_levels(N=Ni, **kwds), con) for Ni, con in N])
         return Qcurve._newform_levels(self, N=N, **kwds)
+    
+    def _newforms(self, levels, condition, additive_primes,
+                  algorithm, prime_cap, verbose):
+        r"""
+        Internal function,
+        see newforms for more information.
+        """
+        if algorithm == 'sage':
+            use_magma = False
+        elif algorithm == 'magma':
+            use_magma = True
+        else:
+            raise ValueError("%s is not a valid algorithm."%(algorithm,))
+        nfs = []
+        done_levels = []
+        characters = [(eps^(-1)).primitive_character()
+                      for eps in self.splitting_characters('conjugacy')]
+        for levelsi in levels:
+            level, eps, Lbeta = min(zip(levels,
+                                        self.splitting_character('conjugacy'),
+                                        self.splitting_image_field('conjugacy')),
+                                    key=lambda x: x[0])
+            if (level, eps, Lbeta) in done_levels:
+                continue #Already computed, continue on with the next
+            if verbose > 0:
+                print "Computing newforms of level %s and character %s"%(level, eps)
+            if use_magma:
+                Dm = magma.DirichletGroup(eps.conductor(), magma(eps.base_ring()))
+                for eps_m in Dm.elements():
+                    candidate = True
+                    for i in eps.parent().unit_gens():
+                        i = ZZ(i)
+                        candidate = (eps(i) == eps_m(i))
+                        if not candidate: # Note the right one
+                            break
+                    if candidate: # Found the right one
+                        break
+                if not candidate:
+                    raise ValueError("No matching magma dirichlet character for %s"%(candidate,))
+                eps_m = magma.DirichletGroup(level, magma(eps.base_ring()))(eps_m) # Right level
+                cfs = magma.CuspForms(eps_m)
+                nfs = magma.Newforms(cfs)
+                for f in nfs:
+                    f = f[1]
+                    Kf = f.BaseField().sage()
+                    roots = Lbeta.gen().minpoly().change_ring(Kf).roots()
+                    if len(roots > 0):
+                        nfs.append((f, Lbeta.hom([roots[0][0]], Kf), 0))
+            else:
+                for f in Newforms(eps.extend(level)):
+                    Kf = f.base_ring()
+                    roots = Lbeta.gen().minpoly().change_ring(Kf).roots()
+                    if len(roots > 0):
+                        nfs.append((f, Lbeta.hom([roots[0][0]], Kf), 0))
+            done_levels.append((level, eps, Lbeta))
+
+        bad_primes = []
+        for P in additive_primes:
+            if P in QQ:
+                bad_primes.append(P)
+            else:
+                bad_primes.append(P.smallest_integer())
+            
+        p = 1
+        KE = self.decomposition_field()
+        while len(nfs) > 0:
+            p = next_prime(p)
+            while p in bad_primes:
+                p = next_prime(p)
+            if p > prime_cap:
+                break
+            P = KE.prime_above(p)
+            if verbose > 0:
+                print "Comparing traces of frobenius at %s for %s possible candidates."%(p, len(nfs))
+            nfs_old = nfs
+            nfs = []
+            for f, B in nfs_old:
+                # TODO actual stuff!!!
+                if use_magma:
+                    apf = f.Coefficient(p).sage()
+                else:
+                    apf = f.coefficient(p)
+                Kf = apf.parent()
+                aPE = self.trace_of_frobenius(P, condition=condition,
+                                              verbose=(verbose - 1 if verbose > 0 else -1),
+                                              precision_cap=1)
+                if isinstance(apE, ConditionalValue):
+                    aPE_ls = [val for val, con in aPE]
+                else:
+                    aPE_ls = [apE]
+                if K == QQ:
+                    Bnew = ZZ(p * product(apE - apf for apE in apE_ls))
+                else:
+                    Bnew = ZZ(p * product((apE - apf).absolute_norm() for apE in apE_ls))
+                B = gcd(B, Bnew)
+                if B != 1:
+                    nfs.append((f, B))
+        return [(f, ('all' if B == 0 else B.prime_factors())) for f, B in nfs]
+
+    def newforms(self, condition=None, additive_primes=None, algorithm='sage',
+                 prime_cap=50, verbose=False, precision_cap=20):
+        r"""
+        Computes the newforms that could be associated to this Frey Q-curve.
+
+        To compute these newforms this method will perform the following procedure.
+          - First of all this method will call the method _newform_levels to
+            determine all the possible levels of the newforms associated
+            to the abelian varieties of GL_2-type in which the restriction
+            of scalars of this curve decomposes.
+          - For each of these sets of levels associated to the decomposition,
+            will compute the newforms at the lowest level among these levels,
+            considering the appropiate character of the associated variety
+            of GL_2-type. It will only consider those newforms that have a
+            coefficient field that extends the endomorphism field of the
+            appropiate abelian variety of GL_2-type.
+          - Let K be the decomposition field of this curve and n be its degree.
+            For each prime number p not divisible by any of the primes in
+            additive primes and smaller than the given prime_cap, will compute
+            a list of possible traces of the mod-l galois representation of
+            this curve at the frobenius element
+            of a prime above p to the power the ramification index of p. Next,
+            for each remaining newform, it will compute the product of the
+            difference of each ot these traces with the trace of the galois
+            representation associated to the newform at the frobenius element
+            at p to the power n. All l that divide this final product or p
+            are considered the only candidates at which these galois
+            representations can agree. If no such candidates remain the
+            newform is eliminated.
+
+        INPUT:
+        - ``condition`` -- A Condition giving the restrictions on the
+          parameters on this Frey curve that should be considered. By default
+          this will be set to the condition associated to this FreyCurve.
+        - ``additive_primes`` -- An iterable containing prime ideals
+          or prime numbers, if the field of definition is QQ, that
+          contains all the primes at which this curve can have
+          additive reduction. If set to None will compute this
+          by using the method primes_of_possible_additive_reduction
+        - ``algorithm`` -- One of the following values
+          'sage' -- to use sage to compute newforms (default)
+          'magma' -- to use magma to compute newforms
+        - ``prime_cap`` -- A strictly positive integer (default: 50)
+          that gives a cap on the size of primes for which the
+          traces of frobenius of this curve and a newform should
+          be compared.
+        - ``verbose`` -- A boolean value or an integer
+          (default: False). When set to True or any value
+          larger then zero will print comments to stdout
+          about the computations being done whilst busy. If
+          set to False or 0 will not print such comments.
+          If set to any negative value will also prevent
+          the printing of any warnings.
+          If this method calls any method that accepts an
+          argument verbose will pass this argument to it.
+          If such a method fulfills a minor task within
+          this method and the argument verbose was larger
+          than 0, will instead pass 1 less than the given
+          argument. This makes it so a higher value will
+          print more details about the computation than a
+          lower one.
+        - ``precision_cap`` -- A strictly positive integer
+          (default: 20) giving the maximal precision level to be
+          used in p-Adic arithmetic.
+
+        OUTPUT:
+
+        A list consisting of pairs with as first entry a newform
+        that has a mod-l representation that has traces of frobenius
+        that could match the traces of frobenius of this curve for
+        all primes, not dividing l, that are not in additive_primes
+        up to the given prime_cap. The second entry is a list of all
+        prime numbers l for which this is true.
+        
+        If the level of the newform might depend on a choice of parameters
+        will instead give a conditional value wherein each value is of
+        the form above and each condition corresponds to a single possible
+        level.
+        """
+        if condition is None:
+            condition = self._condition
+        if additive_primes is None:
+            additive_primes = self.primes_of_possible_additive_reduction()
+        levels = self._newform_levels(additive_primes=additive_primes,
+                                      condition=condition,
+                                      verbose=(verbose - 1 if verbose > 0 else verbose),
+                                      precision_cap=precision_cap)
+        if isinstance(levels, ConditionalValue):
+            result = []
+            for val, con in levels:
+                answer = self._newforms(val, con & condition, additive_primes,
+                                        algorithm, prime_cap, verbose)
+                if len(answer) > 0:
+                    result.append((answer, con))
+            if len(result) > 0:
+                return ConditionalValue(result)
+            else:
+                return None
+        else:
+            result = self._newforms(N, condition, additive_primes,
+                                    algorithm, prime_cap, verbose)
+            if len(result) > 0:
+                return result
+            else:
+                return None
         
     def _repr_(self):
         """
