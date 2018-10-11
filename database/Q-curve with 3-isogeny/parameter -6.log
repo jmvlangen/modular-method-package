@@ -1,0 +1,43 @@
+Q-curve with 3-isogeny for parameter -6
+
+Decomposable curve of lowest conductor:
+
+Q-curve defined by y^2 = x^3 + (-22/3*sqrt_tu^3+12*sqrt_tu^2+70*sqrt_tu+396)*x + (-1144/9*sqrt_tu^3-384*sqrt_tu^2-2696/3*sqrt_tu+528) over Number Field in sqrt_tu with defining polynomial x^4 + 6*x^2 + 81
+
+Newform levels:
+
+(435456,)
+
+
+An exception occured:
+Error executing Magma code:
+
+Current total memory usage: 5729.7MB, failed memory request: 78732.0MB
+System error: Out of memory.
+All virtual memory has been exhausted so Magma cannot perform this statement.
+
+--------------------------------------------------------------
+
+	Command being timed: "sage ./code/Q-curve with 3-isogeny -6.sage"
+	User time (seconds): 4.00
+	System time (seconds): 0.59
+	Percent of CPU this job got: 4%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:33.29
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 203508
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 159834
+	Voluntary context switches: 8075
+	Involuntary context switches: 1991
+	Swaps: 0
+	File system inputs: 80
+	File system outputs: 184
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

@@ -1,0 +1,41 @@
+Q-curve with 3-isogeny for parameter 7
+
+Decomposable curve of lowest conductor:
+
+Q-curve defined by y^2 = x^3 + (-207947461260/930447249719*sqrt_tuzeta0^11-61037108475/21638308133*sqrt_tuzeta0^10+18314023532112/930447249719*sqrt_tuzeta0^9+5419659016695/21638308133*sqrt_tuzeta0^8-501002629404564/930447249719*sqrt_tuzeta0^7-150837259935495/21638308133*sqrt_tuzeta0^6+4316317395786900/930447249719*sqrt_tuzeta0^5+1365826581546210/21638308133*sqrt_tuzeta0^4-10594627782009012/930447249719*sqrt_tuzeta0^3-3884219224345320/21638308133*sqrt_tuzeta0^2-6538793680254024/930447249719*sqrt_tuzeta0-14989954842975/21638308133)*x + (280974455514284/930447249719*sqrt_tuzeta0^11+10893153141024/21638308133*sqrt_tuzeta0^10-25119191235538288/930447249719*sqrt_tuzeta0^9-974564685228456/21638308133*sqrt_tuzeta0^8+708395230949305928/930447249719*sqrt_tuzeta0^7+27522712733910632/21638308133*sqrt_tuzeta0^6-6610745546377115696/930447249719*sqrt_tuzeta0^5-257701357371976896/21638308133*sqrt_tuzeta0^4+19268956440322432508/930447249719*sqrt_tuzeta0^3+755243115555955992/21638308133*sqrt_tuzeta0^2+235302503312604924/930447249719*sqrt_tuzeta0-1454099415860336/21638308133) over Number Field in sqrt_tuzeta0 with defining polynomial x^12 - 102*x^10 + 3649*x^8 - 55406*x^6 + 367630*x^4 - 877144*x^2 + 1849
+
+Newform levels:
+
+(9072, 9072, 63504, 63504, 63504, 63504)
+(63504, 63504, 9072, 9072, 63504, 63504)
+(63504, 63504, 63504, 63504, 9072, 9072)
+
+Newform of level 9072:
+
+q + (2*a + 2)*q^5 + (a + 2)*q^7 + (2*a - 4)*q^11 + O(q^12)
+
+--------------------------------------------------------------
+
+	Command being timed: "sage ./code/Q-curve with 3-isogeny 7.sage"
+	User time (seconds): 49.85
+	System time (seconds): 0.92
+	Percent of CPU this job got: 14%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 5:40.25
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 250184
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 186542
+	Voluntary context switches: 42267
+	Involuntary context switches: 12195
+	Swaps: 0
+	File system inputs: 40
+	File system outputs: 13544
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

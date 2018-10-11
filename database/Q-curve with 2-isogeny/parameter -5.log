@@ -1,0 +1,45 @@
+Q-curve with 2-isogeny for parameter -5
+
+Decomposable curve of lowest conductor:
+
+Q-curve defined by y^2 = x^3 + (131497941776013/470014717667011220*sqrt_tusqrt_tzeta0^15-45598870989/3141232177688*sqrt_tusqrt_tzeta0^14+19591489649813733/470014717667011220*sqrt_tusqrt_tzeta0^13-21906062056899/17276776977284*sqrt_tusqrt_tzeta0^12+58893440574167253/24737616719316380*sqrt_tusqrt_tzeta0^11-86033030205537/1818608102872*sqrt_tusqrt_tzeta0^10+156411131604776109/2292754720326884*sqrt_tusqrt_tzeta0^9-680810134478355/842769608648*sqrt_tusqrt_tzeta0^8+86155709421109285413/94002943533402244*sqrt_tusqrt_tzeta0^7-141997633878920175/34553553954568*sqrt_tusqrt_tzeta0^6+16413912644093452359/6619925600943820*sqrt_tusqrt_tzeta0^5+1310084815533403653/34553553954568*sqrt_tusqrt_tzeta0^4-10805176683722591344323/235007358833505610*sqrt_tusqrt_tzeta0^3-660976648978188501/8638388488642*sqrt_tusqrt_tzeta0^2+38805541709437202025123/235007358833505610*sqrt_tusqrt_tzeta0-7740122945953343409/34553553954568)*x^2 + (25174029356787684861/9895046687726552*sqrt_tusqrt_tzeta0^15-63028283218424253/34553553954568*sqrt_tusqrt_tzeta0^14+40404480043148073611199/188005887066804488*sqrt_tusqrt_tzeta0^13-644067776699434053/4319194244321*sqrt_tusqrt_tzeta0^12+9450539001134213687748/1236880835965819*sqrt_tusqrt_tzeta0^11-9239380960141299645/1818608102872*sqrt_tusqrt_tzeta0^10+28270923545260036297665/241342602139672*sqrt_tusqrt_tzeta0^9-60418397756197044585/842769608648*sqrt_tusqrt_tzeta0^8+14722890386599339469483985/47001471766701122*sqrt_tusqrt_tzeta0^7-2415293076543627687435/34553553954568*sqrt_tusqrt_tzeta0^6-1561315931473882796068035393/188005887066804488*sqrt_tusqrt_tzeta0^5+214544875846127844700791/34553553954568*sqrt_tusqrt_tzeta0^4+6963258985320198414123592677/188005887066804488*sqrt_tusqrt_tzeta0^3-575398603631644284278961/17276776977284*sqrt_tusqrt_tzeta0^2-1875593156207655356867140443/47001471766701122*sqrt_tusqrt_tzeta0+1873799503268637700572075/34553553954568)*x over Number Field in sqrt_tusqrt_tzeta0 with defining polynomial x^16 + 84*x^14 + 2962*x^12 + 44672*x^10 + 107035*x^8 - 3192512*x^6 + 16504402*x^4 - 29121804*x^2 + 29604481
+
+Newform levels:
+
+(38400, 38400, 38400, 38400)
+
+Magma crashed -- automatically restarting.
+
+An exception occured:
+Error evaluating Magma code.
+IN:_sage_[37]:=Newforms(_sage_[2]);
+OUT:
+>> _sage_[37]:=Newforms(_sage_[2]);
+                        ^
+User error: Identifier '_sage_' has not been declared or assigned
+
+--------------------------------------------------------------
+
+	Command being timed: "sage ./code/Q-curve with 2-isogeny -5.sage"
+	User time (seconds): 124.10
+	System time (seconds): 17.53
+	Percent of CPU this job got: 61%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:49.12
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 7583800
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 383686
+	Minor (reclaiming a frame) page faults: 5755969
+	Voluntary context switches: 545428
+	Involuntary context switches: 7891
+	Swaps: 0
+	File system inputs: 21286928
+	File system outputs: 440
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

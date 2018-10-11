@@ -1,0 +1,39 @@
+Q-curve with 3-isogeny for parameter -8
+
+Decomposable curve of lowest conductor:
+
+Q-curve defined by y^2 = x^3 + (-96/11*sqrt_tu^3+12*sqrt_tu^2+624/11*sqrt_tu+540)*x + (-1532/11*sqrt_tu^3-516*sqrt_tu^2-17388/11*sqrt_tu-340) over Number Field in sqrt_tu with defining polynomial x^4 + 10*x^2 + 121
+
+Newform levels:
+
+(6912, 6912)
+
+Newform of level 6912:
+
+q + a*q^5 - 1/2*a*q^7 - 6*q^11 + O(q^12)
+
+--------------------------------------------------------------
+
+	Command being timed: "sage ./code/Q-curve with 3-isogeny -8.sage"
+	User time (seconds): 4.20
+	System time (seconds): 0.64
+	Percent of CPU this job got: 8%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:00.45
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 204064
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 164191
+	Voluntary context switches: 9587
+	Involuntary context switches: 4019
+	Swaps: 0
+	File system inputs: 32
+	File system outputs: 344
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

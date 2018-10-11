@@ -1,0 +1,39 @@
+Q-curve with 2-isogeny for parameter -7
+
+Decomposable curve of lowest conductor:
+
+Q-curve defined by y^2 = x^3 + (-36*sqrt_tu^2-576)*x^2 + (-24381/5*sqrt_tu^3+2268*sqrt_tu^2-402003/5*sqrt_tu+37422)*x over Number Field in sqrt_tu with defining polynomial x^4 + 18*x^2 + 25
+
+Newform levels:
+
+(6272, 6272)
+
+
+An exception occured:
+unsupported operand parent(s) for *: 'Number Field in azeta6 with defining polynomial x^4 - 2*x^3 - x^2 + 2*x + 7' and 'Univariate Polynomial Ring in T over Number Field in a with defining polynomial x^2 - 2'
+
+--------------------------------------------------------------
+
+	Command being timed: "sage ./code/Q-curve with 2-isogeny -7.sage"
+	User time (seconds): 4.42
+	System time (seconds): 0.57
+	Percent of CPU this job got: 25%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:19.73
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 207808
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 160010
+	Voluntary context switches: 7938
+	Involuntary context switches: 2669
+	Swaps: 0
+	File system inputs: 32
+	File system outputs: 184
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

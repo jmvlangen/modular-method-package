@@ -1,0 +1,39 @@
+Q-curve with 2-isogeny for parameter 5
+
+Decomposable curve of lowest conductor:
+
+Q-curve defined by y^2 = x^3 + (-27/82*sqrt_tuzeta00^3-270/41*sqrt_tuzeta00^2+2790/41*sqrt_tuzeta00+5220/41)*x^2 + (405/41*sqrt_tuzeta00^3-25110/41*sqrt_tuzeta00^2+137700/41*sqrt_tuzeta00+396900/41)*x over Number Field in sqrt_tuzeta00 with defining polynomial x^4 - 60*x^2 - 80*x + 80
+
+Newform levels:
+
+(800, 800)
+
+Newform of level 800:
+
+q + (-a + 1)*q^3 + (a + 1)*q^7 + a*q^9 - 4*a*q^11 + O(q^12)
+
+--------------------------------------------------------------
+
+	Command being timed: "sage ./code/Q-curve with 2-isogeny 5.sage"
+	User time (seconds): 5.08
+	System time (seconds): 0.87
+	Percent of CPU this job got: 60%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:09.80
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 205640
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 555
+	Minor (reclaiming a frame) page faults: 177109
+	Voluntary context switches: 16639
+	Involuntary context switches: 5244
+	Swaps: 0
+	File system inputs: 278120
+	File system outputs: 456
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
