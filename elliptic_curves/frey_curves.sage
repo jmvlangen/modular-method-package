@@ -1142,7 +1142,7 @@ class FreyCurve(EllipticCurve_generic):
         return [(f, ('all' if B == 0 else B.prime_factors())) for f, B in nfs]
 
     @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap:
-                   ((self._condition if c is None else c), add, prime_cap, prec_cap))
+                   ((self._condition if c is None else c), tuple(add), prime_cap, prec_cap))
     def newforms(self, condition=None, additive_primes=None, algorithm='sage',
                  prime_cap=50, verbose=False, precision_cap=20):
         r"""
@@ -1496,9 +1496,9 @@ class FreyQcurve(FreyCurve, Qcurve):
                           parameter_ring=self._R,
                           conversion=conversion,
                           condition=self._condition)
-
-    @cached_method
+    
     def conductor_restriction_of_scalars(self, additive_primes=None,
+                                         condition=None,
                                          verbose=False, precision_cap=20):
         r"""
         Gives the conductor of the restriction of scalars of this Frey Q-curve.
@@ -1509,7 +1509,7 @@ class FreyQcurve(FreyCurve, Qcurve):
 
         INPUT:
 
-        - ``bad_primes`` -- An iterable containing prime ideals
+        - ``additive_primes`` -- An iterable containing prime ideals
           or prime numbers, if the decomposition field is QQ, that
           contains all the primes at which this curve, over the
           decomposition field, can have additive reduction and all
@@ -1517,6 +1517,10 @@ class FreyQcurve(FreyCurve, Qcurve):
           set to None will compute this by using the method
           primes_of_possible_additive_reduction and by computing
           the ramified primes of the decomposition field.
+        - ``condition`` -- A Condition or None (default:
+          None) giving the condition that the parameters of
+          this Frey curve should satisfy. If set to None will
+          use the condition stored in this FreyCurve instead.
         - ``verbose`` -- A boolean value or an integer
           (default: False). When set to True or any value
           larger then zero will print comments to stdout
@@ -1562,6 +1566,7 @@ class FreyQcurve(FreyCurve, Qcurve):
                         additive_primes.append(P)
         # Proposition 1 of Milne, On the arithmetic of Abelian varieties
         N = E.conductor(additive_primes=additive_primes,
+                        condition=condition,
                         verbose=verbose,
                         precision_cap=precision_cap)
         additive_part = N.left()
@@ -1676,9 +1681,9 @@ class FreyQcurve(FreyCurve, Qcurve):
         nfs = []
         done_levels = []
         characters = [(eps^(-1)).primitive_character()
-                      for eps in self.splitting_characters('conjugacy')]
+                      for eps in self.splitting_character('conjugacy')]
         for levelsi in levels:
-            level, eps, Lbeta = min(zip(levels,
+            level, eps, Lbeta = min(zip(levelsi,
                                         self.splitting_character('conjugacy'),
                                         self.splitting_image_field('conjugacy')),
                                     key=lambda x: x[0])
@@ -1714,9 +1719,9 @@ class FreyQcurve(FreyCurve, Qcurve):
                                                 verbose=(verbose - 1 if verbose > 0 else -1),
                                                 precision_cap=1)
             if isinstance(apE, ConditionalValue):
-                aPE_ls = [val for val, con in aPE]
+                apE_ls = [val for val, con in apE]
             else:
-                aPE_ls = [apE]
+                apE_ls = [apE]
             nfs_old = nfs
             nfs = []
             for f, B in nfs_old:
@@ -1729,7 +1734,9 @@ class FreyQcurve(FreyCurve, Qcurve):
                 if B != 1:
                     nfs.append((f, B))
         return [(f, ('all' if B == 0 else B.prime_factors())) for f, B in nfs]
-
+    
+    @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap:
+                   ((self._condition if c is None else c), tuple(add), prime_cap, prec_cap))
     def newforms(self, condition=None, additive_primes=None, algorithm='sage',
                  prime_cap=50, verbose=False, precision_cap=20):
         r"""

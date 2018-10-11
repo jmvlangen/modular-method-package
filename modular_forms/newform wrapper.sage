@@ -1,4 +1,4 @@
-def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ):
+def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, names='a'):
     r"""
     Computes the newforms of a given level and character.
 
@@ -17,6 +17,10 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ):
     - ``minimal_coeffs`` -- A number field or the rationals
       (default: QQ) that should be contained inf the
       coefficient field of each newform computed.
+    - ``names`` -- An argument required by the sage
+      implementation of newforms to be used as the names
+      for the generator of coefficient fields of newforms
+      that are not QQ.
     
     OUTPUT:
     
@@ -34,10 +38,10 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ):
     """
     if algorithm == 'sage':
         if character is None:
-            nfs = Newforms(level)
+            nfs = Newforms(level, names=names)
         else:
             eps = character.primitive_character().extend(level)
-            nfs = Newforms(eps)
+            nfs = Newforms(eps, names=names)
         result = [Newform_wrapped_sage(f) for f in nfs]
     elif algorithm == 'magma':
         if character is None:
@@ -48,7 +52,7 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ):
             gens = eps.parent().unit_gens()
             Dm = magma.DirichletGroup(eps.modulus(), magma(eps.base_ring()))
             candidate = False
-            for eps_m in Dm.elements():
+            for eps_m in Dm.Elements():
                 candidate = all(eps_m(n) == eps(n) for n in gens)
                 if candidate:
                     break
@@ -300,7 +304,7 @@ class Newform_wrapped_sage(Newform_wrapped):
         A non-negative integer describing the level of this
         newform.
         """
-        self._f.level()
+        return self._f.level()
 
     def character(self):
         r"""
@@ -311,7 +315,7 @@ class Newform_wrapped_sage(Newform_wrapped):
         The dirichlet character associated to this newform
         as a primitive character.
         """
-        self._f.character()
+        return self._f.character()
         
     def coefficient(self, n):
         r"""
@@ -326,7 +330,7 @@ class Newform_wrapped_sage(Newform_wrapped):
         The n-th coefficient of the q-expansion of
         this newform at infinity.
         """
-        self._f.coefficient(n)
+        return self._f.coefficient(n)
 
     def coefficient_field(self):
         r"""
@@ -339,7 +343,7 @@ class Newform_wrapped_sage(Newform_wrapped):
         q-expansion of this newform at infinity are
         defined.
         """
-        self._f.base_ring()
+        return self._f.base_ring()
 
     def q_expansion(self, prec=20):
         """
@@ -358,7 +362,7 @@ class Newform_wrapped_sage(Newform_wrapped):
         coefficient field of this newform and capped at
         the prec.
         """
-        self._f.q_expansion(prec=20)
+        return self._f.q_expansion(prec=20)
 
     def _repr_(self):
         """
@@ -389,7 +393,7 @@ class Newform_wrapped_magma(Newform_wrapped):
         A non-negative integer describing the level of this
         newform.
         """
-        self._f.Level().sage()
+        return self._f.Level().sage()
 
     @cached_method
     def character(self):
@@ -424,7 +428,7 @@ class Newform_wrapped_magma(Newform_wrapped):
         The n-th coefficient of the q-expansion of
         this newform at infinity.
         """
-        self._f.Coefficient(n).sage()
+        return self._f.Coefficient(n).sage()
 
     def coefficient_field(self):
         r"""
@@ -437,7 +441,7 @@ class Newform_wrapped_magma(Newform_wrapped):
         q-expansion of this newform at infinity are
         defined.
         """
-        self._f.BaseField().sage()
+        return self._f.BaseField().sage()
 
     def _repr_(self):
         """Gives a string representation of self."""

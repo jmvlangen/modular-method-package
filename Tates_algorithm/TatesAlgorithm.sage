@@ -97,7 +97,6 @@ def get_number_of_roots_cases(poly_list, pAdics, T, name, general_case,
     information in a copy of case under the given name.
     """
     Tdict = {}
-    least_power = _least_power(poly_list, T.pAdics())
     n = _determine_level(poly_list, pAdics, T, 1)
     F = pAdics.residue_field()
     S.<x> = F[]

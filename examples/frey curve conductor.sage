@@ -17,7 +17,7 @@ print E.conductor()
 #      1 if ('ap', 'cp') is 1 of 8 possibilities mod 32
 # (agrees with article)
 print ""
-print E.newforms()
+print E.newforms(algorithm='magma')
 # [(q - 2*q^5 + O(q^6), 'all')] if ('ap', 'cp') == (3, 1), (3, 3) mod 4
 # (corresponds to the trivial solution (1, 1, 1))
 # (agrees with article)
@@ -60,7 +60,7 @@ print E.conductor()
 # 32*Rad_P( 2^6 * ap^2 * (c^2 - ap) )
 # (agrees with article)
 print ""
-print E.newforms()
+print E.newforms(algorithm='magma')
 # [(q - 2*q^5 + O(q^6), 'all')]
 # (corresponds to the trivial solution (1, -1, 0))
 # (agrees with article)
@@ -79,14 +79,14 @@ E = FreyCurve([0, 0, bp, -3*((c/2)^3 + bp)*(c/2), -(c/2)^3*(2*(c/2)^3 - 5*bp)],
               # Y^2 + b^p*Y = X^3 - 3*((c/2)^3 + b^p)*(c/2)*X - (c/2)^3*(2*(c/2)^3 - 5*b^p)
               condition=C)
 print ""
-print E.conductor(verbose=2)
+print E.conductor()
 # 3^n0*Rad_P( (27) * bp * (c^3 - bp)^3 )
 #  where 
 # n0 = 2 if ('bp', 'c') is 1 of 710046 possibilities mod 2187
 #      3 if ('bp', 'c') is 1 of 24 possibilities mod 9
 #      1 if ('bp', 'c') is 1 of 1458 possibilities mod 2187
 print ""
-print E.newforms()
+print E.newforms(algorithm='magma')
 # [(q - 2*q^4 + O(q^6), 'all')] if ('bp', 'c') is 1 of 24 possibilities mod 9
 # (corresponds to the trivial solution (1,-1,0))
 # (agrees with article)
@@ -106,13 +106,13 @@ E = FreyCurve([c, -c^2, 0, -3/2*c*bp, bp*((c^3 - bp) + 5/4*bp)],
               # Y^2 + c*X*Y = X^3 - c^2*X^2 - 3/2*c*b^p*X + b^p*(a^p + 5/4*b^p))
               condition=C)
 print ""
-print E.conductor(verbose=True)
+print E.conductor()
 # 3^n0*Rad_P( (27) * bp * (c^3 - bp)^3 )
 #  where 
 # n0 = 2 if ('bp', 'c') is 1 of 710046 possibilities mod 2187
 #      3 if ('bp', 'c') is 1 of 24 possibilities mod 9
 #      1 if ('bp', 'c') is 1 of 1458 possibilities mod 2187
-print E.newforms()
+print E.newforms(algorithm='magma')
 # ???
 del E
 
@@ -129,14 +129,14 @@ E = FreyCurve([0, 2*(1+i) * a, 0 , b + i*a^2, 0],
               parameter_ring=ZZ, condition=C)
 # Y^2 = X^3 + 2*(1 + i)*a*X^2 + (b + i*a^2)*X
 print ""
-print E.conductor(verbose=True)
+print E.conductor()
 # Fractional ideal (i + 1)^n0*Rad_P( ((-64*i)) * (a^2 + (i)*b) * (a^2 + (-i)*b)^2 )
 #  where 
 # n0 = 12 if ('a', 'b') == (1, 0) mod 2
 #      6  if ('a', 'b') == (0, 3), (2, 3) mod 4
 # (agrees with article)
 print ""
-print E.newforms()
+print E.newforms(algorithm='magma')
 # ???
 del E
 

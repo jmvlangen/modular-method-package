@@ -101,7 +101,7 @@ class pAdicBase(SageObject):
             prime = self._R.ideal(prime)
         if prime not in self._R.ideal_monoid() or not prime.is_prime():
             raise ValueError("%s is not a prime ideal of %s."%(prime, self._R))
-        self._P = prime
+        self._P = self._R.ideal_monoid()(prime)
         self._ext = dict() #Residue field as vector space, see extension_vector_space
         
     def number_field(self):
