@@ -30,6 +30,6 @@ print E.conductor()
 
 # Newforms
 print ""
-print E.newforms()
+print E.newforms(algorithm='magma')
 # 
 # (article: eliminated by other means (CM))

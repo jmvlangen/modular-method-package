@@ -41,6 +41,6 @@ print E.conductor()
 
 # Newforms
 print ""
-print E.newforms()
+print E.newforms(algorithm='magma')
 #
 # (article: 1 form of level 576 and 2 forms of level 1728 remain)

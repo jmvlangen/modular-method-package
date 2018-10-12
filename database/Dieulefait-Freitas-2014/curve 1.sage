@@ -47,6 +47,6 @@ print E.conductor()
 
 # Newforms
 print ""
-# print E.newforms()
+print E.newforms(algorithm='magma')
 #
 # (article: None should remain, but different elimination methods)

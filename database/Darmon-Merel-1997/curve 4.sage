@@ -34,6 +34,6 @@ print E.conductor()
 
 # Newforms
 print ""
-print E.newforms()
+print E.newforms(algorithm='magma')
 # 
 # (article: no solution if l == 1 (mod 3) and assuming Shimura-Tate)

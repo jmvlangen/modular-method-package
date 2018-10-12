@@ -38,6 +38,6 @@ print E.conductor()
 
 # Newform
 print ""
-# print E.newforms()
+print E.newforms(algorithm='magma')
 #
 # (article: no newforms agree for l > 349)

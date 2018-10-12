@@ -40,7 +40,7 @@ print E.conductor()
 
 # Newforms
 print ""
-# print E.newforms()
+print E.newforms(algorithm='magma')
 #
 # (article: the only form at level 48 is CM and 2 forms at level 432 are CM.
 #  The rest is excluded for l >= 11)

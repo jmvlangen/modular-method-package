@@ -40,6 +40,6 @@ E = E.decomposable_twist()
 
 # Newform
 print ""
-# print E.newforms()
+print E.newforms(algorithm='magma')
 #
 # (article: no newforms agree for l > 131)
