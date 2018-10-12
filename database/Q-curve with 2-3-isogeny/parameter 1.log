@@ -1,30 +1,31 @@
-Q-curve with 2-3-isogeny for parameter 1
-
-An exception occured:
-Paramater 1 gives a CM elliptic curve.
+  File "./results/run.sage.py", line 5
+    load( * BackslashOperator() * '~/Documents/SageFiles/load.sage\')
+                                                                    ^
+SyntaxError: EOL while scanning string literal
 
 --------------------------------------------------------------
 
-	Command being timed: "sage ./code/Q-curve with 2-3-isogeny 1.sage"
-	User time (seconds): 2.48
-	System time (seconds): 0.36
-	Percent of CPU this job got: 66%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:04.26
+Command exited with non-zero status 1
+	Command being timed: "sage ./results/run.sage"
+	User time (seconds): 0.11
+	System time (seconds): 0.07
+	Percent of CPU this job got: 101%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.19
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 204476
+	Maximum resident set size (kbytes): 10808
 	Average resident set size (kbytes): 0
-	Major (requiring I/O) page faults: 88
-	Minor (reclaiming a frame) page faults: 119109
-	Voluntary context switches: 1669
-	Involuntary context switches: 78
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 23251
+	Voluntary context switches: 120
+	Involuntary context switches: 33
 	Swaps: 0
-	File system inputs: 29784
-	File system outputs: 48
+	File system inputs: 8
+	File system outputs: 24
 	Socket messages sent: 0
 	Socket messages received: 0
 	Signals delivered: 0
 	Page size (bytes): 4096
-	Exit status: 0
+	Exit status: 1

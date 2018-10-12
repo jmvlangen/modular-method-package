@@ -1,43 +1,31 @@
-Q-curve with 3-isogeny for parameter 10
-
-Decomposable curve of lowest conductor:
-
-Q-curve defined by y^2 = x^3 + (-43201294554247919453743/22838785730109894759769133303010*sqrt_tusqrt_tzeta0^15-117623124420241/53402191677606068422008*sqrt_tusqrt_tzeta0^14+9711839121604996940399509/6300354684168246830281140221520*sqrt_tusqrt_tzeta0^13+130671698688474806/73428013556708344080261*sqrt_tusqrt_tzeta0^12-30819458779342718940820017057/60903428613626386026051022141360*sqrt_tusqrt_tzeta0^11-113137824952722616479/195808036151222250880696*sqrt_tusqrt_tzeta0^10+392201920680111531650002613851/4567757146021978951953826660602*sqrt_tusqrt_tzeta0^9+56668847642259305329381/587424108453666752642088*sqrt_tusqrt_tzeta0^8-26676944753558989516882545498901/3322005197106893783239146662256*sqrt_tusqrt_tzeta0^7-5161491575755442179746413/587424108453666752642088*sqrt_tusqrt_tzeta0^6+1550276530098319307728164337068986/3806464288351649126628188883835*sqrt_tusqrt_tzeta0^5+82961219114087338782635567/195808036151222250880696*sqrt_tusqrt_tzeta0^4-1853961576320543933403237338413114627/182710285840879158078153066424080*sqrt_tusqrt_tzeta0^3-2759695324860874598637830969/293712054226833376321044*sqrt_tusqrt_tzeta0^2+16697843926026920456247015505357010167/182710285840879158078153066424080*sqrt_tusqrt_tzeta0+34097681352474597878835292565/587424108453666752642088)*x + (60126556680676541911485/1522585715340659650651275553534*sqrt_tusqrt_tzeta0^15+60685705131630971/97904018075611125440348*sqrt_tusqrt_tzeta0^14-871098039539900630287475863/27406542876131873711722959963612*sqrt_tusqrt_tzeta0^13-442134835934702832215/881136162680500128963132*sqrt_tusqrt_tzeta0^12+3229238824676164539864911909/315017734208412341514057011076*sqrt_tusqrt_tzeta0^11+8012805225545302801087/48952009037805562720174*sqrt_tusqrt_tzeta0^10-7735640848253806358002392756601/4567757146021978951953826660602*sqrt_tusqrt_tzeta0^9-2702334472129557940799985/97904018075611125440348*sqrt_tusqrt_tzeta0^8+378163534617952662767890136996953/2491503897830170337429359996692*sqrt_tusqrt_tzeta0^7+1129907707074082898806916855/440568081340250064481566*sqrt_tusqrt_tzeta0^6-32662274500393000156101864401580229/4567757146021978951953826660602*sqrt_tusqrt_tzeta0^5-37916966838229041839931650891/293712054226833376321044*sqrt_tusqrt_tzeta0^4+1407442074202964402499787644520103771/9135514292043957903907653321204*sqrt_tusqrt_tzeta0^3+30183096191514049509255827815/9474582394413979881324*sqrt_tusqrt_tzeta0^2-1982096028884566166116232729694341339/2108195605856297977824843074124*sqrt_tusqrt_tzeta0-959105749128283919128429377257/33889852410788466498582) over Number Field in sqrt_tusqrt_tzeta0 with defining polynomial x^16 - 836*x^14 + 284402*x^12 - 50859128*x^10 + 5164568635*x^8 - 300878023912*x^6 + 9699598429442*x^4 - 156363150946684*x^2 + 967436483456881
-
-Newform levels:
-
-(172800, 172800)
-
-
-An exception occured:
-Error executing Magma code:
-
-Current total memory usage: 4780.4MB, failed memory request: 13668.8MB
-System error: Out of memory.
-All virtual memory has been exhausted so Magma cannot perform this statement.
+  File "./results/run.sage.py", line 5
+    load( * BackslashOperator() * '~/Documents/SageFiles/load.sage\')
+                                                                    ^
+SyntaxError: EOL while scanning string literal
 
 --------------------------------------------------------------
 
-	Command being timed: "sage ./code/Q-curve with 3-isogeny 10.sage"
-	User time (seconds): 452.69
-	System time (seconds): 1.43
-	Percent of CPU this job got: 55%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 13:38.21
+Command exited with non-zero status 1
+	Command being timed: "sage ./results/run.sage"
+	User time (seconds): 0.13
+	System time (seconds): 0.05
+	Percent of CPU this job got: 102%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.18
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 459712
+	Maximum resident set size (kbytes): 10808
 	Average resident set size (kbytes): 0
-	Major (requiring I/O) page faults: 604
-	Minor (reclaiming a frame) page faults: 257979
-	Voluntary context switches: 53381
-	Involuntary context switches: 9801
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 23244
+	Voluntary context switches: 119
+	Involuntary context switches: 34
 	Swaps: 0
-	File system inputs: 301704
-	File system outputs: 153464
+	File system inputs: 8
+	File system outputs: 24
 	Socket messages sent: 0
 	Socket messages received: 0
 	Signals delivered: 0
 	Page size (bytes): 4096
-	Exit status: 0
+	Exit status: 1

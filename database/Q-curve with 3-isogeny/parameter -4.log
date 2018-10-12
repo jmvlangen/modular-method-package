@@ -1,39 +1,31 @@
-Q-curve with 3-isogeny for parameter -4
-
-Decomposable curve of lowest conductor:
-
-Q-curve defined by y^2 = x^3 + (-279/7*sqrt_tu^3-387/2*sqrt_tu^2-3267/7*sqrt_tu-783/2)*x + (1434*sqrt_tu^3+3276*sqrt_tu^2+4170*sqrt_tu-11844) over Number Field in sqrt_tu with defining polynomial x^4 + 2*x^2 + 49
-
-Newform levels:
-
-(2160,)
-
-Newform of level 2160:
-
-q + 1/126*(-a^3 - 12*a^2 - 63*a - 124)*q^5 + 1/42*(a^3 + 12*a^2 + 21*a - 44)*q^11 + O(q^12)
+  File "./results/run.sage.py", line 5
+    load( * BackslashOperator() * '~/Documents/SageFiles/load.sage\')
+                                                                    ^
+SyntaxError: EOL while scanning string literal
 
 --------------------------------------------------------------
 
-	Command being timed: "sage ./code/Q-curve with 3-isogeny -4.sage"
-	User time (seconds): 3.87
-	System time (seconds): 0.59
-	Percent of CPU this job got: 49%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:09.01
+Command exited with non-zero status 1
+	Command being timed: "sage ./results/run.sage"
+	User time (seconds): 0.13
+	System time (seconds): 0.07
+	Percent of CPU this job got: 104%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.19
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 206204
+	Maximum resident set size (kbytes): 10808
 	Average resident set size (kbytes): 0
 	Major (requiring I/O) page faults: 0
-	Minor (reclaiming a frame) page faults: 160058
-	Voluntary context switches: 7843
-	Involuntary context switches: 2494
+	Minor (reclaiming a frame) page faults: 23245
+	Voluntary context switches: 120
+	Involuntary context switches: 34
 	Swaps: 0
-	File system inputs: 32
-	File system outputs: 224
+	File system inputs: 8
+	File system outputs: 24
 	Socket messages sent: 0
 	Socket messages received: 0
 	Signals delivered: 0
 	Page size (bytes): 4096
-	Exit status: 0
+	Exit status: 1

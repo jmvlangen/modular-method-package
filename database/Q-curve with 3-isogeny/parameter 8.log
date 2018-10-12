@@ -1,43 +1,31 @@
-Q-curve with 3-isogeny for parameter 8
-
-Decomposable curve of lowest conductor:
-
-Q-curve defined by y^2 = x^3 + (288/5*sqrt_tu^3-36*sqrt_tu^2-4176/5*sqrt_tu-1044)*x + (300*sqrt_tu^3+2700*sqrt_tu^2-14820*sqrt_tu-17604) over Number Field in sqrt_tu with defining polynomial x^4 - 22*x^2 + 25
-
-Newform levels:
-
-(48384,)
-
-
-An exception occured:
-Error executing Magma code:
-
-Current total memory usage: 9830.2MB, failed memory request: 648.0MB
-System error: Out of memory.
-All virtual memory has been exhausted so Magma cannot perform this statement.
+  File "./results/run.sage.py", line 5
+    load( * BackslashOperator() * '~/Documents/SageFiles/load.sage\')
+                                                                    ^
+SyntaxError: EOL while scanning string literal
 
 --------------------------------------------------------------
 
-	Command being timed: "sage ./code/Q-curve with 3-isogeny 8.sage"
-	User time (seconds): 3.96
-	System time (seconds): 0.80
-	Percent of CPU this job got: 0%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 33:36.49
+Command exited with non-zero status 1
+	Command being timed: "sage ./results/run.sage"
+	User time (seconds): 0.12
+	System time (seconds): 0.06
+	Percent of CPU this job got: 103%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.18
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 203308
+	Maximum resident set size (kbytes): 10804
 	Average resident set size (kbytes): 0
-	Major (requiring I/O) page faults: 5489
-	Minor (reclaiming a frame) page faults: 192103
-	Voluntary context switches: 13404
-	Involuntary context switches: 2008
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 23239
+	Voluntary context switches: 120
+	Involuntary context switches: 41
 	Swaps: 0
-	File system inputs: 482048
-	File system outputs: 176
+	File system inputs: 8
+	File system outputs: 24
 	Socket messages sent: 0
 	Socket messages received: 0
 	Signals delivered: 0
 	Page size (bytes): 4096
-	Exit status: 0
+	Exit status: 1

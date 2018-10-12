@@ -1,41 +1,31 @@
-Q-curve with 3-isogeny for parameter -7
-
-Decomposable curve of lowest conductor:
-
-Q-curve defined by y^2 = x^3 + (-24742034426078738373725559/13327648492289035300864*sqrt_tusqrt_tzeta00^11+320975674223587285662209979/3331912123072258825216*sqrt_tusqrt_tzeta00^10-1601091949642136505410566005/3331912123072258825216*sqrt_tusqrt_tzeta00^9+171480156500194596906560685/19371582110885225728*sqrt_tusqrt_tzeta00^8-6437031470007397479519277275/208244507692016176576*sqrt_tusqrt_tzeta00^7+241973567754832267089339366819/416489015384032353152*sqrt_tusqrt_tzeta00^6-6864855061314279109145960349/4004702071000311088*sqrt_tusqrt_tzeta00^5+2282308962482460849656449399335/104122253846008088288*sqrt_tusqrt_tzeta00^4-2276686166040836854895118401775/52061126923004044144*sqrt_tusqrt_tzeta00^3+14168814206938365158274298616721/26030563461502022072*sqrt_tusqrt_tzeta00^2-11724105401520047256488260846653/13015281730751011036*sqrt_tusqrt_tzeta00+23383069489606622647467203148429/3253820432687752759)*x + (-21053920746915954494334462221553/3331912123072258825216*sqrt_tusqrt_tzeta00^11-67375182836005001056230723301017/3331912123072258825216*sqrt_tusqrt_tzeta00^10-375889721827099529266437304035189/832978030768064706304*sqrt_tusqrt_tzeta00^9-49389612790792110329507913576069/19371582110885225728*sqrt_tusqrt_tzeta00^8-12457576291961175604792015172685567/416489015384032353152*sqrt_tusqrt_tzeta00^7-34877660871055032382714839671469303/208244507692016176576*sqrt_tusqrt_tzeta00^6-7206224098858367430106810423016907/8009404142000622176*sqrt_tusqrt_tzeta00^5-24536046776473515879354364258996413/3253820432687752759*sqrt_tusqrt_tzeta00^4-71278100995923352987913930270318892/3253820432687752759*sqrt_tusqrt_tzeta00^3-1251042713993611711025905312463966631/6507640865375505518*sqrt_tusqrt_tzeta00^2-506494205732162308463774606249921439/3253820432687752759*sqrt_tusqrt_tzeta00-10836937914550846394138948155313890053/3253820432687752759) over Number Field in sqrt_tusqrt_tzeta00 with defining polynomial x^12 - 4*x^11 + 124*x^10 - 368*x^9 + 8928*x^8 - 23936*x^7 + 417536*x^6 - 903936*x^5 + 12720896*x^4 - 22115328*x^3 + 249836544*x^2 - 282566656*x + 2242441216
-
-Newform levels:
-
-(42, 294, 294)
-(294, 42, 294)
-(294, 294, 42)
-
-Newform of level 42:
-
-q + 1/9*(2*a^3 + 3*a)*q^2 + 1/3*(-a^3 - 3*a)*q^3 - 1/3*a^2*q^4 + a*q^5 + 1/3*(2*a^2 + 3)*q^6 + 1/3*(a^2 - 6)*q^7 + 1/9*(a^3 + 6*a)*q^8 + (-a^2 - 3)*q^9 + 1/3*(-a^2 - 6)*q^10 + 1/3*(a^3 - 3*a)*q^11 + O(q^12)
+  File "./results/run.sage.py", line 5
+    load( * BackslashOperator() * '~/Documents/SageFiles/load.sage\')
+                                                                    ^
+SyntaxError: EOL while scanning string literal
 
 --------------------------------------------------------------
 
-	Command being timed: "sage ./code/Q-curve with 3-isogeny -7.sage"
-	User time (seconds): 602.40
-	System time (seconds): 1.07
-	Percent of CPU this job got: 99%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 10:05.53
+Command exited with non-zero status 1
+	Command being timed: "sage ./results/run.sage"
+	User time (seconds): 0.12
+	System time (seconds): 0.07
+	Percent of CPU this job got: 102%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.19
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 880488
+	Maximum resident set size (kbytes): 10808
 	Average resident set size (kbytes): 0
-	Major (requiring I/O) page faults: 1
-	Minor (reclaiming a frame) page faults: 410724
-	Voluntary context switches: 29451
-	Involuntary context switches: 5906
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 23236
+	Voluntary context switches: 122
+	Involuntary context switches: 57
 	Swaps: 0
-	File system inputs: 832
-	File system outputs: 16672
+	File system inputs: 8
+	File system outputs: 24
 	Socket messages sent: 0
 	Socket messages received: 0
 	Signals delivered: 0
 	Page size (bytes): 4096
-	Exit status: 0
+	Exit status: 1

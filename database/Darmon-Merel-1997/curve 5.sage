@@ -16,7 +16,7 @@ R.<bl, c> = ZZ[]
 C = (CoprimeCondition([bl,c]) &
      PowerCondition(c^3 - bl, 7) & # c^3 - bl = a^l
      PowerCondition(bl, 7) & # bl = b^l
-     CongruenceCondition(c^3 - b^l -1, 2) & # wlog a^l odd
+     CongruenceCondition(c^3 - bl -1, 2) & # wlog a^l odd
      CongruenceCondition(bl, 2)) # wlog
 
 # The curve

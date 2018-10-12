@@ -1,39 +1,31 @@
-Q-curve with 3-isogeny for parameter -3
-
-Decomposable curve of lowest conductor:
-
-Q-curve defined by y^2 = x^3 + (-891/4*sqrt_tu0+2187/2)*x + (3402*sqrt_tu0+15066) over Number Field in sqrt_tu0 with defining polynomial x^2 + 12
-
-Newform levels:
-
-(243,)
-
-Newform of level 243:
-
-q + a*q^2 + q^4 + 2*a*q^5 - q^7 - a*q^8 + 6*q^10 - 2*a*q^11 + O(q^12)
+  File "./results/run.sage.py", line 5
+    load( * BackslashOperator() * '~/Documents/SageFiles/load.sage\')
+                                                                    ^
+SyntaxError: EOL while scanning string literal
 
 --------------------------------------------------------------
 
-	Command being timed: "sage ./code/Q-curve with 3-isogeny -3.sage"
-	User time (seconds): 2.56
-	System time (seconds): 0.47
-	Percent of CPU this job got: 64%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:04.68
+Command exited with non-zero status 1
+	Command being timed: "sage ./results/run.sage"
+	User time (seconds): 0.12
+	System time (seconds): 0.04
+	Percent of CPU this job got: 102%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.15
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 205004
+	Maximum resident set size (kbytes): 10812
 	Average resident set size (kbytes): 0
 	Major (requiring I/O) page faults: 0
-	Minor (reclaiming a frame) page faults: 141826
-	Voluntary context switches: 3815
-	Involuntary context switches: 860
+	Minor (reclaiming a frame) page faults: 23236
+	Voluntary context switches: 120
+	Involuntary context switches: 44
 	Swaps: 0
-	File system inputs: 32
-	File system outputs: 160
+	File system inputs: 8
+	File system outputs: 24
 	Socket messages sent: 0
 	Socket messages received: 0
 	Signals delivered: 0
 	Page size (bytes): 4096
-	Exit status: 0
+	Exit status: 1
