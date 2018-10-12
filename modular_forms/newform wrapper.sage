@@ -197,7 +197,8 @@ class Newform_wrapped(SageObject):
             return self.coefficient(prime)
         T = self.trace_of_frobenius(prime)
         D = self.determinant_of_frobenius(prime)
-        return self._trace_power_formula(power)(T, D)
+        K, T_map, D_map = composite_field(T.parent(), D.parent(), give_maps=True)
+        return self._trace_power_formula(power)(T_map(T), D_map(D))
 
     def determinant_of_frobenius(self, prime, power=1):
         """
@@ -269,7 +270,7 @@ class Newform_wrapped(SageObject):
         """
         T = self.trace_of_frobenius(prime, power=power)
         D = self.determinant_of_frobenius(prime, power=power)
-        K, T_map, D_map = composite_field(T.parent(), D.parent())
+        K, T_map, D_map = composite_field(T.parent(), D.parent(), give_maps=True)
         R.<x> = K[]
         return x^2 - T_map(T)*x + D_map(D)
     
@@ -411,7 +412,7 @@ class Newform_wrapped_magma(Newform_wrapped):
         L = eps_f.BaseRing().sage()
         gens = Integers(N).unit_gens()
         for eps in DirichletGroup(N0, base_ring=L):
-            if all(magma(eps(n)) == eps_f(n) for n in gens):
+            if all(eps(n) == eps_f(n).sage() for n in gens):
                 return eps
         raise ValueError("No sage character corresponds to %s"%(eps_f,))
         

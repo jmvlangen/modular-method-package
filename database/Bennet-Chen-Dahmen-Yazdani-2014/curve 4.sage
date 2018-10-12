@@ -28,7 +28,7 @@ C = (CoprimeCondition(['s','t']) &
 # The curve
 # Y^2 = X^3 - 3*a*X - 2*c
 a_invariants = [0, 0, 0, -12*a, -16*c]
-E = FreyQcurve(a_invariants, condition=C)
+E = FreyCurve(a_invariants, condition=C)
 
 # The conductor
 print ""

@@ -1142,7 +1142,10 @@ class FreyCurve(EllipticCurve_generic):
         return [(f, ('all' if B == 0 else B.prime_factors())) for f, B in nfs]
 
     @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap:
-                   ((self._condition if c is None else c), tuple(add), prime_cap, prec_cap))
+                   ((self._condition if c is None else c),
+                    (tuple(self.primes_of_possible_additive_reduction())
+                     if add is None else tuple(add)),
+                    prime_cap, prec_cap))
     def newforms(self, condition=None, additive_primes=None, algorithm='sage',
                  prime_cap=50, verbose=False, precision_cap=20):
         r"""
@@ -1736,7 +1739,10 @@ class FreyQcurve(FreyCurve, Qcurve):
         return [(f, ('all' if B == 0 else B.prime_factors())) for f, B in nfs]
     
     @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap:
-                   ((self._condition if c is None else c), tuple(add), prime_cap, prec_cap))
+                   ((self._condition if c is None else c),
+                    (tuple(self.primes_of_possible_additive_reduction())
+                     if add is None else tuple(add)),
+                    prime_cap, prec_cap))
     def newforms(self, condition=None, additive_primes=None, algorithm='sage',
                  prime_cap=50, verbose=False, precision_cap=20):
         r"""
@@ -1836,7 +1842,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             else:
                 return None
         else:
-            result = self._newforms(N, condition, additive_primes,
+            result = self._newforms(levels, condition, additive_primes,
                                     algorithm, prime_cap, verbose)
             if len(result) > 0:
                 return result
