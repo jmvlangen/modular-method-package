@@ -7,8 +7,19 @@ touch "${runtmp}"
 touch "${timetmp}"
 touch "${logtmp}"
 
+findargs="../database -iname '*.sage'"
+while getopts "s:" opt; do
+    case "${opt}" in
+	s)
+	    echo "Skipping ${OPTARG}"
+	    findargs="${findargs} -and -not -path \"${OPTARG}\""
+	    ;;
+    esac
+done
+findargs="${findargs} -printf \"%p\n\""
+
 IFS=''
-find ~/Documents/SageFiles/database -name '*.sage' -printf "%p\n" | while read path;
+eval find $findargs | while read path;
 do
     cp "${runsource}" "${runtmp}"
     replace '<path>' "${path}" -- "${runtmp}"
