@@ -129,6 +129,12 @@ class Qcurve(EllipticCurve_number_field):
                 break
         if not flag:
             raise ValueError("There is not sufficient isogeny information to make %s a Q-curve"%curve)
+        # Check that c^2 is the coboundary of the degree map.
+        G = self.definition_field().galois_group()
+        d = self.degree_map
+        c = self.c
+        if not all(d(s) * d(t) / d(s*t) == c(s,t)^2 for s in G for t in G):
+            raise ValueError("The given isogenies are not valid.")
 
     def definition_field(self):
         r"""
