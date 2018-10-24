@@ -1687,7 +1687,7 @@ class FreyQcurve(FreyCurve, Qcurve):
                       for eps in self.splitting_character('conjugacy')]
         for levelsi in levels:
             level, eps, Lbeta = min(zip(levelsi,
-                                        self.splitting_character('conjugacy'),
+                                        characters,
                                         self.splitting_image_field('conjugacy')),
                                     key=lambda x: x[0])
             if (level, eps, Lbeta) in done_levels:
@@ -1695,8 +1695,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             if verbose > 0:
                 print "Computing newforms of level %s and character %s"%(level, eps)
             nfs.extend([(f,0) for f in get_newforms(level, character=eps,
-                                                    algorithm=algorithm,
-                                                    minimal_coeffs=Lbeta)])
+                                                    algorithm=algorithm)])
             done_levels.append((level, eps, Lbeta))
 
         bad_primes = []
@@ -1729,6 +1728,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             nfs = []
             for f, B in nfs_old:
                 apf = f.trace_of_frobenius(p, power=KE.degree())
+                # apE is always in QQ, hence the computations below always work!
                 if apf in QQ:
                     Bnew = ZZ(p * product(apE - QQ(apf) for apE in apE_ls))
                 else:
