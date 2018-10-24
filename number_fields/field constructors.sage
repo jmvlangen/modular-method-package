@@ -189,6 +189,16 @@ def composite_field(K1, K2, give_maps=False):
            To:   Number Field in a0 with defining polynomial x^4 - 10*x^2 + 1
            Defn: a |--> -1/2*a0^3 + 11/2*a0)
     """
+    if not is_field(K1):
+        if K1.is_subring(QQ):
+            K1 = QQ
+        else:
+            K1 = K1.field_of_fractions()
+    if not is_field(K2):
+        if K2.is_subring(QQ):
+            K2 = QQ
+        else:
+            K2 = K2.field_of_fractions()
     from_K2 = None
     if K1 != QQ and K2 != QQ and K1.defining_polynomial().parent() != K2.defining_polynomial().parent():
         R = K1.defining_polynomial().parent()
