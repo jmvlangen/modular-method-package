@@ -11,7 +11,7 @@
 #   - b != 1 (mod 4) (wlog)
 
 # Conditions
-R.<a,b> = ZZ[]
+R.<a,b> = QQ[]
 C = (CoprimeCondition([a,b]) &
      PowerCondition(a^4 + b^2, 3) & # a^4 + b^2 = c^p
      ~CongruenceCondition(b-1, 4)) # b != 1 mod 4
