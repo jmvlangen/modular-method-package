@@ -190,15 +190,9 @@ def composite_field(K1, K2, give_maps=False):
            Defn: a |--> -1/2*a0^3 + 11/2*a0)
     """
     if not is_field(K1):
-        if K1.is_subring(QQ):
-            K1 = QQ
-        else:
-            K1 = K1.field_of_fractions()
+        K1 = K1.fraction_field()
     if not is_field(K2):
-        if K2.is_subring(QQ):
-            K2 = QQ
-        else:
-            K2 = K2.field_of_fractions()
+        K2 = K2.fraction_field()
     from_K2 = None
     if K1 != QQ and K2 != QQ and K1.defining_polynomial().parent() != K2.defining_polynomial().parent():
         R = K1.defining_polynomial().parent()
