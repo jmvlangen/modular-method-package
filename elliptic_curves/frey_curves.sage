@@ -1089,7 +1089,7 @@ class FreyCurve(EllipticCurve_generic):
         return apply_to_conditional_value(lambda t: result(t, D), T)
 
     def _newforms(self, level, condition, additive_primes,
-                  algorithm, prime_cap, verbose):
+                  algorithm, prime_cap, verbose, precision_cap):
         r"""
         Computes the possible newforms of a given level.
 
@@ -1122,7 +1122,8 @@ class FreyCurve(EllipticCurve_generic):
             if verbose > 0:
                 print "Comparing traces of frobenius at %s for %s possible candidates."%(p, len(nfs))
             apE = self.trace_of_frobenius(p, condition=condition,
-                                          verbose=(verbose - 1 if verbose > 0 else -1))
+                                          verbose=(verbose - 1 if verbose > 0 else -1),
+                                          precision_cap=precision_cap)
             if isinstance(apE, ConditionalValue):
                 apE_ls = [val for val, con in apE]
             else:
@@ -1140,13 +1141,14 @@ class FreyCurve(EllipticCurve_generic):
                     nfs.append((f, B))
         return [(f, ('all' if B == 0 else B.prime_factors())) for f, B in nfs]
 
-    @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap:
+    @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap1, prec_cap2:
                    ((self._condition if c is None else c),
                     (tuple(self.primes_of_possible_additive_reduction())
                      if add is None else tuple(add)),
-                    prime_cap, prec_cap))
+                    prime_cap, prec_cap1, prec_cap2))
     def newforms(self, condition=None, additive_primes=None, algorithm='sage',
-                 prime_cap=50, verbose=False, precision_cap=20):
+                 prime_cap=50, verbose=False, precision_cap_conductor=20,
+                 precision_cap_reduction=1):
         r"""
         Computes the newforms that could be associated to this Frey curve.
 
@@ -1183,9 +1185,16 @@ class FreyCurve(EllipticCurve_generic):
           argument. This makes it so a higher value will
           print more details about the computation than a
           lower one.
-        - ``precision_cap`` A strictly positive integer
+        - ``precision_cap_conductor`` -- A strictly positive integer
           (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+          used in p-Adic arithmetic when computing the conductor.
+        - ``precision_cap_reduction`` -- A strictly positive
+          integer (default: 1) giving the maximal precision level
+          to be used in the p-Adic arithmetic when computing the
+          reduction type at a given prime. Since this will do a
+          computation for every prime lower than prime_cap, this
+          might get very computational intensive if set to a value
+          larger than 1.
 
         OUTPUT:
 
@@ -1208,7 +1217,7 @@ class FreyCurve(EllipticCurve_generic):
         N = self.conductor(additive_primes=additive_primes,
                            condition=condition,
                            verbose=verbose,
-                           precision_cap=precision_cap).left()
+                           precision_cap=precision_cap_conductor).left()
         if isinstance(N, ConditionalExpression):
             N = N.value()
         if condition is None:
@@ -1217,7 +1226,8 @@ class FreyCurve(EllipticCurve_generic):
             result = []
             for val, con in N:
                 answer = self._newforms(val, con & condition, additive_primes,
-                                        algorithm, prime_cap, verbose)
+                                        algorithm, prime_cap, verbose,
+                                        precision_cap_reduction)
                 if len(answer) > 0:
                     result.append((answer, con))
             if len(result) > 0:
@@ -1226,7 +1236,8 @@ class FreyCurve(EllipticCurve_generic):
                 return None
         else:
             result =  self._newforms(N, condition, additive_primes,
-                                     algorithm, prime_cap, verbose)
+                                     algorithm, prime_cap, verbose,
+                                     precision_cap_reduction)
             if len(result) > 0:
                 return result
             else:
@@ -1675,7 +1686,8 @@ class FreyQcurve(FreyCurve, Qcurve):
         return Qcurve._newform_levels(self, N=N, **kwds)
     
     def _newforms(self, levels, condition, additive_primes,
-                  algorithm, prime_cap, verbose):
+                  algorithm, prime_cap, verbose,
+                  precision_cap):
         r"""
         Internal function,
         see newforms for more information.
@@ -1720,7 +1732,8 @@ class FreyQcurve(FreyCurve, Qcurve):
             P = KE.prime_above(p)
             apE = self.trace_of_frobenius_power(P, P.ramification_index(),
                                                 condition=condition,
-                                                verbose=(verbose - 1 if verbose > 0 else -1))
+                                                verbose=(verbose - 1 if verbose > 0 else -1),
+                                                precision_cap=precision_cap)
             if isinstance(apE, ConditionalValue):
                 apE_ls = [val for val, con in apE]
             else:
@@ -1739,13 +1752,14 @@ class FreyQcurve(FreyCurve, Qcurve):
                     nfs.append((f, B))
         return [(f, ('all' if B == 0 else B.prime_factors())) for f, B in nfs]
     
-    @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap:
+    @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap1, prec_cap2:
                    ((self._condition if c is None else c),
                     (tuple(self.primes_of_possible_additive_reduction())
                      if add is None else tuple(add)),
-                    prime_cap, prec_cap))
+                    prime_cap, prec_cap1, prec_cap2))
     def newforms(self, condition=None, additive_primes=None, algorithm='sage',
-                 prime_cap=50, verbose=False, precision_cap=20):
+                 prime_cap=50, verbose=False, precision_cap_conductor=20,
+                 precision_cap_reduction=1):
         r"""
         Computes the newforms that could be associated to this Frey Q-curve.
 
@@ -1805,9 +1819,16 @@ class FreyQcurve(FreyCurve, Qcurve):
           argument. This makes it so a higher value will
           print more details about the computation than a
           lower one.
-        - ``precision_cap`` -- A strictly positive integer
+        - ``precision_cap_conductor`` -- A strictly positive integer
           (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+          used in p-Adic arithmetic when computing the conductor.
+        - ``precision_cap_reduction`` -- A strictly positive
+          integer (default: 1) giving the maximal precision level
+          to be used in the p-Adic arithmetic when computing the
+          reduction type at a given prime. Since this will do a
+          computation for every prime lower than prime_cap, this
+          might get very computational intensive if set to a value
+          larger than 1.
 
         OUTPUT:
 
@@ -1830,12 +1851,13 @@ class FreyQcurve(FreyCurve, Qcurve):
         levels = self._newform_levels(additive_primes=additive_primes,
                                       condition=condition,
                                       verbose=(verbose - 1 if verbose > 0 else verbose),
-                                      precision_cap=precision_cap)
+                                      precision_cap=precision_cap_conductor)
         if isinstance(levels, ConditionalValue):
             result = []
             for val, con in levels:
                 answer = self._newforms(val, con & condition, additive_primes,
-                                        algorithm, prime_cap, verbose)
+                                        algorithm, prime_cap, verbose,
+                                        precision_cap_reduction)
                 if len(answer) > 0:
                     result.append((answer, con))
             if len(result) > 0:
@@ -1844,7 +1866,8 @@ class FreyQcurve(FreyCurve, Qcurve):
                 return None
         else:
             result = self._newforms(levels, condition, additive_primes,
-                                    algorithm, prime_cap, verbose)
+                                    algorithm, prime_cap, verbose,
+                                    precision_cap_reduction)
             if len(result) > 0:
                 return result
             else:
