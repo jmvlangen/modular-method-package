@@ -74,10 +74,11 @@ def get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
 
 def get_two_cases_invariant(poly, pAdics, T, bndry, case_big, case_small,
                             variables=None, verbose=False, result=[],
-                            **kwds):
+                            precision_cap=20, **kwds):
     Tbig, Tsmall = find_pAdicRoots(poly, pAdics=pAdics,
                                    variables=variables, value_tree=T,
-                                   precision=bndry, verbose=verbose)
+                                   precision=bndry, verbose=verbose,
+                                   precision_cap=precision_cap)
     if not Tbig.is_empty():
         case_big['T'] = Tbig
         result.append(case_big)

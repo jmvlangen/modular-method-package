@@ -1122,8 +1122,7 @@ class FreyCurve(EllipticCurve_generic):
             if verbose > 0:
                 print "Comparing traces of frobenius at %s for %s possible candidates."%(p, len(nfs))
             apE = self.trace_of_frobenius(p, condition=condition,
-                                          verbose=(verbose - 1 if verbose > 0 else -1),
-                                          precision_cap=1)
+                                          verbose=(verbose - 1 if verbose > 0 else -1))
             if isinstance(apE, ConditionalValue):
                 apE_ls = [val for val, con in apE]
             else:
@@ -1718,8 +1717,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             P = KE.prime_above(p)
             apE = self.trace_of_frobenius_power(P, P.ramification_index(),
                                                 condition=condition,
-                                                verbose=(verbose - 1 if verbose > 0 else -1),
-                                                precision_cap=1)
+                                                verbose=(verbose - 1 if verbose > 0 else -1))
             if isinstance(apE, ConditionalValue):
                 apE_ls = [val for val, con in apE]
             else:
