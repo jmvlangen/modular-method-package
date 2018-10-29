@@ -1115,7 +1115,7 @@ class FreyCurve(EllipticCurve_generic):
         p = 1
         while len(nfs) > 0:
             p = next_prime(p)
-            while p in additive_primes:
+            while p in additive_primes or p.divides(level):
                 p = next_prime(p)
             if p > prime_cap:
                 break
@@ -1680,6 +1680,13 @@ class FreyQcurve(FreyCurve, Qcurve):
         Internal function,
         see newforms for more information.
         """
+        bad_primes = []
+        for P in additive_primes:
+            if P in QQ:
+                bad_primes.append(P)
+            else:
+                bad_primes.append(P.smallest_integer())
+                
         nfs = []
         done_levels = []
         characters = [(eps^(-1)).primitive_character()
@@ -1696,13 +1703,9 @@ class FreyQcurve(FreyCurve, Qcurve):
             nfs.extend([(f,0) for f in get_newforms(level, character=eps,
                                                     algorithm=algorithm)])
             done_levels.append((level, eps, Lbeta))
-
-        bad_primes = []
-        for P in additive_primes:
-            if P in QQ:
-                bad_primes.append(P)
-            else:
-                bad_primes.append(P.smallest_integer())
+            for p in level.prime_factors():
+                if p not in bad_primes:
+                    bad_primes.append(p)
             
         p = 1
         KE = self.decomposition_field()
