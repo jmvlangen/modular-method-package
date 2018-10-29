@@ -190,7 +190,7 @@ class PolynomialCondition(Condition_base):
         second return value.
         """
         if "precision_cap" in kwds and precision > kwds["precision_cap"]:
-            print "Warning: A p-Adic tree for %s is computed with a lower precision, due to a given precision_cap!"%(self,)
+            print "Warning: A p-Adic tree for %s is computed with a lower precision than the given precision %s, due to a given precision_cap %s!"%(self, precision, kwds["precision_cap"])
             precision = kwds["precision_cap"]
         if pAdic_tree is None:
             pAdic_tree = pAdicTree(variables=self.variables(),
