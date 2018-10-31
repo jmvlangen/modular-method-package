@@ -1,4 +1,8 @@
-def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, names='a'):
+import re
+
+from sage.modular.dirichlet import is_DirichletCharacter
+
+def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, names='a', file=None):
     r"""
     Computes the newforms of a given level and character.
 
@@ -14,6 +18,8 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, nam
          compute the newforms.
        - 'magma' - If magma should be used to compute
          the newforms.
+       - 'file' - If the newforms should be loaded from
+         a file.
     - ``minimal_coeffs`` -- A number field or the rationals
       (default: QQ) that should be contained inf the
       coefficient field of each newform computed.
@@ -21,6 +27,10 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, nam
       implementation of newforms to be used as the names
       for the generator of coefficient fields of newforms
       that are not QQ.
+    - ``file`` -- A string or None (default: None). Only
+      used in case the algorithm is set to file, in which
+      case it should be the path to the file from which
+      to load the newforms as a string.
     
     OUTPUT:
     
@@ -63,6 +73,26 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, nam
             else:
                 raise ValueError("There is no dirichlet character in magma matching %s"%(eps,))
         result = [Newform_wrapped_magma(orbit[1]) for orbit in nfs]
+    elif algorithm == 'file':
+        if character is None:
+            character = DirichletGroup(1)[0]
+        character = character.primitive_character()
+        if file is None:
+            raise ValueError("Argument file should be set if algorithm file is chosen.")
+        to_do = [load_newforms(file)]
+        result = []
+        while len(to_do) > 0:
+            check = to_do
+            to_do = []
+            for element in check:
+                if isinstance(element, list):
+                    to_do.extend(element)
+                elif (isinstance(element, Newform_wrapped) and
+                      element.level() == level and
+                      element.character().primitive_character() == character):
+                    result.append(element)
+                else:
+                    pass # Not a right newform, skip!
     else:
         raise ValueError("%s is not a valid algorithm."%(algorithm,))
     if minimal_coeffs == QQ:
@@ -71,6 +101,478 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, nam
         poly = minimal_coeffs.gen().minpoly()
         return [f for f in result if len(poly.change_ring(f.coefficient_field()).roots()) > 0]
 
+class LabeledElement:
+    def __init__(self, label, element):
+        self.label = label
+        self.element = element
+    
+def save_newforms(newforms, file_name, coefficient_range=50, only_primes=False):
+    r"""
+    Saves newforms to a file.
+
+    A file that stores newforms will adhere to the following
+    formatting rules in which we shall use:
+ 
+    <list> := '[' ( <element> ( ',' <element> )* )? ']'
+    <element> := ( '<' <identifier> '>' ':=' )? ( <list> | <rational> )
+    <identifier> := <letter>+
+    <rational> := <integer> ( '/' <positive_integer> )?
+    <integer> := ( '-' )? <zero> | <positive_integer>
+    <positive_integer> := <non_zero_digit> ( <digit> )*
+    <digit> := <zero> | <non_zero_digit>
+    <non_zero_digit> := [1-9]
+    <zero> := '0'
+    <letter> := [a-zA-Z]
+
+    - An element of a number field is represented as the list of
+      rational coefficients with respect to the power basis in the
+      generator, preceded by the identifier 'element'
+    - A polynomial with rational coefficients is represented by
+      a list of its coefficients (starting at the constant term)
+      preceded by the identifier 'polynomial'
+    - A number field is represented by a list containing a polynomial,
+      preceded by the identifier 'field'. The polynomial is the
+      defining polynomial of the number field.
+    - A list of values of a function is represented by a list containing
+      lists of exactly two elements, all preceded by the identifier
+      'values'. The function maps the first element of a list in the
+      corresponding list to the second element thereof.
+    - A character is represented by a list containing an integer
+      preceded by the identifier 'conductor' and a list of values of
+      the character, all preceded by the identifier 'character'.
+      The integer with identifier 'conductor' will be the conductor
+      of the character, the number field will give the coefficient
+      field of the character and the last entry will give the values
+      of the character (at some points).
+    - A newform is represented by a list containing an integer
+      preceded by the identifier 'level', a character, a number field
+      and a list of values, all preceded by the identifier 'newform'.
+      The first entry will be the level of the newform, the second
+      the corresponding character, the third the coefficient field of
+      the newform and the last the coefficients of the newform (at some)
+      indices.
+    - A list of things will be represented as a list of the
+      corresponding representations.
+
+    INPUT:
+
+    - ``newforms`` -- An instance of Newform_wrapped. This may also
+      be a list or other iterable containing as elements instances
+      of Newform_wrapped or lists that satisfy the same property.
+      These are the newforms that will be saved to the file.
+    - ``file_name`` -- A string containing the file name to which
+      the given newforms should be saved.
+    - ``coefficient_range`` -- A non-negative integer or a
+      tuple or list of two non-negative integers (default: 50).
+      This indicates the range of coefficients to be saved. In the
+      case this is a tuple or list of two elements will save all
+      the coefficients of index at least the first integer and
+      smaller than the second integer. If a single integer is
+      given will interpret this as the tuple 0 and the given
+      integer.
+    - ``only_primes`` -- A boolean (default: False). If set to
+      True will only save those coefficients of which their
+      index is a prime number.
+    """
+    if coefficient_range in ZZ:
+        coefficient_range = (0, coefficient_range)
+    f = open(file_name, "w")
+    try:
+        _write_element(newforms, f, coefficient_range, only_primes)
+    finally:
+        f.close()
+
+def _write_list(ls, f, coefficient_range, only_primes, indent=0, indent_start=True):
+    if indent_start:
+        f.write(" "*4*indent)
+    f.write('[')
+    write_comma = False
+    for element in ls:
+        if write_comma:
+            f.write(',')
+        f.write('\n')
+        _write_element(element, f, coefficient_range, only_primes, indent=indent+1)
+        write_comma=True
+    f.write(']')
+
+def _write_element(element, f, coefficient_range, only_primes, indent=0):
+    if isinstance(element, Newform_wrapped):
+        _write_newform(element, f, coefficient_range, only_primes, indent=indent)
+    elif is_DirichletCharacter(element):
+        _write_character(element, f, coefficient_range, only_primes, indent=indent)
+    elif is_NumberField(element):
+        _write_field(element, f, coefficient_range, only_primes, indent=indent)
+    elif isinstance(element, LabeledElement):
+        _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
+    elif is_Polynomial(element):
+        _write_polynomial(element, f, coefficient_range, only_primes, indent=indent)
+    elif element in QQ:
+        _write_rational(element, f, indent=indent)
+    elif hasattr(element, '__iter__'):
+        _write_list(element, f, coefficient_range, only_primes, indent=indent)
+    else:
+        raise ValueError("Do not know how to write %s to file."%(element,))
+
+def _write_newform(nf, f, coefficient_range, only_primes, indent=0):
+    level = LabeledElement('level', nf.level())
+    character = nf.character()
+    field = nf.coefficient_field()
+    if only_primes:
+        coeffs_index = prime_range(*coefficient_range)
+    else:
+        coeffs_index = range(*coefficient_range)
+    coefficients = [(n, (QQ(nf.coefficient(n)) if nf.coefficient(n) in QQ
+                         else LabeledElement('element', nf.coefficient(n).list())))
+                     for n in coeffs_index]
+    coefficients = LabeledElement('values', coefficients)
+    element = LabeledElement('newform', [level, character, field, coefficients])
+    _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
+
+def _write_character(eps, f, coefficient_range, only_primes, indent=0):
+    eps = eps.primitive_character()
+    conductor = LabeledElement('conductor', eps.conductor())
+    field = eps.base_ring()
+    ls_values = [(k, (QQ(eps(k)) if eps(k) in QQ
+                      else LabeledElement('element', eps(k).list())))
+                 for k in eps.parent().unit_gens()]
+    values = LabeledElement('values', ls_values)
+    element = LabeledElement('character', [conductor, field, values])
+    _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
+
+def _write_field(field, f, coefficient_range, only_primes, indent=0):
+    if field is QQ:
+        polynomial = PolynomialRing(QQ, names='x').gen()
+    else:
+        polynomial = field.defining_polynomial()
+    element = LabeledElement('field', [polynomial])
+    _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
+
+def _write_polynomial(poly, f, coefficient_range, only_primes, indent=0):
+    element = LabeledElement('polynomial', poly.list())
+    _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
+
+def _write_rational(q, f, indent=0, indent_start=True):
+    if indent_start:
+        f.write(" "*4*indent)
+    f.write(str(QQ(q)))
+
+def _write_labeled_element(element, f, coefficient_range, only_primes, indent=0):
+    f.write(" "*4*indent)
+    f.write("<%s> := "%(element.label,))
+    if element.element in QQ:
+        _write_rational(element.element, f, indent=indent, indent_start=False)
+    elif hasattr(element.element, "__iter__"):
+        _write_list(element.element, f, coefficient_range, only_primes, indent=indent, indent_start=False)
+    else:
+        raise ValueError("%s, %s is not a valid labeled element"%(element.label, element.element))
+
+def load_newforms(file_name):
+    r"""
+    Loads newforms from a file.
+
+    A file that stores newforms will adhere to the following
+    formatting rules in which we shall use:
+ 
+    <list> := '[' ( <element> ( ',' <element> )* )? ']'
+    <element> := ( '<' <identifier> '>' ':=' )? ( <list> | <rational> )
+    <identifier> := <letter>+
+    <rational> := <integer> ( '/' <positive_integer> )?
+    <integer> := <zero> | ( ( '-' )?<positive_integer> )
+    <positive_integer> := <non_zero_digit> ( <digit> )*
+    <digit> := <zero> | <non_zero_digit>
+    <non_zero_digit> := [1-9]
+    <zero> := '0'
+    <letter> := [a-zA-Z]
+
+    - An element of a number field is represented as the list of
+      rational coefficients with respect to the power basis in the
+      generator, preceded by the identifier 'element'
+    - A polynomial with rational coefficients is represented by
+      a list of its coefficients (starting at the constant term)
+      preceded by the identifier 'polynomial'
+    - A number field is represented by a list containing a polynomial,
+      preceded by the identifier 'field'. The polynomial is the
+      defining polynomial of the number field.
+    - A list of values of a function is represented by a list containing
+      lists of exactly two elements, all preceded by the identifier
+      'values'. The function maps the first element of a list in the
+      corresponding list to the second element thereof.
+    - A character is represented by a list containing an integer
+      preceded by the identifier 'conductor' and a list of values of
+      the character, all preceded by the identifier 'character'.
+      The integer with identifier 'conductor' will be the conductor
+      of the character, the number field will give the coefficient
+      field of the character and the last entry will give the values
+      of the character (at some points).
+    - A newform is represented by a list containing an integer
+      preceded by the identifier 'level', a character, a number field
+      and a list of values, all preceded by the identifier 'newform'.
+      The first entry will be the level of the newform, the second
+      the corresponding character, the third the coefficient field of
+      the newform and the last the coefficients of the newform (at some)
+      indices.
+    - A list of things will be represented as a list of the
+      corresponding representations.
+
+    INPUT:
+
+    - ``file_name`` -- A string containing the file name to which
+      the given newforms should be saved.
+
+    OUTPUT:
+
+    An instance of Newform_wrapped_file or a list thereof
+    representing the newforms found in the given file.
+    """
+    f = open(file_name, 'r')
+    try:
+        return _read_element(f)
+    finally:
+        f.close()
+
+def _interpret_element(element):
+    if element.label == 'newform':
+        return _interpret_newform(element.element)
+    elif element.label == 'character':
+        return _interpret_character(element.element)
+    elif element.label == 'field':
+        return _interpret_field(element.element)
+    elif element.label == 'polynomial':
+        return _interpret_polynomial(element.element)
+    else:
+        return element
+
+def _interpret_polynomial(element):
+    R.<x> = QQ[]
+    return R(element)
+
+def _interpret_field(element):
+    if not isinstance(element, list):
+        raise ValueError("%s is not a list."%(element,))
+    if len(element) != 1:
+        raise ValueError("%s does not have length 1."%(element,))
+    polynomial = element[0]
+    if not is_Polynomial(polynomial):
+        raise ValueError("%s is not a polynomial."%(polynomial,))
+    if polynomial.degree() == 1:
+        return QQ
+    return NumberField(polynomial, names='a')
+
+def _interpret_character(element):
+    if not isinstance(element, list):
+        raise valueError("%s is not a list."%(element,))
+    conductor=None
+    field=None
+    values=None
+    for part in element:
+        if is_NumberField(part) and field is None:
+            field=part
+        elif isinstance(part, LabeledElement):
+            if part.label.lower() == 'conductor' and conductor is None and part.element in ZZ:
+                conductor = ZZ(part.element)
+            elif part.label.lower() == 'values' and values is None and isinstance(part.element, list):
+                values=dict()
+                for pair in part.element:
+                    if not isinstance(pair, list) or len(pair) != 2 or pair[0] not in ZZ:
+                        raise ValueError("Expected a pair for character values, but got %s"%(pair,))
+                    if pair[1] in QQ:
+                        values[ZZ(pair[0])] = QQ(pair[1])
+                    elif isinstance(pair[1], LabeledElement) and pair[1].label.lower() == 'element':
+                        values[ZZ(pair[0])] = pair[1].element
+                    else:
+                        raise ValueError("Expected a pair for character values, but got %s"%(pair,))
+            else:
+                raise ValueError("Unexpected element %s with label %s for character."%(part.element, part.label))
+        else:
+            raise ValueError("Unexpected element %s for character."%(part,))
+    if conductor is None or field is None or values is None:
+        raise ValueError("Not enough arguments to make a character.")
+    for key in values:
+        values[key] = field(values[key])
+    D = DirichletGroup(conductor)
+    try:
+        return D([values[n] for n in D.unit_gens()])
+    except KeyError as e:
+        raise ValueError("Requires value at %s to construct Dirichlet character."%(str(e),))
+
+def _interpret_newform(element):
+    if not isinstance(element, list):
+        raise valueError("%s is not a list."%(element,))
+    level=None
+    character=None
+    field=None
+    coefficients=None
+    for part in element:
+        if is_DirichletCharacter(part) and character is None:
+            character=part
+        elif is_NumberField(part) and field is None:
+            field=part
+        elif isinstance(part, LabeledElement):
+            if part.label.lower() == 'level' and level is None and part.element in ZZ:
+                level = ZZ(part.element)
+            elif part.label.lower() == 'values' and coefficients is None and isinstance(part.element, list):
+                coefficients=dict()
+                for pair in part.element:
+                    if not isinstance(pair, list) or len(pair) != 2 or pair[0] not in ZZ:
+                        raise ValueError("Expected a pair for newform coefficients, but got %s"%(pair,))
+                    if pair[1] in QQ:
+                        coefficients[ZZ(pair[0])] = QQ(pair[1])
+                    elif isinstance(pair[1], LabeledElement) and pair[1].label.lower() == 'element':
+                        coefficients[ZZ(pair[0])] = pair[1].element
+                    else:
+                        raise ValueError("Expected a pair for newform coefficients, but got %s"%(pair,))
+            else:
+                raise ValueError("Unexpected element %s with label %s for newform."%(part.element, part.label))
+        else:
+            raise ValueError("Unexpected element %s for newform."%(part,))
+    if level is None or character is None or field is None or coefficients is None:
+        raise ValueError("Not enough arguments to make a newform.")
+    for key in coefficients:
+        coefficients[key] = field(coefficients[key])
+    return Newform_wrapped_stored(level, character, field, coefficients)
+
+def _read_element(f):
+    whitespace = re.compile('\s')
+    label = None
+    element = None
+    s = f.read(1)
+    while len(s) > 0:
+        if whitespace.match(s):
+            pass
+        elif s == '<':
+            f.seek(-1,1)
+            label = _read_identifier(f)
+            _read_colon_is(f)
+        elif s == '[':
+            f.seek(-1,1)
+            element = _read_list(f)
+            break
+        elif s.isdigit() or s == '-':
+            f.seek(-1,1)
+            element = _read_rational(f)
+            break
+        else:
+            raise ValueError("Read unexpected character %s while reading an element."%(s,))
+        s = f.read(1)
+    else:
+        raise ValueError("File ended before reading an element.")
+    if label is None:
+        return element
+    else:
+        element = LabeledElement(label, element)
+        return _interpret_element(element)
+
+def _read_colon_is(f):
+    whitespace = re.compile('\s')
+    s = f.read(1)
+    while len(s) > 0:
+        if whitespace.match(s):
+            pass
+        elif s == ':':
+           s = f.read(1)
+           if s == '=':
+               return
+           else:
+               raise ValueError("Attempting to read ':=' at :%s, but failed."%(s,))
+        else:
+           raise ValueError("Attempting to read ':=' at %s, but failed."%(s,))
+        s = f.read(1)
+    raise ValueError("Attempting to read ':=', but encountered end of file.")
+
+def _read_identifier(f):
+    s = f.read(1)
+    if s != '<':
+        raise ValueError("Attempting to read '<', but read %s"%(s,))
+    result = ""
+    s = f.read(1)
+    while len(s) > 0:
+        if s.isalpha():
+            result = result + s
+        elif s == '>':
+            return result
+        else:
+            raise ValueError("Attempting to read a letter, but read %s"%(s,))
+        s = f.read(1)
+    raise ValueError("Reached end of file whilst reading an identifier.")
+
+def _read_list(f):
+    whitespace = re.compile('\s')
+    s = f.read(1)
+    if s != '[':
+        raise ValueError("Attempting to read the start of a list at %s, but failed"%(s,))
+    result = []
+    s = f.read(1)
+    can_close = True
+    need_comma = False
+    while len(s) > 0:
+        if whitespace.match(s):
+            pass
+        elif s == ']' and can_close:
+            return result
+        elif s == ',' and need_comma:
+            need_comma = False
+            can_close = False
+        elif not need_comma:
+            f.seek(-1,1)
+            result.append(_read_element(f))
+            need_comma = True
+            can_close = True
+        else:
+            raise ValueError("Attempting to read more of a list, but encountered %s"%(s,))
+        s = f.read(1)
+    raise ValueError("Encountered end of file whilst reading a list.")
+
+def _read_rational(f):
+    result = _read_integer(f)
+    s = f.read(1)
+    if s == '/':
+        result = result + '/' + _read_positive_integer(f)
+    else:
+        f.seek(-1,1)
+    return QQ(result)
+
+def _read_integer(f):
+    result = ''
+    s = f.read(1)
+    if s == '-':
+        result = result + '-'
+    else:
+        f.seek(-1,1)
+    try:
+        result = result + _read_zero(f)
+    except ValueError:
+        f.seek(-1,1)
+        result = result + _read_positive_integer(f)
+    return result
+
+def _read_positive_integer(f):
+    result = _read_non_zero_digit(f)
+    try:
+        while True:
+            result = result + _read_digit(f)
+    except ValueError:
+        f = f.seek(-1,1)
+        return result
+        
+def _read_digit(f):
+    s = f.read(1)
+    if not s.isdigit():
+        raise ValueError("Attempting to read a digit, but read %s"%(s,))
+    return s
+    
+def _read_non_zero_digit(f):
+    s = f.read(1)
+    if s.isdigit() and s != 0:
+        return s
+    else:
+        raise ValueError("Attempting to read a non-zero digit, but read %s"%(s,))
+    
+def _read_zero(f):
+    s = f.read(1)
+    if s != '0':
+        raise ValueError("Attempting to read 0, but read %s"%(s,))
+    return s
+    
 class Newform_wrapped(SageObject):
     r"""
     The wrapped version of a newform.
@@ -331,7 +833,10 @@ class Newform_wrapped_sage(Newform_wrapped):
         The n-th coefficient of the q-expansion of
         this newform at infinity.
         """
-        return self._f.coefficient(n)
+        if n == 0:
+            return self.coefficient_field()(0)
+        else:
+            return self._f.coefficient(n)
 
     def coefficient_field(self):
         r"""
@@ -451,3 +956,68 @@ class Newform_wrapped_magma(Newform_wrapped):
     def _latex_(self):
         """Gives a latex representation of self."""
         return latex(self._f)
+
+class Newform_wrapped_stored(Newform_wrapped):
+    r"""
+    The wrapped version of a newform created from some stored data.
+    """
+
+    def __init__(self, level, character, coefficient_field, coefficients):
+        self._level = level
+        self._eps = character
+        self._K = coefficient_field
+        self._coeffs = coefficients
+
+    def level(self):
+        r"""
+        Gives the level of the newform.
+        
+        OUTPUT:
+
+        A non-negative integer describing the level of this
+        newform.
+        """
+        return self._level
+
+    @cached_method
+    def character(self):
+        r"""
+        Gives the character associated to this newform.
+
+        OUTPUT:
+
+        The dirichlet character associated to this newform
+        as a primitive character.
+        """
+        return self._eps
+        
+    def coefficient(self, n):
+        r"""
+        Give the n-th coefficient of this newform.
+
+        INPUT:
+        
+        - ``n`` -- A non-negative integer.
+
+        OUTPUT:
+        
+        The n-th coefficient of the q-expansion of
+        this newform at infinity.
+        """
+        try:
+            return self._coeffs[n]
+        except KeyError:
+            raise ValueError("The %s-th coefficient is not stored."%(n,))
+
+    def coefficient_field(self):
+        r"""
+        Gives the field over which the coefficients of
+        this newform are defined.
+
+        OUTPUT:
+
+        The field over which the coefficients of the
+        q-expansion of this newform at infinity are
+        defined.
+        """
+        return self._K
