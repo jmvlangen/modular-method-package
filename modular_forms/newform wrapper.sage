@@ -141,9 +141,10 @@ def save_newforms(newforms, file_name, coefficient_range=50, only_primes=False):
       preceded by the identifier 'conductor' and a list of values of
       the character, all preceded by the identifier 'character'.
       The integer with identifier 'conductor' will be the conductor
-      of the character, the number field will give the coefficient
-      field of the character and the last entry will give the values
-      of the character (at some points).
+      of the character. The entry labeled values will be pairs of
+      integers, such that if zeta is the relevant n-th root of unity
+      a pair (k, e) appears in this list if the character takes the
+      value zeta^e at k.
     - A newform is represented by a list containing an integer
       preceded by the identifier 'level', a character, a number field
       and a list of values, all preceded by the identifier 'newform'.
@@ -206,7 +207,7 @@ def _write_element(element, f, coefficient_range, only_primes, indent=0):
         _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
     elif is_Polynomial(element):
         _write_polynomial(element, f, coefficient_range, only_primes, indent=indent)
-    elif element in QQ:
+    elif element in QQ or element in ZZ:
         _write_rational(element, f, indent=indent)
     elif hasattr(element, '__iter__'):
         _write_list(element, f, coefficient_range, only_primes, indent=indent)
@@ -216,13 +217,13 @@ def _write_element(element, f, coefficient_range, only_primes, indent=0):
 def _write_newform(nf, f, coefficient_range, only_primes, indent=0):
     level = LabeledElement('level', nf.level())
     character = nf.character()
-    field = nf.coefficient_field()
+    field = nf.coefficient_field().absolute_field(names='a')
     if only_primes:
         coeffs_index = prime_range(*coefficient_range)
     else:
         coeffs_index = range(*coefficient_range)
     coefficients = [(n, (QQ(nf.coefficient(n)) if nf.coefficient(n) in QQ
-                         else LabeledElement('element', nf.coefficient(n).list())))
+                         else LabeledElement('element', field(nf.coefficient(n)).list())))
                      for n in coeffs_index]
     coefficients = LabeledElement('values', coefficients)
     element = LabeledElement('newform', [level, character, field, coefficients])
@@ -231,12 +232,9 @@ def _write_newform(nf, f, coefficient_range, only_primes, indent=0):
 def _write_character(eps, f, coefficient_range, only_primes, indent=0):
     eps = eps.primitive_character()
     conductor = LabeledElement('conductor', eps.conductor())
-    field = eps.base_ring()
-    ls_values = [(k, (QQ(eps(k)) if eps(k) in QQ
-                      else LabeledElement('element', eps(k).list())))
-                 for k in eps.parent().unit_gens()]
+    ls_values = zip(eps.parent().unit_gens(), eps.element())
     values = LabeledElement('values', ls_values)
-    element = LabeledElement('character', [conductor, field, values])
+    element = LabeledElement('character', [conductor, values])
     _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
 
 def _write_field(field, f, coefficient_range, only_primes, indent=0):
@@ -301,9 +299,10 @@ def load_newforms(file_name):
       preceded by the identifier 'conductor' and a list of values of
       the character, all preceded by the identifier 'character'.
       The integer with identifier 'conductor' will be the conductor
-      of the character, the number field will give the coefficient
-      field of the character and the last entry will give the values
-      of the character (at some points).
+      of the character. The entry labeled values will be pairs of
+      integers, such that if zeta is the relevant n-th root of unity
+      a pair (k, e) appears in this list if the character takes the
+      value zeta^e at k.
     - A newform is represented by a list containing an integer
       preceded by the identifier 'level', a character, a number field
       and a list of values, all preceded by the identifier 'newform'.
@@ -362,12 +361,9 @@ def _interpret_character(element):
     if not isinstance(element, list):
         raise valueError("%s is not a list."%(element,))
     conductor=None
-    field=None
     values=None
     for part in element:
-        if is_NumberField(part) and field is None:
-            field=part
-        elif isinstance(part, LabeledElement):
+        if isinstance(part, LabeledElement):
             if part.label.lower() == 'conductor' and conductor is None and part.element in ZZ:
                 conductor = ZZ(part.element)
             elif part.label.lower() == 'values' and values is None and isinstance(part.element, list):
@@ -375,23 +371,20 @@ def _interpret_character(element):
                 for pair in part.element:
                     if not isinstance(pair, list) or len(pair) != 2 or pair[0] not in ZZ:
                         raise ValueError("Expected a pair for character values, but got %s"%(pair,))
-                    if pair[1] in QQ:
-                        values[ZZ(pair[0])] = QQ(pair[1])
-                    elif isinstance(pair[1], LabeledElement) and pair[1].label.lower() == 'element':
-                        values[ZZ(pair[0])] = pair[1].element
+                    if pair[1] in ZZ:
+                        values[ZZ(pair[0])] = ZZ(pair[1])
                     else:
                         raise ValueError("Expected a pair for character values, but got %s"%(pair,))
             else:
                 raise ValueError("Unexpected element %s with label %s for character."%(part.element, part.label))
         else:
             raise ValueError("Unexpected element %s for character."%(part,))
-    if conductor is None or field is None or values is None:
+    if conductor is None or values is None:
         raise ValueError("Not enough arguments to make a character.")
-    for key in values:
-        values[key] = field(values[key])
     D = DirichletGroup(conductor)
     try:
-        return D([values[n] for n in D.unit_gens()])
+        pows = D._zeta_powers
+        return D([pows[values[n]] for n in D.unit_gens()])
     except KeyError as e:
         raise ValueError("Requires value at %s to construct Dirichlet character."%(str(e),))
 
