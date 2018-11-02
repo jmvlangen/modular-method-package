@@ -67,7 +67,7 @@ def function_with_coboundary(G, A, c, action=None):
             return A(u).list()
     if action is None:
         action = {s : [convert(s(u)) for u in gens] for s in G}
-    action = {s : matrix(action[s]) for s in action}
+    action = {s : matrix(action[s]).transpose() for s in action}
 
     # Constructing the important relations
     relations = [(s, t) for s in G for t in G]
@@ -86,7 +86,7 @@ def function_with_coboundary(G, A, c, action=None):
                 if (not (s == t and t == w) and
                     (t, w) in relations and (s*t, w) in relations and
                     (s, t*w) in relations and (s, t) in relations):
-                    relations.remove(t,w) # These four are distinct and linearly dependent
+                    relations.remove((t,w)) # These four are distinct and linearly dependent
 
     # The variables
     m = len(G.gens()) # Number of generators of G
