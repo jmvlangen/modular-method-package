@@ -5,7 +5,7 @@ def function_with_coboundary(G, A, c, action=None):
     Gives the function G -> A with coboundary c.
 
     INPUT:
-    - ``G`` -- A finite group or list of its elements
+    - ``G`` -- A finite group 
     - ``A`` -- An abelian group with an action of G defined
       on it. This may be given as a Sage implementation of a
       multiplicative abelian group or as a tuple containing
@@ -65,67 +65,91 @@ def function_with_coboundary(G, A, c, action=None):
         orders = [a.order() for a in gens]
         def convert(u):
             return A(u).list()
-    G = list(G)
     if action is None:
-        action = {i : [convert(G[i](u)) for u in gens] for i in range(len(G))}
-    else:
-        action = {i : action[G[i]] for i in range(len(G))}
+        action = {s : [convert(s(u)) for u in gens] for s in G}
+    action = {s : matrix(action[s]) for s in action}
 
-    # Usefull constants
-    w = len(G)^2 * len(gens) # Usefull dimensions
-    x = len(G) * len(gens)   # for indexing
-    y = len(gens)            #  ---
-    z = 1                    # labeled accordingly
-    G_index = {v : k for k, v in enumerate(G)}
+    # Constructing the important relations
+    relations = [(s, t) for s in G for t in G]
+    G_without_1 = [s for s in G if s != G.identity()]
+    # Removing some relations
+    relations.remove((G.identity(), G.identity()))
+    for s in G_without_1:
+        if (G.identity(), s) in relations:
+            relations.remove((G.identity(), s)) # Linearly dependent with (1,1)
+        if (s, G.identity()) in relations:
+            relations.remove((s, G.identity())) # Linearly dependent with (1,1)
+        if (s^2, s) in relations and (s, s^2) in relations:
+            relations.remove((s^2, s)) # Linearly dependent with (s, s^2)
+        for t in G_without_1:
+            for w in G_without_1:
+                if (not (s == t and t == w) and
+                    (t, w) in relations and (s*t, w) in relations and
+                    (s, t*w) in relations and (s, t) in relations):
+                    relations.remove(t,w) # These four are distinct and linearly dependent
 
-    # Building a matrix
-    M = [[0 for j in range(x)] for i in range(w)]
-    V = [0 for i in range(w)]
-    for i in range(len(G)):
-        for j in range(len(G)):
-            ij = G_index[G[i] * G[j]]
-            val = convert(c(G[i],G[j]))
-            for k in range(len(gens)):
-                M[i*x + j*y + k*z][i*y + k*z] += 1 # a(G[i])
-                M[i*x + j*y + k*z][ij*y + k*z] += -1 # -a(G[i]*G[j])
-                for l in range(len(gens)):
-                    M[i*x + j*y + k*z][j*y + l*z] += action[i][l][k] # G[i](a(G[j]))
-                V[i*x + j*y + k*z] = val[k]
-    M = matrix(M)
-    V = vector(V).column()
+    # The variables
+    m = len(G.gens()) # Number of generators of G
+    n = len(gens) # Number of generators of A
+    alpha0 = {G.gens()[i]: block_matrix(1, m+1,
+                                        [(identity_matrix(n) if j == i else zero_matrix(n))
+                                         for j in range(m)] +
+                                        [vector([0]*n).column()])
+              for i in range(m)}
+    def c_to_matrix(s,t):
+        return block_matrix([[zero_matrix(n) for j in range(m)] +
+                             [vector(convert(c(s, t))).column()]])
+    # We always have alpha(1) = c(1, 1)
+    alpha0[G.identity()] = c_to_matrix(G.identity(), G.identity())
+    while len(alpha0) < len(G):
+        keys = alpha0.keys()
+        for s in keys:
+            for t in keys:
+                if s*t not in alpha0:
+                    alpha0[s*t] = alpha0[s] + (action[s] * alpha0[t]) - c_to_matrix(s, t)
+                    if (s,t) in relations:
+                        relations.remove((s,t))
+
+    # Building a matrix:
+    MV = block_matrix(len(relations), 1, [alpha0[s] + action[s]*alpha0[t] - alpha0[s*t] - c_to_matrix(s, t)
+                                         for (s, t) in relations])
 
     # Changing torsion to one modulus
-    tor_gens = [k for k in range(len(gens)) if orders[k] in ZZ]
+    tor_gens = [k for k in range(n) if orders[k] in ZZ]
     N = lcm(orders[k] for k in tor_gens)
     for k in tor_gens:
         if orders[k] < N:
             g = ZZ(N / orders[k])
-            for i in range(len(G)):
-                for j in range(len(G)):
-                    M.rescale_row(i*x + j*y + k*z, g)
-                    V.rescale_row(i*x + j*y + k*z, g)
+            for i in range(len(relations)):
+                MV.rescale_row(i*n + k, g)
 
     # Seperating torsion
-    tor_rows = [i*x + j*y + k*z for i in range(len(G)) for j in range(len(G)) for k in tor_gens]
-    MF = M.delete_rows(tor_rows)
-    if len(tor_rows) == w:
-        VF = vector(ZZ,0)
+    tor_rows = [i*n + k for i in range(len(relations)) for k in tor_gens]
+    MVF = MV.delete_rows(tor_rows)
+    MVT = MV.matrix_from_rows(tor_rows)
+
+    # Extracting the distinct matrices
+    MF = MVF[:,:-1]
+    VF = -MVF[:,-1]
+    if VF.dimensions()[0] == 0:
+        VF = vector([])
     else:
-        VF = vector(V.delete_rows(tor_rows))
-    MT = M.matrix_from_rows(tor_rows)
-    if len(tor_rows) == 0:
-        VT = vector(Integers(N),0)
+        VF = vector(VF)
+    MT = MVT[:,:-1]
+    VT = -MVT[:,-1]
+    if VT.dimensions()[0] == 0:
+        VT = vector([])
     else:
-        VT = vector(V.matrix_from_rows(tor_rows))
+        VT = vector(VT)
 
     # Solving and giving the result
     v = solve_integer_problem_with_torsion(MF, VF, MT, VT, N)
     @cached_function
     def alpha(s):
-        i = G_index[s]
         result = identity
-        for k in range(len(gens)):
-            result = result * gens[k]^v[i*y + k*z]
+        val = alpha0[s] * block_matrix(2,1,[v.column(), identity_matrix(1)])
+        for k in range(n):
+            result = result * gens[k]^val[k][0]
         return result
     return alpha
 
