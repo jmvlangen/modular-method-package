@@ -2,7 +2,7 @@ import re
 
 from sage.modular.dirichlet import is_DirichletCharacter
 
-def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, names='a', file=None):
+def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, names='a', path=None):
     r"""
     Computes the newforms of a given level and character.
 
@@ -27,7 +27,7 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, nam
       implementation of newforms to be used as the names
       for the generator of coefficient fields of newforms
       that are not QQ.
-    - ``file`` -- A string or None (default: None). Only
+    - ``path`` -- A string or None (default: None). Only
       used in case the algorithm is set to file, in which
       case it should be the path to the file from which
       to load the newforms as a string.
@@ -77,9 +77,9 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, nam
         if character is None:
             character = DirichletGroup(1)[0]
         character = character.primitive_character()
-        if file is None:
-            raise ValueError("Argument file should be set if algorithm file is chosen.")
-        to_do = [load_newforms(file)]
+        if path is None:
+            raise ValueError("Argument path should be set if algorithm file is chosen.")
+        to_do = [load_newforms(path)]
         result = []
         while len(to_do) > 0:
             check = to_do

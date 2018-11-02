@@ -1089,7 +1089,8 @@ class FreyCurve(EllipticCurve_generic):
         return apply_to_conditional_value(lambda t: result(t, D), T)
 
     def _newforms(self, level, condition, additive_primes,
-                  algorithm, prime_cap, verbose, precision_cap):
+                  algorithm, prime_cap, verbose, precision_cap,
+                  path):
         r"""
         Computes the possible newforms of a given level.
 
@@ -1141,14 +1142,14 @@ class FreyCurve(EllipticCurve_generic):
                     nfs.append((f, B))
         return [(f, ('all' if B == 0 else B.prime_factors())) for f, B in nfs]
 
-    @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap1, prec_cap2:
+    @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap1, prec_cap2, path:
                    ((self._condition if c is None else c),
                     (tuple(self.primes_of_possible_additive_reduction())
                      if add is None else tuple(add)),
                     prime_cap, prec_cap1, prec_cap2))
     def newforms(self, condition=None, additive_primes=None, algorithm='sage',
                  prime_cap=50, verbose=False, precision_cap_conductor=20,
-                 precision_cap_reduction=1):
+                 precision_cap_reduction=1, path=None):
         r"""
         Computes the newforms that could be associated to this Frey curve.
 
@@ -1195,6 +1196,10 @@ class FreyCurve(EllipticCurve_generic):
           computation for every prime lower than prime_cap, this
           might get very computational intensive if set to a value
           larger than 1.
+        - ``path`` -- A string or None (default: None). A parameter
+          only used if the algorithm is set to file, in which case
+          this should be a path to the file from which to load
+          newforms.
 
         OUTPUT:
 
@@ -1227,7 +1232,7 @@ class FreyCurve(EllipticCurve_generic):
             for val, con in N:
                 answer = self._newforms(val, con & condition, additive_primes,
                                         algorithm, prime_cap, verbose,
-                                        precision_cap_reduction)
+                                        precision_cap_reduction, path)
                 if len(answer) > 0:
                     result.append((answer, con))
             if len(result) > 0:
@@ -1237,7 +1242,7 @@ class FreyCurve(EllipticCurve_generic):
         else:
             result =  self._newforms(N, condition, additive_primes,
                                      algorithm, prime_cap, verbose,
-                                     precision_cap_reduction)
+                                     precision_cap_reduction, path)
             if len(result) > 0:
                 return result
             else:
@@ -1687,7 +1692,7 @@ class FreyQcurve(FreyCurve, Qcurve):
     
     def _newforms(self, levels, condition, additive_primes,
                   algorithm, prime_cap, verbose,
-                  precision_cap):
+                  precision_cap, path):
         r"""
         Internal function,
         see newforms for more information.
@@ -1713,7 +1718,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             if verbose > 0:
                 print "Computing newforms of level %s and character %s"%(level, eps)
             nfs.extend([(f,0) for f in get_newforms(level, character=eps,
-                                                    algorithm=algorithm)])
+                                                    algorithm=algorithm, path=path)])
             done_levels.append((level, eps, Lbeta))
             for p in level.prime_factors():
                 if p not in bad_primes:
@@ -1752,14 +1757,14 @@ class FreyQcurve(FreyCurve, Qcurve):
                     nfs.append((f, B))
         return [(f, ('all' if B == 0 else B.prime_factors())) for f, B in nfs]
     
-    @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap1, prec_cap2:
+    @cached_method(key=lambda self, c, add, alg, prime_cap, v, prec_cap1, prec_cap2, path:
                    ((self._condition if c is None else c),
                     (tuple(self.primes_of_possible_additive_reduction())
                      if add is None else tuple(add)),
                     prime_cap, prec_cap1, prec_cap2))
     def newforms(self, condition=None, additive_primes=None, algorithm='sage',
                  prime_cap=50, verbose=False, precision_cap_conductor=20,
-                 precision_cap_reduction=1):
+                 precision_cap_reduction=1, path=None):
         r"""
         Computes the newforms that could be associated to this Frey Q-curve.
 
@@ -1829,6 +1834,10 @@ class FreyQcurve(FreyCurve, Qcurve):
           computation for every prime lower than prime_cap, this
           might get very computational intensive if set to a value
           larger than 1.
+        - ``path`` -- A string or None (default: None). A parameter
+          only used when the algorithm is set to file, in which
+          case this should be a path to the file that contains
+          the newforms to be used in computation.
 
         OUTPUT:
 
@@ -1857,7 +1866,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             for val, con in levels:
                 answer = self._newforms(val, con & condition, additive_primes,
                                         algorithm, prime_cap, verbose,
-                                        precision_cap_reduction)
+                                        precision_cap_reduction, path)
                 if len(answer) > 0:
                     result.append((answer, con))
             if len(result) > 0:
@@ -1867,7 +1876,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         else:
             result = self._newforms(levels, condition, additive_primes,
                                     algorithm, prime_cap, verbose,
-                                    precision_cap_reduction)
+                                    precision_cap_reduction, path)
             if len(result) > 0:
                 return result
             else:
