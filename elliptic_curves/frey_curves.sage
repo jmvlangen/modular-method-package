@@ -1735,7 +1735,9 @@ class FreyQcurve(FreyCurve, Qcurve):
             if verbose > 0:
                 print "Comparing traces of frobenius at %s for %s possible candidates."%(p, len(nfs))
             P = KE.prime_above(p)
-            apE = self.trace_of_frobenius_power(P, P.ramification_index(),
+            fP = P.residue_class_degree()
+            eP = P.ramification_index()
+            apE = self.trace_of_frobenius_power(P, eP,
                                                 condition=condition,
                                                 verbose=(verbose - 1 if verbose > 0 else -1),
                                                 precision_cap=precision_cap)
@@ -1746,7 +1748,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             nfs_old = nfs
             nfs = []
             for f, B in nfs_old:
-                apf = f.trace_of_frobenius(p, power=KE.degree())
+                apf = f.trace_of_frobenius(p, power=(eP * fP))
                 # apE is always in QQ, hence the computations below always work!
                 if apf in QQ:
                     Bnew = ZZ(p * product(apE - QQ(apf) for apE in apE_ls))
