@@ -29,7 +29,7 @@ C = (CoprimeCondition([s,t]) &
 # Y^2 = X^3 + 4*(sqrt(3) - 1)*t*X^2 - (sqrt(3) - 1)^2*(sqrt(3)*s^2 + (-2 - sqrt(3))*t^2)*X
 K.<sqrt3> = QuadraticField(3)
 G.<sigma> = K.galois_group()
-a_invariants = [0, 4*(sqrt3 - 1)*t, 0, (sqrt3 - 1)^2*(sqrt3*s^2 + (-2 - sqrt3)*t^2), 0]
+a_invariants = [0, 4*(sqrt3 - 1)*t, 0, -(sqrt3 - 1)^2*(sqrt3*s^2 + (-2 - sqrt3)*t^2), 0]
 isogenies={sigma^0: (QQ(1), 1), sigma^1: (-1 - sqrt3, 2)}
 E = FreyQcurve(a_invariants,
                isogenies=isogenies,
@@ -38,7 +38,7 @@ E = FreyQcurve(a_invariants,
 # The conductor
 print ""
 print E.conductor()
-# (64*sqrt3)*Rad_P( ((-39936*sqrt3 + 69120)) * (s^2 + (-2*sqrt3 - 1)*t^2) * (s^2 + (-2/3*sqrt3 - 1)*t^2)^2 )
+# (64)*Rad_P( ((39936*sqrt3 - 69120)) * (s^2 + (2/3*sqrt3 - 1)*t^2) * (s^2 + (-2/3*sqrt3 - 1)*t^2)^2 )
 # (agrees with article)
 
 # Newforms
