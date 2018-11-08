@@ -177,11 +177,8 @@ def save_newforms(newforms, file_name, coefficient_range=50, only_primes=False):
     """
     if coefficient_range in ZZ:
         coefficient_range = (0, coefficient_range)
-    f = open(file_name, "w")
-    try:
+    with open(file_name, "w+") as f:
         _write_element(newforms, f, coefficient_range, only_primes)
-    finally:
-        f.close()
 
 def _write_list(ls, f, coefficient_range, only_primes, indent=0, indent_start=True):
     if indent_start:
@@ -323,11 +320,8 @@ def load_newforms(file_name):
     An instance of Newform_wrapped_file or a list thereof
     representing the newforms found in the given file.
     """
-    f = open(file_name, 'r')
-    try:
+    with open(file_name, 'r') as f:
         return _read_element(f)
-    finally:
-        f.close()
 
 def _interpret_element(element):
     if element.label == 'newform':
