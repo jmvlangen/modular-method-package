@@ -106,7 +106,7 @@ class LabeledElement:
         self.label = label
         self.element = element
     
-def save_newforms(newforms, file_name, coefficient_range=50, only_primes=False):
+def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True):
     r"""
     Saves newforms to a file.
 
@@ -163,24 +163,30 @@ def save_newforms(newforms, file_name, coefficient_range=50, only_primes=False):
       These are the newforms that will be saved to the file.
     - ``file_name`` -- A string containing the file name to which
       the given newforms should be saved.
-    - ``coefficient_range`` -- A non-negative integer or a
-      tuple or list of two non-negative integers (default: 50).
-      This indicates the range of coefficients to be saved. In the
-      case this is a tuple or list of two elements will save all
-      the coefficients of index at least the first integer and
-      smaller than the second integer. If a single integer is
-      given will interpret this as the tuple 0 and the given
-      integer.
-    - ``only_primes`` -- A boolean (default: False). If set to
-      True will only save those coefficients of which their
-      index is a prime number.
+    - ``coefficients`` -- An iterable object of non-negative
+      integers or a non-negative integer (default: 50). This
+      determines the coefficients of the newform that will be
+      saved. If it is an iterable object, will save all the
+      coefficients with the indices given in that object. If it
+      is a single non-negative integer will make this to be
+      the list of all non-negative integers up to the given
+      integer (including the integer itself).
+    - ``repr_coefficients`` -- A boolean value (default: True).
+      If set to true, will always save the first 20 coeficients
+      of this newform. This is recommmended as the string
+      representation of this newform will break if loaded back
+      in.
     """
-    if coefficient_range in ZZ:
-        coefficient_range = (0, coefficient_range)
+    if coefficients in ZZ and coefficients > 0:
+        coefficients = range(coefficients)
+    if repr_coefficients:
+        coefficients = range(20) + [c for c in coefficients if c > 20]
+    else:
+        coefficients = [c for c in coefficients]
     with open(file_name, "w+") as f:
-        _write_element(newforms, f, coefficient_range, only_primes)
+        _write_element(newforms, f, coefficients)
 
-def _write_list(ls, f, coefficient_range, only_primes, indent=0, indent_start=True):
+def _write_list(ls, f, coefficients, indent=0, indent_start=True):
     if indent_start:
         f.write(" "*4*indent)
     f.write('[')
@@ -189,75 +195,73 @@ def _write_list(ls, f, coefficient_range, only_primes, indent=0, indent_start=Tr
         if write_comma:
             f.write(',')
         f.write('\n')
-        _write_element(element, f, coefficient_range, only_primes, indent=indent+1)
+        _write_element(element, f, coefficients, indent=indent+1)
         write_comma=True
     f.write(']')
 
-def _write_element(element, f, coefficient_range, only_primes, indent=0):
+def _write_element(element, f, coefficients, indent=0):
     if isinstance(element, Newform_wrapped):
-        _write_newform(element, f, coefficient_range, only_primes, indent=indent)
+        _write_newform(element, f, coefficients, indent=indent)
     elif is_DirichletCharacter(element):
-        _write_character(element, f, coefficient_range, only_primes, indent=indent)
+        _write_character(element, f, coefficients, indent=indent)
     elif is_NumberField(element):
-        _write_field(element, f, coefficient_range, only_primes, indent=indent)
+        _write_field(element, f, coefficients, indent=indent)
     elif isinstance(element, LabeledElement):
-        _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
+        _write_labeled_element(element, f, coefficients, indent=indent)
     elif is_Polynomial(element):
-        _write_polynomial(element, f, coefficient_range, only_primes, indent=indent)
+        _write_polynomial(element, f, coefficients, indent=indent)
     elif element in QQ or element in ZZ:
         _write_rational(element, f, indent=indent)
     elif hasattr(element, '__iter__'):
-        _write_list(element, f, coefficient_range, only_primes, indent=indent)
+        _write_list(element, f, coefficients, indent=indent)
     else:
         raise ValueError("Do not know how to write %s to file."%(element,))
 
-def _write_newform(nf, f, coefficient_range, only_primes, indent=0):
+def _write_newform(nf, f, coefficients, indent=0):
     level = LabeledElement('level', nf.level())
     character = nf.character()
-    field = nf.coefficient_field().absolute_field(names='a')
-    if only_primes:
-        coeffs_index = prime_range(*coefficient_range)
-    else:
-        coeffs_index = range(*coefficient_range)
-    coefficients = [(n, (QQ(nf.coefficient(n)) if nf.coefficient(n) in QQ
-                         else LabeledElement('element', field(nf.coefficient(n)).list())))
-                     for n in coeffs_index]
-    coefficients = LabeledElement('values', coefficients)
-    element = LabeledElement('newform', [level, character, field, coefficients])
-    _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
+    field = nf.coefficient_field()
+    if not field.is_absolute():
+        field = field.absolute_field(names='a')
+    values = [(n, (QQ(nf.coefficient(n)) if nf.coefficient(n) in QQ
+                   else LabeledElement('element', field(nf.coefficient(n)).list())))
+              for n in coefficients]
+    values = LabeledElement('values', values)
+    element = LabeledElement('newform', [level, character, field, values])
+    _write_labeled_element(element, f, coefficients, indent=indent)
 
-def _write_character(eps, f, coefficient_range, only_primes, indent=0):
+def _write_character(eps, f, coefficients, indent=0):
     eps = eps.primitive_character()
     conductor = LabeledElement('conductor', eps.conductor())
     ls_values = zip(eps.parent().unit_gens(), eps.element())
     values = LabeledElement('values', ls_values)
     element = LabeledElement('character', [conductor, values])
-    _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
+    _write_labeled_element(element, f, coefficients, indent=indent)
 
-def _write_field(field, f, coefficient_range, only_primes, indent=0):
+def _write_field(field, f, coefficients, indent=0):
     if field is QQ:
         polynomial = PolynomialRing(QQ, names='x').gen()
     else:
         polynomial = field.defining_polynomial()
     element = LabeledElement('field', [polynomial])
-    _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
+    _write_labeled_element(element, f, coefficients, indent=indent)
 
-def _write_polynomial(poly, f, coefficient_range, only_primes, indent=0):
+def _write_polynomial(poly, f, coefficients, indent=0):
     element = LabeledElement('polynomial', poly.list())
-    _write_labeled_element(element, f, coefficient_range, only_primes, indent=indent)
+    _write_labeled_element(element, f, coefficients, indent=indent)
 
 def _write_rational(q, f, indent=0, indent_start=True):
     if indent_start:
         f.write(" "*4*indent)
     f.write(str(QQ(q)))
 
-def _write_labeled_element(element, f, coefficient_range, only_primes, indent=0):
+def _write_labeled_element(element, f, coefficients, indent=0):
     f.write(" "*4*indent)
     f.write("<%s> := "%(element.label,))
     if element.element in QQ:
         _write_rational(element.element, f, indent=indent, indent_start=False)
     elif hasattr(element.element, "__iter__"):
-        _write_list(element.element, f, coefficient_range, only_primes, indent=indent, indent_start=False)
+        _write_list(element.element, f, coefficients, indent=indent, indent_start=False)
     else:
         raise ValueError("%s, %s is not a valid labeled element"%(element.label, element.element))
 
@@ -1008,3 +1012,21 @@ class Newform_wrapped_stored(Newform_wrapped):
         defined.
         """
         return self._K
+
+    def _repr_(self):
+        """
+        Gives a string representation of self
+        """
+        try:
+            return str(self.q_expansion())
+        except ValueError:
+            return "Loaded newform with limited coefficients."
+
+    def _latex_(self):
+        """
+        Gives a latex representation of self.
+        """
+        try:
+            return latex(self.q_expansion())
+        except ValueError:
+            return "\\text{Loaded newform with limited coefficients}"
