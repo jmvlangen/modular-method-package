@@ -1999,6 +1999,30 @@ class pAdicTree(SageObject):
             result = result.resort_variables(variables)
         return result
 
+    def is_empty(self):
+        r"""
+        Tells whether this tree is empty.
+
+        OUTPUT:
+
+        True - If there exists no infinite branches in
+               this tree.
+        False - Otherwise
+        """
+        return self._root.is_empty()
+
+    def is_full(self):
+        r"""
+        Tells whether this tree is full.
+
+        OUTPUT:
+
+        True - If every possible branch in this tree
+               exists.
+        False - Otherwise
+        """
+        return self._root.is_full()
+
     @cached_method
     def get_values_at_level(self, level):
         r"""
