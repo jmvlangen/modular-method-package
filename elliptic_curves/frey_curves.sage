@@ -927,7 +927,8 @@ class FreyCurve(EllipticCurve_generic):
         else:
             raise ValueError("Can not compute trace of frobenius for additive reduction.")
 
-    def trace_of_frobenius(self, prime, condition=None, verbose=False, precision_cap=20):
+    def trace_of_frobenius(self, prime, power=1, condition=None,
+                           verbose=False, precision_cap=20):
         r"""
         Computes the trace of the frobenius map acting on this curve.
 
@@ -954,6 +955,9 @@ class FreyCurve(EllipticCurve_generic):
           frey curve is defined. This may be a maximal ideal of the
           ring of integers of that field or a prime number if it is
           the field \Q.
+        - ``power`` -- A strictly positive integer (default: 1). If
+          set to a value higher than 1 will compute the trace of
+          the frobenius to the given power.
         - ``condition`` -- A Condition or None (default: None)
           giving a condition that the parameters in this curve should
           satisfy. If set to None will use the default condition
@@ -979,12 +983,20 @@ class FreyCurve(EllipticCurve_generic):
 
         OUTPUT:
 
-        The trace of frobenius of and l-adic or mod-l reprentation
-        assuming that they are unramified.
+        The trace of frobenius to the given power under the
+        l-adic or mod-l reprentation assuming that they are
+        unramified.
         If this would depend on the parameters will return a
         ConditionalValue of options instead.
         """
         pAdics = pAdicBase(self.definition_ring(), prime)
+        if power > 1:
+            D = len(pAdics.residue_field())
+            T = self.trace_of_frobenius(prime, condition=condition,
+                                        verbose=verbose,
+                                        precision_cap=precision_cap)
+            result = self._power_trace_formula(power)
+            return apply_to_conditional_value(lambda t: result(t, D), T)
         if condition is None:
             condition = self._condition
         red_type = self.reduction_type(prime, condition=condition,
@@ -1019,74 +1031,6 @@ class FreyCurve(EllipticCurve_generic):
         R.<x,y> = QQ[]
         f = x^n + y^n
         return polynomial_to_symmetric(f)
-
-    def trace_of_frobenius_power(self, prime, power, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Computes the trace of a power of frobenius acting on this curve.
-
-        If the elliptic curve has good reduction at the given prime,
-        for every prime number l not divisible by the prime the l-adic
-        representation is unramified at the prime and the trace of
-        frobenius to the given power is given by this function.
-
-        If the elliptic curve has multiplicative reduction at the given
-        prime, for every prime number l not divisible by the prime,
-        the mod-l representation is unramified at the prime if and only
-        if the valuation of the discriminant is divisible by l. In this
-        case this function returns the trace of frobenius to the given power
-        in such a case, but does not check whether the valuation of the
-        discriminant is divisible by l.
-
-        If the elliptic curve has additive reduction, will raise a
-        ValueError since the trace of frobenius is not well-defined
-        in that case.
-
-        INPUT:
-
-        - ``prime`` -- A prime of the number field over which this
-          frey curve is defined. This may be a maximal ideal of the
-          ring of integers of that field or a prime number if it is
-          the field \Q.
-        - ``power`` -- A strictly positive integer giving to which
-          power the frobenius element should be raised.
-        - ``condition`` -- A Condition or None (default: None)
-          giving a condition that the parameters in this curve should
-          satisfy. If set to None will use the default condition
-          stored in this Frey curve.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
-
-        OUTPUT:
-
-        The trace of frobenius to the given power under the
-        l-adic or mod-l reprentation assuming that they are
-        unramified.
-        If this would depend on the parameters will return a
-        ConditionalValue of options instead.
-        """
-        pAdics = pAdicBase(self.definition_ring(), prime)
-        D = len(pAdics.residue_field())
-        T = self.trace_of_frobenius(prime, condition=condition,
-                                    verbose=verbose,
-                                    precision_cap=precision_cap)
-        result = self._power_trace_formula(power)
-        return apply_to_conditional_value(lambda t: result(t, D), T)
 
     def _newforms(self, level, condition, additive_primes,
                   algorithm, prime_cap, verbose, precision_cap,
@@ -1737,10 +1681,10 @@ class FreyQcurve(FreyCurve, Qcurve):
             P = KE.prime_above(p)
             fP = P.residue_class_degree()
             eP = P.ramification_index()
-            apE = self.trace_of_frobenius_power(P, eP,
-                                                condition=condition,
-                                                verbose=(verbose - 1 if verbose > 0 else -1),
-                                                precision_cap=precision_cap)
+            apE = self.trace_of_frobenius(P, power=eP,
+                                          condition=condition,
+                                          verbose=(verbose - 1 if verbose > 0 else -1),
+                                          precision_cap=precision_cap)
             if isinstance(apE, ConditionalValue):
                 apE_ls = [val for val, con in apE]
             else:
