@@ -40,6 +40,13 @@ def eliminate_newforms_by_trace(curves, newforms, condition=None, primes=50,
       isomorphic to the corresponding newforms in this
       tuple. This can be used to chain multiple
       elimination methods.
+      Everywhere where a list is expected, one may also
+      give a ConditionalValue of which the possible
+      values are lists of the expected format. The
+      method will be applied to each entry individually
+      and the condition will be replaced by the condition
+      that both the given condition and the condition
+      at which that value is attained hold.
     - ``condition`` -- A Condition giving the
       restrictions on the parameters of the given
       Frey curve that should be considered. By default
