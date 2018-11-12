@@ -1,6 +1,7 @@
 from sage.rings.polynomial.multi_polynomial import is_MPolynomial
 from sage.rings.polynomial.polynomial_element import is_Polynomial
 import re
+import itertools
 
 class Condition_base(SageObject):
     """
@@ -1498,7 +1499,8 @@ class ConditionalExpression(SageObject):
     def __rpow__(self, other):
         return ConditionalExpression(ConditionalExpression.EXPONENT_OPERATOR, other, self)
 
-def apply_to_conditional_value(function, value, singleton=False):
+def apply_to_conditional_value(function, value, singleton=False,
+                               use_condition=False, default_condition=None):
     r"""
     Applies a function to a conditional value.
 
@@ -1511,6 +1513,17 @@ def apply_to_conditional_value(function, value, singleton=False):
     - ``singleton`` -- A boolean value (default: False)
       indicating whether a ConditionalValue with only
       one possibility should be returned.
+    - ``use_condition`` -- A boolean value (default:
+      False). If set to true, will pass a value
+      condition pair to the function for each possible
+      value instead of only the value. This is useful
+      for functions which also require the condition
+      on which this value depends.
+    - ``default_condition`` -- If the given value was
+      not ConditionalValue, will use this to determine
+      the condition corresponding to the value if it
+      is required to pass to be passed to the funcion
+      or to construct a ConditionalValue at the end.
 
     OUTPUT:
 
@@ -1527,7 +1540,10 @@ def apply_to_conditional_value(function, value, singleton=False):
     if isinstance(value, ConditionalValue):
         result = {}
         for val, con in value:
-            f_val = function(val)
+            if use_condition:
+                f_val = function(val, con)
+            else:
+                f_val = function(val)
             if f_val in result:
                 result[f_val] = (result[f_val] | con)
             else:
@@ -1537,4 +1553,61 @@ def apply_to_conditional_value(function, value, singleton=False):
         else:
             return ConditionalValue(list(result.iteritems()))
     else:
-        return function(value)    
+        if use_condition:
+            result = function(value, default_condition)
+        else:
+            result = function(value)
+        if singleton and default_conditon != None:
+            return ConditionalValue([(result, default_condition)])
+        else:
+            return result
+
+def conditional_product(*args):
+    r"""
+    Given multiple ConditionalValues creates a
+    ConditionalValue of lists of possible values.
+
+    INPUT:
+    
+    Any amount of arguments, all of which can be
+    an instance of ConditionalValue or any other
+    value.
+
+    OUTPUT:
+
+    A ConditionalValue of which the values are all
+    possible lists with as i-th entry a possible
+    value of the i-th given ConditionalValue. For
+    each value the corresponding condition is the
+    condition that all the corresponding conditions
+    for each entry in the respective ConditionalValue
+    hold.
+
+    Note that if each entry given is not a
+    ConditionalValue, the result will also not be
+    a ConditionalValue.
+    """
+    if len(args) == 0:
+        raise ValueError("conditional_zip requires at least one argument.")
+    for i in range(len(args)):
+        if not isinstance(args[i], ConditionalValue):
+            args[i] = [(args[i], None)]
+    # Helper function
+    def combine_conditions(C1, C2):
+        if C1 is None:
+            return C2
+        if C2 is None:
+            return C1
+        return C1 & C2
+    # Make a list of lists of value condition pairs
+    result = itertools.product(*args)
+    # Turn into a list of pairs of a list of values
+    # and the corresponding list of conditions.
+    result = [zip(*val_con) for val_con in result]
+    # Turn into a list of pairs of a list of values
+    # and the corresponding condition, combined with and.
+    result = [(val, reduce(combine_conditions, con, None)) for val, con in result]
+    if len(result) == 1:
+        return result[0]
+    else:
+        return ConditionalValue(result)
