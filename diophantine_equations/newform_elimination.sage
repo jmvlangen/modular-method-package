@@ -104,11 +104,21 @@ def eliminate_newforms_by_trace(curves, newforms, condition=None, primes=50,
     newforms = _init_newform_list(newforms, curves)
     if primes in ZZ and primes > 0:
         primes = prime_range(primes)
+    if condition is None:
+        condition = curves[0]._condition
     for prime in primes:
         if verbose > 0:
             print "Comparing traces of frobenius at %s for %s cases."%(prime, len(newforms))
-        newforms = _eliminate_newforms_by_trace(curves, newforms, condition,
-                                                prime, precision_cap, verbose)
+        newforms = apply_to_conditional_value(lambda nfs, con:
+                                              _eliminate_newforms_by_trace(curves,
+                                                                           nfs,
+                                                                           cond & condition,
+                                                                           prime,
+                                                                           precision_cap,
+                                                                           verbose),
+                                              newforms,
+                                              use_condition=True
+                                              default_condition=condition)
     return newforms
         
 def _eliminate_newforms_by_trace(curves, newforms, condition, prime,
@@ -167,7 +177,9 @@ def _init_newform_list(newforms, curves):
         newforms = [(curves[i].newform_candidates() if newforms[i] is None
                      else newforms[i])
                     for i in range(len(curves))])
-        newforms = [nfs for nfs in itertools.product(*newforms)]
+        newforms = conditional_product(newforms)
+    if isinstance(newforms, ConditionalValue):
+        return apply_to_conditional_value(lambda nfs: _init_newform_list(nfs, curves), newforms)
     for i in range(len(newforms)):
         if not isinstance(newforms[i], tuple):
             if len(curves) != 1:
