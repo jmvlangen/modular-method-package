@@ -1538,20 +1538,23 @@ def apply_to_conditional_value(function, value, singleton=False,
     instead of the whole ConditionalValue.
     """
     if isinstance(value, ConditionalValue):
-        result = {}
+        values = []
+        conditions = []
         for val, con in value:
             if use_condition:
                 f_val = function(val, con)
             else:
                 f_val = function(val)
-            if f_val in result:
-                result[f_val] = (result[f_val] | con)
-            else:
-                result[f_val] = con
-        if not singleton and len(result) == 1:
-            return result.keys()[0]
+            try:
+                i = values.index(f_val)
+                conditions[i] = conditions[i] | con
+            except ValueError:
+                values.append(f_val)
+                conditions.append(con)
+        if not singleton and len(values) == 1:
+            return values[0]
         else:
-            return ConditionalValue(list(result.iteritems()))
+            return ConditionalValue(zip(values, conditions))
     else:
         if use_condition:
             result = function(value, default_condition)
@@ -1588,10 +1591,10 @@ def conditional_product(*args):
     a ConditionalValue.
     """
     if len(args) == 0:
-        raise ValueError("conditional_zip requires at least one argument.")
-    for i in range(len(args)):
-        if not isinstance(args[i], ConditionalValue):
-            args[i] = [(args[i], None)]
+        raise ValueError("conditional_product requires at least one argument.")
+    args = [(arg if isinstance(arg, ConditionalValue)
+             else [(arg, None)])
+            for arg in args]
     # Helper function
     def combine_conditions(C1, C2):
         if C1 is None:
@@ -1608,6 +1611,6 @@ def conditional_product(*args):
     # and the corresponding condition, combined with and.
     result = [(val, reduce(combine_conditions, con, None)) for val, con in result]
     if len(result) == 1:
-        return result[0]
+        return result[0][0]
     else:
         return ConditionalValue(result)

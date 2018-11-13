@@ -1104,12 +1104,26 @@ class FreyCurve(EllipticCurve_generic):
         the form above and each condition corresponds to a single possible
         level.
         """
+        if condition is None:
+            condition = self._condition
+        if additive_primes is None:
+            additive_primes = self.primes_of_possible_additive_reduction()
         newforms = self.newform_candidates(additive_primes=additive_primes,
                                            condition=condition,
                                            algorithm=algorithm,
                                            precision_cap=precision_cap_conductor,
                                            verbose=verbose,
                                            path=path)
+        newforms = apply_to_conditional_value(lambda x: list(x),
+                                              newforms)
+        if primes in ZZ and primes > 0:
+            primes = prime_range(primes)
+        primes = list(primes)
+        for P in additive_primes:
+            if P in ZZ and P in primes:
+                primes.remove(P)
+            elif P.smallest_integer() in primes:
+                primes.remove(P.smallest_integer())
         return eliminate_newforms_by_trace(self, newforms, condition=condition,
                                            primes=primes,
                                            precision_cap=precision_cap_reduction,
@@ -1190,9 +1204,9 @@ class FreyCurve(EllipticCurve_generic):
             N = N.value()
         if condition is None:
             condition = self._condition
-        return apply_to_conditional_value(lambda level: get_newforms(level,
-                                                                     algorithm=algorithm,
-                                                                     path=path),
+        return apply_to_conditional_value(lambda level: tuple(get_newforms(level,
+                                                                           algorithm=algorithm,
+                                                                           path=path)),
                                           N)
         
 class FreyCurveLocalData(EllipticCurveLocalData):    
@@ -1702,21 +1716,21 @@ class FreyQcurve(FreyCurve, Qcurve):
         of the parameters, will return a ConditionalValue
         containing such lists instead.
         """
+        if condition is None:
+            condition = self._condition
         levels = self._newform_levels(additive_primes=additive_primes,
                                       condition=condition,
                                       verbose=(verbose - 1 if verbose > 0 else verbose),
                                       precision_cap=precision_cap)
-        if isinstance(N, ConditionalExpression):
-            N = N.value()
-        if condition is None:
-            condition = self._condition
         return apply_to_conditional_value(lambda levelsi, con:
                                           self._newform_candidates(levelsi,
                                                                    con & condition,
                                                                    algorithm,
                                                                    path,
                                                                    verbose),
-                                          levels)
+                                          levels,
+                                          use_condition=True,
+                                          default_condition=condition)
 
     def _newform_candidates(self, levels, condition, algorithm, path, verbose):
         result = []
@@ -1735,7 +1749,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             result.extend(get_newforms(level, character=eps,
                                        algorithm=algorithm, path=path))
             done_levels.append((level, eps, Lbeta))
-        return result
+        return tuple(result)
             
     def _repr_(self):
         """

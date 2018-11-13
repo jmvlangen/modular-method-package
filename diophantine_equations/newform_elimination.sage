@@ -1,7 +1,7 @@
 import itertools
 
 def eliminate_newforms_by_trace(curves, newforms, condition=None, primes=50,
-                                precision_cap=1, verbose=20):
+                                precision_cap=1, verbose=False):
     r"""
     Eliminates newforms associated to frey curves.
 
@@ -119,12 +119,12 @@ def eliminate_newforms_by_trace(curves, newforms, condition=None, primes=50,
         newforms = apply_to_conditional_value(lambda nfs, con:
                                               _eliminate_newforms_by_trace(curves,
                                                                            nfs,
-                                                                           cond & condition,
+                                                                           con & condition,
                                                                            prime,
                                                                            precision_cap,
                                                                            verbose),
                                               newforms,
-                                              use_condition=True
+                                              use_condition=True,
                                               default_condition=condition)
     return newforms
         
@@ -145,22 +145,26 @@ def _eliminate_newforms_by_trace(curves, newforms, condition, prime,
     result = []
     for nfs in newforms:
         Bold = nfs[-1]
-        apf = (nfs[i].trace_of_frobenius(prime, power=powers[i]) for i in range(nE))
-        B = ZZ(prime * product(gcd((apE[i] - apf[i] if apE in QQ
-                                    else (apE[i] - apf[i]).absolute_norm())
-                                   for i in range(nE))
-                               for apE in apE_ls))
-        Bnew = gcd(Bold, B)
+        if all(not prime.divides(nfs[i].level()) for i in range(nE)):
+            apf = [nfs[i].trace_of_frobenius(prime, power=powers[i]) for i in range(nE)]
+            B = ZZ(prime * product(gcd(((apE[i] - apf[i]) if apf[i] in QQ
+                                        else (apE[i] - apf[i]).absolute_norm())
+                                       for i in range(nE))
+                                   for apE in apE_ls))
+            Bnew = gcd(Bold, B)
+        else:
+            Bnew = Bold
         if abs(Bnew) != 1:
             result.append(tuple([nfs[i] for i in range(nE)] + [Bnew]))
     return result
 
 def _init_traces(curves, condition, primes, precision_cap, verbose):
     eP = [(1 if prime in ZZ else prime.ramification_index()) for prime in primes]
-    traces = [curve.trace_of_frobenius(primes, power=eP, condition=condition,
-                                       precision_cap=precision_cap,
-                                       verbose=(verbose - 1 if verbose > 0 else verbose))
-              for curve in curves]
+    traces = [curves[i].trace_of_frobenius(primes[i], power=eP[i],
+                                           condition=condition,
+                                           precision_cap=precision_cap,
+                                           verbose=(verbose - 1 if verbose > 0 else verbose))
+              for i in range(len(curves))]
     result = []
     for case in itertools.product(*traces):
         values, conditions = zip(*case)
@@ -181,12 +185,17 @@ def _init_newform_list(newforms, curves):
         if len(newforms) != len(curves):
             raise ValueError("Expected %s lists of newforms, but got %s"%(len(curves),
                                                                           len(newforms)))
-        newforms = [(curves[i].newform_candidates() if newforms[i] is None
+        newforms = [(apply_to_conditional_value(lambda x: list(x),
+                                                curves[i].newform_candidates())
+                     if newforms[i] is None
                      else newforms[i])
-                    for i in range(len(curves))])
-        newforms = conditional_product(newforms)
+                    for i in range(len(curves))]
+        newforms = conditional_product(*newforms)
+        newforms = apply_to_conditional_value(lambda nfs: itertools.product(*nfs),
+                                              newforms)
     if isinstance(newforms, ConditionalValue):
         return apply_to_conditional_value(lambda nfs: _init_newform_list(nfs, curves), newforms)
+    newforms = [nfs for nfs in newforms]
     for i in range(len(newforms)):
         if not isinstance(newforms[i], tuple):
             if len(curves) != 1:
