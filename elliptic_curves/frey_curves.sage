@@ -83,6 +83,16 @@ class FreyCurve(EllipticCurve_generic):
         Frey curve is defined.
         """
         return self.base_ring().base()
+
+    def definition_field(self):
+        r"""
+        Gives the field over which this Frey curve is defined.
+
+        OUTPUT:
+
+        The number field over which this Frey curve is defined.
+        """
+        return self.definition_ring()
     
     def parameters(self):
         r"""

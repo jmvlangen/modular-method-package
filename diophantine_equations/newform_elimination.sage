@@ -137,6 +137,8 @@ def _eliminate_newforms_by_trace(curves, newforms, condition, prime,
     
     see :meth:`eliminate_newforms_by_trace`
     """
+    if len(newforms) == 0:
+        return newforms
     nE = len(curves)
     fields = tuple(curve.definition_field() for curve in curves)
     primes = tuple((prime if K == QQ else K.prime_above(prime)) for K in fields)
@@ -147,9 +149,9 @@ def _eliminate_newforms_by_trace(curves, newforms, condition, prime,
         Bold = nfs[-1]
         if all(not prime.divides(nfs[i].level()) for i in range(nE)):
             apf = [nfs[i].trace_of_frobenius(prime, power=powers[i]) for i in range(nE)]
-            B = ZZ(prime * product(gcd(((apE[i] - apf[i]) if apf[i] in QQ
-                                        else (apE[i] - apf[i]).absolute_norm())
-                                       for i in range(nE))
+            B = ZZ(prime * product(gcd([(QQ(apE[i] - apf[i]) if apf[i] in QQ
+                                         else (apE[i] - apf[i]).absolute_norm())
+                                        for i in range(nE)])
                                    for apE in apE_ls))
             Bnew = gcd(Bold, B)
         else:
@@ -165,6 +167,13 @@ def _init_traces(curves, condition, primes, precision_cap, verbose):
                                            precision_cap=precision_cap,
                                            verbose=(verbose - 1 if verbose > 0 else verbose))
               for i in range(len(curves))]
+    pAdics = pAdicBase(curves[0].definition_ring(), primes[0]).pAdics_below(curves[0]._R)
+    default_tree = condition.pAdic_tree(pAdics=pAdics,
+                                        verbose=(max(0, verbose - 3) if verbose > 0 else verbose),
+                                        precision_cap=precision_cap)
+    traces = [(trace if isinstance(trace, ConditionalValue)
+               else [(trace, TreeCondition(default_tree))])
+              for trace in traces]
     result = []
     for case in itertools.product(*traces):
         values, conditions = zip(*case)
