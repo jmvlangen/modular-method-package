@@ -1564,7 +1564,7 @@ def apply_to_conditional_value(function, value, singleton=False,
             return ConditionalValue([(result, default_condition)])
         else:
             return result
-
+        
 def conditional_product(*args):
     r"""
     Given multiple ConditionalValues creates a
