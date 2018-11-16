@@ -7,7 +7,7 @@
 # Assumptions:
 #   - a, b and c are coprime
 #   - l > 7
-#   - a = -3*s^4 + 6*t^2*s^2 + t^4
+#   - a = 3*s^4 + 6*t^2*s^2 + t^4
 #   - b^l = (t^2 + 3*s^2)^2 - 12*s^4
 #   - c = 6*s*t*(3*s^4 + t^4)
 #   - s and t coprime

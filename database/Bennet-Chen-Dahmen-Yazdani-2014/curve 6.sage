@@ -16,7 +16,7 @@
 # Variables
 R.<s,t> = QQ[]
 a = -3*s^4 + 6*t^2*s^2 + t^4
-bl = 3*(s^2 + t^2)^2 - 4*t^4
+bl = -(3*(s^2 + t^2)^2 - 4*t^4)
 c = 6*s*t*(3*s^4 + t^4)
 
 # Conditions
