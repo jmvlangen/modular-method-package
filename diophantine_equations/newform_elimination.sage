@@ -340,8 +340,8 @@ def kraus_method(curves, newforms, l, polynomials, primes=200,
     if not (l in ZZ and l > 0 and l.is_prime()):
         raise ValueError("%s is not a prime number"%(prime,))
     if not isinstance(polynomials, list):
-        if hasattr(polynomials, "__iter__"):
-            polynomials = [poly for poly in polynomials]
+        if isinstance(polynomials, tuple):
+            polynomials = list(polynomials)
         else:
             polynomials = [polynomials]
     if primes in ZZ and primes > 0:
@@ -358,15 +358,15 @@ def kraus_method(curves, newforms, l, polynomials, primes=200,
             CP = [_init_kraus_condition(polynomials[i], P[i], l) for i in range(len(P))]
             if verbose > 0:
                 print "Comparing traces of frobenius at %s for %s cases."%(p, len(newforms))
-            C = reduce(lambda x, y: x & y, C, condition)
+            C = reduce(lambda x, y: x & y, CP, condition)
             newforms = apply_to_conditional_value(lambda nfs, con:
-                                                  _eliminate_newforms_by_trace(curves,
-                                                                               nfs,
-                                                                               l,
-                                                                               prime,
-                                                                               con & C,
-                                                                               precision_cap,
-                                                                               verbose),
+                                                  _kraus_method_trace_compare(curves,
+                                                                              nfs,
+                                                                              l,
+                                                                              p,
+                                                                              con & C,
+                                                                              precision_cap,
+                                                                              verbose),
                                                   newforms,
                                                   use_condition=True,
                                                   default_condition=C)
@@ -411,7 +411,7 @@ def _kraus_method_trace_compare(curves, newforms, l, p, condition, precision_cap
     result = []
     for nfs in newforms:
         Bold = nfs[-1]
-        if l.divides(Bold) and all(not p.divides(nfs[i].level()) for i in range(nE)):
+        if Bold != 0 and l.divides(Bold) and all(not p.divides(nfs[i].level()) for i in range(nE)):
             apf = [nfs[i].trace_of_frobenius(p, power=powers[i]) for i in range(nE)]
             B = max(min((QQ(apE[i] - apf[i]) if apf[i] in QQ
                          else (apE[i] - apf[i]).absolute_norm()).ord(l)

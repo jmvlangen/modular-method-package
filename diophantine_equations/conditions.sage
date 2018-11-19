@@ -841,7 +841,7 @@ class OrCondition(Condition_base):
         """
         return self._left, self._right
 
-    def pAdic_tree(self, complement=False, **kwds):
+    def pAdic_tree(self, pAdic_tree=None, pAdics=None, complement=False, **kwds):
         r"""
         Gives this condition as a pAdicTree.
         
