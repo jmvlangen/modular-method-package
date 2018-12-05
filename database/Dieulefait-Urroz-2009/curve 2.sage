@@ -30,7 +30,8 @@ E = FreyQcurve(a_invariants,
 
 # Conductor
 print ""
-print E.conductor()
+N = E.conductor()
+print N
 # (16)*Rad_P( ((-233610467125568/15*rsqrtm2rzeta0^7 + 583050224176000*rsqrtm2rzeta0^6 - 32212260985250176/15*rsqrtm2rzeta0^5 + 10494904035168000*rsqrtm2rzeta0^4 + 114728482001153792/15*rsqrtm2rzeta0^3 - 34983013450560000*rsqrtm2rzeta0^2 - 583609468822355456/15*rsqrtm2rzeta0 + 222330073930210304)) * (a^2 + (1/4800*rsqrtm2rzeta0^7 + 7/800*rsqrtm2rzeta0^5 + 63/400*rsqrtm2rzeta0^3 + 169/600*rsqrtm2rzeta0)*b) * (a^2 + (-1/4800*rsqrtm2rzeta0^7 - 7/800*rsqrtm2rzeta0^5 - 63/400*rsqrtm2rzeta0^3 - 169/600*rsqrtm2rzeta0)*b)^2 )
 # (agees with article)
 
@@ -40,6 +41,7 @@ E = E.decomposable_twist()
 
 # Newform
 print ""
-print E.newforms(algorithm='magma', precision_cap_reduction=2)
+nfs = E.newforms(algorithm='magma', precision_cap_reduction=2)
+print nfs
 #
 # (article: no newforms agree for l > 131)

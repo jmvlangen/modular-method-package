@@ -24,12 +24,14 @@ E = FreyCurve(a_invariants, condition=C)
 
 # Conductor
 print ""
-print E.conductor()
+N = E.conductor()
+print N
 # 32*Rad_P( 2^6 * ap^2 * (c^2 - ap) )
 # (agrees with article)
 
 # Newforms
 print ""
-print E.newforms(algorithm='magma')
+nfs = E.newforms(algorithm='magma')
+print nfs
 # 
 # (article: eliminated by other means (CM))

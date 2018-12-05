@@ -24,7 +24,8 @@ E = FreyCurve(a_invariants, condition=C)
 
 # Data
 print ""
-print E.conductor()
+N = E.conductor()
+print N
 # 2^n0*Rad_P( 2^6 * cl^2 * al^2 * (al - 2*cl)^2 )
 #  where 
 # n0 = 5 if ('al', 'cl') == (3, 1), (3, 3) mod 4
@@ -33,6 +34,7 @@ print E.conductor()
 
 # Newforms
 print ""
-print E.newforms(algorithm='magma')
+nfs = E.newforms(algorithm='magma')
+print nfs
 # 
 # (article: none if 2 divides a*b*c)

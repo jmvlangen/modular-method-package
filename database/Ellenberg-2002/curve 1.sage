@@ -29,7 +29,8 @@ E = FreyQcurve(a_invariants,
 
 # Conductor
 print ""
-print E.conductor()
+N = E.conductor()
+print N
 # Fractional ideal (i + 1)^n0*Rad_P( ((-64*i)) * (a^2 + (i)*b) * (a^2 + (-i)*b)^2 )
 #  where 
 # n0 = 12 if ('a', 'b') == (1, 0) mod 2
@@ -38,6 +39,7 @@ print E.conductor()
 
 # Newforms
 print ""
-print E.newforms(algorithm='magma')
+nfs = E.newforms(algorithm='magma')
+print nfs
 #
 # (article: None if l >= 211)

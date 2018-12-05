@@ -57,7 +57,7 @@ print E2.conductor()
 print ""
 nfs1 = apply_to_conditional_value(lambda x: list(x), E1.newform_candidates(algorithm='magma'))
 nfs2 = apply_to_conditional_value(lambda x: list(x), E2.newform_candidates(algorithm='magma'))
-nfs = eliminate_newforms_by_trace((E1, E2), (nfs1, nfs2), condition=C, primes=prime_range(5,20))
+nfs = eliminate_by_traces((E1, E2), (nfs1, nfs2), condition=C, primes=prime_range(5,20))
 print nfs
 # [(q + 4*q^5 + O(q^12), q + 1/2*(a + 2)*q^3 + a*q^5 + a*q^7 + (a - 1)*q^9 + 2*q^11 + O(q^12), 0), (q + 4*q^5 + O(q^12), q + 1/2*(-a + 2)*q^3 + a*q^5 + a*q^7 + (-a - 1)*q^9 + 2*q^11 + O(q^12), 0), (q + 4*q^5 + O(q^12), q + 1/2*(-a - 2)*q^3 + a*q^5 - a*q^7 + (a - 1)*q^9 - 2*q^11 + O(q^12), 0), (q + 4*q^5 + O(q^12), q + 1/2*(a - 2)*q^3 + a*q^5 - a*q^7 + (-a - 1)*q^9 - 2*q^11 + O(q^12), 0)]                   if ('s', 't') == (1, 2), (2, 1) mod 3
 # [(q - 2*q^5 + 3*q^7 - 6*q^11 + O(q^12), q + 1/4*(a - 2)*q^3 + 1/2*(a - 8)*q^9 - 6*q^11 + O(q^12), 0), (q - 2*q^5 + 3*q^7 - 6*q^11 + O(q^12), q + 1/4*(-a + 2)*q^3 + 1/2*(a - 8)*q^9 + 6*q^11 + O(q^12), 0), (q - 2*q^5 - 3*q^7 + 6*q^11 + O(q^12), q + 1/4*(a - 2)*q^3 + 1/2*(a - 8)*q^9 - 6*q^11 + O(q^12), 0), (q - 2*q^5 - 3*q^7 + 6*q^11 + O(q^12), q + 1/4*(-a + 2)*q^3 + 1/2*(a - 8)*q^9 + 6*q^11 + O(q^12), 0)] if ('s', 't') is 1 of 4 possibilities mod 3

@@ -26,7 +26,8 @@ E = FreyCurve(a_invariants, condition=C)
 
 # Conductor
 print ""
-print E.conductor()
+N = E.conductor()
+print N
 # 3^n0*Rad_P( (27) * bl * (c^3 - bl)^3 )
 #  where 
 # n0 = 2 if ('bl', 'c') is 1 of 710046 possibilities mod 2187
@@ -36,6 +37,7 @@ print E.conductor()
 
 # Newforms
 print ""
-print E.newforms(algorithm='magma')
+nfs = E.newforms(algorithm='magma')
+print nfs
 # 
 # (article: no solution if l == 1 (mod 3) and assuming Shimura-Tate)

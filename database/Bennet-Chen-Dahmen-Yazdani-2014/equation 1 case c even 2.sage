@@ -72,7 +72,7 @@ print ""
 nfs1 = apply_to_conditional_value(lambda x: list(x), E1.newform_candidates(algorithm='magma'))
 nfs2 = apply_to_conditional_value(lambda x: list(x), E2.newform_candidates(algorithm='magma'))
 nfs3 = apply_to_conditional_value(lambda x: list(x), E3.newform_candidates(algorithm='magma'))
-nfs = eliminate_newforms_by_trace((E1, E2, E3), (nfs1, nfs2, nfs3), condition=C, primes=prime_range(5,20))
+nfs = eliminate_by_traces((E1, E2, E3), (nfs1, nfs2, nfs3), condition=C, primes=prime_range(5,20))
 print nfs
 # 
 # (Agrees with article!)

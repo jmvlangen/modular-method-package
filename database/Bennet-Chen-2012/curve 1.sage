@@ -31,7 +31,8 @@ E = E.decomposable_twist()
 
 # Conductor
 print ""
-print E.conductor()
+N = E.conductor()
+print N
 # (4)*(1/4*izeta0^2 + 1)^n0*Rad_P( ((18195840*izeta0^3 - 145566720*izeta0 + 252129024)) * (b^3 + (-1/8*izeta0^3)*a) * (b^3 + (1/8*izeta0^3)*a)^3 )
 #  where 
 # n0 = 0 if ('a', 'b') is 1 of 24 possibilities mod 9
@@ -40,7 +41,8 @@ print E.conductor()
 
 # Newforms
 print ""
-print E.newforms(algorithm='magma')
+nfs = E.newforms(algorithm='magma')
+print nfs
 #
 # (article: the only form at level 48 is CM and 2 forms at level 432 are CM.
 #  The rest is excluded for l >= 11)

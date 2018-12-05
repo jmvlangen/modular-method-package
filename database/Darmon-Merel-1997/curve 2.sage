@@ -26,12 +26,14 @@ E = FreyCurve(a_invariants, condition=C)
 
 # Data
 print ""
-print E.conductor()
+N = E.conductor()
+print N
 # Rad_P( (1/4096) * al^2 * (c^2 - al) )
 # (agrees with article)
 
 # Newforms
 print ""
-print E.newforms(algorithm='magma')
+nfs = E.newforms(algorithm='magma')
+print nfs
 # 
 # (article: none)

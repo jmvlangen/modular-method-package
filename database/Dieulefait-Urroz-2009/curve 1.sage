@@ -29,7 +29,8 @@ E = FreyQcurve(a_invariants,
 
 # Conductor
 print ""
-print E.conductor()
+N = E.conductor()
+print N
 # (r)^n0*Rad_P( (512) * (a^2 + (-r)*b) * (a^2 + (r)*b)^2 )
 #  where 
 # n0 = 12 if ('a', 'b') == (1, 1) mod 2
@@ -38,6 +39,7 @@ print E.conductor()
 
 # Newform
 print ""
-print E.newforms(algorithm='magma')
+nfs = E.newforms(algorithm='magma')
+print nfs
 #
 # (article: no newforms agree for l > 349)

@@ -33,7 +33,8 @@ E = E.decomposable_twist()
 
 # Conductor
 print ""
-print E.conductor()
+N = E.conductor()
+print N
 # (2, 1/16*wsqrtm2zeta00^3 + 1/4*wsqrtm2zeta00^2 - 3/2*wsqrtm2zeta00 - 4)^n0*(5, 1/8*wsqrtm2zeta00^2 - 2)^n1*Rad_P( ((-5540*wsqrtm2zeta00^3 - 3960*wsqrtm2zeta00^2 + 136800*wsqrtm2zeta00 + 120320)) * (a^2 + (-1/16*wsqrtm2zeta00^3 - 1/8*wsqrtm2zeta00^2 + 3/2*wsqrtm2zeta00 + 2)*a*b + b^2) * (a^2 + (1/16*wsqrtm2zeta00^3 + 1/8*wsqrtm2zeta00^2 - 3/2*wsqrtm2zeta00 - 3)*a*b + b^2)^2 )
 #  where 
 # n0 =  8 if ('a', 'b') is 1 of 6 possibilities mod 4
@@ -47,6 +48,7 @@ print E.conductor()
 
 # Newforms
 print ""
-print E.newforms(algorithm='magma')
+nfs = E.newforms(algorithm='magma')
+print nfs
 #
 # (article: None should remain, but different elimination methods)
