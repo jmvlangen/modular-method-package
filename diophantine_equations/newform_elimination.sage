@@ -82,7 +82,7 @@ def _init_newform_list(newforms, curves):
                                                                            len(newforms[i])))
     return newforms
 
-def eliminate_by_trace(curves, newforms, prime, B, condition=None,
+def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
                        precision_cap=1, verbose=False):
     r"""
     Eliminates newforms associated to frey curves by the trace
@@ -138,11 +138,12 @@ def eliminate_by_trace(curves, newforms, prime, B, condition=None,
       whilst for the elliptic curves a prime above this
       prime number will be chosen if the curve is defined
       over a number field rather than QQ.
-    - ``B`` -- A non-negative number. Whenever the traces
-      of frobenius disagree for the mod-l representations,
-      the prime factor l will only be removed from the
-      corresponding last entry of the tuple of newforms
-      if the prime also divides this number B.
+    - ``B`` -- A non-negative integer (default: 0).
+      Whenever the traces of frobenius disagree for the
+      mod-l representations, the prime factor l will only
+      be removed from the corresponding last entry of the
+      tuple of newforms if the prime also divides this
+      number B.
     - ``condition`` -- A Condition giving the
       restrictions on the parameters of the given
       Frey curve that should be considered. By default
@@ -205,17 +206,17 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
         return newforms
     if isinstance(newforms, ConditionalValue):
         return apply_to_conditional_value(lambda nfs, con:
-                                          _eliminate_newforms_by_trace(curves,
-                                                                       nfs,
-                                                                       con & C,
-                                                                       prime,
-                                                                       precision_cap,
-                                                                       verbose),
+                                          _eliminate_by_trace(curves,
+                                                              nfs,
+                                                              con & C,
+                                                              prime,
+                                                              precision_cap,
+                                                              verbose),
                                           newforms,
                                           use_condition=True,
                                           default_condition=C)
     if verbose > 0:
-        print "Comparing traces of frobenius at %s for %s cases."%(prime, len(newforms))
+        print "Comparing traces of frobenius at %s for %s cases."%(p, len(newforms))
     nE = len(curves)
     fields = tuple(curve.definition_field() for curve in curves)
     primes = tuple((p if K == QQ else K.prime_above(p)) for K in fields)
@@ -226,7 +227,7 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
     result = []
     for nfs in newforms:
         Bold = nfs[-1]
-        if all(not p.divides(nfs[i].level()) for i in range(nE)):
+        if (B == 0 or Bold != 0) and all(not p.divides(nfs[i].level()) for i in range(nE)):
             apf = [nfs[i].trace_of_frobenius(p, power=powers[i]) for i in range(nE)]
             Bnew = ZZ(p * lcm(gcd([(QQ(apE[i] - apf[i]) if apf[i] in QQ
                                     else (apE[i] - apf[i]).absolute_norm())
@@ -349,10 +350,10 @@ def eliminate_by_traces(curves, newforms, condition=None, primes=50,
                                       use_condition=True,
                                       default_condition=condition)
         
-def _eliminate_newforms_by_trace(curves, newforms, condition, primes,
-                                 precision_cap, verbose):
+def _eliminate_by_traces(curves, newforms, condition, primes,
+                         precision_cap, verbose):
     r"""
-    Implementation of :meth:`eliminate_newforms_by_trace`
+    Implementation of :meth:`eliminate_by_traces`
     For internal use only.
     """
     for prime in primes:

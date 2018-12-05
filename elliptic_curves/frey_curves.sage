@@ -1134,10 +1134,10 @@ class FreyCurve(EllipticCurve_generic):
                 primes.remove(P)
             elif P.smallest_integer() in primes:
                 primes.remove(P.smallest_integer())
-        return eliminate_newforms_by_trace(self, newforms, condition=condition,
-                                           primes=primes,
-                                           precision_cap=precision_cap_reduction,
-                                           verbose=(verbose - 1 if verbose > 0 else verbose))
+        return eliminate_by_traces(self, newforms, condition=condition,
+                                   primes=primes,
+                                   precision_cap=precision_cap_reduction,
+                                   verbose=(verbose - 1 if verbose > 0 else verbose))
 
     @cached_method(key=lambda self, add, c, alg, prec, v, path:
                    ((self._condition if c is None else c),
