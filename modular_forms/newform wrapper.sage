@@ -124,6 +124,8 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True):
     <zero> := '0'
     <letter> := [a-zA-Z]
 
+    - A boolean value is represented by the integer 1 if it is
+      True and the integer 0 if it is False.
     - An element of a number field is represented as the list of
       rational coefficients with respect to the power basis in the
       generator, preceded by the identifier 'element'
@@ -146,12 +148,14 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True):
       a pair (k, e) appears in this list if the character takes the
       value zeta^e at k.
     - A newform is represented by a list containing an integer
-      preceded by the identifier 'level', a character, a number field
-      and a list of values, all preceded by the identifier 'newform'.
-      The first entry will be the level of the newform, the second
-      the corresponding character, the third the coefficient field of
-      the newform and the last the coefficients of the newform (at some)
-      indices.
+      preceded by the identifier 'level', a boolean preceded by the
+      identifier 'cm', a character, a number field and a list of
+      values, all preceded by the identifier 'newform'. The first
+      entry will be the level of the newform, the second a boolean
+      indicating whether or not this newform has complex multiplication,
+      the third the corresponding character, the fourth the coefficient
+      field of the newform and the last the coefficients of the newform
+      (at some) indices.
     - A list of things will be represented as a list of the
       corresponding representations.
 
@@ -219,6 +223,7 @@ def _write_element(element, f, coefficients, indent=0):
 
 def _write_newform(nf, f, coefficients, indent=0):
     level = LabeledElement('level', nf.level())
+    cm = LabeledElement('cm', ZZ(nf.has_cm()))
     character = nf.character()
     field = nf.coefficient_field()
     if not field.is_absolute():
@@ -227,7 +232,7 @@ def _write_newform(nf, f, coefficients, indent=0):
                    else LabeledElement('element', field(nf.coefficient(n)).list())))
               for n in coefficients]
     values = LabeledElement('values', values)
-    element = LabeledElement('newform', [level, character, field, values])
+    element = LabeledElement('newform', [level, cm, character, field, values])
     _write_labeled_element(element, f, coefficients, indent=indent)
 
 def _write_character(eps, f, coefficients, indent=0):
@@ -283,6 +288,8 @@ def load_newforms(file_name):
     <zero> := '0'
     <letter> := [a-zA-Z]
 
+    - A boolean value is represented by the integer 1 if it is
+      True and the integer 0 if it is False.
     - An element of a number field is represented as the list of
       rational coefficients with respect to the power basis in the
       generator, preceded by the identifier 'element'
@@ -305,12 +312,14 @@ def load_newforms(file_name):
       a pair (k, e) appears in this list if the character takes the
       value zeta^e at k.
     - A newform is represented by a list containing an integer
-      preceded by the identifier 'level', a character, a number field
-      and a list of values, all preceded by the identifier 'newform'.
-      The first entry will be the level of the newform, the second
-      the corresponding character, the third the coefficient field of
-      the newform and the last the coefficients of the newform (at some)
-      indices.
+      preceded by the identifier 'level', a boolean preceded by the
+      identifier 'cm', a character, a number field and a list of
+      values, all preceded by the identifier 'newform'. The first
+      entry will be the level of the newform, the second a boolean
+      indicating whether or not this newform has complex multiplication,
+      the third the corresponding character, the fourth the coefficient
+      field of the newform and the last the coefficients of the newform
+      (at some) indices.
     - A list of things will be represented as a list of the
       corresponding representations.
 
@@ -390,6 +399,7 @@ def _interpret_newform(element):
     if not isinstance(element, list):
         raise valueError("%s is not a list."%(element,))
     level=None
+    cm=None
     character=None
     field=None
     coefficients=None
@@ -412,15 +422,17 @@ def _interpret_newform(element):
                         coefficients[ZZ(pair[0])] = pair[1].element
                     else:
                         raise ValueError("Expected a pair for newform coefficients, but got %s"%(pair,))
+            elif part.label.lower() == 'cm' and cm is None and part.element in ZZ:
+                cm = (part.element != 0)
             else:
                 raise ValueError("Unexpected element %s with label %s for newform."%(part.element, part.label))
         else:
             raise ValueError("Unexpected element %s for newform."%(part,))
-    if level is None or character is None or field is None or coefficients is None:
+    if level is None or character is None or field is None or coefficients is None or cm is None:
         raise ValueError("Not enough arguments to make a newform.")
     for key in coefficients:
         coefficients[key] = field(coefficients[key])
-    return Newform_wrapped_stored(level, character, field, coefficients)
+    return Newform_wrapped_stored(level, character, field, coefficients, cm)
 
 def _read_element(f):
     whitespace = re.compile('\s')
@@ -766,6 +778,19 @@ class Newform_wrapped(SageObject):
         K, T_map, D_map = composite_field(T.parent(), D.parent(), give_maps=True)
         R.<x> = K[]
         return x^2 - T_map(T)*x + D_map(D)
+
+    def has_cm(self):
+        """
+        Determines if this newform has complex
+        multiplication.
+
+        OUTPUT:
+
+        True if the abelian variety corresponding
+        to this newform has complex multiplication.
+        False in any other case.
+        """
+        raise NotImplementedError()
     
     qexp = q_expansion
 
@@ -861,6 +886,19 @@ class Newform_wrapped_sage(Newform_wrapped):
         """
         return self._f.q_expansion(prec=20)
 
+    def has_cm(self):
+        """
+        Determines if this newform has complex
+        multiplication.
+
+        OUTPUT:
+
+        True if the abelian variety corresponding
+        to this newform has complex multiplication.
+        False in any other case.
+        """
+        return self._f.has_cm()
+
     def _repr_(self):
         """
         Gives a string representation of self.
@@ -940,6 +978,19 @@ class Newform_wrapped_magma(Newform_wrapped):
         """
         return self._f.BaseField().sage()
 
+    def has_cm(self):
+        """
+        Determines if this newform has complex
+        multiplication.
+
+        OUTPUT:
+
+        True if the abelian variety corresponding
+        to this newform has complex multiplication.
+        False in any other case.
+        """
+        return self._f.ModularSymbols().HasCM()
+
     def _repr_(self):
         """Gives a string representation of self."""
         return str(self._f)
@@ -953,11 +1004,12 @@ class Newform_wrapped_stored(Newform_wrapped):
     The wrapped version of a newform created from some stored data.
     """
 
-    def __init__(self, level, character, coefficient_field, coefficients):
+    def __init__(self, level, character, coefficient_field, coefficients, cm):
         self._level = level
         self._eps = character
         self._K = coefficient_field
         self._coeffs = coefficients
+        self._cm = cm
 
     def level(self):
         r"""
@@ -1012,6 +1064,19 @@ class Newform_wrapped_stored(Newform_wrapped):
         defined.
         """
         return self._K
+
+    def has_cm(self):
+        """
+        Determines if this newform has complex
+        multiplication.
+
+        OUTPUT:
+
+        True if the abelian variety corresponding
+        to this newform has complex multiplication.
+        False in any other case.
+        """
+        return self._cm
 
     def _repr_(self):
         """
