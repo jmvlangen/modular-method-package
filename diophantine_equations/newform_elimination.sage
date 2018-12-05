@@ -533,7 +533,7 @@ def _init_kraus_condition(polynomial, prime, l):
             return C1 | C2
     return reduce(combine_conditions, conditions, None)
 
-def eliminate_cm_forms(curves, newforms, has_cm=False):
+def eliminate_cm_forms(curves, newforms, has_cm=False, condition=None):
     r"""
     Eliminates newforms eliminates those that have CM.
 
