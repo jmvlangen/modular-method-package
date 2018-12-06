@@ -106,7 +106,7 @@ class LabeledElement:
         self.label = label
         self.element = element
     
-def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True):
+def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True, save_cm=True):
     r"""
     Saves newforms to a file.
 
@@ -155,7 +155,8 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True):
       indicating whether or not this newform has complex multiplication,
       the third the corresponding character, the fourth the coefficient
       field of the newform and the last the coefficients of the newform
-      (at some) indices.
+      (at some) indices. The entry with label 'cm' may be left out
+      or set to -1 to indicate that this information is not known.
     - A list of things will be represented as a list of the
       corresponding representations.
 
@@ -180,6 +181,11 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True):
       of this newform. This is recommmended as the string
       representation of this newform will break if loaded back
       in.
+    - ``save_cm`` -- A boolean value (default: True) indicating
+      whether for each newform saved the information whether or
+      not it has complex multiplication should also be computed
+      and saved. If set to False, this will not be done and the
+      field 'cm' of a newform will be set to -1.
     """
     if coefficients in ZZ and coefficients > 0:
         coefficients = range(coefficients)
@@ -188,9 +194,9 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True):
     else:
         coefficients = [c for c in coefficients]
     with open(file_name, "w+") as f:
-        _write_element(newforms, f, coefficients)
+        _write_element(newforms, f, coefficients, save_cm)
 
-def _write_list(ls, f, coefficients, indent=0, indent_start=True):
+def _write_list(ls, f, coefficients, save_cm, indent=0, indent_start=True):
     if indent_start:
         f.write(" "*4*indent)
     f.write('[')
@@ -199,31 +205,34 @@ def _write_list(ls, f, coefficients, indent=0, indent_start=True):
         if write_comma:
             f.write(',')
         f.write('\n')
-        _write_element(element, f, coefficients, indent=indent+1)
+        _write_element(element, f, coefficients, save_cm, indent=indent+1)
         write_comma=True
     f.write(']')
 
-def _write_element(element, f, coefficients, indent=0):
+def _write_element(element, f, coefficients, save_cm, indent=0):
     if isinstance(element, Newform_wrapped):
-        _write_newform(element, f, coefficients, indent=indent)
+        _write_newform(element, f, coefficients, save_cm, indent=indent)
     elif is_DirichletCharacter(element):
-        _write_character(element, f, coefficients, indent=indent)
+        _write_character(element, f, coefficients, save_cm, indent=indent)
     elif is_NumberField(element):
-        _write_field(element, f, coefficients, indent=indent)
+        _write_field(element, f, coefficients, save_cm, indent=indent)
     elif isinstance(element, LabeledElement):
-        _write_labeled_element(element, f, coefficients, indent=indent)
+        _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
     elif is_Polynomial(element):
-        _write_polynomial(element, f, coefficients, indent=indent)
+        _write_polynomial(element, f, coefficients, save_cm, indent=indent)
     elif element in QQ or element in ZZ:
         _write_rational(element, f, indent=indent)
     elif hasattr(element, '__iter__'):
-        _write_list(element, f, coefficients, indent=indent)
+        _write_list(element, f, coefficients, save_cm, indent=indent)
     else:
         raise ValueError("Do not know how to write %s to file."%(element,))
 
-def _write_newform(nf, f, coefficients, indent=0):
+def _write_newform(nf, f, coefficients, save_cm, indent=0):
     level = LabeledElement('level', nf.level())
-    cm = LabeledElement('cm', ZZ(nf.has_cm()))
+    if save_cm:
+        cm = LabeledElement('cm', ZZ(nf.has_cm()))
+    else:
+        cm = LabeledElement('cm', ZZ(-1))
     character = nf.character()
     field = nf.coefficient_field()
     if not field.is_absolute():
@@ -233,15 +242,15 @@ def _write_newform(nf, f, coefficients, indent=0):
               for n in coefficients]
     values = LabeledElement('values', values)
     element = LabeledElement('newform', [level, cm, character, field, values])
-    _write_labeled_element(element, f, coefficients, indent=indent)
+    _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
-def _write_character(eps, f, coefficients, indent=0):
+def _write_character(eps, f, coefficients, save_cm, indent=0):
     eps = eps.primitive_character()
     conductor = LabeledElement('conductor', eps.conductor())
     ls_values = zip(eps.parent().unit_gens(), eps.element())
     values = LabeledElement('values', ls_values)
     element = LabeledElement('character', [conductor, values])
-    _write_labeled_element(element, f, coefficients, indent=indent)
+    _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
 def _write_field(field, f, coefficients, indent=0):
     if field is QQ:
@@ -249,24 +258,24 @@ def _write_field(field, f, coefficients, indent=0):
     else:
         polynomial = field.defining_polynomial()
     element = LabeledElement('field', [polynomial])
-    _write_labeled_element(element, f, coefficients, indent=indent)
+    _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
-def _write_polynomial(poly, f, coefficients, indent=0):
+def _write_polynomial(poly, f, coefficients, save_cm, indent=0):
     element = LabeledElement('polynomial', poly.list())
-    _write_labeled_element(element, f, coefficients, indent=indent)
+    _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
 def _write_rational(q, f, indent=0, indent_start=True):
     if indent_start:
         f.write(" "*4*indent)
     f.write(str(QQ(q)))
 
-def _write_labeled_element(element, f, coefficients, indent=0):
+def _write_labeled_element(element, f, coefficients, save_cm, indent=0):
     f.write(" "*4*indent)
     f.write("<%s> := "%(element.label,))
     if element.element in QQ:
         _write_rational(element.element, f, indent=indent, indent_start=False)
     elif hasattr(element.element, "__iter__"):
-        _write_list(element.element, f, coefficients, indent=indent, indent_start=False)
+        _write_list(element.element, f, coefficients, save_cm, indent=indent, indent_start=False)
     else:
         raise ValueError("%s, %s is not a valid labeled element"%(element.label, element.element))
 
@@ -319,18 +328,19 @@ def load_newforms(file_name):
       indicating whether or not this newform has complex multiplication,
       the third the corresponding character, the fourth the coefficient
       field of the newform and the last the coefficients of the newform
-      (at some) indices.
+      (at some) indices. The entry with label 'cm' may be left out
+      or set to -1 to indicate that this information is not known.
     - A list of things will be represented as a list of the
       corresponding representations.
 
     INPUT:
 
-    - ``file_name`` -- A string containing the file name to which
-      the given newforms should be saved.
+    - ``file_name`` -- A string containing the file name from which
+      the given newforms should be loaded.
 
     OUTPUT:
 
-    An instance of Newform_wrapped_file or a list thereof
+    An instance of Newform_wrapped_stored or a list thereof
     representing the newforms found in the given file.
     """
     with open(file_name, 'r') as f:
@@ -423,12 +433,13 @@ def _interpret_newform(element):
                     else:
                         raise ValueError("Expected a pair for newform coefficients, but got %s"%(pair,))
             elif part.label.lower() == 'cm' and cm is None and part.element in ZZ:
-                cm = (part.element != 0)
+                if cm != -1:
+                    cm = (part.element != 0)
             else:
                 raise ValueError("Unexpected element %s with label %s for newform."%(part.element, part.label))
         else:
             raise ValueError("Unexpected element %s for newform."%(part,))
-    if level is None or character is None or field is None or coefficients is None or cm is None:
+    if level is None or character is None or field is None or coefficients is None:
         raise ValueError("Not enough arguments to make a newform.")
     for key in coefficients:
         coefficients[key] = field(coefficients[key])
@@ -1076,6 +1087,8 @@ class Newform_wrapped_stored(Newform_wrapped):
         to this newform has complex multiplication.
         False in any other case.
         """
+        if self._cm is None:
+            raise ValueError("Undetermined whether this newform has CM.")
         return self._cm
 
     def _repr_(self):
