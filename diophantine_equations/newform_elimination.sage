@@ -208,9 +208,10 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
         return apply_to_conditional_value(lambda nfs, con:
                                           _eliminate_by_trace(curves,
                                                               nfs,
+                                                              p,
+                                                              B,
                                                               con & C,
-                                                              prime,
-                                                              precision_cap,
+                                                              prec_cap,
                                                               verbose),
                                           newforms,
                                           use_condition=True,
@@ -225,9 +226,12 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
     apE_ls = _init_traces(curves, C, primes, prec_cap,
                           (verbose - 1 if verbose > 0 else verbose))
     result = []
+    Bprod = (B if B in ZZ else product(B))
     for nfs in newforms:
         Bold = nfs[-1]
-        if (B == 0 or Bold != 0) and all(not p.divides(nfs[i].level()) for i in range(nE)):
+        if (gcd(Bprod, Bold) != 1 and # Only work if elemination might give a result
+            (B == 0 or Bold != 0) and # Can only eliminate finitely many primes if Bold != 0
+            all(not p.divides(nfs[i].level()) for i in range(nE))): # Avoid primes dividing the level
             apf = [nfs[i].trace_of_frobenius(p, power=powers[i]) for i in range(nE)]
             Bnew = ZZ(p * lcm(gcd([(QQ(apE[i] - apf[i]) if apf[i] in QQ
                                     else (apE[i] - apf[i]).absolute_norm())

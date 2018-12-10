@@ -252,7 +252,7 @@ def _write_character(eps, f, coefficients, save_cm, indent=0):
     element = LabeledElement('character', [conductor, values])
     _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
-def _write_field(field, f, coefficients, indent=0):
+def _write_field(field, f, coefficients, save_cm, indent=0):
     if field is QQ:
         polynomial = PolynomialRing(QQ, names='x').gen()
     else:

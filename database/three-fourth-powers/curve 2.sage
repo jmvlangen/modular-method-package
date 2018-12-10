@@ -42,6 +42,6 @@ print levels
 
 # Newforms
 print ""
-nfs = E.newforms(algorithm='file', path='tmp/all.nfs')
+nfs = E.newforms(algorithm='file', path='tmp/all_full.nfs')
 print nfs
 # 
