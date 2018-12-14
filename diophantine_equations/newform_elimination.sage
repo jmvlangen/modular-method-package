@@ -53,6 +53,9 @@ def _init_newform_list(newforms, curves):
     Initializes a list of newforms associated
     to n frey curves
     """
+    if newforms is None and len(curves) == 1:
+        newforms = apply_to_conditional_value(lambda x: list(x),
+                                              curves[0].newform_candidates())
     if isinstance(newforms, tuple):
         if len(newforms) != len(curves):
             raise ValueError("Expected %s lists of newforms, but got %s"%(len(curves),
