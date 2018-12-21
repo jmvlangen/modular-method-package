@@ -1,13 +1,55 @@
 from sage.schemes.elliptic_curves.ell_number_field import EllipticCurve_number_field
 
 def _lambda_of_isogeny(phi):
-    """
+    r"""
+    Returns the scalar associated to an isogeny.
+
     For an isogeny of the form
-    ..MATH:
+    .. MATH:
 
         (x,y) \mapsto (F(x), yF'(x) / \lambda)
 
     returns $\lambda$
+
+    INPUT:
+    
+    - ``phi`` -- An isogeny of elliptic curves,
+      such that both curves are given by
+      Weierstrass equations of the form
+      .. MATH:
+    
+        Y^2 = X^3 + a2*X^2 + a4*X + a6
+
+    OUTPUT:
+
+    The unique number \lambda such that the
+    isogeny is of the form
+    .. MATH:
+
+        (x,y) \mapsto (F(x), yF'(x) / \lambda)
+    
+    for F(x) a rational function in x and
+    F'(x) its derivative.
+
+    EXAMPLES::
+
+        sage: E = EllipticCurve([0,0,0,1,0])
+        sage: P = E.torsion_points()[0]
+        sage: phi = E.isogeny(P)
+        sage: _lambda_of_isogeny(phi)
+        1
+
+    Note that the lambda of an isogeny and its
+    dual multiply to the degree of the isogeny::
+
+        sage: E = EllipticCurve("20a4")
+        sage: phi = E.isogenies_prime_degree(3)[0]
+        sage: _lambda_of_isogeny(phi)
+        3
+        sage: _lambda_of_isogeny(phi.dual())
+        1
+        sage: QQ(_lambda_of_isogeny(phi)) * QQ(_lambda_of_isogeny(phi.dual())) == 3
+        True
     """
     Fx, Fy = phi.rational_maps()
     x,y = Fy.parent().gens()
@@ -62,20 +104,31 @@ def _lambda_of_isomorphism(E1, E2):
 class Qcurve(EllipticCurve_number_field):
     r"""
     A Q-curve over some number field
+
+    A Q-curve is an elliptic curve defined over some
+    number field, such that all its galois conjugates
+    are isogeneous to the curve itself.
+
+    In this class a Q-curve is represented by the as
+    an elliptic curve E defined over a galois number
+    field K, together with for each element s of the
+    galois group of K a tuple containing the scalar
+    and degree associated to the isogeny from s(E)
+    to E.
     """
     def _is_cached(self, var):
         return hasattr(self, var) and getattr(self, var) != None
 
     def __init__(self, curve, isogenies={}, guessed_degrees=[], verbose=False):
         r"""
-        Constructor of a Q-curve
+        Initializes a Q-curve
 
         Will build all data associated to a Q-curve in the following way.
          - First of all will initialize the curve itself by using either
            a given curve or by data that can be turned into a curve using
            the function EllipticCurve. The resulting curve should be
            defined over some number field and will be redefined over the
-           minimal galois extension of this field.
+           galois closure of this field.
          - Next it will compute all the galois conjugates of itself with
            respect to the galois group of its base field.
          - Third it will fill in data about the isogenies from a galois
@@ -140,13 +193,28 @@ class Qcurve(EllipticCurve_number_field):
         r"""
         Gives the field over which this Q-curve is defined.
 
+        NOTE:
+
+        This number field is always galois.
+
         OUTPUT:
 
         The number field over which this Q-curve is defined.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.definition_field()
+            Number Field in t with defining polynomial x^2 - 3
         """
         return self.base_ring()
     
     def _init_curve(self, curve):
+        r"""
+        Internal method to initialize the underlying elliptic
+        curve. For internal use only.
+        """
         if not isinstance(curve, EllipticCurve_number_field):
             curve = EllipticCurve(curve)
         if not isinstance(curve, EllipticCurve_number_field):
@@ -178,7 +246,17 @@ class Qcurve(EllipticCurve_number_field):
         The galois conjugate of this curve by the galois homomorphism
         which extends to a common galois homomorphism over the algebraic
         closure of Q as sigma. This will be an elliptic curve and not
-        returned as a Q-curve
+        a Q-curve
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
+            sage: sigma = K.galois_group().gens()[0]
+            sage: E.galois_conjugate(sigma)
+            Elliptic Curve defined by y^2 = x^3 + 12*x^2 + (-18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
         """
         sigma = galois_field_change(sigma, self.definition_field())
         return conjugate_curve(self, sigma)
@@ -187,6 +265,8 @@ class Qcurve(EllipticCurve_number_field):
     def _init_isogenies(self):
         r"""
         Initializes the isogeny data.
+
+        For internal use only.
         """
         self._l = dict() # $\lambda$'s of isogenies.
         self._d = dict() # degrees of isogenies.
@@ -200,6 +280,8 @@ class Qcurve(EllipticCurve_number_field):
     def _add_isogeny(self, sigma, phi):
         r"""
         Adds an isogeny to the stored isogeny data.
+
+        For internal use only.
 
         INPUT:
 
@@ -218,6 +300,8 @@ class Qcurve(EllipticCurve_number_field):
     def _update_isogeny_field(self):
         r"""
         Updates the field over which all isogenies are defined
+
+        For internal use only.
         """
         G = list(self.definition_field().galois_group())
         for i in range(len(G)):
@@ -238,6 +322,8 @@ class Qcurve(EllipticCurve_number_field):
     def _fill_isogenies(self):
         r"""
         Attempts to fill in missing isogenies by combining known ones.
+
+        For internal use only.
         """
         G = self.definition_field().galois_group()
         Kl = self._Kl
@@ -258,6 +344,8 @@ class Qcurve(EllipticCurve_number_field):
     def _add_isogenies_of_degree(self, degree, verbose=False):
         r"""
         Attempts to find isogenies of a given degree.
+
+        For internal use only.
         """
         G = self.definition_field().galois_group()
         fd = self.torsion_polynomial(degree)
@@ -296,6 +384,18 @@ class Qcurve(EllipticCurve_number_field):
         on the complex number defines an isogeny from a galois
         conjugate of this curve to itself. The galois conjugate is one
         obtained by conjugating with an extension of sigma.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: G = K.galois_group()
+            sage: E.isogeny_lambda(G[0])
+            1
+            sage: E.isogeny_lambda(G[1])
+            -1/10*tu^3 - 3/10*tu
+            sage: E.isogeny_lambda(G[1]).parent()
+            Number Field in tu with defining polynomial x^4 - 2*x^2 + 25
         """
         return self._l[galois_field_change(sigma, self.definition_field())]
 
