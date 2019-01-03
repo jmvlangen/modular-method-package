@@ -42,6 +42,8 @@ print levels
 
 # Newforms
 print ""
-nfs = E.newforms(algorithm='file', path='tmp/all_full.nfs')
-print nfs
+primes = prime_range(7, 40) + prime_range(50, 70) + [97, 193]
+nfs = E.newforms(algorithm='file', primes=primes, path='tmp/all_full.nfs')
+print len(nfs)
+# print nfs
 # 

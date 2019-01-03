@@ -26,16 +26,19 @@ E = FreyQcurve(a_invariants,
 E = E.decomposable_twist()
 
 # Conductor
+N = E.conductor()
 print ""
-print E.conductor()
+print N
 #
 
 # The levels of the newforms
+levels = E._newform_levels()
 print ""
-print E._newform_levels()
+print levels
 # [(15360, 15360, 76800, 76800), (76800, 76800, 15360, 15360)]
 
 # Newforms
+nfs = E.newforms(algorithm='file', path='tmp/15360_full_magma.nfs')
 print ""
-print E.newforms(algorithm='magma')
+print len(nfs)
 # 
