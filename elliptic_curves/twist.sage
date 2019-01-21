@@ -24,6 +24,193 @@ AUTHORS:
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
+def _is_twist_good_char(E1, E2):
+    """
+    Determines whether the curve E1 is a twist of E2.
+
+    INPUT:
+
+    - ``E1`` -- An elliptic curve over a field of
+      characteristic not 2 or 3.
+    - ``E2`` -- An ellitpic curve defined over the
+      same field as E1.
+    
+    OUTPUT:
+    1 if the two curves are isomorphic
+    -1 if the curves are twists of one another,
+    but not isomorphic over their base field.
+    0 if the curves are not twists of one another.
+    """
+    if E1.c4()^3 * E2.c6()^2 != E2.c4()^3 * E1.c6()^2:
+        return 0
+    if E2.c4() == 0:
+        c = E1.c6() / E2.c6()
+        try:
+            a = c.nth_root(3)
+            if a.is_square():
+                return 1
+            else:
+                return -1
+        except ValueError:
+            return 0
+    elif E2.c6() == 0:
+        b = E1.c4() / E2.c4()
+        try:
+            a = b.nth_root(2)
+            if a.is_square():
+                return 1
+            else:
+                return -1
+        except ValueError:
+            return 0
+    else:
+        b = E1.c4() / E2.c4()
+        c = E1.c6() / E2.c6()
+        a = c / b
+        if a.is_square():
+            return 1
+        else:
+            return -1
+
+def _is_twist_char_2(E1, E2):
+    """
+    Determines whether the curve E1 is a twist of E2.
+
+    INPUT:
+
+    - ``E1`` -- An elliptic curve over a field of
+      characteristic 2.
+    - ``E2`` -- An ellitpic curve defined over the
+      same field as E1.
+    
+    OUTPUT:
+    1 if the two curves are isomorphic
+    -1 if the curves are twists of one another,
+    but not isomorphic over their base field.
+    0 if the curves are not twists of one another.
+    """
+    
+    if (E1.a1() != 0 or
+        E1.a3() != 0 or
+        E2.a1() != 0 or
+        E2.a3() != 0):
+        return 0
+    b1 = E1.a2()^2 + E1.a4()
+    b2 = E2.a2()^2 + E2.a4()
+    c1 = E1.a2()*E1.a4() + E1.a6()
+    c2 = E2.a2()*E2.a4() + E2.a6()
+    if b1^3 * c2^2 != b2^3 * c1^2:
+        return 0
+    if b2 == 0:
+        c = c1 / c2
+        try:
+            a = c.nth_root(3)
+            if a.is_square():
+                return 1
+            else:
+                return -1
+        except ValueError:
+            return 0
+    elif c2 == 0:
+        b = b1 / b2
+        try:
+            a = b.nth_root(2)
+            if a.is_square():
+                return 1
+            else:
+                return -1
+        except ValueError:
+            return 0
+    else:
+        b = b1 / b2
+        c = c1 / c2
+        a = c / b
+        if a.is_square():
+            return 1
+        else:
+            return -1    
+
+def _is_twist_char_3(E1, E2):
+    """
+    Determines whether the curve E1 is a twist of E2.
+
+    INPUT:
+
+    - ``E1`` -- An elliptic curve over a field of
+      characteristic 3.
+    - ``E2`` -- An ellitpic curve defined over the
+      same field as E1.
+    
+    OUTPUT:
+    1 if the two curves are isomorphic
+    -1 if the curves are twists of one another,
+    but not isomorphic over their base field.
+    0 if the curves are not twists of one another.
+    """
+    if (E1.b2()^2 * E2.b4() != E2.b2()^2 * E1.b4() or
+        E1.b2()^3 * E2.b6() != E2.b2()^2 * E1.b6() or
+        E1.b4()^3 * E2.b4()^2 != E2.b4()^3 * E1.b6()^2):
+        return 0
+    if E2.b2() == 0:
+        if E2.b4() == 0:
+            c = E1.b6() / E2.b6()
+            try:
+                a = c.nth_root(3)
+                if a.is_square():
+                    return 1
+                else:
+                    return -1
+            except ValueError:
+                return 0
+        elif E2.b6() == 0:
+            b = E1.b4() / E2.b4()
+            try:
+                a = b.nth_root(2)
+                if a.is_square():
+                    return 1
+                else:
+                    return -1
+            except ValueError:
+                return 0
+        else:
+            b = E1.b4() / E2.b4()
+            c = E1.b6() / E2.b6()
+            a = c / b
+            if a.is_square():
+                return 1
+            else:
+                return -1
+    else:
+        a = E1.b2() / E2.b2()
+        if a.is_square():
+            return 1
+        else:
+            return -1
+
+def is_twist(E1, E2):
+    """
+    Determines whether the curve E1 is a twist of E2.
+
+    INPUT:
+
+    - ``E1`` -- An elliptic curve over a field.
+    - ``E2`` -- An ellitpic curve defined over the
+      same field as E1.
+    
+    OUTPUT:
+    1 if the two curves are isomorphic
+    -1 if the curves are twists of one another,
+    but not isomorphic over their base field.
+    0 if the curves are not twists of one another.
+    """
+    p = E1.base_ring().characteristic()
+    if p == 2:
+        return _is_twist_char_2(E1, E2)
+    elif p == 3:
+        return _is_twist_char_3(E1, E2)
+    else:
+        return _is_twist_good_char(E1, E2)
+
 def twist_elliptic_curve(E, d):
     """
     Returns the twists of an elliptic curve by 'd'.
