@@ -17,6 +17,29 @@ def galois_on_poly(s, f):
     """
     return sum(s(f.coefficient(m).constant_coefficient()) * m for m in f.monomials())
 
+@cached_function
+def galois_on_units(K):
+    r"""
+    Computes how the galois group of a field acts on the
+    units of its ring of integers.
+
+    INPUT:
+
+    - ``K`` -- A galois number field.
+    
+    OUTPUT:
+    
+    A dictionary indexed by the elements of the galois group
+    of K, such that the value with key s is a matrix with
+    integer coefficients. If u1, ..., un are the units given
+    by K.unit_group().gens() and a1, ..., an are the entries
+    of the i-th row of this matrix, then ui is mapped to
+    u1^a1 * ... * un^an by s.
+    """
+    G = K.galois_group()
+    U = K.unit_group()
+    return {s : matrix([U(s(u)).list() for u in U.gens()]).transpose() for s in G}
+
 def mrange_i(n, s, e):
     r"""
     Gives all increasing sequences of a given length.
@@ -97,7 +120,7 @@ class power_analyzer(SageObject):
           be defined over the rationals or a
           number field.
         """
-        self._f = polynomial
+        self._f = f
 
     def factor(self, K):
         r"""
@@ -346,3 +369,41 @@ class power_analyzer(SageObject):
         return {p : {product(U.gens()[i]^ZZ(cf[i]) for i in range(len(cf))) :
                      u_dict[cf][p] for cf in u_dict}
                 for p in primes}
+
+def polynomial_split_on_basis(f, B):
+    r"""
+    Determines the part of the polynomial associated
+    to each basis element.
+
+    Given a (multivariate) polynomial over a
+    number field K, one can see this as the sum of
+    (multivariate) polynomials over the rationals
+    times an associated basis element of a basis of
+    K over the rationals. This method constructs
+    these polynomials for a given basis.
+
+    INPUT:
+
+    - ``f`` -- A (multivariate) polynomial over some
+      number field.
+    - ``B`` -- A basis over QQ for the number field
+      over which the polynomial is defined.
+
+    OUTPUT:
+
+    A list ls of polynomials over the rationals such
+    that sum(ls[i] * B[i] for i in range(len(B))) == f.
+    """
+    K = f.parent().base_ring()
+    M = matrix([K(B[i]).list() for i in range(len(B))]).transpose()
+    if not M.is_invertible():
+        raise ValueError("%s is not a basis for %s"%(B, K))
+    R = f.parent().change_ring(QQ)
+    # For each monomial m
+    # M^(-1) * vector(f.monomial_coefficient(m).list())
+    # is the vector that expresses the corresponding coefficient
+    # of f in terms of the basis B
+    monomials = [[cf * R(m)
+               for cf in (M^(-1) * vector(f.monomial_coefficient(m).list()))]
+              for m in f.monomials()]
+    return [sum(ls) for ls in zip(*monomials)]
