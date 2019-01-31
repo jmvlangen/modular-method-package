@@ -440,9 +440,7 @@ class power_analyzer(SageObject):
         Gives the possible values of the variables of
         g modulo a prime p that can satisfy the
         relation g = cg * u * x^l for some x in K
-        and some unit u.
-
-        
+        and some unit u.        
 
         INPUT:
         
@@ -475,8 +473,9 @@ class power_analyzer(SageObject):
         OUTPUT:
         
         A dictionary indexed by the primes in the
-        given list of primes, such that the residue field
-        of . For each prime p the
+        given list of primes, such that the number of
+        elements of a residue field of a prime above p
+        in K is 1 modulo l. For each prime p the
         corresponding value is a dictionary indexed
         by possible units u such that g = cg * u * x^l
         for some x in K. For each such u the
@@ -535,6 +534,69 @@ class power_analyzer(SageObject):
         return {p : {product(U.gens()[i]^ZZ(cf[i]) for i in range(len(cf))) :
                      u_dict[cf][p] for cf in u_dict}
                 for p in primes}
+
+    def prime_conditions(self, K, g, l, primes, cg=None, bad_primes_val=None):
+        r"""
+        Gives the possible values of the variables of
+        g modulo a prime p that can satisfy the
+        relation g = cg * u * x^l for some x in K
+        and some unit u as a condition.        
+
+        INPUT:
+        
+        - ``K`` -- A field extension of the field
+          over which the polynomial is defined that
+          is galois.
+        - ``g`` -- A factor of the polynomial over
+          the field K.
+        - ``l`` -- A prime number, the
+          exponent to be considered whenever
+          l-th powers are mentioned.
+        - ``primes`` -- A list of prime numbers for
+          which the possible values modulo that
+          prime should be determined. It can also
+          be set to a non-negative integer in which
+          case this list will be initialized as all
+          the prime numbers smaller than that number.
+        - ``cg`` -- An element of K, such that
+          g = cg * u * x^l for some x in K and some
+          unit u of the ring of integers of K. By
+          default will be set to the value returned
+          by :meth:`constant_coeff`.
+        - ``bad_primes_val`` -- A tuple of integers,
+          where each integer is the valuation of g
+          at the corresponding prime in the list
+          returned by :meth:`bad_primes`. This
+          argument only has to be provided if cg
+          is not given.
+
+        OUTPUT:
+        
+        A dictionary indexed by the primes in the
+        given list of primes, such that the number of
+        elements of a residue field of a prime above p
+        in K is 1 modulo l. For each prime p the
+        corresponding value is a Condition such that
+        the values of the variables satisfy this
+        condition if and only if in that case
+        g = cg * u * x^l modulo all primes above p in
+        K for some unit u and some x in K. Note that
+        the possible units u can be limited by
+        their options modulo other primes.
+        """
+        data = self.prime_data(K, g, l, primes, cg=cg,
+                               bad_primes_val=bad_primes_val)
+        result = {}
+        for p in data:
+            T = pAdicTree(variables=self._f.gens(), prime=p, ring=QQ, full=False)
+            Tr = T._root
+            for u in data[p]:
+                for val in data[p][u]:
+                    Tr.children.add(pAdicNode(pAdics=Tr.pAdics(),
+                                              coefficients=val,
+                                              full=True))
+            result[p] = TreeCondition(T)
+        return result
 
 def polynomial_split_on_basis(f, B):
     r"""
