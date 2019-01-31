@@ -628,7 +628,7 @@ def polynomial_split_on_basis(f, B):
         raise ValueError("%s is not a basis for %s"%(B, K))
     R = f.parent().change_ring(QQ)
     # For each monomial m
-    # M^(-1) * vector(f.monomial_coefficient(m).list())
+    #   M^(-1) * vector(f.monomial_coefficient(m).list())
     # is the vector that expresses the corresponding coefficient
     # of f in terms of the basis B
     monomials = [[cf * R(m)
