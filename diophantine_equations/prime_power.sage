@@ -192,7 +192,7 @@ class power_analyzer(SageObject):
         A list of tuples of the form (s1, ..., sn, c)
         with s1, ..., sn elements of the galois group
         of K and c an element of K, such that the
-        product of g conjugates by each si is equal
+        product of g conjugated by each si is equal
         to c times the polynomial.
         """
         if g is None:
@@ -268,10 +268,11 @@ class power_analyzer(SageObject):
         An element c of K such that we have
         ..MATH::
 
-          g = c * x^l
+          g = c * u * x^l
 
-        for some x in K. For this we assume that g
-        is evaluated at values for which the polynomial
+        for some x in K and some unit u in the ring of
+        integers of K. For this we assume that g is
+        evaluated at values for which the polynomial
         is an l-th power.
         """
         bad_primes = self.bad_primes(K, g)
@@ -287,6 +288,42 @@ class power_analyzer(SageObject):
         return (I * (J^l)).gens_reduced()[0]
     
     def unit_relation(self, K, g, cg, relation, l):
+        r"""
+        Determines the relation on units defined by
+        a relation on a factor of the polynomial.
+
+        INPUT:
+
+        - ``K`` -- A field extension of the field
+          over which the polynomial is defined that
+          is galois.
+        - ``g`` -- A factor of the polynomial over
+          the field K.
+        - ``cg`` -- An element of K, such that
+          g = cg * u * x^l for some x in K and some
+          unit u of the ring of integers of K
+        - ``relation`` -- A tuple of the form
+          (s0, ..., sn, c) with s0, ..., sn elements
+          of the galois group of K and c an element
+          of K, such that the product of the
+          conjugates of g by each si is equal to
+          the polynomial times c.
+        - ``l`` -- A prime number, the
+          exponent to be considered whenever
+          l-th powers are mentioned.
+
+        OUTPUT:
+
+        A matrix M and a vector v with integer
+        coefficients, such that the vectors x
+        satisfying M y = v are precisely the
+        exponents y = (y1, ..., yn) such that
+        the unit u = u1^y1 * ... * un^yn in
+        g = cg * u * x^l satisfies the given
+        relation on g. Here u1, ..., un are 
+        the generators of the unit group of K
+        as returned by :meth:`gens`.
+        """
         s_ls, C = relation
         constant = C / product(s(cg) for s in s_ls)
         l_part = product(P^(ZZ(e/l)) for P, e in K.ideal(constant).factor()).gens_reduced()[0]
@@ -301,8 +338,49 @@ class power_analyzer(SageObject):
         return M, v
 
     @cached_method
-    def unit_coeffs(self, K, g, bad_primes_val, l):
-        cg = self.constant_coeff(K, g, bad_primes_val, l)
+    def unit_coeffs(self, K, g, l, cg=None, bad_primes_val=None):
+        r"""
+        Gives the possible exponents of units u such
+        that g = cg * u * x^l for a fixed constant
+        cg in K and some x in K.
+
+        INPUT:
+        
+        - ``K`` -- A field extension of the field
+          over which the polynomial is defined that
+          is galois.
+        - ``g`` -- A factor of the polynomial over
+          the field K.
+        - ``l`` -- A prime number, the
+          exponent to be considered whenever
+          l-th powers are mentioned.
+        - ``cg`` -- An element of K, such that
+          g = cg * u * x^l for some x in K and some
+          unit u of the ring of integers of K. By
+          default will be set to the value returned
+          by :meth:`constant_coeff`.
+        - ``bad_primes_val`` -- A tuple of integers,
+          where each integer is the valuation of g
+          at the corresponding prime in the list
+          returned by :meth:`bad_primes`. This
+          argument only has to be provided if cg
+          is not given.
+
+        OUTPUT:
+        
+        A list of tuples of integers modulo l,
+        consisting of all those tuples (x0, ..., xn)
+        such that the unit u = u0^x0 * ... * un^xn 
+        can satisfy g = cg * u * x^l for some x in K
+        whilst agreeing with all relations on g given
+        by :meth:`relations`. Here u0, ..., un are
+        the generators of the unit group of K as
+        returned by :meth:`gens`
+        """
+        if cg is None:
+            if bad_primes_val is None:
+                raise ValueError("Must provide the argument 'bad_primes_val' if the argument 'cg' is not provided.")
+            cg = self.constant_coeff(K, g, bad_primes_val, l)
         relations = self.relations(K, g)
         n = len(relations)
         lin_rel = [self.unit_relation(K, g, cg, rel, l) for rel in relations]
@@ -316,18 +394,106 @@ class power_analyzer(SageObject):
             vi.set_immutable()
         return result
 
-    def units(self, K, g, bad_primes_val, l):
-        coeffs = self.unit_coeffs(K, g, bad_primes_val, l)
+    def units(self, K, g, l, cg=None, bad_primes_val=None):
+        r"""
+        Gives the possible units u such that
+        g = cg * u * x^l for a fixed constant
+        cg in K and some x in K.
+
+        INPUT:
+        
+        - ``K`` -- A field extension of the field
+          over which the polynomial is defined that
+          is galois.
+        - ``g`` -- A factor of the polynomial over
+          the field K.
+        - ``l`` -- A prime number, the
+          exponent to be considered whenever
+          l-th powers are mentioned.
+        - ``cg`` -- An element of K, such that
+          g = cg * u * x^l for some x in K and some
+          unit u of the ring of integers of K. By
+          default will be set to the value returned
+          by :meth:`constant_coeff`.
+        - ``bad_primes_val`` -- A tuple of integers,
+          where each integer is the valuation of g
+          at the corresponding prime in the list
+          returned by :meth:`bad_primes`. This
+          argument only has to be provided if cg
+          is not given.
+
+        OUTPUT:
+        
+        A list of units u of the ring of integers
+        of K that can satisfy g = cg * u * x^l for
+        some x in K whilst agreeing with all
+        relations on g given by :meth:`relations`.
+        This list contains representatives for each
+        such units modulo multiplication by l-th powers.
+        """
+        coeffs = self.unit_coeffs(K, g, l, cg=cg, bad_primes_val=bad_primes_val)
         U = K.unit_group()
         return [product(U.gens()[i]^ZZ(cf[i]) for i in range(len(U.gens()))) for cf in coeffs]
 
-    def prime_data(self, K, g, bad_primes_val, l, primes):
+    def prime_data(self, K, g, l, primes, cg=None, bad_primes_val=None):
+        r"""
+        Gives the possible values of the variables of
+        g modulo a prime p that can satisfy the
+        relation g = cg * u * x^l for some x in K
+        and some unit u.
+
+        
+
+        INPUT:
+        
+        - ``K`` -- A field extension of the field
+          over which the polynomial is defined that
+          is galois.
+        - ``g`` -- A factor of the polynomial over
+          the field K.
+        - ``l`` -- A prime number, the
+          exponent to be considered whenever
+          l-th powers are mentioned.
+        - ``primes`` -- A list of prime numbers for
+          which the possible values modulo that
+          prime should be determined. It can also
+          be set to a non-negative integer in which
+          case this list will be initialized as all
+          the prime numbers smaller than that number.
+        - ``cg`` -- An element of K, such that
+          g = cg * u * x^l for some x in K and some
+          unit u of the ring of integers of K. By
+          default will be set to the value returned
+          by :meth:`constant_coeff`.
+        - ``bad_primes_val`` -- A tuple of integers,
+          where each integer is the valuation of g
+          at the corresponding prime in the list
+          returned by :meth:`bad_primes`. This
+          argument only has to be provided if cg
+          is not given.
+
+        OUTPUT:
+        
+        A dictionary indexed by the primes in the
+        given list of primes, such that the residue field
+        of . For each prime p the
+        corresponding value is a dictionary indexed
+        by possible units u such that g = cg * u * x^l
+        for some x in K. For each such u the
+        corresponding value is a list of tuples
+        containing the possible values of the variables
+        of g for which the above relation is satisfied
+        modulo all primes above p in K.
+        """
         if primes in ZZ:
             primes = prime_range(primes)
-        u_dict = {cf : {} for cf in self.unit_coeffs(K, g, bad_primes_val, l)}
+        if cg is None:
+            if bad_primes_val is None:
+                raise ValueError("Must provide the argument 'bad_primes_val' if the argument 'cg' is not provided.")
+            cg = self.constant_coeff(K, g, bad_primes_val, l)
+        u_dict = {cf : {} for cf in self.unit_coeffs(K, g, l, cg=cg)}
         U = K.unit_group()
         G = K.galois_group()
-        cg = self.constant_coeff(K, g, bad_primes_val, l)
         n = len(g.variables())
         for p in primes:
             P = K.prime_above(p)
