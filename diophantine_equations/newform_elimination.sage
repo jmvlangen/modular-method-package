@@ -185,6 +185,8 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
     - as its last entry an integer that is divisible
       by all prime numbers l for which the mentioned
       mod-l galois representations could still exist.
+      Note that this number is always 0 if there is
+      infinitely many such l remaining.
     """
     curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
     if not (prime in ZZ and prime > 0 and prime.is_prime()):
@@ -342,6 +344,8 @@ def eliminate_by_traces(curves, newforms, condition=None, primes=50,
     - as its last entry an integer that is divisible
       by all prime numbers l for which the mentioned
       mod-l galois representations could still exist.
+      Note that this number is always 0 if there is
+      infinitely many such l remaining.
     """
     curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
     if primes in ZZ and primes > 0:
@@ -470,6 +474,8 @@ def kraus_method(curves, newforms, l, polynomials, primes=200,
     - as its last entry an integer that is divisible
       by all prime numbers l for which the mentioned
       mod-l galois representations could still exist.
+      Note that this number is always 0 if there is
+      infinitely many such l remaining.
     """
     curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
     if not (l in ZZ and l > 0 and l.is_prime()):
@@ -542,7 +548,7 @@ def _init_kraus_condition(polynomial, prime, l):
 
 def eliminate_cm_forms(curves, newforms, has_cm=False, condition=None):
     r"""
-    Eliminates newforms eliminates those that have CM.
+    Eliminates those newforms that have CM.
 
     Given newforms corresponding to Frey curves,
     determines which combinations of newforms are
@@ -615,6 +621,8 @@ def eliminate_cm_forms(curves, newforms, has_cm=False, condition=None):
     - as its last entry an integer that is divisible
       by all prime numbers l for which the mentioned
       mod-l galois representations could still exist.
+      Note that this number is always 0 if there is
+      infinitely many such l remaining.
     """
     curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
     if isinstance(has_cm, tuple):
@@ -642,3 +650,126 @@ def _eliminate_cm_forms(newforms, has_cm):
         if keep:
             result.append(nfs)
     return result
+
+def eliminate_primes(curves, newforms, N, condition=None):
+    r"""
+    Eliminates newforms that can only appear for certain primes
+
+    Given newforms, eliminates the possibility of their
+    mod l representations being associated to the mod l
+    representations of the corresponding elliptic curves
+    for all those l that divide N. This allows one to
+    eliminate cases that can be eliminated by other means.
+
+    INPUT:
+
+    - ``curves`` -- A frey curve or a list/tuple of frey
+      curves that share the same parameters.
+    - ``newforms`` -- A list of newforms that are
+      associated to the given frey curve, i.e. such that
+      their mod-l representations could be isomorphic
+      to the mod-l representation of the frey curve.
+      Instead of a list one can also give the value
+      None, in which case the list will be retrieved
+      from the curve by the method
+      :meth:`newform_candidates` of the given Frey curve.
+      If multiple Frey curves are given this argument
+      should be a tuple of length equal to the number
+      of given Frey curves, containing for each Frey
+      curve an entry as described above in the same order
+      as the Frey curves are given.
+      Alternatively the input may also be a list of
+      tuples wherein each tuple has length equal to
+      the number of Frey curves and each entry thereof
+      is a newform associated to the corresponding Frey
+      curve.
+      In the last input format, each tuple may also be
+      1 longer than the number of Frey curves, in which
+      case the last entry must be an integer divisible
+      by all primes l for which the mod-l representations
+      of the given elliptic curves may still be
+      isomorphic to the corresponding newforms in this
+      tuple. This can be used to chain multiple
+      elimination methods.
+      Everywhere where a list is expected, one may also
+      give a ConditionalValue of which the possible
+      values are lists of the expected format. The
+      method will be applied to each entry individually
+      and the condition will be replaced by the condition
+      that both the given condition and the condition
+      at which that value is attained hold.
+    - ``N`` -- A non-zero integer, divisible by all
+      those primes l for which the possibility of
+      a tuple of newforms being associated to the
+      given Frey curves by their mod-l representation
+      should be removed.
+    - ``condition`` -- A Condition giving the
+      restrictions on the parameters of the given
+      Frey curve that should be considered. By default
+      this will be set to the condition stored in
+      the first given Frey curve. Note that this is
+      only relevant if the newforms are not given yet.
+
+    OUTPUT:
+    
+    A list of tuples, wherein each tuple contains:
+    - for each frey curve given a corresponding newform
+      for which an isomorphism between the mod-l
+      representations of that curve and that newform
+      could not be excluded by this method, i.e. for
+      which l does not divide N.
+    - as its last entry an integer that is divisible
+      by all prime numbers l for which the mentioned
+      mod-l galois representations could still exist.
+      Note that this number is always 0 if there is
+      infinitely many such l remaining.
+    """
+    curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
+    if N not in ZZ or N == 0:
+        raise ValueError("Argument N is not a non-zero integer.")
+    _eliminate_primes(newforms, N.prime_factors())
+
+def _eliminate_primes(newforms, ls):
+    r"""Implementation of meth:`eliminate_primes`"""
+    result = []
+    for nfs in newforms:
+        nfs = list(nfs)
+        for l in ls:
+            nfs[-1] = ZZ(nfs[-1] / (l^nfs[-1].ord(l)))
+        nfs = tuple(nfs)
+        if abs(nfs[-1]) != 1 :
+            result.append(nfs)
+    return result
+
+def combine_newforms(*newforms):
+    r"""
+    Combines output of different newform eliminations into one
+    
+    Given multiple lists of newforms given as output by one of
+    the methods :meth:`eliminate_by_traces`,
+    :meth:`eliminate_by_trace`, :meth:`kraus_method`,
+    :meth:`eliminate_cm_forms` or :meth:`eliminate_primes`
+    outputs a single list of tuples of newforms that
+    combines all this information.
+
+    INPUT:
+    
+    Any number of arguments, wherein each argument is a list
+    of tuples of the form (f_1, ..., f_m, N), where each f_i
+    is a newform and N is an integer. Here m should be the
+    same for each tuple in the list.
+
+    OUTPUT:
+    
+    A list of tuples, such that for each combination of
+    tuples (f_(1, 1), ..., f_(1, m_1), N_1), ...,
+    (f_(n, 1), ..., f_(n, m_n), N_n) from the respective
+    lists given, the tuple
+    (f_(1, 1), ..., f(1, m_1), f_(2, 1), ..., f_(n, m_n), gcd(N_1, ..., N_n))
+    is in this list. Note that tuples wherein the last
+    entry is 1 or -1 are omitted.
+    """
+    return [nfs for nfs in (sum((item[:-1] for item in items), ()) + 
+                            (gcd([item[-1] for item in items]),)
+                            for items in itertools.product(*newforms))
+            if abs(nfs[-1]) != 1]
