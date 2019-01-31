@@ -915,7 +915,7 @@ class FreyCurve(EllipticCurve_generic):
         return ConditionalExpression(ConditionalExpression.PRODUCT_OPERATOR,
                                      result,
                                      "Rad_P( " + str(self.discriminant().factor()) + " )")
-
+    
     def _trace_of_frobenius(self, pAdics, red_type, condition, verbose, precision_cap):
         T = condition.pAdic_tree(pAdics=pAdics.pAdics_below(self._R),
                                  verbose=(verbose-1 if verbose > 0 else verbose),
@@ -923,10 +923,19 @@ class FreyCurve(EllipticCurve_generic):
         Fp = len(pAdics.residue_field())
         if red_type is None:
             result = {}
+            computed = {}
             for N in T.children_at_level(1):
                 E = self.specialize(N.representative())
-                Ep = E.reduction(pAdics.prime()).count_points()
-                ap = 1 + Fp - Ep
+                Ered = E.reduction(pAdics.prime())
+                for E2 in computed:
+                    a = is_twist(Ered, E2)
+                    if a != 0:
+                        ap = a * computed[E2]
+                        break
+                else:
+                    Ep = Ered.count_points()
+                    ap = 1 + Fp - Ep
+                    computed[Ered] = ap
                 if ap not in result:
                     result[ap] = pAdicNode(pAdics=N.pAdics(),
                                            width=N.width)
