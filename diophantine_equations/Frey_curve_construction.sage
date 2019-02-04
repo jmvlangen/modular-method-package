@@ -59,7 +59,7 @@ def getEllipticCurveFromBinarySymmetricSixForm(sixForm):
     F = sixForm
     if not F.is_homogeneous():
         raise ValueError("Form is not homogeneous")
-    if F.degree != 6:
+    if F.degree() != 6:
         raise ValueError("Form is not of degree 6")
         
     variables = list(F.variables())

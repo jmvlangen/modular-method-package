@@ -731,6 +731,9 @@ def eliminate_primes(curves, newforms, N, condition=None):
 
 def _eliminate_primes(newforms, ls):
     r"""Implementation of meth:`eliminate_primes`"""
+    if isinstance(newforms, ConditionalValue):
+        return apply_to_conditional_value(lambda nfs: _eliminate_primes(nfs, ls),
+                                          newforms)
     result = []
     for nfs in newforms:
         nfs = list(nfs)
@@ -769,6 +772,11 @@ def combine_newforms(*newforms):
     is in this list. Note that tuples wherein the last
     entry is 1 or -1 are omitted.
     """
+    newforms = conditional_product(newforms)
+    apply_to_conditional_value(lambda nfs: _combine_newforms(*nfs), newforms)
+
+def _combine_newforms(*newforms):
+    r"""Implementation of :meth:`combine_newforms`"""
     return [nfs for nfs in (sum((item[:-1] for item in items), ()) + 
                             (gcd([item[-1] for item in items]),)
                             for items in itertools.product(*newforms))
