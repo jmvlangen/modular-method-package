@@ -727,7 +727,7 @@ def eliminate_primes(curves, newforms, N, condition=None):
     curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
     if N not in ZZ or N == 0:
         raise ValueError("Argument N is not a non-zero integer.")
-    _eliminate_primes(newforms, N.prime_factors())
+    return _eliminate_primes(newforms, N.prime_factors())
 
 def _eliminate_primes(newforms, ls):
     r"""Implementation of meth:`eliminate_primes`"""
@@ -773,7 +773,7 @@ def combine_newforms(*newforms):
     entry is 1 or -1 are omitted.
     """
     newforms = conditional_product(newforms)
-    apply_to_conditional_value(lambda nfs: _combine_newforms(*nfs), newforms)
+    return apply_to_conditional_value(lambda nfs: _combine_newforms(*nfs), newforms)
 
 def _combine_newforms(*newforms):
     r"""Implementation of :meth:`combine_newforms`"""
