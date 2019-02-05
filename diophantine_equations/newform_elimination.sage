@@ -772,7 +772,7 @@ def combine_newforms(*newforms):
     is in this list. Note that tuples wherein the last
     entry is 1 or -1 are omitted.
     """
-    newforms = conditional_product(newforms)
+    newforms = conditional_product(*newforms)
     return apply_to_conditional_value(lambda nfs: _combine_newforms(*nfs), newforms)
 
 def _combine_newforms(*newforms):
