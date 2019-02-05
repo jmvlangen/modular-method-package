@@ -6,6 +6,16 @@ import itertools
 class Condition_base(SageObject):
     """
     A class that represents a condition on some variables.
+
+    This class should not be used by itself.
+
+    EXAMPLE::
+
+        sage: R.<x,y> = QQ[]
+        sage: CoprimeCondition([x, y])
+        The condition that the variables ('x', 'y') are pairwise coprime.
+        sage: PolynomialCondition(x^2 + y^2 - 4)
+        The condition that x^2 + y^2 - 4 == 0
     """
 
     def __init__(self, variables):
@@ -14,12 +24,18 @@ class Condition_base(SageObject):
 
         INPUT:
         
-        - ``variables`` -- A collection of variables on
-          which this condition applies. This may be any
-          form of a variable, but will be converted into
-          strings. Multiple variables with the same name
-          are therefore not very well supported and may
-          cause unpredictable behavior.
+        - ``variables`` -- A list or tuple of variables
+          on which this condition applies. Each entry of
+          the given list or tuple will be converted to
+          a string.
+
+        EXAMPLE::
+
+            sage: R.<x,y> = QQ[]
+            sage: CoprimeCondition([x, y])
+            The condition that the variables ('x', 'y') are pairwise coprime.
+            sage: CoprimeCondition(['x', 'y'])
+            The condition that the variables ('x', 'y') are pairwise coprime.
         """
         self._vars = tuple(str(v) for v in variables)
 
@@ -30,6 +46,20 @@ class Condition_base(SageObject):
         OUTPUT:
 
         A tuple of variables on which this Condition applies.
+        Each variable is represented as a string.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = QQ[]
+            sage: CoprimeCondition([x, y]).variables()
+            ('x', 'y')
+
+        Note that even when a ring has multiple variables only
+        the relevant variables for this condition are returned::
+
+            sage: R.<x, y, z> = ZZ[]
+            sage: PolynomialCondition(x^2 - y^2 - 4).variables()
+            ('x', 'y')
         """
         return self._vars
 
@@ -39,13 +69,20 @@ class Condition_base(SageObject):
 
         INPUT:
         
-        - ``other`` -- A Condition.
+        - ``other`` -- A Condition, i.e. an instance of
+          Condition_base.
 
         OUTPUT:
 
         A Condition object that holds on all values where
         both this Condition object and the given Condition
         object hold.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: CoprimeCondition([x,y]) & PolynomialCondition(x^2 + y^2 - 4)
+            The condition that the variables ('x', 'y') are pairwise coprime and the condition that x^2 + y^2 - 4 == 0
         """
         return AndCondition(self, other)
 
@@ -55,13 +92,20 @@ class Condition_base(SageObject):
 
         INPUT:
         
-        - ``other`` -- A Condition.
+        - ``other`` -- A Condition, i.e. an instance of
+          Condition_base.
 
         OUTPUT:
 
         A Condition object that holds on all values where
         either this Condition object or the given Condition
         object holds.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: CoprimeCondition([x,y]) | PolynomialCondition(x^2 + y^2 - 4)
+            The condition that the variables ('x', 'y') are pairwise coprime or the condition that x^2 + y^2 - 4 == 0
         """
         return OrCondition(self, other)
 
@@ -73,6 +117,23 @@ class Condition_base(SageObject):
 
         A Condition object that holds on all values where
         this Condition does not hold.
+
+        EXAMPLES::
+        
+            sage: R.<x, y> = ZZ[]
+            sage: ~ PolynomialCondition(x^2 + y^2 - 4)
+            The condition that x^2 + y^2 - 4 ~= 0
+
+        Note that a double not simplifies in print,
+        but gives a different object::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1); C
+            The condition that -x^3 + y^2 - 1 == 0
+            sage: ~~C
+            The condition that -x^3 + y^2 - 1 == 0
+            sage: C == ~~C
+            False
         """
         return NotCondition(self)
 
@@ -107,14 +168,79 @@ class Condition_base(SageObject):
         given pAdicTree which satisfies the condition
         defined by this object. If complement was set to
         True will return a tuple with the afore mentioned
-        as its first entry and the complement of that tree
-        within the given pAdicTree as its second argument.
+        as its first entry and a pAdicTree containing those
+        values of the given pAdicTree for which this
+        condition is not satisfied.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which
+        the condition is satisfied and one for which it is not::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only
+        in case it is obvious which tree should be returned::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            pAdic tree over Rational Field
+            for the prime Principal ideal (5) of Integer Ring
+            and the variables ('x', 'y').
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set.
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
         """
-        raise NotImplementedError("The method 'apply_to_tree' is not implemented for the base condition class")
+        raise NotImplementedError("The method 'pAdic_tree' is not implemented for the base condition class")
 
 class PolynomialCondition(Condition_base):
     r"""
-    A condition that a certain polynomial is zero.
+    The condition that a certain polynomial is zero.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: PolynomialCondition(x^2 + y^2 - 4)
+        The condition that x^2 + y^2 - 4 == 0
+        sage: PolynomialCondition(y^2 - x^3 - 1)
+        The condition that -x^3 + y^2 - 1 == 0
     """
 
     def __init__(self, polynomial):
@@ -123,8 +249,16 @@ class PolynomialCondition(Condition_base):
 
         INPUT:
 
-        - ``polynomial`` -- A polynomial of one or more variables
-          which should be zero or non-zero
+        - ``polynomial`` -- A polynomial in one or more variables
+          which should be zero
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: PolynomialCondition(x^2 + y^2 - 4)
+            The condition that x^2 + y^2 - 4 == 0
+            sage: PolynomialCondition(y^2 - x^3 - 1)
+            The condition that -x^3 + y^2 - 1 == 0
         """
         if not (is_Polynomial(polynomial) or is_MPolynomial(polynomial)):
             raise ValueError("The given argument %s is not a polynomial."%(polynomial,))
@@ -136,6 +270,12 @@ class PolynomialCondition(Condition_base):
         OUTPUT:
 
         The polynomial that defines this PolynomialCondition.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: PolynomialCondition(x^2 + y^2 - 4).polynomial()
+            x^2 + y^2 - 4
         """
         return self._f
 
@@ -145,7 +285,7 @@ class PolynomialCondition(Condition_base):
         Gives this condition as a pAdicTree.
         
         Given a p-adic tree, returns the subtree of those
-        values for the variable such that the polynomial
+        values for the variables such that the polynomial
         of this condition is zero on them.
         
         INPUT:
@@ -182,13 +322,71 @@ class PolynomialCondition(Condition_base):
 
         OUTPUT:
 
-        A pAdicTree object that contatins that part of the
+        A pAdicTree object that contatns that part of the
         given pAdicTree which satisfies the polynomial of
-        this condition being equal to zero modulo the
-        prime defined by pAdics up to the power precision.
-        If complement is set to True will also give the
-        complement of this tree in the given tree as a 
-        second return value.
+        this condition being equal to zero modulo P^n,
+        where P is the prime defined by the given pAdics
+        and n is the given precision.
+        If complement was set to True will return a tuple
+        with the afore mentioned as its first entry and
+        the complement of that tree within the given
+        pAdicTree as its second argument.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which
+        the condition is satisfied and one for which it is not::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only
+        in case it is obvious which tree should be returned::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            pAdic tree over Rational Field
+            for the prime Principal ideal (5) of Integer Ring
+            and the variables ('x', 'y').
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set.
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
         """
         if "precision_cap" in kwds and precision > kwds["precision_cap"]:
             print "Warning: A p-Adic tree for %s is computed with a lower precision than the given precision %s, due to a given precision_cap %s!"%(self, precision, kwds["precision_cap"])
@@ -240,11 +438,19 @@ class PolynomialCondition(Condition_base):
 class CongruenceCondition(PolynomialCondition):
     r"""
     Defines a congruence that should hold for a given polynomial.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: CongruenceCondition(x, 3)
+        The condition that x == 0 modulo 3
+        sage: CongruenceCondition(y^2 - 4, 12)
+        The condition that y^2 - 4 == 0 modulo 12
     """
 
     def __init__(self, polynomial, modulus):
         r"""
-        A constructor of a CongruenceCondition.
+        Initializes a CongruenceCondition.
 
         INPUT:
 
@@ -253,6 +459,22 @@ class CongruenceCondition(PolynomialCondition):
         - ``modulus`` -- An algebraic integer or integral
           ideal of the ring of integers of a number field
           modulo which the polynomial should be zero.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: CongruenceCondition(x, 3)
+            The condition that x == 0 modulo 3
+            sage: CongruenceCondition(y^2 - 4, 12)
+            The condition that y^2 - 4 == 0 modulo 12
+
+        We can also work over some number field::
+
+            sage: K.<w> = QuadraticField(30)
+            sage: S.<x, y> = K[]
+            sage: I = K.prime_above(3)^5
+            sage: CongruenceCondition(x^2 + y^2, I)
+            The condition that x^2 + y^2 == 0 modulo (27, 9*w)
         """
         PolynomialCondition.__init__(self, polynomial)
         self._mod = modulus
@@ -265,6 +487,29 @@ class CongruenceCondition(PolynomialCondition):
 
         The algebraic integer or integral ideal modulo which
         the polynomial of this condition should be zero.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: CongruenceCondition(x^2 + 2*y, 7).modulus()
+            7
+
+        Over number fields the modulus can be an ideal::
+
+            sage: K.<w> = QuadraticField(30)
+            sage: S.<x, y> = K[]
+            sage: I = K.prime_above(3)^5
+            sage: CongruenceCondition(x^2 + y^2, I).modulus()
+            Fractional ideal (27, 9*w)
+
+        However, if the ideal is principal it will be replaced
+        by a generator::
+
+            sage: K.<w> = QuadraticField(30)
+            sage: S.<x, y> = K[]
+            sage: I = K.prime_above(3)^4
+            sage: CongruenceCondition(x^2 + y^2, I).modulus()
+            9
         """
         return self._mod
         
@@ -275,8 +520,8 @@ class CongruenceCondition(PolynomialCondition):
         
         Given a p-adic tree, returns the subtree of those
         values for the variables such that the polynomial
-        of this condition is zero on them modulo the
-        modulus given in this condition.
+        of this condition can be zero modulo the modulus
+        given in this condition.
         
         INPUT:
         
@@ -309,16 +554,77 @@ class CongruenceCondition(PolynomialCondition):
 
         OUTPUT:
 
-        A pAdicTree object that contatins that part of the
-        given pAdicTree which satisfies the polynomial of
-        this condition being equal to zero modulo the
-        maximal prime power of the prime in the given
-        pAdics that divides the modulus given in this
-        Condition.
-        If complement is set to True will also give the
-        complement of this tree or the same tree if the
-        prime in the given pAdics does not divide the
-        modulus.
+        If the prime given by the given pAdics divides the
+        modulus of this Condition, returns the pAdicTree
+        containing all values for the variables in the
+        give pAdicTree such that the polynomial of this
+        condition is zero modulo the maximal power to which
+        this prime ideal appears in the modulus.
+        If the prime given does not divide the modulus of
+        this Condition the returned tree is simply the
+        one given.
+        If complement was set to True will return a tuple
+        with the afore mentioned as its first entry. The
+        second entry will be the complement of the first
+        pAdicTree inside the given pAdicTree if the prime
+        given divides the modulus and the given pAdicTree
+        otherwise.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which
+        the condition is satisfied and one for which it is not::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only
+        in case it is obvious which tree should be returned::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            pAdic tree over Rational Field
+            for the prime Principal ideal (5) of Integer Ring
+            and the variables ('x', 'y').
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set.
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
         """
         precision = pAdics.valuation(self.modulus())
         result = PolynomialCondition.pAdic_tree(self, pAdic_tree=pAdic_tree,
@@ -352,6 +658,12 @@ class CongruenceCondition(PolynomialCondition):
 class PowerCondition(PolynomialCondition):
     r"""
     Defines an expression that should be an n-th power.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: PowerCondition(x^3 + y^3, 3)
+        The condition that x^3 + y^3 == x0^n0 with n0 >= 3
     """
 
     def __init__(self, polynomial, least_exp=1):
@@ -366,6 +678,12 @@ class PowerCondition(PolynomialCondition):
         - ``least_exp`` -- A strictly positive integer
           (default: 1) that is the least power that
           this polynomial must be.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: PowerCondition(x^3 + y^3, 3)
+            The condition that x^3 + y^3 == x0^n0 with n0 >= 3
         """
         PolynomialCondition.__init__(self, polynomial)
         self._exp = least_exp
@@ -377,6 +695,12 @@ class PowerCondition(PolynomialCondition):
         The smallest integer such that the polynomial in
         this condition is allowed to be that power of 
         some number.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: PowerCondition(x^3 + y^3, 3).least_exponent()
+            3
         """
         return self._exp
 
@@ -387,8 +711,10 @@ class PowerCondition(PolynomialCondition):
         
         Given a p-adic tree, returns the subtree of those
         values for the variables such that the polynomial
-        of this condition can be a power of some number.
-        
+        of this condition is at least the power n of some
+        number, where n is the least exponent stored in
+        this condition.
+
         INPUT:
         
         - ``pAdic_tree`` -- A pAdicTree object (default:None)
@@ -427,6 +753,62 @@ class PowerCondition(PolynomialCondition):
         If complement is set to True will also give the
         complement of this tree in the given tree as a 
         second return value.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which
+        the condition is satisfied and one for which it is not::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only
+        in case it is obvious which tree should be returned::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            pAdic tree over Rational Field
+            for the prime Principal ideal (5) of Integer Ring
+            and the variables ('x', 'y').
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set.
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
         """
         T1, T0 = PolynomialCondition.pAdic_tree(self, pAdic_tree=pAdic_tree,
                                                 pAdics=pAdics, complement=True,
@@ -483,6 +865,23 @@ class PowerCondition(PolynomialCondition):
 class CoprimeCondition(Condition_base):
     r"""
     Defines the condition of variables being n-wise coprime.
+
+    EXAMPLES::
+
+        sage: R.<x, y> = ZZ[]
+        sage: CoprimeCondition([x,y])
+        The condition that the variables ('x', 'y') are pairwise coprime.
+
+    By default variables are assumed to be pairwise coprime, but other
+    options are possible::
+
+        sage: R.<a, b, c, d> = ZZ[]
+        sage: CoprimeCondition([a, b, c, d], n=0)
+        The condition that always holds
+        sage: CoprimeCondition([a, b, c, d], n=1)
+        The condition that the variables ('a', 'b', 'c', 'd') are units.
+        sage: CoprimeCondition([a, b, c, d], n=3)
+        The condition that the variables ('a', 'b', 'c', 'd') are 3-wise coprime.
     """
 
     def __init__(self, variables, n=2):
@@ -502,6 +901,23 @@ class CoprimeCondition(Condition_base):
           that should be coprime, e.g. n=2 means that
           the variables should be pairwise coprime and
           n=1 indicates all variables should be units.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: CoprimeCondition([x,y])
+            The condition that the variables ('x', 'y') are pairwise coprime.
+
+        By default variables are assumed to be pairwise coprime, but other
+        options are possible::
+
+            sage: R.<a, b, c, d> = ZZ[]
+            sage: CoprimeCondition([a, b, c, d], n=0)
+            The condition that always holds
+            sage: CoprimeCondition([a, b, c, d], n=1)
+            The condition that the variables ('a', 'b', 'c', 'd') are units.
+            sage: CoprimeCondition([a, b, c, d], n=3)
+            The condition that the variables ('a', 'b', 'c', 'd') are 3-wise coprime.
         """
         Condition_base.__init__(self, variables)
         self._n = n
@@ -512,6 +928,18 @@ class CoprimeCondition(Condition_base):
 
         An integer n such that this condition is that
         the variables should be n-wise coprime.
+
+        EXAMPLE::
+
+            sage: R.<a, b, c, d> = ZZ[]
+            sage: CoprimeCondition([a, b, c, d], n=0).number_of_coprimes()
+            0
+            sage: CoprimeCondition([a, b, c, d], n=1).number_of_coprimes()
+            1
+            sage: CoprimeCondition([a, b, c, d], n=3).number_of_coprimes()
+            3
+            sage: CoprimeCondition([a, b, c, d]).number_of_coprimes()
+            2
         """
         return self._n
 
@@ -520,7 +948,8 @@ class CoprimeCondition(Condition_base):
         Gives this condition as a pAdicTree.
         
         Given a p-adic tree, returns the subtree such that
-        all variables in this condition are n-wise coprime.
+        all variables in this condition are n-wise coprime
+        with respect to the given prime.
         
         INPUT:
         
@@ -545,6 +974,62 @@ class CoprimeCondition(Condition_base):
         with the afore mentioned as its first entry and the
         complement of that tree within the given pAdicTree
         as its second argument.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which
+        the condition is satisfied and one for which it is not::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only
+        in case it is obvious which tree should be returned::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            pAdic tree over Rational Field
+            for the prime Principal ideal (5) of Integer Ring
+            and the variables ('x', 'y').
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set.
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
         """
         if pAdic_tree is None:
             pAdic_tree = pAdicTree(variables=self.variables(),
@@ -596,6 +1081,14 @@ class CoprimeCondition(Condition_base):
 class NotCondition(Condition_base):
     r"""
     The condition that not another condition holds.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: C = CoprimeCondition([x, y]); C
+        The condition that the variables ('x', 'y') are pairwise coprime.
+        sage: ~C
+        The condition that the variables ('x', 'y') are not pairwise coprime.
     """
 
     def __init__(self, other):
@@ -606,6 +1099,14 @@ class NotCondition(Condition_base):
 
         - ``other`` -- The condition that this condition
           should be the negation of.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]); C
+            The condition that the variables ('x', 'y') are pairwise coprime.
+            sage: ~C
+            The condition that the variables ('x', 'y') are not pairwise coprime.
         """
         self._other = other
         Condition_base.__init__(self, other.variables())
@@ -615,6 +1116,14 @@ class NotCondition(Condition_base):
         OUTPUT:
 
         The condition that this condition is the negation of.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]); C
+            The condition that the variables ('x', 'y') are pairwise coprime.
+            sage: (~C).negated_condition()
+            The condition that the variables ('x', 'y') are pairwise coprime.
         """
         return self._other
 
@@ -648,6 +1157,62 @@ class NotCondition(Condition_base):
         the afore mentioned as its first entry and the
         complement of that tree within the given pAdicTree as
         its second argument.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which
+        the condition is satisfied and one for which it is not::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only
+        in case it is obvious which tree should be returned::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            pAdic tree over Rational Field
+            for the prime Principal ideal (5) of Integer Ring
+            and the variables ('x', 'y').
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set.
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
         """
         TY, TN = self._other.pAdic_tree(complement=True, **kwds)
         if complement:
@@ -712,11 +1277,17 @@ class NotCondition(Condition_base):
 class AndCondition(Condition_base):
     r"""
     The condition that both conditions hold.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: CoprimeCondition([x,y]) & PolynomialCondition(x^2 + y^2 - 4)
+        The condition that the variables ('x', 'y') are pairwise coprime and the condition that x^2 + y^2 - 4 == 0
     """
 
     def __init__(self, left, right):
         r"""
-        The constructor of an AndCondition.
+        Initializes an AndCondition.
 
         INPUT:
 
@@ -724,6 +1295,12 @@ class AndCondition(Condition_base):
           hold for this condition to hold.
         - ``right`` - The second condition that should
           hold for this condition to hold.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: CoprimeCondition([x,y]) & PolynomialCondition(x^2 + y^2 - 4)
+            The condition that the variables ('x', 'y') are pairwise coprime and the condition that x^2 + y^2 - 4 == 0
         """
         self._left = left
         self._right = right
@@ -733,12 +1310,23 @@ class AndCondition(Condition_base):
                 variables.append(var)
         Condition_base.__init__(self, variables)
 
-    def other_condition(self):
+    def other_conditions(self):
         r"""
         OUTPUT:
 
         The conditions that should hold for this condition
         to hold.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C1 = CoprimeCondition([x, y]); C1
+            The condition that the variables ('x', 'y') are pairwise coprime.
+            sage: C2 = PolynomialCondition(x^2 + y^2 - 4); C2
+            The condition that x^2 + y^2 - 4 == 0
+            sage: (C1 & C2).other_conditions()
+            (The condition that the variables ('x', 'y') are pairwise coprime.,
+             The condition that x^2 + y^2 - 4 == 0)
         """
         return self._left, self._right
 
@@ -746,7 +1334,7 @@ class AndCondition(Condition_base):
         r"""
         Gives this condition as a pAdicTree.
         
-        Given a p-adic tree, returns the subtree that satisfies
+        Given a pAdicTree, returns the subtree that satisfies
         both conditions stored in this condition.
         
         INPUT:
@@ -772,6 +1360,62 @@ class AndCondition(Condition_base):
         the afore mentioned as its first entry and the
         complement of that tree within the given pAdicTree as
         its second argument.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which
+        the condition is satisfied and one for which it is not::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only
+        in case it is obvious which tree should be returned::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            pAdic tree over Rational Field
+            for the prime Principal ideal (5) of Integer Ring
+            and the variables ('x', 'y').
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set.
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
         """
         if pAdic_tree is None:
             pAdic_tree = pAdicTree(variables=self.variables(),
@@ -811,11 +1455,17 @@ class AndCondition(Condition_base):
 class OrCondition(Condition_base):
     r"""
     The condition that either one of two conditions holds.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: CoprimeCondition([x,y]) | PolynomialCondition(x^2 + y^2 - 4)
+        The condition that the variables ('x', 'y') are pairwise coprime or the condition that x^2 + y^2 - 4 == 0
     """
 
     def __init__(self, left, right):
         r"""
-        The constructor of an OrCondition.
+        Initializes an OrCondition.
 
         INPUT:
 
@@ -823,6 +1473,12 @@ class OrCondition(Condition_base):
           hold for this condition to hold.
         - ``right`` - The second condition that could
           hold for this condition to hold.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: CoprimeCondition([x,y]) | PolynomialCondition(x^2 + y^2 - 4)
+            The condition that the variables ('x', 'y') are pairwise coprime or the condition that x^2 + y^2 - 4 == 0
         """
         self._left = left
         self._right = right
@@ -832,12 +1488,23 @@ class OrCondition(Condition_base):
                 variables.append(var)
         Condition_base.__init__(self, variables)
 
-    def other_condition(self):
+    def other_conditions(self):
         r"""
         OUTPUT:
 
         The conditions that could hold for this condition
         to hold.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C1 = CoprimeCondition([x, y]); C1
+            The condition that the variables ('x', 'y') are pairwise coprime.
+            sage: C2 = PolynomialCondition(x^2 + y^2 - 4); C2
+            The condition that x^2 + y^2 - 4 == 0
+            sage: (C1 | C2).other_conditions()
+            (The condition that the variables ('x', 'y') are pairwise coprime.,
+             The condition that x^2 + y^2 - 4 == 0)
         """
         return self._left, self._right
 
@@ -872,6 +1539,62 @@ class OrCondition(Condition_base):
         the afore mentioned as its first entry and the
         complement of that tree within the given pAdicTree as
         its second argument.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which
+        the condition is satisfied and one for which it is not::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only
+        in case it is obvious which tree should be returned::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            pAdic tree over Rational Field
+            for the prime Principal ideal (5) of Integer Ring
+            and the variables ('x', 'y').
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set.
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
         """
         if pAdic_tree is None:
             pAdic_tree = pAdicTree(variables=self.variables(),
@@ -910,18 +1633,32 @@ class OrCondition(Condition_base):
 
 class TreeCondition(Condition_base):
     r"""
-    A condition that the value should be part of some pAdicTree.
+    A condition that the values should be part of some pAdicTree.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 3))
+        sage: TreeCondition(T)
+        The condition that ('x', 'y') == (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2) mod 3
     """
 
     def __init__(self, pAdic_tree):
         r"""
-        Te constructor of a TreeCondition.
+        Initializes a TreeCondition.
 
         INPUT:
 
         - ``pAdic_tree`` -- A pAdicTree that contains the
           variables and values they should attain for this
           condition to hold.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 3))
+            sage: TreeCondition(T)
+            The condition that ('x', 'y') == (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2) mod 3
         """
         self._T = pAdic_tree
         Condition_base.__init__(self, pAdic_tree.variables())
@@ -947,18 +1684,80 @@ class TreeCondition(Condition_base):
 
         OUTPUT:
 
+        If no pAdicTree was given and no pAdics were given,
+        returns the pAdicTree that defines this Condition. If
+        complement was set to True will return that pAdicTree
+        and its complement.
+
         If the given pAdicTree has no common pAdics with the
         pAdicTree stored in this Condition will return the given
-        pAdicTree. Otherwise will return a pAdicTree with the
-        same variables as the given pAdicTree and values such
-        that for each value there is a value in the pAdicTree
-        stored in this Condition with the same value for each
-        (common) variable.
+        pAdicTree. If complement was set to True will return
+        that pAdicTree twice.
 
-        If complement was set to True will return a tuple with
-        the afore mentioned as its first entry and the
-        complement of that tree within the given pAdicTree as
-        its second argument.
+        If the given pAdicTree has common pAdics with the
+        pAdicTree stored in this Condition will return a
+        pAdicTree with the same variables as the given pAdicTree
+        and values such that for each value there is a value in
+        the pAdicTree stored in this Condition and the given
+        pAdicTree with the same value for each common variable.
+        If complement was set to True will return the afore
+        mentioned tree and its complement in the given pAdicTree.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which
+        the condition is satisfied and one for which it is not::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only
+        in case it is obvious which tree should be returned::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            pAdic tree over Rational Field
+            for the prime Principal ideal (5) of Integer Ring
+            and the variables ('x', 'y').
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set.
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
         """
         if pAdic_tree is None:
             if pAdics is None:
@@ -989,11 +1788,11 @@ class TreeCondition(Condition_base):
 
         INPUT:
 
-        - ``max_item`` -- A non-negative integer (default: 10)
+        - ``max_item`` -- A non-negative integer (default: 50)
           indicating the maximal number of items to be included
           in this representation.
         - ``max_char`` -- A non-negative integer (default: 200)
-          giving the maximal number of character to be used in
+          giving the maximal number of characters to be used in
           the string representation of this object.
         """
         l = len(self.variables())
@@ -1054,6 +1853,14 @@ class TreeCondition(Condition_base):
 class ConditionalValue(SageObject):
     r"""
     Some value that depends on some condition.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: C = CoprimeCondition([x, y])
+        sage: ConditionalValue([(1, C), (0, ~C)])
+        1 if ('x', 'y') are pairwise coprime
+        0 if ('x', 'y') are not pairwise coprime
     """
 
     def __init__(self, val_con):
@@ -1071,6 +1878,14 @@ class ConditionalValue(SageObject):
           possibilities, nor do they have to be exclusive
           of one another, but not adhering to this will
           reflect in the resulting object.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: ConditionalValue([(1, C), (0, ~C)])
+            1 if ('x', 'y') are pairwise coprime
+            0 if ('x', 'y') are not pairwise coprime
         """
         self._vals = tuple(vc[0] for vc in val_con)
         self._con = tuple(vc[1] for vc in val_con)
@@ -1086,6 +1901,17 @@ class ConditionalValue(SageObject):
 
         True - If this condition does not contain any possible value.
         False - If this condition contains at least one value.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x + y, 4)
+            sage: V = ConditionalValue([(12, C)]); V
+            12 if x + y == 0 mod 4
+            sage: V.no_value()
+            False
+            sage: ConditionalValue([]).no_value()
+            True
         """
         return len(self._vals) == 0
 
@@ -1181,6 +2007,17 @@ class ConditionalExpression(SageObject):
     EXPONENT_OPERATOR = ('^', '^', 4.5)
     r"""
     An expression containing conditional values.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: C = CongruenceCondition(x + y, 4)
+        sage: V = ConditionalValue([(2, C), (-2, ~C)])
+        sage: V * 3 + 12
+        n0*3+12
+         where 
+        n0 = 2  if x + y == 0 mod 4
+             -2 if x + y ~= 0 mod 4
     """
     
     def __init__(self, operator, left, right):
@@ -1194,6 +2031,38 @@ class ConditionalExpression(SageObject):
           that will produce the operator in latex and a
           non-negative integer indicating the power of the
           operator.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x + y, 4)
+            sage: V = ConditionalValue([(2, C), (-2, ~C)])
+            sage: V * 3 + 12
+            n0*3+12
+             where 
+            n0 = 2  if x + y == 0 mod 4
+                 -2 if x + y ~= 0 mod 4
+
+        ConditionalExpressions can be used to write formulas
+        with objects that normally don't support this::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: ConditionalValue([(2, C),(0, ~C)]) + "I"
+            n0+I
+             where 
+            n0 = 2 if ('x', 'y') are pairwise coprime
+                 0 if ('x', 'y') are not pairwise coprime
+
+        Constructing expressions explicitly allows for custom
+        symbols to be used::
+
+            sage: E = ConditionalExpression((' & ', ' \\alpha ', 1), "Hello", "World"); E
+            Hello & World
+            sage: latex(E)
+            Hello \alpha World
+            \\ 	ext{ where } \\
+
         """
         self._op = operator
         self._left = left
@@ -1209,6 +2078,23 @@ class ConditionalExpression(SageObject):
         OUTPUT:
 
         The left side of this expression.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: E = ConditionalValue([(2, C), (-2, ~C)]) + "I"; E
+            n0+I
+             where 
+            n0 = 2  if ('x', 'y') are pairwise coprime
+                 -2 if ('x', 'y') are not pairwise coprime
+            sage: E.left()
+            2  if ('x', 'y') are pairwise coprime
+            -2 if ('x', 'y') are not pairwise coprime
+            sage: E.right()
+            'I'
+            sage: E.operator()
+            ('+', '+', 0)
         """
         return self._left
 
@@ -1221,7 +2107,27 @@ class ConditionalExpression(SageObject):
 
         OUTPUT:
 
-        The left side of this expression.
+        A tuple consisting of the string representing
+        the operator in this expression in sage, the
+        string representing the operator in LaTeX and
+        the priority of this operator.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: E = ConditionalValue([(2, C), (-2, ~C)]) + "I"; E
+            n0+I
+             where 
+            n0 = 2  if ('x', 'y') are pairwise coprime
+                 -2 if ('x', 'y') are not pairwise coprime
+            sage: E.left()
+            2  if ('x', 'y') are pairwise coprime
+            -2 if ('x', 'y') are not pairwise coprime
+            sage: E.right()
+            'I'
+            sage: E.operator()
+            ('+', '+', 0)
         """
         return self._op
 
@@ -1235,6 +2141,23 @@ class ConditionalExpression(SageObject):
         OUTPUT:
 
         The right side of this expression.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: E = ConditionalValue([(2, C), (-2, ~C)]) + "I"; E
+            n0+I
+             where 
+            n0 = 2  if ('x', 'y') are pairwise coprime
+                 -2 if ('x', 'y') are not pairwise coprime
+            sage: E.left()
+            2  if ('x', 'y') are pairwise coprime
+            -2 if ('x', 'y') are not pairwise coprime
+            sage: E.right()
+            'I'
+            sage: E.operator()
+            ('+', '+', 0)
         """
         return self._right
 
@@ -1259,28 +2182,28 @@ class ConditionalExpression(SageObject):
         The factoring will work as follows:
         - If the operator is a PRODUCT_OPERATOR will factor left
           and right and combine both by taking the union of the
-          factors of left and right and taking as the exponent
-          the sum of the exponents if the factor appeared at both
+          factors of left and right. The exponent of a factor is
+          the sum of the exponents if the factor appeared on both
           sides or the exponent of the side it appeared on otherwise.
         - If the operator is a DIVISION_OPERATOR will factor left
           and right and combine both by taking the union of the
-          factors of left and right and taking as exponents the
+          factors of left and right. The exponent of a factor is
           exponent of that factor in left minus the exponent of
           that factor in right. If the factor appeared only on
           the left will take the corresponding exponent instead
           and if the factor only appeared on the right will take
           0 minus the corresponding exponent instead.
-        - If the operator is a EXPONENT_OPERATOR will factor left
+        - If the operator is an EXPONENT_OPERATOR will factor left
           and take all those factors. The exponent of each factor
           will be the corresponding exponent in left times the
           right side.
         - If the operator is anything else, will return this as
           the only factor and 1 as the exponent.
         - When factoring a side, will use the method factors if
-          the side is a ConditionalExponent, will attempt to
+          the side is a ConditionalExpression, will attempt to
           use the method factor if it is any other object with
           such a method and in any other case will assume that
-          side to be the factor with exponent 1. If the method
+          side to be a factor with exponent 1. If the method
           factor is used and the resulting object has a method
           unit, the result of this method will be added as a
           factor with respective exponent 1 unless it is 1
@@ -1293,6 +2216,19 @@ class ConditionalExpression(SageObject):
         Note that these factors and exponents could be any
         type of expression that could normally appear in a
         conditional expression.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x + 2*y, 5)
+            sage: V = ConditionalValue([(2, C), (3, ~C)])
+            sage: E = 24^V
+            sage: E.factors()
+            {2: 3*n0
+              where 
+             n0 = 2 if x + 2*y == 0 mod 5
+                  3 if x + 2*y ~= 0 mod 5, 3: 2 if x + 2*y == 0 mod 5
+             3 if x + 2*y ~= 0 mod 5}
         """
         if self._op == ConditionalExpression.PRODUCT_OPERATOR:
             result = self._factor_side(self._left)
@@ -1364,21 +2300,44 @@ class ConditionalExpression(SageObject):
     
     def value(self):
         r"""
-        Turns this conditional expression into a conditional value.
+        Turns this ConditionalExpression into a ConditionalValue.
 
-        Attempts to turn this conditional expression into a conditional
-        value by taking for each conditional value in the expression
-        a list of possible combinations of their conditions as the
-        conditions for the resulting conditional value. For each of
-        these conditions will substitute the appropiate value
-        for each conditional value in this expression and evaluate
-        the expression assigning the result as the corresponding
-        value of the resulting conditional value.
+        Attempts to turn this ConditionalExpression into a
+        ConditionalValue by taking for each ConditionalValue in the
+        expression a list of possible combinations of their
+        conditions as the conditions for the resulting conditional
+        value. For each of these conditions will substitute the
+        appropiate value for each ConditionalValue in this expression
+        and evaluate the expression assigning the result as the
+        corresponding value of the resulting ConditionalValue.
+
+        NOTE:
+
+        For this method to work all operations in this
+        ConditionalExpression must be one of the predefined operations
+        corresponding to addition, subtraction, multiplication,
+        division and exponentiation, and the objects in the
+        Expression must allow these operations to be performed on
+        them.
 
         OUTPUT:
 
         A ConditionalValue or some element that has exactly the same
         values as this expression on every choice of parameters.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x + 2*y, 5)
+            sage: V = ConditionalValue([(2, C), (3, ~C)])
+            sage: E = 2 * V + 4; E
+            2*n0+4
+             where 
+            n0 = 2 if x + 2*y == 0 mod 5
+                 3 if x + 2*y ~= 0 mod 5
+            sage: E.value()
+            8  if x + 2*y == 0 mod 5
+            10 if x + 2*y ~= 0 mod 5
         """
         left = self._left
         if isinstance(left, ConditionalExpression):
@@ -1506,13 +2465,18 @@ def apply_to_conditional_value(function, value, singleton=False,
 
     INPUT:
     
-    - ``function`` -- Any function
+    - ``function`` -- Any function with a single input
+      or two inputs if the argument use_condition is
+      set to True.
     - ``value`` -- Any value that is accepted by the
       given function as an input or a ConditionalValue
       that contains such values.
     - ``singleton`` -- A boolean value (default: False)
       indicating whether a ConditionalValue with only
-      one possibility should be returned.
+      one possibility should be returned as a
+      ConditionalValue. If set to False and the resulting
+      ConditionalValue only has one value, will just
+      return that value.
     - ``use_condition`` -- A boolean value (default:
       False). If set to true, will pass a value
       condition pair to the function for each possible
@@ -1520,10 +2484,10 @@ def apply_to_conditional_value(function, value, singleton=False,
       for functions which also require the condition
       on which this value depends.
     - ``default_condition`` -- If the given value was
-      not ConditionalValue, will use this to determine
+      not a ConditionalValue, will use this to determine
       the condition corresponding to the value if it
-      is required to pass to be passed to the funcion
-      or to construct a ConditionalValue at the end.
+      is required to be passed to the funcion or to
+      construct a ConditionalValue at the end.
 
     OUTPUT:
 
@@ -1532,10 +2496,76 @@ def apply_to_conditional_value(function, value, singleton=False,
     is evaluated on every value in the ConditionalValue
     producing a new ConditionalValue of possible outcomes.
     Conditions which produce the same outcome will be combined
-    using the OrCondition. If the resulting ConditionalValue
+    using an OrCondition. If the resulting ConditionalValue
     would have only one possibility and singleton is set to
     False, will return the value of that single possibility
     instead of the whole ConditionalValue.
+
+    EXAMPLES::
+
+        sage: R.<x, y> = ZZ[]
+        sage: C = CoprimeCondition([x, y])
+        sage: V = ConditionalValue([(1, C), (0, ~C)])
+        sage: def f(x):
+        ....:     return 3 * x
+        ....: 
+        sage: apply_to_conditional_value(f, V)
+        3 if ('x', 'y') are pairwise coprime
+        0 if ('x', 'y') are not pairwise coprime
+
+    Acts as the function on normal values::
+
+        sage: def f(x):
+        ....:     return 3 * x
+        ....: 
+        sage: apply_to_conditional_value(f, 2)
+        6
+
+    The function can use the condition::
+
+        sage: R.<x, y> = ZZ[]
+        sage: C = CoprimeCondition([x, y])
+        sage: V = ConditionalValue([(1, C), (0, ~C)])
+        sage: def f(x, con):
+        ....:     return (3*x if con == C else x - 8)
+        ....: 
+        sage: apply_to_conditional_value(f, V, use_condition=True)
+        3  if ('x', 'y') are pairwise coprime
+        -8 if ('x', 'y') are not pairwise coprime
+
+    A single answer is by default just returned as the value,
+    but can be forced to be a ConditionalValue::
+
+        sage: R.<x, y> = ZZ[]
+        sage: C = CongruenceCondition(x + 2*y, 5)
+        sage: V = ConditionalValue([(-2, C), (2, ~C)])
+        sage: def f(x):
+        ....:     return x^2
+        ....: 
+        sage: apply_to_conditional_value(f, V)
+        4
+        sage: apply_to_conditional_value(f, V, singleton=True)
+        4 if x + 2*y == 0 mod 5 or x + 2*y ~= 0 mod 5
+
+    The default condition has to be given in some cases for
+    the answer to be as expected::
+
+        sage: R.<x, y> = ZZ[]
+        sage: C = CoprimeCondition([x, y])
+        sage: def f(x, con):
+        ....:     return (6 - x if con == C else 0)
+        ....: 
+        sage: apply_to_conditional_value(f, 3, use_condition=True)
+        0
+        sage: apply_to_conditional_value(f, 3, use_condition=True, default_condition=C)
+        3
+        sage: def g(x):
+        ....:     return 6 + x
+        ....: 
+        sage: apply_to_conditional_value(g, 3, singleton=True)
+        9
+        sage: apply_to_conditional_value(g, 3, singleton=True, default_condition=C)
+        9 if ('x', 'y') are pairwise coprime
     """
     if isinstance(value, ConditionalValue):
         values = []
@@ -1560,7 +2590,7 @@ def apply_to_conditional_value(function, value, singleton=False,
             result = function(value, default_condition)
         else:
             result = function(value)
-        if singleton and default_conditon != None:
+        if singleton and default_condition != None:
             return ConditionalValue([(result, default_condition)])
         else:
             return result
@@ -1589,6 +2619,19 @@ def conditional_product(*args):
     Note that if each entry given is not a
     ConditionalValue, the result will also not be
     a ConditionalValue.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: C1 = CoprimeCondition([x, y])
+        sage: V1 = ConditionalValue([(2, C1), (7, ~C1)])
+        sage: C2 = PolynomialCondition(x^2 + y^2 - 4)
+        sage: V2 = ConditionalValue([(27, C2), (0, ~C2)])
+        sage: conditional_product(V1, V2)
+        (2, 27) if ('x', 'y') are pairwise coprime and x^2 + y^2 - 4 == 0
+        (2, 0)  if ('x', 'y') are pairwise coprime and x^2 + y^2 - 4 ~= 0
+        (7, 27) if ('x', 'y') are not pairwise coprime and x^2 + y^2 - 4 == 0
+        (7, 0)  if ('x', 'y') are not pairwise coprime and x^2 + y^2 - 4 ~= 0
     """
     if len(args) == 0:
         raise ValueError("conditional_product requires at least one argument.")
