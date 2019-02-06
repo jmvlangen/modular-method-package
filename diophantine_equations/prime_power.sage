@@ -588,13 +588,12 @@ class power_analyzer(SageObject):
                                bad_primes_val=bad_primes_val)
         result = {}
         for p in data:
-            T = pAdicTree(variables=self._f.gens(), prime=p, ring=QQ, full=False)
+            T = pAdicTree(variables=self._f.variables(), prime=p, ring=QQ, full=False)
             Tr = T._root
-            for u in data[p]:
-                for val in data[p][u]:
-                    Tr.children.add(pAdicNode(pAdics=Tr.pAdics(),
-                                              coefficients=val,
-                                              full=True))
+            for val in {val for u in data[p] for val in data[p][u]}:
+                Tr.children.add(pAdicNode(pAdics=Tr.pAdics(),
+                                          coefficients=val,
+                                          full=True))
             result[p] = TreeCondition(T)
         return result
 
