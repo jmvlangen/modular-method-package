@@ -1462,7 +1462,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         E_map = iota * self._to_Kl
         E = twist_elliptic_curve(self.change_ring(E_map), gamma)
         ainvs = E.a_invariants()
-        l = self.isogeny_lambda
+        l = self.isogeny_scalar
         d = self.degree_map
         G = K.galois_group()
         isogenies = dict()

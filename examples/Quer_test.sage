@@ -184,7 +184,7 @@ class Quer_invariants(SageObject):
                     self._d[s*t] = self._d[s] * self._d[t]
 
     @cached_method
-    def isogeny_lambda(self, sigma):
+    def isogeny_scalar(self, sigma):
         if not self._is_cached('_l') or sigma not in self._l or self._l[sigma] == None:
             self.fill_isogenies()
             K = self._E0.base_ring()
@@ -212,7 +212,7 @@ class Quer_invariants(SageObject):
         t = galois_field_change(tau, self._Kl)
         stpair = (s, t)
         if stpair not in self._c or self._c[stpair] is None:
-            l = self.isogeny_lambda
+            l = self.isogeny_scalar
             self._c[stpair] = QQ(l(s) * s(l(t)) * l(s*t)^(-1))
         return self._c[stpair]
 

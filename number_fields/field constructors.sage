@@ -70,7 +70,7 @@ def field_with_root(K, a, names='sqrt_a', give_embedding=False):
         R.<x> = K[]
         L = K.extension(x^2 - a, names=names).absolute_field(names=names)
         if give_embedding:
-            K_to_L = K.hom([a.minpoly().change_ring(L).roots()[0][0] for a in K.gens()], L)
+            K_to_L = K.hom([b.minpoly().change_ring(L).roots()[0][0] for b in K.gens()], L)
             return L, K_to_L, sqrt(K_to_L(a))
         else:
             return L

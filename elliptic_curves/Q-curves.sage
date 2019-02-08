@@ -1,79 +1,110 @@
 from sage.schemes.elliptic_curves.ell_number_field import EllipticCurve_number_field
 
-def _lambda_of_isogeny(phi):
-    r"""
-    Returns the scalar associated to an isogeny.
+def _scalar_of_isogeny(phi):
+    r"""Return the scalar associated to an isogeny.
 
-    For an isogeny of the form
-    .. MATH:
+    For an isogeny between elliptic curves of the form .. MATH:
 
         (x,y) \mapsto (F(x), yF'(x) / \lambda)
 
-    returns $\lambda$
+    returns $\lambda$.
+
+    If both elliptic curves are defined over a subfield of the complex
+    numbers, this scalar is the same as the scalar in the map ..MATH
+
+       z \mapsto \lambda z
+
+    on the complex numbers that induces this isogeny on the
+    corresponding quotients.
 
     INPUT:
     
-    - ``phi`` -- An isogeny of elliptic curves,
-      such that both curves are given by
-      Weierstrass equations of the form
-      .. MATH:
+    - ``phi`` -- An isogeny of elliptic curves, such that both curves
+      are given by Weierstrass equations of the form .. MATH:
     
         Y^2 = X^3 + a2*X^2 + a4*X + a6
 
     OUTPUT:
 
-    The unique number \lambda such that the
-    isogeny is of the form
+    The unique number $\lambda$ such that the isogeny is of the form
     .. MATH:
 
         (x,y) \mapsto (F(x), yF'(x) / \lambda)
     
-    for F(x) a rational function in x and
-    F'(x) its derivative.
+    for F(x) a rational function in x and F'(x) its derivative.
 
     EXAMPLES::
 
         sage: E = EllipticCurve([0,0,0,1,0])
         sage: P = E.torsion_points()[0]
         sage: phi = E.isogeny(P)
-        sage: _lambda_of_isogeny(phi)
+        sage: _scalar_of_isogeny(phi)
         1
 
-    Note that the lambda of an isogeny and its
-    dual multiply to the degree of the isogeny::
+    Note that the scalar of an isogeny and its dual multiply to the
+    degree of the isogeny::
 
         sage: E = EllipticCurve("20a4")
         sage: phi = E.isogenies_prime_degree(3)[0]
-        sage: _lambda_of_isogeny(phi)
+        sage: _scalar_of_isogeny(phi)
         3
-        sage: _lambda_of_isogeny(phi.dual())
+        sage: _scalar_of_isogeny(phi.dual())
         1
-        sage: QQ(_lambda_of_isogeny(phi)) * QQ(_lambda_of_isogeny(phi.dual())) == 3
+        sage: QQ(_scalar_of_isogeny(phi)) * QQ(_scalar_of_isogeny(phi.dual())) == 3
         True
+
     """
     Fx, Fy = phi.rational_maps()
     x,y = Fy.parent().gens()
     R = Fy.parent().base().base()
-    u =  R((Fx.derivative(x) * y) / Fy)
+    u = R(((Fx.derivative(x) * y) / Fy).numerator())
     f = u.minpoly()
     return NumberField(f, names='l').gen()
 
-def _lambda_of_isomorphism(E1, E2):
+def _scalar_of_isomorphism(E1, E2):
+    """Return the scalar associated to an isomorphism.
+    
+    For an isomorphism of the form .. MATH:
+
+        (x,y) \mapsto (F(x), y F'(x) / \lambda )
+
+    returns $ 1 / u $.
+
+    If both elliptic curves are defined over a subfield of the complex
+    numbers, this scalar is the same as the scalar in the map ..MATH
+
+       z \mapsto \lambda z
+
+    on the complex numbers that induces this isogeny on the
+    corresponding quotients.
+
+    INPUT:
+
+    - ``E1`` -- An elliptic curve given by a Weierstrass equation over
+      a field of characteristic not equal to 3 and given by a
+      Weierstrass equation of the form .. MATH:
+    
+        Y^2 = X^3 + a2*X^2 + a4*X + a6
+
+    - ``E2`` -- An elliptic curve defined over the same basefield as
+      E1, which is isomorphic to E1 and the isomorphism can be given
+      in a form as above. The isomorphism does not have to be defined
+      over the base field.
+
+    OUTPUT:
+
+    The unique number $\lambda$ such that the isomorphism from E1 to
+    E2 is of the form .. MATH:
+
+        (x,y) \mapsto (F(x), y F'(x) / \lambda)
+    
+    or an error if such a $\lambda$ does not exist.
+
     """
-    For two isomorphic curves $E_1$ and $E_2$,
-    let $u$ be the unique scaling factor such that
-    the isomorphism can be given by
-    ..MATH:
-
-       (x,y) \mapsto (u^2 x, u^3 y)
-
-    then returns 1/u.
-    In this case the equations are of the form
-    ..MATH:
-
-       E_1 : y^2 = x^3 + A x + B
-       E_2 : y^2 = x^3 + u^4 A x + u^6 B
-    """
+    if (E1.a1() != 0 or E1.a3() != 0):
+        raise ValueError("The curve %s is not of the correct form."%(E1,))
+    if (E2.a1() != 0 or E2.a3() != 0):
+        raise ValueError("The curve %s is not of the correct form."%(E2,))
     E1 = E1.rst_transform(-E1.a2()/3,0,0);
     E2 = E2.rst_transform(-E2.a2()/3,0,0);
     ainv1 = list(E1.a_invariants())
@@ -94,81 +125,137 @@ def _lambda_of_isomorphism(E1, E2):
     elif n + min(k) in k:
         un = u[n + min(k)]/(u[min(k)])
     else:
-        raise Exception("Could not compute u for some reason.")
-    f = un.minpoly()
-    f = f(f.variables()[0]^n)
-    f = f.factor()[0][0]
-    L.<u> = NumberField(f)
-    return 1/u
+        raise Exception("Could not compute the sought scalar for some reason.")
+    if hasattr(un, "nth_root"):
+        try:
+            return 1 / un.nth_root(n)
+        except ValueError:
+            pass
+    K = un.parent()
+    R.<x> = K[]
+    L.<u> = K.extension(x^n - un)
+    return 1 / L.absolute_field(names='u')(u)
 
 class Qcurve(EllipticCurve_number_field):
-    r"""
-    A Q-curve over some number field
+    r"""A Q-curve over some number field
 
-    A Q-curve is an elliptic curve defined over some
-    number field, such that all its galois conjugates
-    are isogeneous to the curve itself.
+    A Q-curve is an elliptic curve defined over some number field,
+    such that all its galois conjugates are isogeneous to the curve
+    itself.
 
-    In this class a Q-curve is represented by the as
-    an elliptic curve E defined over a galois number
-    field K, together with for each element s of the
-    galois group of K a tuple containing the scalar
-    and degree associated to the isogeny from s(E)
-    to E.
+    In this class a Q-curve is represented as an elliptic curve E
+    defined over a galois number field K, together with for each
+    element s of the galois group of K a tuple containing the scalar
+    and degree associated to the isogeny from s(E) to E.
+
+    EXAMPLE::
+
+        sage: K.<t> = QuadraticField(-2)
+        sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : (-t, 2)})
+        Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
+
     """
     def _is_cached(self, var):
         return hasattr(self, var) and getattr(self, var) != None
 
     def __init__(self, curve, isogenies={}, guessed_degrees=[], verbose=False):
-        r"""
-        Initializes a Q-curve
+        r"""Initialize a Q-curve
 
-        Will build all data associated to a Q-curve in the following way.
-         - First of all will initialize the curve itself by using either
-           a given curve or by data that can be turned into a curve using
-           the function EllipticCurve. The resulting curve should be
-           defined over some number field and will be redefined over the
-           galois closure of this field.
-         - Next it will compute all the galois conjugates of itself with
-           respect to the galois group of its base field.
-         - Third it will fill in data about the isogenies from a galois
-           conjugate to itself using the provided data given.
-         - Next is will determine the remaining isogenies using the
-           guessed degrees and combining previously found isogenies.
+        Will build all data associated to a Q-curve in the following
+        way.
         
-        If in this way it can not find isogenies from each galois conjugate
-        to itself, the initialization will produce an error and the resulting
-        object should not be used.
+        First of all will initialize the curve itself by using either
+        a given curve or by data that can be turned into a curve using
+        the function EllipticCurve. The resulting curve should be
+        defined over some number field and will be redefined over the
+        galois closure of this field.
+        
+        Next it will compute all the galois conjugates of itself with
+        respect to the galois group of its base field.
+
+        Third it will fill in data about the isogenies from a galois
+        conjugate to itself using the provided data given.
+
+        Next it will determine the remaining isogenies using the
+        guessed degrees and combining previously found isogenies.
+        
+        If in this way it can not find isogenies from each galois
+        conjugate to itself, the initialization will produce an error
+        and the resulting object should not be used.
 
         INPUT:
         
-         - ``curve`` -- An elliptic curve over some number field or any
-           input that would create such a curve when passed to the constructor
-           EllipticCurve. This curve will be taken over the minimal galois
-           extension of its base field.
-         - ``isogenies`` -- A dictionary (default: {}) with as keys elements
-           of the galois group of the base field of the Q-curve and as values
-           data of the corresponding isogeny from the galois conjugate of this
-           Q-curve to itself. This data can be either an isogeny as a Sage
-           object or a tuple of an algebraic integer (defined as an element of
-           some number field) and a strictly positive integer, which are
-           respectively the $\lambda$ such that the isogeny is
-           $z \mapsto \lambda z$ on the complex numbers and the degree of the
-           isogeny.
-         - ``guessed_degrees`` -- A list (default: []) of strictly positive
-           integers indicating possible degrees of isogenies from galois
-           conjugates of this curve to itself.
-        - ``verbose`` -- A boolean value or an integer (default: False). When
-          set to True or any value larger then zero will print comments to
-          stdout about the computations being done whilst busy. If set to
-          False or 0 will not print such comments. If set to any negative
-          value will also prevent the printing of any warnings.
-          If this method calls any method that accepts an argument verbose
-          will pass this argument to it. If such a method fulfills a minor
-          task within this method and the argument verbose was larger than 0,
-          will instead pass 1 less than the given argument. This makes it so
-          a higher value will print more details about the computation than a
-          lower one.
+         - ``curve`` -- An elliptic curve over some number field or
+           any input that would create such a curve when passed to the
+           constructor EllipticCurve. This curve will be taken over
+           the minimal galois extension of its base field. It should
+           be defined by a Weierstrass equation of the form .. MATH:
+
+              Y^2 = X^3 + a2*X^2 + a4*X + a6
+
+         - ``isogenies`` -- A dictionary (default: {}) with as keys
+           elements of the galois group of the base field of the
+           Q-curve and as values data of the corresponding isogeny
+           from the galois conjugate of this Q-curve to itself. This
+           data can be either an isogeny as a Sage object or a tuple
+           of an algebraic integer (defined as an element of some
+           number field) and a strictly positive integer, which are
+           respectively the $\lambda$ such that the isogeny is $z
+           \mapsto \lambda z$ on the complex numbers and the degree of
+           the isogeny.
+
+        - ``guessed_degrees`` -- A list (default: []) of strictly
+           positive integers indicating possible degrees of isogenies
+           from galois conjugates of this curve to itself.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+           False). When set to True or any value larger then zero will
+           print comments to stdout about the computations being done
+           whilst busy. If set to False or 0 will not print such
+           comments. If set to any negative value will also prevent
+           the printing of any warnings.  If this method calls any
+           method that accepts an argument verbose will pass this
+           argument to it. If such a method fulfills a minor task
+           within this method and the argument verbose was larger than
+           0, will instead pass 1 less than the given argument. This
+           makes it so a higher value will print more details about
+           the computation than a lower one.
+
+        EXAMPLES:
+
+        One can create a Qcurve using an explicit isogeny::
+
+            sage: K.<t> = QuadraticField(-2)
+            sage: G.<s> = K.galois_group()
+            sage: E = EllipticCurve([0, 12, 0, 18*(t + 1), 0])
+            sage: Es = EllipticCurve([s(a) for a in E.a_invariants()])
+            sage: phi = Es.isogeny(Es([0,0]), codomain=E)
+            sage: Qcurve(E, isogenies={s : phi})
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
+
+        However, it is sufficient to simply provide the scalar and the
+        degree of the isogeny::
+
+            sage: K.<t> = QuadraticField(-2)
+            sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : (-t, 2)})
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
+        
+        It is also possible to make the code 'guess' the isogenies by
+        giving a suggestion for their degree::
+        
+            sage: K.<t> = QuadraticField(3)
+            sage: Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
+
+        Note that giving no data with regards to the isogenies will
+        result in an error::
+
+            sage: K.<t> = QuadraticField(5)
+            sage: Qcurve([0, 12, 0, 18*(t + 1), 0])
+            Traceback (most recent call last):
+            ...
+            ValueError: There is not sufficient isogeny information to make [0, 12, 0, 18*t + 18, 0] a Q-curve
+
         """
         self._init_curve(curve)
         self._init_isogenies()
@@ -190,10 +277,9 @@ class Qcurve(EllipticCurve_number_field):
             raise ValueError("The given isogenies are not valid.")
 
     def definition_field(self):
-        r"""
-        Gives the field over which this Q-curve is defined.
+        r"""Give the field over which this Q-curve is defined.
 
-        NOTE:
+        .. NOTE::
 
         This number field is always galois.
 
@@ -207,6 +293,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.definition_field()
             Number Field in t with defining polynomial x^2 - 3
+
         """
         return self.base_ring()
     
@@ -234,8 +321,7 @@ class Qcurve(EllipticCurve_number_field):
         
     @cached_method(key=_galois_cache_key)
     def galois_conjugate(self, sigma):
-        r"""
-        Gives the galois conjugate of this curve.
+        r"""Give the galois conjugate of this curve.
 
         INPUT:
 
@@ -244,9 +330,9 @@ class Qcurve(EllipticCurve_number_field):
         OUTPUT:
         
         The galois conjugate of this curve by the galois homomorphism
-        which extends to a common galois homomorphism over the algebraic
-        closure of Q as sigma. This will be an elliptic curve and not
-        a Q-curve
+        which extends to a common galois homomorphism over the
+        algebraic closure of Q as sigma. This will be an elliptic
+        curve and not a Q-curve
 
         EXAMPLE::
 
@@ -257,14 +343,14 @@ class Qcurve(EllipticCurve_number_field):
             sage: sigma = K.galois_group().gens()[0]
             sage: E.galois_conjugate(sigma)
             Elliptic Curve defined by y^2 = x^3 + 12*x^2 + (-18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
+
         """
         sigma = galois_field_change(sigma, self.definition_field())
         return conjugate_curve(self, sigma)
 
     # Isogeny related stuff
     def _init_isogenies(self):
-        r"""
-        Initializes the isogeny data.
+        r"""Initialize the isogeny data.
 
         For internal use only.
         """
@@ -278,30 +364,31 @@ class Qcurve(EllipticCurve_number_field):
         self._d[e] = 1
 
     def _add_isogeny(self, sigma, phi):
-        r"""
-        Adds an isogeny to the stored isogeny data.
+        r"""Add an isogeny to the stored isogeny data.
 
         For internal use only.
 
         INPUT:
 
-        - ``sigma`` -- A galois homomorphism of the field over which this
-          Q-curve is defined.
-        - ``phi`` -- An isogeny from the galois conjugate of this curve by
-          sigma to this curve itself or a tuple of the corresponding
-          $\lambda$ and degree of such an isogeny.
+        - ``sigma`` -- A galois homomorphism of the field over which
+          this Q-curve is defined.
+
+        - ``phi`` -- An isogeny from the galois conjugate of this
+          curve by sigma to this curve itself or a tuple of the
+          corresponding $\lambda$ and degree of such an isogeny.
+
         """
         if isinstance(phi, tuple):
             self._l[sigma], self._d[sigma] = phi
             self._update_isogeny_field()
         else:
-            self._add_isogeny(sigma, (_lambda_of_isogeny(phi), phi.degree()))
+            self._add_isogeny(sigma, (_scalar_of_isogeny(phi), phi.degree()))
 
     def _update_isogeny_field(self):
-        r"""
-        Updates the field over which all isogenies are defined
+        r"""Update the field over which all isogenies are defined
 
         For internal use only.
+
         """
         G = list(self.definition_field().galois_group())
         for i in range(len(G)):
@@ -320,10 +407,10 @@ class Qcurve(EllipticCurve_number_field):
                     self._l[s] = clos(self._l[s])
 
     def _fill_isogenies(self):
-        r"""
-        Attempts to fill in missing isogenies by combining known ones.
+        r"""Attempt to fill in missing isogenies by combining known ones.
 
         For internal use only.
+
         """
         G = self.definition_field().galois_group()
         Kl = self._Kl
@@ -342,37 +429,41 @@ class Qcurve(EllipticCurve_number_field):
         return flag
 
     def _add_isogenies_of_degree(self, degree, verbose=False):
-        r"""
-        Attempts to find isogenies of a given degree.
+        r"""Attempt to find isogenies of a given degree.
 
         For internal use only.
+
         """
         G = self.definition_field().galois_group()
         fd = self.torsion_polynomial(degree)
-        Kd, yotad = fd.splitting_field(names='a'+str(degree), map=True)
-        Ed = EllipticCurve_number_field.base_extend(self, yotad)
-        for g,e in fd.change_ring(yotad).factor():
-            psi = Ed.isogeny(g)
+        for g,e in fd.factor():
+            Kd.<l> = self.definition_field().extension(g)
+            Kdabs = Kd.absolute_field(names='a'+str(degree))
+            yotad = Kdabs.convert_map_from(Kd) * K.hom(Kd)
+            Ed = EllipticCurve_number_field.base_extend(self, yotad)
+            l = Kdabs(l)
+            S.<x> = Kdabs[]
+            psi = Ed.isogeny(x - l)
             E_t = psi.codomain()
             j_t = E_t.j_invariant()
             for s in G:
-                if yotad(self.galois_conjugate(s).j_invariant()) == j_t:
+                if Kdabs(Kd(self.galois_conjugate(s).j_invariant())) == j_t:
                     if verbose > 0:
                         print "Degree %s isogeny found for"%degree, s
-                    l1 = _lambda_of_isomorphism(self.galois_conjugate(s).change_ring(yotad),E_t)
-                    l2 = _lambda_of_isogeny(psi.dual())
+                    l1 = _scalar_of_isomorphism(self.galois_conjugate(s).change_ring(yotad),E_t)
+                    l2 = _scalar_of_isogeny(psi.dual())
                     Kl, p1, p2 = composite_field(l1.parent(), l2.parent(), give_maps=True)
-                    self._add_isogeny(s, (p1(l1) * p2(l2), psi.degree()))
+                    l = p1(l1) * p2(l2)
+                    l = l.parent().subfield(l)[0](l)
+                    self._add_isogeny(s, (l, psi.degree()))
 
     @cached_method(key=_galois_cache_key)
-    def isogeny_lambda(self, sigma):
-        r"""
-        Returns the $\lambda$ of the isogeny from the sigma conjugate 
-        of this curve to this curve.
+    def isogeny_scalar(self, sigma):
+        r"""Return the scalar of the isogeny from the sigma conjugate of this
+        curve to this curve.
 
-        The $\lambda$ of an isogeny is the constant such that
-        the isogeny becomes $z \mapsto \lambda z$ on the complex
-        numbers.
+        The $\lambda$ of an isogeny is the constant such that the
+        isogeny becomes $z \mapsto \lambda z$ on the complex numbers.
 
         INPUT:
         
@@ -381,7 +472,7 @@ class Qcurve(EllipticCurve_number_field):
         OUTPUT:
 
         The constant $\lambda$ such that the map $z \mapsto \lambda z$
-        on the complex number defines an isogeny from a galois
+        on the complex number induces an isogeny from a galois
         conjugate of this curve to itself. The galois conjugate is one
         obtained by conjugating with an extension of sigma.
 
@@ -390,31 +481,47 @@ class Qcurve(EllipticCurve_number_field):
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: G = K.galois_group()
-            sage: E.isogeny_lambda(G[0])
+            sage: E.isogeny_scalar(G[0])
             1
-            sage: E.isogeny_lambda(G[1])
-            -1/10*tu^3 - 3/10*tu
-            sage: E.isogeny_lambda(G[1]).parent()
-            Number Field in tu with defining polynomial x^4 - 2*x^2 + 25
+            sage: E.isogeny_scalar(G[1])
+            1/10*tu0^3 + 3/10*tu0
+            sage: E.isogeny_scalar(G[1]).parent()
+            Number Field in tu0 with defining polynomial x^4 - 2*x^2 + 25
+
         """
         return self._l[galois_field_change(sigma, self.definition_field())]
 
     def complete_definition_field(self):
-        r"""
-        Gives the field over which the Q-curve is completely defined.
+        r"""Give the field over which the Q-curve is completely defined.
 
         OUTPUT:
 
         A number field over which both this elliptic curve and all
         isogenies from its galois conjugates to itself are defined.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(-2)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.complete_definition_field()
+            Number Field in t with defining polynomial x^2 + 2
+
+        In general this field is bigger than the definition field::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.definition_field()
+            Number Field in t with defining polynomial x^2 - 3
+            sage: E.complete_definition_field()
+            Number Field in tu0 with defining polynomial x^4 - 2*x^2 + 25
+
         """
         return self._Kl
 
     @cached_method(key=_galois_cache_key)
     def degree_map(self, sigma):
-        r"""
-        Gives the degree of an isogeny from the sigma galois conjugate
-        of this curve to this curve.
+        r"""Give the degree of an isogeny from the sigma galois conjugate of
+        this curve to this curve.
 
         INPUT:
 
@@ -423,23 +530,60 @@ class Qcurve(EllipticCurve_number_field):
         OUTPUT:
         
         The degree of an isogeny from a galois conjugate of this curve
-        to this curve itself. The galois conjugate is one obtained
-        by conjugating with an extension of the given galois homomorphism
+        to this curve itself. The galois conjugate is one obtained by
+        conjugating with an extension of the given galois homomorphism
         sigma.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(2)
+            sage: G.<s> = K.galois_group()
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.degree_map(s)
+            2
+        
+        The isomorphism from the curve to itself will always have a
+        degree that is a square::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: G = K.galois_group()
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.degree_map(G(1))
+            1
+
+        One can also use galois homomorphisms not necessarily defined
+        over the definition field::
+
+            sage: K.<t> = QuadraticField(-1)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: L.<u> = CyclotomicField(12)
+            sage: G = L.galois_group()
+            sage: [E.degree_map(s) for s in G]
+            [1, 2, 1, 2]
+
         """
         return self._d[galois_field_change(sigma, self.definition_field())]
 
     @cached_method
     def degree_map_image(self):
-        r"""
-        Gives the image of the degree map in $\Q^*/(\Q^*)^2$
+        r"""Give the image of the degree map in $\Q^*/(\Q^*)^2$
 
         OUTPUT:
         
-        A list of squarefree integers such that each value of
-        the degree map is a square times such an integer and
-        all integers in this list differ a square from a value
-        of the degree map.
+        A list of squarefree integers such that each value of the
+        degree map is a square times such an integer and all integers
+        in this list differ a square from a value of the degree map.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(-3)
+            sage: G.<s> = K.galois_group()
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: [E.degree_map(s) for s in G]
+            [1, 2]
+            sage: E.degree_map_image()
+            [1, 2]
+
         """
         result = []
         d = self.degree_map
@@ -451,14 +595,30 @@ class Qcurve(EllipticCurve_number_field):
         return result
 
     def degree_field(self):
-        r"""
-        Gives the fixed field of the degree map.
+        r"""Give the fixed field of the degree map.
 
         OUTPUT:
 
-        The biggest number field such that for each galois homomorphism
-        that acts trivially on this field the degree map takes a value
-        in $\Q^2$.
+        The biggest number field such that for each galois
+        homomorphism that acts trivially on this field the degree map
+        takes a value in $\Q^2$.
+
+        EXAMPLES::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.degree_field()
+            Number Field in t with defining polynomial x^2 - 3
+
+        The degree field is always a subfield of the definition field,
+        but can be strictly smaller::
+
+            sage: K.<t> = CyclotomicField(3)
+            sage: G.<s> = K.galois_group()
+            sage: E = Qcurve([0, -6*t + 2, 0, t, 0], isogenies={s : (2, 4)})
+            sage: E.degree_field()
+            Rational Field
+
         """
         Kerd = []
         d = self.degree_map
@@ -469,28 +629,57 @@ class Qcurve(EllipticCurve_number_field):
         return fixed_field(Kerd)
 
     def dual_basis(self, a1=None):
-        r"""
-        Gives a dual basis for the degree map.
+        r"""Give a dual basis for the degree map.
 
         INPUT:
 
-         - ``a1`` -- Optional parameter (default: None). If
-           set to a non-square integer which square root is
-           part of the degree field, will ensure that this is
-           the first entry of the first list returned.
+         - ``a1`` -- Optional parameter (default: None). If set to a
+           non-square integer which square root is part of the degree
+           field, will ensure that this is the first entry of the
+           first list returned.
 
         OUTPUT:
         
         A tuple containing
-         - A list of squarefree integers such that their
-           square roots generate the degree field. This list
-           is of minimal length with respect to such lists.
-         - A list of non-negative integers of the same length
-           as the first, such that the i-th entry differs
-           precisely a square from the degree map at any
-           galois homomorphism that only changes the sign
-           of the square root of the i-th entry of the firs
-           list and not of the others in that list.
+        
+        - A list of squarefree integers such that their square roots
+          generate the degree field. This list is of minimal length
+          with respect to such lists.
+        
+        - A list of non-negative integers of the same length as the
+          first.
+
+        The degree map of this Q-curve on any galois homomorphism that
+        only changes the sign of the square root of i-th entry of the
+        first list, is equal to a square times the i-th entry of the
+        second list.
+
+        EXAMPLES::
+
+            sage: K.<w> = QQ[sqrt(2), sqrt(5)].absolute_field()
+            sage: t = sqrt(K(2))
+            sage: s = sqrt(K(5))
+            sage: a4 = -6 * s^2 * t^2 * (5 + 5*s + 10*t + 5*t^2 + 2*s*t)
+            sage: a6 = 8 * (s*t)^3 * (1 + t) * (7 + 15*s + 14*t + 7*t^2 + 6*s*t)
+            sage: E = Qcurve([a4, a6], guessed_degrees=[2, 3, 6])
+            sage: E.dual_basis()
+            ([10, 2], [2, 6])
+            sage: [(sigma(t*s)/(t*s), sigma(t)/t, E.degree_map(sigma)) for sigma in K.galois_group()]
+            [(1, 1, 1), (-1, 1, 2), (-1, -1, 3), (1, -1, 6)]
+
+        One can also fix the first entry::
+
+            sage: K.<w> = QQ[sqrt(-2), sqrt(-3)].absolute_field()
+            sage: t = sqrt(K(-2))
+            sage: s = sqrt(K(-3))
+            sage: a4 = -6 * s^2 * t^2 * (5 + 5*s + 10*t + 5*t^2 + 2*s*t)
+            sage: a6 = 8 * (s*t)^3 * (1 + t) * (7 + 15*s + 14*t + 7*t^2 + 6*s*t)
+            sage: E = Qcurve([a4, a6], guessed_degrees=[2, 3, 6])
+            sage: E.dual_basis(a1=-2)
+            ([-2, -3], [3, 2])
+            sage: [(sigma(t)/t, sigma(s)/s, E.degree_map(sigma)) for sigma in K.galois_group()]
+            [(1, 1, 1), (-1, 1, 3), (1, -1, 2), (-1, -1, 6)]
+
         """
         if a1 != None:
             a1 = a1.squarefree_part()
@@ -522,101 +711,176 @@ class Qcurve(EllipticCurve_number_field):
     
     @cached_method(key=_galois_cache_key2)
     def c(self, sigma, tau):
-        r"""
-        The value of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2 \to \Q^*$
-        associated to a Q-curve by Quer.
+        r"""Return the value of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2 \to \Q^*$
+        associated to this Q-curve.
 
         INPUT:
 
         - ``sigma`` -- A galois homomorphism over a number field
+
         - ``tau`` -- A galois homomorphism over a number field
 
         OUTPUT:
 
-        The value
-        .. MATH::
+        The value .. MATH::
 
-            \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot lambda_{\sigma \tau}^{-1}
+            \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot
+            lambda_{\sigma \tau}^{-1}
 
         where $\sigma$ and $\tau$ are extensions of sigma and tau to
-        $\bar{\Q}$ respectively and where $\lambda_\sigma$ is the function
-        :meth:`Qcurve.isogeny_lambda` at $\sigma$.
+        $\bar{\Q}$ respectively and where $\lambda_\sigma$ is the
+        function :meth:`Qcurve.isogeny_scalar` at $\sigma$.
+
+        EXAMPLES::
+
+            sage: K.<t> = QuadraticField(5)
+            sage: G = K.galois_group()
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: matrix([[E.c(s, t) for t in G] for s in G])
+            [ 1  1]
+            [ 1 -2]
+
+        Note that the value of this function always squares to the
+        coboundary of the degree map::
+
+            sage: K.<t> = QuadraticField(-5)
+            sage: G = K.galois_group()
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: d = E.degree_map
+            sage: matrix([[E.c(s, t)^2 for t in G] for s in G])
+            [1 1]
+            [1 4]
+            sage: matrix([[d(s)*d(t)/d(s*t) for t in G] for s in G])
+            [1 1]
+            [1 4]
+
         """
-        l = self.isogeny_lambda
+        l = self.isogeny_scalar
         sigma = galois_field_change(sigma, self.complete_definition_field())
         tau = galois_field_change(tau, self.complete_definition_field())
         return QQ(l(sigma) * sigma(l(tau)) * l(sigma*tau)^(-1))
 
     def c_pm(self, sigma, tau):
-        r"""
-        The sign of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2 \to \Q^*$
-        associated to a Q-curve by Quer.
+        r"""Return the sign of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2 \to \Q^*$
+        associated to a Q-curve.
 
         INPUT:
 
         - ``sigma`` -- A galois homomorphism over a number field
+
         - ``tau`` -- A galois homomorphism over a number field
 
         OUTPUT:
 
-        The sign of
-        .. MATH::
+        The sign of .. MATH::
 
-            \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot lambda_{\sigma \tau}^{-1}
+            \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot
+            lambda_{\sigma \tau}^{-1}
 
         where $\sigma$ and $\tau$ are extensions of sigma and tau to
-        $\bar{\Q}$ respectively and where $\lambda_\sigma$ is the function
-        :meth:`Qcurve.isogeny_lambda` at $\sigma$.
+        $\bar{\Q}$ respectively and where $\lambda_\sigma$ is the
+        function :meth:`Qcurve.isogeny_scalar` at $\sigma$.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(-3)
+            sage: G = K.galois_group()
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: matrix([[E.c(s, t) for t in G] for s in G])
+            [ 1  1]
+            [ 1 -2]
+            sage: matrix([[E.c_pm(s, t) for t in G] for s in G])
+            [ 1  1]
+            [ 1 -1]
+            sage: matrix([[E.c_abs(s, t) for t in G] for s in G])
+            [1 1]
+            [1 2]
+            sage: all(E.c(s, t) == E.c_pm(s, t) * E.c_abs(s, t) for s in G for t in G)
+            True
+
         """
         return sign(self.c(sigma,tau))
 
     def c_abs(self, sigma, tau):
-        r"""
-        The absolute value of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2 \to \Q^*$
-        associated to a Q-curve by Quer.
+        r"""Return the absolute value of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2
+        \to \Q^*$ associated to a Q-curve.
 
         INPUT:
 
         - ``sigma`` -- A galois homomorphism over a number field
+
         - ``tau`` -- A galois homomorphism over a number field
 
         OUTPUT:
 
-        The absolute value of
-        .. MATH::
+        The absolute value of .. MATH::
 
-            \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot lambda_{\sigma \tau}^{-1}
+            \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot
+            lambda_{\sigma \tau}^{-1}
 
         where $\sigma$ and $\tau$ are extensions of sigma and tau to
-        $\bar{\Q}$ respectively and where $\lambda_\sigma$ is the function
-        :meth:`Qcurve.isogeny_lambda` at $\sigma$.
+        $\bar{\Q}$ respectively and where $\lambda_\sigma$ is the
+        function :meth:`Qcurve.isogeny_scalar` at $\sigma$.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(-3)
+            sage: G = K.galois_group()
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: matrix([[E.c(s, t) for t in G] for s in G])
+            [ 1  1]
+            [ 1 -2]
+            sage: matrix([[E.c_pm(s, t) for t in G] for s in G])
+            [ 1  1]
+            [ 1 -1]
+            sage: matrix([[E.c_abs(s, t) for t in G] for s in G])
+            [1 1]
+            [1 2]
+            sage: all(E.c(s, t) == E.c_pm(s, t) * E.c_abs(s, t) for s in G for t in G)
+            True
+
         """
         return abs(self.c(sigma,tau))
 
     @cached_method
     def xi_pm(self):
-        r"""
-        Returns the brauer group representation of the invariant $\xi_\pm$.
+        r"""Return the brauer group representation of the invariant $\xi_\pm$.
+
+        The element $\xi_\pm \in Br_2(\Q)$ is the element in the
+        Brauer group corresponding to the homology class of $c_\pm$,
+        the cocyle returned by the method :meth:c_pm
 
         OUTPUT:
 
-        A list of tuples of integers, such that $\xi_\pm$ as an element
-        of $Br_2(\Q)$ is the product of the quaternion algebras given
-        by each of these tuples.
+        A list of tuples of integers, such that $\xi_\pm$ as an
+        element of $Br_2(\Q)$ is the product of the quaternion
+        algebras given by each of these tuples.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(2)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.xi_pm()
+            [(2, 2)]
+
         """
         ai, di = self.dual_basis()
         return [(ai[i], di[i]) for i in range(len(ai))]
 
     @cached_method
     def _xi_pm_primes(self):
-        r"""
-        Gives the primes at which the $\xi_\pm$ might locally not be 1
+        r"""Give the primes at which the $\xi_\pm$ might locally not be 1
+
+        The element $\xi_\pm \in Br_2(\Q)$ is the element in the
+        Brauer group corresponding to the homology class of $c_\pm$,
+        the cocyle returned by the method :meth:c_pm
         
         OUTPUT:
 
         A list of prime numbers, such that all primes at which xi_pm
         is locally not trivial are contained in this list. This list
         may contain more primes as well, but not less.
+
         """
         result = lcm([lcm(h) for h in self.xi_pm()]).prime_factors()
         if 2 not in result:
@@ -625,8 +889,11 @@ class Qcurve(EllipticCurve_number_field):
 
     @cached_method
     def xi_pm_local(self, p):
-        r"""
-        Gives a representative for $\xi_\pm$ in $Br_2(\Q_p)$.
+        r"""Give a representative for $\xi_\pm$ in $Br_2(\Q_p)$.
+
+        The element $\xi_\pm \in Br_2(\Q)$ is the element in the
+        Brauer group corresponding to the homology class of $c_\pm$,
+        the cocyle returned by the method :meth:c_pm
 
         INPUT:
 
@@ -637,6 +904,20 @@ class Qcurve(EllipticCurve_number_field):
         +1 or -1 depending on whether the central simple algebra
         associated to $\xi_\pm$ over $\Q_p$ is split or non-split
         respectively.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.xi_pm()
+            [(3, 2)]
+            sage: E.xi_pm_local(2)
+            -1
+            sage: E.xi_pm_local(3)
+            -1
+            sage: E.xi_pm_local(5)
+            1
+
         """
         if p not in self._xi_pm_primes():
             return 1
@@ -658,25 +939,32 @@ class Qcurve(EllipticCurve_number_field):
         return product([eps_p.extend(N) for eps_p in eps_ls]).primitive_character()
 
     def _splitting_character_data(self, i, j):
-        r"""
-        Manages data related to splitting characters, i.e. for each splitting
-        character we have a list containing the following entries
+        r"""Manages data related to splitting characters, i.e. for each
+        splitting character we have a list containing the following
+        entries
+
          0 - the splitting character as a dirichlet character
+
          1 - the fixed field of that splitting character
-         2 - the splitting character as a galois character on its fixed field
+
+         2 - the splitting character as a galois character on its
+             fixed field
 
         INPUT:
 
-        - ``i`` -- The index of the splitting character for which data should
-          be retrieved. This may also be a list of such indices or one of the
-          special keywords 'all', for all splitting characters, or 'conjugacy',
-          for all splitting characters up to conjugacy.
+        - ``i`` -- The index of the splitting character for which data
+          should be retrieved. This may also be a list of such indices
+          or one of the special keywords 'all', for all splitting
+          characters, or 'conjugacy', for all splitting characters up
+          to conjugacy.
+
         - ``j`` -- The index of the data to be retrieved.
 
         OUTPUT:
         
-        The specified data for each index given in i, formatted according
-        to how i was formatted.
+        The specified data for each index given in i, formatted
+        according to how i was formatted.
+
         """
         if not self._is_cached('_eps') or 0 not in self._eps:
             self._eps = dict()
@@ -695,42 +983,104 @@ class Qcurve(EllipticCurve_number_field):
                 self._eps[i].append(dirichlet_fixed_field(self._eps[i][0]))
             if j >= 2 and len(self._eps[i]) < 3:
                 self._eps[i].append(dirichlet_to_galois(self._eps[i][0]))
-                                                        
             return self._eps[i][j]
         if i == 'all':
-            return tuple(self._splitting_character_data(ii, j) for ii in range(self.number_of_splitting_maps()))
+            return tuple(self._splitting_character_data(ii, j)
+                         for ii in range(self.number_of_splitting_maps()))
         if i == 'conjugacy':
-            return tuple(self._splitting_character_data(ii[0], j) for ii in self._conjugacy_determination())
+            return tuple(self._splitting_character_data(ii[0], j)
+                         for ii in self._conjugacy_determination())
         raise Exception("Invalid index %s."%i)
     
     def splitting_character(self, index=0, galois=False):
-        r"""
-        Gives a splitting character of this Q-curve.
+        r"""Give a splitting character of this Q-curve.
+
+        A splitting character is the character $\eps$ associated to a
+        splitting map $\beta$ by $\eps \cdot d = \beta^2$, where $d$
+        is the degree map of this Q-curve.
+
+        Although the definition using a splitting map defines a
+        splitting character as a galois character, since its fixed
+        field is abelian, it can be interpreted as a dirichlet
+        character by looking at it as a galois character on
+        $\Q(\zeta_n)$. This is the default way of presenting a
+        splitting character.
+
+        ALGORITHM:
+
+        To compute the first splitting character, we use the relation
+        between splitting characters and the invariant $\xi_\pm$
+        computed by :meth:`xi_pm`. The other splitting characters are
+        computed using the twist characters computed by
+        :meth:`twist_character`.
+
+        .. SEEALSO::
+
+            :meth:`degree_map`,
+            :meth:`splitting_map`
 
         INPUT:
 
-        - ``index`` -- The index (default: 0) of the splitting
-          character to return. Accepted values are non-negative
-          integers smaller than the total amount of splitting maps
-          or one of the special values:
-          - 'all' : for a tuple of all splitting characters
-          - 'conjugacy' : for a tuple of splitting characters, one
-            for each conjugacy class of splitting maps.
-          Also accepts tuples of accepted values including tuples
-          themselves.
-        - ``galois`` -- A boolean (default: False) indicating
-          whether the splitting characters should be given as
-          galois or dirichlet characters.
+        - ``index`` -- The index (default: 0) of the corresponding
+          splitting map. Accepted values are non-negative integers
+          smaller than the total amount of splitting maps or one of
+          the special values: 'all' for a tuple of all splitting
+          characters; and 'conjugacy' for a tuple of splitting
+          characters, one for each conjugacy class of splitting
+          maps. Also accepts tuples of accepted values including
+          tuples themselves.
+
+        - ``galois`` -- A boolean (default: False) indicating whether
+          the splitting characters should be given as galois or
+          dirichlet characters.
 
         OUTPUT:
 
-        Returns the splitting character of the given index, given
-        as a galois character if galois is set to True or as a
-        Dirichlet character otherwise. If the index was 'all'
-        or 'conjugacy' will return a tuple of such characters
-        corresponding to the corresponding tuple of indices. If
-        the given index was a tuple will return a tuple of outputs
-        on each entry of this tuple in the same order.
+        Returns the splitting character of the given index, given as a
+        galois character if galois is set to True or as a Dirichlet
+        character otherwise. If the index was 'all' or 'conjugacy'
+        will return a tuple of such characters corresponding to the
+        corresponding tuple of indices. If the given index was a tuple
+        will return a tuple of outputs on each entry of this tuple in
+        the same order.
+
+        EXAMPLES::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.splitting_character()
+            Dirichlet character modulo 12 of conductor 12 mapping 7 |--> -1, 5 |--> -1
+
+        There are as many splitting characters as the degree of the
+        decomposition field::
+
+            sage: K.<t> = QuadraticField(-3)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.splitting_character('all')
+            (Dirichlet character modulo 12 of conductor 12 mapping 7 |--> -1, 5 |--> -1,
+             Dirichlet character modulo 12 of conductor 12 mapping 7 |--> -1, 5 |--> -1,
+             Dirichlet character modulo 12 of conductor 12 mapping 7 |--> -1, 5 |--> -1,
+             Dirichlet character modulo 12 of conductor 12 mapping 7 |--> -1, 5 |--> -1,
+             Dirichlet character modulo 12 of conductor 12 mapping 7 |--> -1, 5 |--> -1,
+             Dirichlet character modulo 12 of conductor 12 mapping 7 |--> -1, 5 |--> -1,
+             Dirichlet character modulo 12 of conductor 12 mapping 7 |--> -1, 5 |--> -1,
+             Dirichlet character modulo 12 of conductor 12 mapping 7 |--> -1, 5 |--> -1)
+            sage: E.decomposition_field().degree()
+            8
+
+        The galois version of the splitting character relates to the
+        degree map and the corresponding splitting map::
+
+            sage: K.<t> = QuadraticField(12)
+            sage: E = Qcurve([0, 6*t - 12, 0, -54*t + 180, 0], guessed_degrees=[2])
+            sage: n = E.decomposition_field().degree()
+            sage: G = E.decomposition_field().galois_group()
+            sage: d = E.degree_map
+            sage: eps = E.splitting_character
+            sage: beta = E.splitting_map
+            sage: all(eps(i, galois=True)(s) * d(s) == beta(i)(s)^2 for s in G for i in range(n))
+            True
+
         """
         if galois:
             return self._splitting_character_data(index, 2)
@@ -738,44 +1088,66 @@ class Qcurve(EllipticCurve_number_field):
             return self._splitting_character_data(index, 0)
 
     def splitting_character_field(self, index=0):
-        r"""
-        Gives the fixed field of a splitting character of this Q-curve.
+        r"""Give the fixed field of a splitting character of this Q-curve.
+
+        .. SEEALSO::
+
+            :meth:`splitting_character`
 
         INPUT:
 
-        - ``index`` -- The index (default: 0) of the splitting
-          field to return. Accepted values are non-negative
-          integers smaller than the total amount of splitting maps
-          or one of the special values:
-          - 'all' : for a tuple of all splitting fields
-          - 'conjugacy' : for a tuple of splitting fields, one
-            for each conjugacy class of splitting maps.
-          Also accepts tuples of accepted values including tuples
-          themselves.
+        - ``index`` -- The index (default: 0) of the corresponding
+          splitting map. Accepted values are non-negative integers
+          smaller than the total amount of splitting maps or one of
+          the special values: 'all' for a tuple of all splitting
+          character fields; and 'conjugacy' for a tuple of splitting
+          character fields, one for each conjugacy class of splitting
+          maps. Also accepts tuples of accepted values including
+          tuples themselves.
 
         OUTPUT:
 
-        Returns the fixed field of a splitting character of the
-        given index. If the index was 'all' or 'conjugacy' will
-        return a tuple of such fields corresponding to the corresponding
-        tuple of indices. If the given index was a tuple will return a
-        tuple of outputs on each entry of this tuple in the same order.
+        The fixed field of a splitting character of the given index.
+        If the index was 'all' or 'conjugacy' will return a tuple of
+        such fields corresponding to the corresponding tuple of
+        indices.  If the given index was a tuple will return a tuple
+        of outputs on each entry of this tuple in the same order.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.splitting_character_field()
+            Number Field in zeta0 with defining polynomial x^2 - 3
+
+        In general it is distinct from the complete definition field::
+
+            sage: K.<t> = QuadraticField(5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: K1 = E.complete_definition_field(); K1
+            Number Field in tu0 with defining polynomial x^4 - 6*x^2 + 49
+            sage: K2 = E.splitting_character_field(); K2
+            Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
+            sage: K1.is_isomorphic(K2)
+            False
+
         """
         return self._splitting_character_data(index, 1)
 
     def _splitting_image_field(self, eps, Keps):
-        r"""
-        Computes the image field of a splitting map.
+        r"""Computes the image field of a splitting map.
         
         INPUT:
 
         - ``eps`` -- The corresponding dirichlet character.
+
         - ``Keps`` -- The fixed field of eps as a galois character.
 
         OUTPUT:
         
-        The field in which the corresponding splitting map
-        takes values.
+        The field in which the corresponding splitting map takes
+        values.
+
         """
         if isinstance(eps, tuple):
             return tuple(self._splitting_image_field(eps[i], Keps[i]) for i in range(len(eps)))
@@ -796,29 +1168,48 @@ class Qcurve(EllipticCurve_number_field):
 
     @cached_method
     def splitting_image_field(self, index=0):
-        r"""
-        Gives the image field of a splitting map of this Q-curve.
+        r"""Give the image field of a splitting map of this Q-curve.
+
+        ALGORITHM:
+
+        The field in which a splitting map takes values is computed
+        using only the splitting character and its fixed field.
+
+        .. SEEALSO::
+
+            :meth:`splitting_map`,
+            :meth:`splitting_character`,
+            :meth:`splitting_character_field`
 
         INPUT:
 
-        - ``index`` -- The index (default: 0) of the splitting
-          map whose image field to give. Accepted values are non-negative
-          integers smaller than the total amount of splitting maps
-          or one of the special values:
-          - 'all' : for a tuple of all splitting characters
-          - 'conjugacy' : for a tuple of splitting characters, one
-            for each conjugacy class of splitting maps.
-          Also accepts tuples of accepted values including tuples
-          themselves.
+        - ``index`` -- The index (default: 0) of the corresponding
+          splitting map. Accepted values are non-negative integers
+          smaller than the total amount of splitting maps or one of
+          the special values: 'all' for a tuple of all image fields;
+          and 'conjugacy' for a tuple of image fields, one for each
+          conjugacy class of splitting maps. Also accepts tuples of
+          accepted values including tuples themselves.
 
         OUTPUT:
 
-        Returns the image field of the splitting map of the
-        given index. If the index was 'all' or 'conjugacy' will
-        return a tuple of such fields corresponding to the
-        corresponding tuple of indices. If the given index was a
-        tuple will return a tuple of outputs on each entry of this 
-        tuple in the same order.
+        The image field of the splitting map of the given index.  If
+        the index was 'all' or 'conjugacy' will return a tuple of such
+        fields corresponding to the corresponding tuple of indices. If
+        the given index was a tuple will return a tuple of outputs on
+        each entry of this tuple in the same order.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12*t - 12, 0, 180 - 108*t, 0], guessed_degrees=[2])
+            sage: K1 = E.splitting_image_field(); K1
+            Number Field in zeta4a0 with defining polynomial x^2 + 2
+            sage: beta = E.splitting_map()
+            sage: G = E.splitting_field().galois_group()
+            sage: [beta(s) for s in G]
+            [1, zeta4a0]
+
         """
         eps = self.splitting_character(index)
         Keps = self.splitting_character_field(index)
@@ -832,61 +1223,153 @@ class Qcurve(EllipticCurve_number_field):
 
     @cached_method
     def splitting_field(self, index=0):
-        r"""
-        Gives a splitting field of this Q-curve.
+        r"""Give a splitting field of this Q-curve.
+
+        A splitting field is the fixed field of a splitting map.
+
+        ALGORITHM:
+        
+        A splitting field is computed using the fixed field of the
+        degree map and the fixed field of the corresponding splitting
+        character.
+
+        .. SEEALSO::
+
+            :meth:`degree_map`,
+            :meth:`splitting_map`,
+            :meth:`splitting_character`,
+            :meth:`splitting_character_field`,
+            :meth:`degree_field`
 
         INPUT:
 
-        - ``index`` -- The index (default: 0) of the splitting
-          map corresponding to this splitting field. Accepted
-          values are non-negative integers smaller than the
-          total amount of splitting maps or one of the special
-          values:
-          - 'all' : for a tuple of all splitting maps
-          - 'conjugacy' : for a tuple of splitting maps, one for
-            each conjugacy class of splitting maps.
-          Also accepts tuples of accepted values  including
-          tuples themselves.
+        - ``index`` -- The index (default: 0) of the corresponding
+          splitting map. Accepted values are non-negative integers
+          smaller than the total amount of splitting maps or one of
+          the special values: 'all' for a tuple of all splitting
+          fields; and 'conjugacy' for a tuple of splitting fields, one
+          for each conjugacy class of splitting maps. Also accepts
+          tuples of accepted values including tuples themselves.
 
         OUTPUT:
 
-        Returns the splitting field corresponding to the
-        splitting map of the given index. If the index was 'all'
-        or 'conjugacy' will return a tuple of such fields
-        corresponding to the corresponding tuple of indices. If
-        the given index was a tuple will return a tuple of outputs
-        on each entry of this tuple in the same order.
+        The splitting field corresponding to the splitting map of the
+        given index. If the index was 'all' or 'conjugacy' will return
+        a tuple of such fields corresponding to the corresponding
+        tuple of indices. If the given index was a tuple will return a
+        tuple of outputs on each entry of this tuple in the same
+        order.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.splitting_field()
+            Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
+            sage: E.degree_field()
+            Number Field in t with defining polynomial x^2 - 5
+            sage: E.splitting_character_field()
+            Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
+
         """
         Keps = self.splitting_character_field(index)
         return self._splitting_field(Keps)
 
     @cached_method
     def decomposition_field(self):
-        r"""
-        Gives the field over which the restriction of scalars of
-        this Q-curve decomposes as a product of abelian varieties
-        of GL_2-type.
+        r"""Give the field over which the restriction of scalars of this
+        Q-curve could decompose as a product of abelian varieties of
+        GL_2-type.
+
+        .. NOTE::
+
+        In order for the restriction of scalars to decompose into a
+        product of abelian varieties of GL_2-type over this field, the
+        cocycle associated to the Q-curve and the coboundary obtained
+        from each splitting map must agree over this field.  By
+        definition of the splitting maps the coboundaries may however
+        differ by the coboundary of a function from the absolute
+        galois group of $\QQ$ with values in $\QQ^*$, which does not
+        necessarily arise from a function on the galois group of the
+        decomposition field.
+
+        .. SEEALSO::
+
+            :meth:`splitting_map`,
+            :meth:`splitting_field`,
+            :meth:`complete_definition_field`,
+            :meth:`does_decompose`,
+            :meth:`c`,
+            :meth:`decomposable_twist`
 
         OUTPUT:
         
-        The composite field of :meth:`Qcurve.complete_definition_field`
-        and :meth:`Qcurve.splitting_field`
+        The composite field of :meth:`complete_definition_field` and
+        :meth:`splitting_field`
+
+        EXAMPLE::
+        
+            sage: K.<t> = QuadraticField(-3)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.complete_definition_field()
+            Number Field in tu0 with defining polynomial x^4 + 10*x^2 + 1
+            sage: E.splitting_field()
+            Number Field in tzeta0 with defining polynomial x^4 + 36
+            sage: E.decomposition_field()
+            Number Field in tu0tzeta0 with defining polynomial x^8 + 32*x^6 + 456*x^4 - 1408*x^2 + 10000
+
         """
         return composite_field(self.complete_definition_field(), self.splitting_field())
 
     @cached_method
     def does_decompose(self):
-        r"""
-        Determines whether this Q-curve decomposes over its
-        decomposition field.
+        r"""Determine whether this Q-curve decomposes over its decomposition
+        field.
+
+        The restriction of scalars of this Q-curve over its
+        decomposition field decomposes into abelian varieties of
+        GL_2-type if and only if the coboundaries of the splitting
+        maps differ from the cocycle associated to this Q-curve by a
+        coboundary of a function on the absolute galois group of $\QQ$
+        with values in $\QQ^*$ that comes from a function defined on
+        the galois group of the decomposition field.
+
+        .. NOTE::
+
+        In the case that this Q-curve does decompose, the splitting
+        maps will be initialized in such a way that their coboundary
+        actually agrees with the cocycle associated to this Q-curve.
+
+        Furthermore, any Q-curve has a twist over its decomposition field
+        that does decompose over that field. This can be computed using
+        the method :meth:`decomposable_twist`.
+
+        .. SEEALSO::
+
+            :meth:`decomposition_field`,
+            :meth:`c`
+            :meth:`c_splitting_map`,
+            :meth:`splitting_map`,
+            :meth:`decomposable_twist`
 
         OUTPUT:
         
-        - True, if the restriction of scalars of this Q-curve over
-          the decomposition field is isogeneous over $\Q$ to the
-          product of $\Q$-simple, non-$\Q$-isogeneous abelian
-          varieties of $GL_2$-type.
-        - False, otherwise.
+        True if the restriction of scalars of this Q-curve over the
+        decomposition field is isogeneous over $\Q$ to the product of
+        $\Q$-simple, non-$\Q$-isogeneous abelian varieties of
+        $GL_2$-type.
+
+        False otherwise.
+
+        EXAMPLES::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.does_decompose()
+            False
+            sage: E.decomposable_twist().does_decompose()
+            True
+
         """
         if not self._is_cached("_beta"):
             self.splitting_map(verbose=-1)
@@ -896,8 +1379,8 @@ class Qcurve(EllipticCurve_number_field):
         return all(c(s,t) == c_beta(s,t) for s in G for t in G)
 
     def _splitting_map_first_guess(self):
-        r"""
-        Gives a naive guess of a splitting map.
+        r"""Gives a naive guess of a splitting map.
+
         """
         eps = self.splitting_character(galois=True)
         d = self.degree_map
@@ -908,9 +1391,9 @@ class Qcurve(EllipticCurve_number_field):
         return beta
 
     def _first_splitting_map(self, verbose=False):
-        r"""
-        Computes a splitting map corresponding to the first
-        splitting character.
+        r"""Computes a splitting map corresponding to the first splitting
+        character.
+
         """
         self._beta = self._splitting_map_first_guess()
         G = self.decomposition_field().galois_group()
@@ -942,9 +1425,9 @@ class Qcurve(EllipticCurve_number_field):
         return self._beta
 
     def _indexed_splitting_map(self, i):
-        r"""
-        Computes the i-th splitting map from the first splitting
-        map and the corresponding twist.
+        r"""Computes the i-th splitting map from the first splitting map and
+        the corresponding twist.
+
         """
         beta0 = self.splitting_map()
         Lbeta0 = self.splitting_image_field()
@@ -959,44 +1442,118 @@ class Qcurve(EllipticCurve_number_field):
 
     @cached_method(key=lambda self, i, v: i)
     def splitting_map(self, index=0, verbose=False):
-        r"""
-        Gives a splitting map of this Q-curve.
+        r"""Give a splitting map of this Q-curve.
+
+        A splitting map is a function from the absolute galois group
+        of $\QQ$ to the units in the algebraic closure of $\Q$ such
+        that its coboundary gives the same cohomology class as the
+        cocycle associated to this Q-curve in $H^2(G_\QQ,
+        \QQ^*)$. Here $G_\QQ$ is the absolute galois group of $\Q$.
+
+        This method only returns splitting maps that arise as functions
+        on the galois group of the decomposition field. Furthermore
+        all splitting maps returned by this function will have the
+        same coboundary.
+
+        .. NOTE::
+
+        In the case that this Q-curve decomposes over its
+        decomposition field the splitting maps will be chosen in such
+        a way that the common coboundary is precisely the cocycle
+        associated to this Q-curve.
+
+        .. SEEALSO::
+
+            :meth:`splitting_character`,
+            :meth:`c`
+            :meth:`c_splitting_map`,
+            :meth:`does_decompose`,
+            :meth:`decomposable_twist`
 
         INPUT:
 
         - ``index`` -- The index (default: 0) of the splitting
-          map to return. Accepted values are non-negative
-          integers smaller than the total amount of splitting
-          maps or one of the special values:
-          - 'all' : for a tuple of all splitting maps
-          - 'conjugacy' : for a tuple of splitting maps, one
-            for each conjugacy class of splitting maps.
-          Also accepts tuples of accepted values including
-          tuples themselves.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
+          map. Accepted values are non-negative integers smaller than
+          the total amount of splitting maps or one of the special
+          values: 'all' for a tuple of all splitting maps; and
+          'conjugacy' for a tuple of splitting maps, one for each
+          conjugacy class of splitting maps. Also accepts tuples of
+          accepted values including tuples themselves.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such
+          comments.  If set to any negative value will also prevent
+          the printing of any warnings.  If this method calls any
+          method that accepts an argument verbose will pass this
+          argument to it.  If such a method fulfills a minor task
+          within this method and the argument verbose was larger than
+          0, will instead pass 1 less than the given argument. This
+          makes it so a higher value will print more details about the
+          computation than a lower one.
 
         OUTPUT:
 
-        Returns the splitting map of the given index. If the
-        index was 'all' or 'conjugacy' will return a tuple of
-        such maps corresponding to the corresponding
-        tuple of indices. If the given index was a tuple will
-        return a tuple of outputs on each entry of this tuple
-        in the same order.
+        The splitting map of the given index. If the index was 'all'
+        or 'conjugacy' will return a tuple of such maps corresponding
+        to the corresponding tuple of indices. If the given index was
+        a tuple will return a tuple of outputs on each entry of this
+        tuple in the same order.
+
+        EXAMPLES::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12*t - 12, 0, 180 - 108*t, 0], guessed_degrees=[2])
+            sage: beta = E.splitting_map()
+            sage: G = E.decomposition_field().galois_group()
+            sage: [beta(s) for s in G]
+            [1, zeta4a0]
+            sage: [beta(s).minpoly() for s in G]
+            [x - 1, x^2 + 2]
+
+        Note that the cocycle associated to this Q-curve and the
+        coboundary of the splitting map agree if this Q-curve
+        decomposes::
+
+            sage: K.<t> = QuadraticField(5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.does_decompose()
+            False
+            sage: G = E.decomposition_field().galois_group()
+            sage: matrix([[E.c(s, t) for t in G] for s in G])
+            [ 1  1  1  1  1  1  1  1]
+            [ 1  2  1  2  2  1  2  1]
+            [ 1 -1  1 -1 -1  1 -1  1]
+            [ 1  2  1  2  2  1  2  1]
+            [ 1 -2  1 -2 -2  1 -2  1]
+            [ 1  1  1  1  1  1  1  1]
+            [ 1 -2  1 -2 -2  1 -2  1]
+            [ 1 -1  1 -1 -1  1 -1  1]
+            sage: matrix([[E.c_splitting_map(s, t) for t in G] for s in G])
+            [ 1  1  1  1  1  1  1  1]
+            [ 1 -2  1  2 -2  1  2  1]
+            [ 1  1 -1 -1  1 -1 -1  1]
+            [ 1  2 -1  2  2 -1  2  1]
+            [ 1 -2  1  2 -2  1  2  1]
+            [ 1  1 -1 -1  1 -1 -1  1]
+            [ 1  2 -1  2  2 -1  2  1]
+            [ 1  1  1  1  1  1  1  1]
+            sage: E2 = E.decomposable_twist()
+            sage: E2.does_decompose()
+            True
+            sage: G = E2.decomposition_field().galois_group()
+            sage: matrix([[E2.c(s, t) for t in G] for s in G])
+            [ 1  1  1  1]
+            [ 1  2  2 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
+            sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
+            [ 1  1  1  1]
+            [ 1  2  2 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
+
         """
         if hasattr(index, "__iter__"):
             return tuple(self.splitting_map(i, verbose=verbose) for i in index)
@@ -1014,56 +1571,99 @@ class Qcurve(EllipticCurve_number_field):
 
     @cached_method(key=_galois_cache_key2)
     def c_splitting_map(self, sigma, tau):
-        r"""
-        Evaluates the coboundary of a splitting map of this Q-curve.
+        r"""Evaluate the coboundary of a splitting map of this Q-curve.
 
-        .. NOTE::
-        This is independent of the chosen splitting map.
+        .. NOTE:: This is independent of the chosen splitting map.
+
+        .. SEEALSO::
+
+            :meth:`splitting_map`
        
         INPUT:
         
         - ``sigma`` -- A galois homomorphism of a number field.
+
         - ``tau`` -- A galois homomorphism of a number field.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such
+          comments.  If set to any negative value will also prevent
+          the printing of any warnings.  If this method calls any
+          method that accepts an argument verbose will pass this
+          argument to it.  If such a method fulfills a minor task
+          within this method and the argument verbose was larger than
+          0, will instead pass 1 less than the given argument. This
+          makes it so a higher value will print more details about the
+          computation than a lower one.
 
         OUTPUT:
         
-        The value
-        .. MATH::
+        The value .. MATH::
 
-            \beta(\sigma) \cdot \beta(\tau) \cdot \beta(\sigma \tau)^{-1}
+            \beta(\sigma) \cdot \beta(\tau) \cdot \beta(\sigma
+            \tau)^{-1}
 
         for $\beta$ a splitting map of this Q-curve and $\sigma$ and
-        $\tau$ galois extensions to $\bar{\Q}$ of sigma and tau respectively.
+        $\tau$ galois extensions to $\bar{\Q}$ of sigma and tau
+        respectively.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.does_decompose()
+            False
+            sage: G = E.decomposition_field().galois_group()
+            sage: matrix([[E.c(s, t) for t in G] for s in G])
+            [ 1  1  1  1  1  1  1  1]
+            [ 1  2  1  2  2  1  2  1]
+            [ 1 -1  1 -1 -1  1 -1  1]
+            [ 1  2  1  2  2  1  2  1]
+            [ 1 -2  1 -2 -2  1 -2  1]
+            [ 1  1  1  1  1  1  1  1]
+            [ 1 -2  1 -2 -2  1 -2  1]
+            [ 1 -1  1 -1 -1  1 -1  1]
+            sage: matrix([[E.c_splitting_map(s, t) for t in G] for s in G])
+            [ 1  1  1  1  1  1  1  1]
+            [ 1 -2  1  2 -2  1  2  1]
+            [ 1  1 -1 -1  1 -1 -1  1]
+            [ 1  2 -1  2  2 -1  2  1]
+            [ 1 -2  1  2 -2  1  2  1]
+            [ 1  1 -1 -1  1 -1 -1  1]
+            [ 1  2 -1  2  2 -1  2  1]
+            [ 1  1  1  1  1  1  1  1]
+            sage: E2 = E.decomposable_twist()
+            sage: E2.does_decompose()
+            True
+            sage: G = E2.decomposition_field().galois_group()
+            sage: matrix([[E2.c(s, t) for t in G] for s in G])
+            [ 1  1  1  1]
+            [ 1  2  2 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
+            sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
+            [ 1  1  1  1]
+            [ 1  2  2 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
+
         """
         if not self._is_cached('_beta'):
             self.splitting_map(verbose=verbose);
         return QQ(self._beta(sigma) * self._beta(tau) * self._beta(sigma*tau)^(-1))
 
     def _Kl_roots(self):
-        r"""
-        Gives a basis for the field of complete definition.
+        r"""Gives a basis for the field of complete definition.
 
         OUTPUT:
         
-        Gives a list of squarefree integers such that the field
-        of complete definition is $\Q$ adjoint all roots of these
-        integers. Furthermore this list has minimal length in
-        this regard.
+        Gives a list of squarefree integers such that the field of
+        complete definition is $\Q$ adjoint all roots of these
+        integers. Furthermore this list has minimal length in this
+        regard.
+
         """
         Kl = self._Kl
         products = [1]
@@ -1079,14 +1679,36 @@ class Qcurve(EllipticCurve_number_field):
         return result
 
     def cyclotomic_order(self):
-        r"""
-        The smallest $N$ such that $\Q(\zeta_N)$ contains the decomposition field.
+        r"""Return the smallest $N$ such that $\Q(\zeta_N)$ contains the
+        decomposition field.
+
+        .. NOTE::
+
+        For this $N$ to exist, the definition field of this Q-curve
+        should be abelian.
+
+        .. SEEALSO::
+
+            :meth:`decomposition_field`
 
         OUTPUT:
         
-        The smallest non-negative integer $N$ such that the decomposition field
-        of this Q-curve as given by :meth:`Qcurve.decomposition_field` is
-        completely contained in $\Q(\zeta_N)$.
+        The smallest non-negative integer $N$ such that the
+        decomposition field of this Q-curve as given by
+        :meth:`decomposition_field` is completely contained in
+        $\Q(\zeta_N)$.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: N = E.cyclotomic_order(); N
+            40
+            sage: L = E.decomposition_field(); L
+            Number Field in tu0zeta0 with defining polynomial x^8 - 22*x^6 - 20*x^5 + 199*x^4 + 380*x^3 + 882*x^2 + 740*x + 1721
+            sage: len(L.gen().minpoly().change_ring(CyclotomicField(N)).roots()) > 0
+            True
+
         """
         if not self._is_cached('_N') or not self._is_cached('_ker'):
             K = self.decomposition_field()
@@ -1099,8 +1721,8 @@ class Qcurve(EllipticCurve_number_field):
         return self._N
 
     def _init_twist_characters(self):
-        r"""
-        Computes all the twist characters to start with.
+        r"""Compute all the twist characters to start with.
+
         """
         N = self.cyclotomic_order()
         ker = self._ker
@@ -1114,24 +1736,27 @@ class Qcurve(EllipticCurve_number_field):
                 self._chi.append([chi])
 
     def _twist_character_data(self, i, j):
-        r"""
-        Keeps track of the twist characters, storing for each splitting
+        r"""Keeps track of the twist characters, storing for each splitting
         map the following data
+
          0 - The dirichlet character which twists the first splitting
              map into this one.
+
          1 - The same character as a galois character.
 
         INPUT:
 
-        - ``i`` -- The index of the twist character for which to retrieve
-          the data. This may also be a tuple of accepted values or one of
-          the special keywords 'all', for all of them, or 'conjugacy', for
-          all of them up to conjugacy.
+        - ``i`` -- The index of the twist character for which to
+          retrieve the data. This may also be a tuple of accepted
+          values or one of the special keywords 'all', for all of
+          them, or 'conjugacy', for all of them up to conjugacy.
+
         - ``j`` -- The index of the data to be retrieved.
 
         OUTPUT:
         
         The requested data for all indices in i.
+
         """
         if not self._is_cached('_chi'):
             self._init_twist_characters()
@@ -1148,36 +1773,53 @@ class Qcurve(EllipticCurve_number_field):
         raise Exception("Invalid index %s."%i)
     
     def twist_character(self, index=0, galois=False):
-        r"""
-        Gives the twist needed to obtain a certain splitting map.
+        r"""Give the twist needed to obtain a certain splitting map.
+
+        Since all splitting maps have the same coboundary, each
+        splitting map is the product of the first splitting map with
+        some galois character.  As the fixed field of these characters
+        is abelian they can also be represented by Dirichlet
+        characters, which is the default representation used.
+
+        .. SEEALSO::
+
+            :meth:`splitting_map`
 
         INPUT:
 
-        - ``index`` -- The index (default: 0) of the splitting
-          map to which this twist should correspond. Accepted
-          values are non-negative integers smaller than the
-          total amount of splitting maps or one of the special
-          values:
-          - 'all' : for a tuple of all twist characters
-          - 'conjugacy' : for a tuple of twist characters, one
-            for each conjugacy class of splitting maps.
-          Also accepts tuples of accepted values including
-          tuples themselves.
-        - ``galois`` -- A boolean (default: False) indicating
-          whether the twist character should be given as galois
-          or dirichlet characters.
+        - ``index`` -- The index (default: 0) of the corresponding
+          splitting map. Accepted values are non-negative integers
+          smaller than the total amount of splitting maps or one of
+          the special values: 'all' for a tuple of all twist
+          characters; and 'conjugacy' for a tuple of twist characters,
+          one for each conjugacy class of splitting maps. Also accepts
+          tuples of accepted values including tuples themselves.
+
+        - ``galois`` -- A boolean (default: False) indicating whether
+          the twist character should be given as a galois or a
+          dirichlet character.
 
         OUTPUT:
 
-        Returns the character such that twisting the first
-        splitting map by this character gives the splitting
-        map of the given index. This twist character is given
-        as a galois character if galois is set to True or as a
-        Dirichlet character otherwise. If the index was 'all'
-        or 'conjugacy' will return a tuple of such characters
-        corresponding to the corresponding tuple of indices. If
-        the given index was a tuple will return a tuple of outputs
-        on each entry of this tuple in the same order.
+        The character such that the first splitting map times this
+        character gives the splitting map of the given index. This
+        twist character is given as a galois character if galois is
+        set to True or as a Dirichlet character otherwise. If the
+        index was 'all' or 'conjugacy' will return a tuple of such
+        characters corresponding to the corresponding tuple of
+        indices. If the given index was a tuple will return a tuple of
+        outputs on each entry of this tuple in the same order.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12*t - 12, 0, 180 - 108*t, 0], guessed_degrees=[2])
+            sage: beta = E.splitting_map('all')
+            sage: xi = E.twist_character('all', galois=True)
+            sage: G = E.decomposition_field().galois_group()
+            sage: all(beta[i](s) == xi[i](s) * beta[0](s) for s in G for i in range(len(beta)))
+            True
+
         """
         if galois:
             return self._twist_character_data(index, 1)
@@ -1186,22 +1828,45 @@ class Qcurve(EllipticCurve_number_field):
 
     @cached_method
     def number_of_splitting_maps(self, count_conjugates=True):
-        r"""
-        Gives the number of splitting maps for this Q-curve.
+        r"""Give the number of splitting maps for this Q-curve.
+
+        For counting the number of splitting maps, only those
+        splitting maps are counted that have the same coboundary and
+        are defined over the galois group of the decomposition field.
+
+        .. SEEALSO::
+
+            :meth:`splitting_map`,
+            :meth:`decomposition_field`,
+            :meth:`c_splitting_map`,
+            :meth:`splitting_character`,
+            :meth:`twist_character`
 
         INPUT:
 
-        - ``count_conjugates`` -- A boolean (default: True)
-          indicating whether conjugate splitting maps should
-          be counted seperately.
+        - ``count_conjugates`` -- A boolean (default: True) indicating
+          whether conjugate splitting maps should be counted
+          separately.
 
         OUTPUT:
         
-        Gives the number of distinct splitting maps of this
-        Q-curve defined over its decomposition field. If the
-        flag count_conjugates is set to False, will return
-        the number of conjugacy classes of such splitting
-        maps instead.
+        Gives the number of distinct splitting maps of this Q-curve
+        defined over the galois group of its decomposition field. If
+        the flag count_conjugates is set to False, will return the
+        number of galois conjugacy classes of such splitting maps
+        instead.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(-1)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.number_of_splitting_maps()
+            4
+            sage: len(E.splitting_character('all'))
+            4
+            sage: len(E.twist_character('all'))
+            4
+
         """
         if count_conjugates:
             if not self._is_cached('_chi'):
@@ -1212,10 +1877,9 @@ class Qcurve(EllipticCurve_number_field):
 
     @cached_method
     def _conjugacy_determination(self):
-        r"""
-        Gives a tuple of indices that contains for each conjugacy
-        class of splitting maps the index of exactly one element
-        thereof.
+        r"""Give a tuple of indices that contains for each conjugacy class of
+        splitting maps the index of exactly one element thereof.
+
         """
         beta_ls = self.splitting_map("all")
         beta_del = [beta for beta in beta_ls]
@@ -1247,24 +1911,23 @@ class Qcurve(EllipticCurve_number_field):
         return tuple(result)
 
     def _isogeny_data(self, K):
-        r"""
-        Gives the isogeny data of this curve over a given field.
+        r"""Give the isogeny data of this curve over a given field.
 
         INPUT:
 
         - ``K`` -- A number field that is an extension of the
-                   definition field of this Q-curve.
+          definition field of this Q-curve.
 
         OUTPUT:
 
-        A dictionary of which the keys are the elements of the
-        galois group of K, and the value for each element sigma
-        is a tuple containing the lambda and the degree of the
-        isogeny from the conjugate of this curve by sigma to
-        itself, in that order.
+        A dictionary of which the keys are the elements of the galois
+        group of K, and the value for each element sigma is a tuple
+        containing the lambda and the degree of the isogeny from the
+        conjugate of this curve by sigma to itself, in that order.
+
         """
         G = K.galois_group()
-        l = self.isogeny_lambda
+        l = self.isogeny_scalar
         d = self.degree_map
         return {s: (l(galois_field_change(s, self.definition_field())),
                     d(galois_field_change(s, self.definition_field()))) for s in G}
@@ -1280,8 +1943,15 @@ class Qcurve(EllipticCurve_number_field):
         return result
 
     def twist(self, gamma):
-        r"""
-        Gives the twist of this Q-curve by a given element gamma.
+        r"""Give the twist of this Q-curve by a given element gamma.
+
+        If this Q-curve was given by .. MATH::
+
+        E : y^2 = x^3 + a_2 x^2 + a_4 x + a_6
+
+        the twisted Q-curve is given by .. MATH::
+        
+        E : y^2 = x^3 + \gamma a_2 x^2 + \gamma^2 a_4 x + \gamma^3 a_6
 
         INPUT:
 
@@ -1289,20 +1959,18 @@ class Qcurve(EllipticCurve_number_field):
 
         OUTPUT:
         
-        A Q-curve defined over the composite field of the field over which this
-        Q-curve is completely defined and the parent of gamma, that is the
-        twist of this Q-curve by gamma, i.e. if this Q-curve was given by
-        
-        .. MATH::
+        A Q-curve which is the twist of this Q-curve by gamma. This
+        curve will be defined over the smallest possible field over
+        which it is completely defined.
 
-        E : y^2 = x^3 + a_2 x^2 + a_4 x + a_6
+            sage: K.<t> = QuadraticField(5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2]); E
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 5
+            sage: E2 = E.twist(t); E2
+            Q-curve defined by y^2 = x^3 + (1/4*sqrt_a0^3-3*sqrt_a0^2-11*sqrt_a0+76)*x^2 + (15/8*sqrt_a0^3-45/2*sqrt_a0^2-165/2*sqrt_a0+660)*x over Number Field in sqrt_a0 with defining polynomial x^4 - 16*x^3 - 8*x^2 + 576*x - 1264
+            sage: E2.complete_definition_field()
+            Number Field in sqrt_a0 with defining polynomial x^4 - 16*x^3 - 8*x^2 + 576*x - 1264
 
-        the twisted Q-curve is given by
-
-        .. MATH::
-        
-        E : y^2 = x^3 + \gamma a_2 x^2 + \gamma^2 a_4 x + \gamma^3 a_6
-        
         """
         K_E = self.complete_definition_field()
         K_gamma = gamma.parent()
@@ -1311,38 +1979,61 @@ class Qcurve(EllipticCurve_number_field):
         E_map = iota * self._to_Kl
         E = twist_elliptic_curve(self.change_ring(E_map), gamma)
         ainvs = E.a_invariants()
-        l = self.isogeny_lambda
+        l = self.isogeny_scalar
         d = self.degree_map
         G = K.galois_group()
         isogenies = dict()
-        for s in G:
-            L, K_to_L, alpha = field_with_root(K, s(gamma)/gamma, give_embedding=True)
-            isogenies[s] = (K_to_L(iota(l(s))) * alpha, d(s))
-        H = [t for t in G if (all(t(isogenies[s][0]) == isogenies[s][0] for s in G) and
-                              all(t(a) == a for a in ainvs))]
+        Kold = K
+        from_old_K = K.hom(K)
+        for i in range(len(G)):
+            s = G[i]
+            K, to_new_K, alpha = field_with_root(K, s(gamma)/gamma, give_embedding=True)
+            from_old_K = to_new_K * from_old_K
+            isogenies[s] = (from_old_K(iota(l(s))) * alpha, d(s))
+            for j in range(i):
+                isogenies[G[j]] = (to_new_K(isogenies[G[j]][0]), isogenies[G[j]][1])
+        ainvs = [from_old_K(a) for a in ainvs]
+        G2 = K.galois_group()
+        H = [t for t in G2 if (all(t(isogenies[s][0]) == isogenies[s][0] for s in G) and
+                               all(t(a) == a for a in ainvs))]
         Kmin = fixed_field(H)
         if Kmin != K:
             isogenies_min = {}
-            G = Kmin.galois_group()
             for s in Kmin.galois_group():
-                l, d = isogenies[galois_field_change(s, K)]
+                l, d = isogenies[galois_field_change(s, Kold)]
                 isogenies_min[s] = (Kmin(l), d)
             ainvs = [Kmin(a) for a in ainvs]
             return Qcurve(ainvs, isogenies=isogenies_min)
         return Qcurve(ainvs, isogenies=isogenies)
     
     def decomposable_twist(self):
-        r"""
-        Gives another Q-curve which restriction of scalars over the decomposition
-        field decomposes as a product of abelian varieties of GL_2-type.
+        r"""Give a twist of this Q-curve for which the restriction of scalars
+        over the decomposition field decomposes as a product of
+        abelian varieties of GL_2-type.
+
+        .. SEE_ALSO::
+
+            :meth:`does_decompose`,
+            :meth:`decomposition_field`,
+            :meth:`twist`
 
         OUTPUT:
         
-        A Q-curve which is a twist of this curve and has the same decomposition
-        field. When taking the restriction of scalars of this curve over
-        the decomposition field the resulting abelian variety is isogenous
-        to a product of Q-simple, non-Q-isogenous abelian varieties of
-        GL_2-type.
+        A Q-curve which is a twist of this curve that has the same
+        decomposition field. When taking the restriction of scalars of
+        this new curve over the decomposition field the resulting
+        abelian variety is isogenous to a product of $\QQ$-simple,
+        non-$\QQ$-isogenous abelian varieties of GL_2-type.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(7)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.does_decompose()
+            False
+            sage: E.decomposable_twist().does_decompose()
+            True
+
         """
         if self.does_decompose():
             return self
@@ -1377,22 +2068,44 @@ class Qcurve(EllipticCurve_number_field):
         return self.twist(gamma) # twist will do the minimization of the field!
 
     def complete_definition_twist(self, roots):
-        r"""
-        Gives a twist of this curve completely defined over a given field.
+        r"""Give a twist of this curve completely defined over a given field.
+
+        .. SEEALSO::
+
+            :meth:`degree_map_image`,
+            :meth:`twist`
 
         INPUT:
         
-        - ``roots`` -- A list of rational numbers satisfying the
-          following property: There exists a set of generators of the
-          image of the degree map in $\Q^*/(\Q^*)^2$ such that each
-          element in the list is plus or minus an element in this set.
+        - ``roots`` -- A list of rational numbers such that up to sign
+          they form generators of the image of the degree map in
+          $\QQ^* / (\QQ^*)^2$.
         
         OUTPUT:
 
-        A Q-curve that is a twist of this curve and satisfies
-         - It is defined over the same base field $K$
-         - It is completely defined over $K$ adjoint all roots
-           of the rationals given in roots.
+        A Q-curve that is a twist of this curve and is defined over
+        the same definition field as this curve. Furthermore it is
+        completely defined over the definition field with all the
+        roots of the integers in the given list `roots` adjoined.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2]); E
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
+            sage: E.degree_map_image()
+            [1, 2]
+            sage: K1 = E.complete_definition_field(); K1
+            Number Field in tu0 with defining polynomial x^4 - 2*x^2 + 25
+            sage: K1(2).is_square()
+            False
+            sage: E2 = E.complete_definition_twist([2]); E2
+            Q-curve defined by y^2 = x^3 + (-12*t)*x^2 + (54*t+54)*x over Number Field in t with defining polynomial x^2 - 3
+            sage: K2 = E2.complete_definition_field(); K2
+            Number Field in tsqrt_a0 with defining polynomial x^4 - 10*x^2 + 1
+            sage: K2(2).is_square()
+            True
+
         """
         # Calculate all elements generated by absolute roots mod squares and how to obtain them
         roots_image = {1 : []}
@@ -1429,7 +2142,7 @@ class Qcurve(EllipticCurve_number_field):
             return sqrt(Knew(product(roots[i] for i in roots_image[d(s).squarefree_part()])))
 
         # The correction map
-        l = self.isogeny_lambda
+        l = self.isogeny_scalar
         def alpha(s):
             return new_to_big(mu(s))^2 / old_to_big(l(s))^2
 
@@ -1455,13 +2168,24 @@ class Qcurve(EllipticCurve_number_field):
 
     @cached_method
     def conductor_restriction_of_scalars(self):
-        r"""
-        Gives the conductor of the restriction of scalars of this Q-curve.
+        r"""Give the conductor of the restriction of scalars of this Q-curve.
 
         OUTPUT:
 
-        The conductor of the restriction of scalars of this curve
-        over the decomposition field.
+        The conductor of the restriction of scalars of this curve over
+        the decomposition field.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.conductor_restriction_of_scalars()
+            5566277615616
+
+        .. SEE_ALSO::
+
+            :meth:`decomposition_field`
+
         """
         K0 = self.definition_field()
         K = self.decomposition_field()
@@ -1473,39 +2197,50 @@ class Qcurve(EllipticCurve_number_field):
             return self.conductor().absolute_norm() * K.discriminant()^2
 
     def _newform_levels(self, prime=None, alpha=None, beta=None, gamma=None, d=None, N=None):
-        r"""
-        Gives the possible levels of newforms associated to this Q-curve.
+        r"""Give the possible levels of newforms associated to this Q-curve.
 
         INPUT:
         
-        - ``prime`` -- A prime number or None (default: None) indicating the exponent
-          of which prime the level should be computed or None for the level itself.
-        - ``alpha`` -- A tuple of non-negative integers (default: None) containing the
-          conductors of the characters associated to the newforms. Will be computed
-          from the splitting characters up to conjugacy if set to None.
-        - ``beta`` -- A tuple of tuples of non-negative integers (default: None)
-          containing at index i, j the conductor of the twist that turns the i-th
-          newform into the j-th newform. Will be computed from the twist characters
-          up to conjugacy if set to None.
-        - ``gamma`` -- A tuple of tuples of non-negative integers (default: None)
-          containing at index i, j the conductor of the product of the twist that
-          turns the i-th newform into the j-th newform and the character of the
-          i-th newform. Will be computed from the twist characters and splitting
+        - ``prime`` -- A prime number or None (default: None).  If set
+          to a prime number, will only compute the order of that prime
+          number in the level of the newforms. Otherwise it will
+          compute the level for each of them.
+
+        - ``alpha`` -- A tuple of non-negative integers (default:
+          None) containing the conductors of the characters associated
+          to the newforms. Will be computed from the splitting
+          characters up to conjugacy if set to None.
+
+        - ``beta`` -- A tuple of tuples of non-negative integers
+          (default: None) containing at index i, j the conductor of
+          the twist that turns the i-th newform into the j-th
+          newform. Will be computed from the twist characters up to
+          conjugacy if set to None.
+
+        - ``gamma`` -- A tuple of tuples of non-negative integers
+          (default: None) containing at index i, j the conductor of
+          the product of the twist that turns the i-th newform into
+          the j-th newform and the character of the i-th newform. Will
+          be computed from the twist characters and splitting
           characters up to conjugacy if set to None
-        - ``d`` -- A tuple of non-negative integers (default: None) containing the
-          respective degrees of the fields in which the newforms have their
-          coefficients.
-        - ``N`` -- A non-negative integer (default: None) giving the conductor of
-          the restriction of scalars of this Q-curve over the decomposition field.
-          Will be computed using the corresponding method if set to None.
+
+        - ``d`` -- A tuple of non-negative integers (default: None)
+          containing the respective degrees of the fields in which the
+          newforms have their coefficients.
+
+        - ``N`` -- A non-negative integer (default: None) giving the
+          conductor of the restriction of scalars of this Q-curve over
+          the decomposition field.  Will be computed using the
+          corresponding method if set to None.
         
         OUTPUT:
 
-        A list of tuples, each tuple representing one of the options for the levels
-        of the newforms associated to this Q-curve. If a prime was given, these
-        tuples will contain the respective exponent of the given prime for each
-        newform. If no prime was given, they will contain the respective level of
-        each newform.
+        A list of tuples, each tuple representing one of the options
+        for the levels of the newforms associated to this Q-curve. If
+        a prime was given, these tuples will contain the respective
+        exponent of the given prime for each newform. If no prime was
+        given, they will contain the respective level of each newform.
+
         """
         # Calculate missing stuff:
         eps = []
@@ -1594,40 +2329,94 @@ class Qcurve(EllipticCurve_number_field):
 
     @cached_method
     def newform(self, algorithm='magma', verify=0):
-        r"""
-        Gives the newform associated to this Q-curve.
+        r"""Give a newform associated to this Q-curve.
+
+        Each non-CM Q-curve is the quotient of a $\Q$-simple variety
+        of GL_2-type, which in turn is isogeneous to an abelian
+        variety associated to a newform. We will call such a newform a
+        newform associated to a Q-curve.
+
+        ALGORITHM:
+
+        To obtain the newforms we take the restriction of scalars of
+        this Q-curve over its decomposition field. If all is well,
+        this is isogenous to a product of $\Q$-simple, non
+        $\Q$-isogenous abelian varieties of GL_2-type. The newforms
+        attached to these varieties are twists of one another,
+        allowing the computation of their possible levels by using
+        formulas linking the levels of twisted newforms, the conductor
+        of the restriction of scalars and the conductor of the abelian
+        varieties.
+        
+        Next for each possible combination of levels, the space of
+        newforms of the lowest level is computed with the appropiate
+        character. For these newforms the L-series of this Q-curve and
+        the L-series of the newforms are compared until as many
+        newforms are left as expected. Some Q-curves have multiple
+        factors of the same level and character, so one is chosen.
 
         INPUT:
         
         - ``algorithm`` -- A string that determines which program
-          should be used to do computations. Allowed options are:
-            - 'magma' (default)
-            - 'sage'
-          This program is used for computing newforms and Euler
-          factors of the L-series associated to the curve.
+          should be used to do computations. Allowed values are:
+          'magma' (default) or 'sage' to use MAGMA and Sage
+          respectively.  This program is used for computing newforms
+          and Euler factors of the L-series associated to the curve.
+
         - ``verify`` -- A non-negative integer determining what
           the biggest prime is for which the result should be
           verified using the Euler factors of the L-series.
 
         OUTPUT:
 
-        A list of tuples such that each tuple contains
-          - a newform such that this curve is a quotient of the abelian
-            variety associated to that newform, i.e. a newform
-            associated to this Q-curve by modularity
-          - A list of Dirichlet character that twist this newform into
-            other newforms, such that the restriction of scalars of this
-            Q-curve over the decomposition field is isogenous (over $\Q$)
-            to the product of the abelian varieties associated to the
-            twists of the first newform by the given characters.
+        A tuple consisting of
 
-        NOTE:
+          - a newform such that this curve is a quotient of the
+            abelian variety associated to that newform, i.e. a newform
+            associated to this Q-curve by modularity
+
+          - A list of Dirichlet characters that twist this newform
+            into other newforms, such that the restriction of scalars
+            of this Q-curve over the decomposition field is isogenous
+            (over $\Q$) to the product of the abelian varieties
+            associated to the twists of the first newform by the given
+            characters.
+
+        .. NOTE::
         
-        The newforms associated to a Q-curve are not unique. Not
-        only are all their galois conjugates also associated,
-        also twists of the newform are associated to the same
-        curve. On the other hand, all curves isogenous to this
-        Q-curve are associated to the same collection of newforms.
+        The newforms associated to a Q-curve are in no way unique. Not
+        only are all their galois conjugates also associated, also
+        twists of the newform are associated to the same curve. On the
+        other hand, all curves isogenous to this Q-curve are
+        associated to the same collection of newforms.
+
+        .. SEEALSO::
+
+            :meth:`decomposition_field`,
+            :meth:`does_decompose`,
+            :meth:`splitting_character`,
+            :meth:`twist_character`,
+            :meth:`conductor_restriction_of_scalars`
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E2 = E.decomposable_twist()
+            sage: E2.newform() # long
+            (q + (-a + 1)*q^3 + a*q^5 + 3*a*q^7 + (-2*a - 1)*q^9 + 4*q^11 + O(q^12),
+             [Dirichlet character modulo 12 of conductor 1 mapping 7 |--> 1, 5 |--> 1])
+
+        Or another example with two factors::
+
+            sage: K.<t> = QuadraticField(5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E2 = E.decomposable_twist()
+            sage: E2.newform() # long
+            (q + (a + 1)*q^7 - 4*a*q^11 + O(q^12),
+             [Dirichlet character modulo 20 of conductor 1 mapping 11 |--> 1, 17 |--> 1,
+              Dirichlet character modulo 20 of conductor 20 mapping 11 |--> -1, 17 |--> -zeta4])
+
         """
         if not self.does_decompose():
             raise ValueError("Can not compute newform if the restriction of scalars does not decompose.")

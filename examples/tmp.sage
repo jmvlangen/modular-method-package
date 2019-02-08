@@ -22,7 +22,7 @@ Kl = Q1._Kl
 G = Kcomp.galois_group()
 d = Q1.degree_map
 c = Q1.c
-l = Q1.isogeny_lambda
+l = Q1.isogeny_scalar
 eps = Q1.splitting_character(galois=True)
 beta = Q1.splitting_map()
 for sigma in G:
@@ -36,7 +36,7 @@ for sigma in G:
 ZNZ = [1,5,7,-1]
 N = 12
 d = Q1.degree_map
-l = Q1.isogeny_lambda
+l = Q1.isogeny_scalar
 beta = Q1.splitting_map()
 c = Q1.c
 L = CyclotomicField(N)
