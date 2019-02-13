@@ -4,8 +4,7 @@ import re
 import itertools
 
 class Condition_base(SageObject):
-    """
-    A class that represents a condition on some variables.
+    """A class that represents a condition on some variables.
 
     This class should not be used by itself.
 
@@ -16,6 +15,7 @@ class Condition_base(SageObject):
         The condition that the variables ('x', 'y') are pairwise coprime.
         sage: PolynomialCondition(x^2 + y^2 - 4)
         The condition that x^2 + y^2 - 4 == 0
+
     """
 
     def __init__(self, variables):

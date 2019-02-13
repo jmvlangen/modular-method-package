@@ -1,11 +1,10 @@
 def Euler_factor_modular_form(f, p, twists=[1]):
-    r"""
-    Computes the Euler factor of a modular form.
+    r"""Compute the Euler factor of a modular form.
 
     INPUT:
 
-    - ``f`` -- A modular form. This may be a magma
-      or a sage object.
+    - ``f`` -- A modular form. This may be a magma or a sage object.
+
     - ``p`` -- A prime number.
 
     OUTPUT:
@@ -13,6 +12,7 @@ def Euler_factor_modular_form(f, p, twists=[1]):
     The p-th Euler factor of the L-Series, either
     as a magma polynomial if f was a magma object
     or as a sage polynomial otherwise.
+
     """
     if f.parent() == magma:
         ap = f.Coefficient(p).sage()
