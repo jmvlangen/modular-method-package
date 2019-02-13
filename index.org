@@ -13,7 +13,7 @@ Should scrap (%)
 ** diophantine_equations/
 Code to analyze diophantine equations
 
-*** conditions.sage (*#)
+*** conditions.sage (*#!)
 Conditions on diophantine variables
 - Add decorator for conditional functions
 
