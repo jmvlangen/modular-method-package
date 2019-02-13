@@ -20,9 +20,6 @@ Conditions on diophantine variables
 *** Frey_curve_construction.sage
 Some functions to make Frey curves
 
-*** Krausmethod.sage (%)
-Old file
-
 *** newform_elimination.sage (*-) -> modular_forms/
 Methods for eliminating newforms
 - Add better tracking system for primes
@@ -53,10 +50,6 @@ Considering the diophantine equation x^4 + c*y^2 = z^l
 ! Uses deprecated DiophantineAnalyzer
 - Is it in database?
 - Remove or move and update
-*** frey_curve_calculator (%)
-Code that looks through equations of the form a^p + b^p = c^l and
-tries to find matching frey curves
-! Uses deprecated DiophantineAnalyzer
 *** frey curve conductor (-)
 Conductor computations of frey curves by Merel and Ellenberg
 Equations a^n + b^n = 2*c^n, a^n + b^n = c^2, a^n + b^n = c^2,
@@ -87,8 +80,6 @@ Frey curve computations of frey curves by Dieulefait and Urroz
 Equation x^4 + 2*y^2 = z^l
 - Is it in database?
 - Remove or move and update
-*** OverBiggerFields.sage (%)
-Some temporary computations
 *** Q-curve examples.sage (-)
 Examples of Q-curves
 - Is it in database?
@@ -101,17 +92,9 @@ Families of Q-curves
 Small tests on Q-curves with two isogeny
 - Superceded by new tests?
 - Remove or move and update
-*** Q-curve with 2-isogeny.sage (%)
-Old computations on an explicit Q-curve
-! Uses the removed Quer_invariants
-*** Quer_test.sage (%)
-Old code for computing with Q-curves
-Superceded by newer code
 *** scr.sage
 A check on Tate's algorithm
 - Make into a doctest
-*** SpecialCurve.sage (%)
-Some very specific temporary data
 *** test1.sage
 Examples of Tates algorithm
 Equations x^l + y^l = z^l, x^2 - 11 = y^l, x^3 - x - 2 = y^l,
@@ -121,17 +104,11 @@ x^3 = 13 = y^l, x^4 + x^3 - 3*x^2 + 11*x + 2 = y^l
 *** test.sage
 A test on Tate's algorithm
 - Make into a doctest of performTatesAlgorithm
-*** three_four_code.sage (%)
-Old code for the equation (x-y)^4 + x^4 + (x+y)^4 = z^l
 *** tmp2.sage
 Old conductor computations (no results)
 Equations x^l + y^l = z^2 and x^l + y^l = z^3
 - Are these in database?
 ! Uses the remove DiophantineAnalyzer
-*** tmpFLT.sage (%)
-Terrible code for computing conductor of FLT curve
-*** tmp.sage (%)
-Old manual computations in studying Q-curves
 ** group cohomology/
 Results about group cohomology
 *** calculations.sage (*+)
@@ -197,17 +174,10 @@ Unfinished code for Papadopoulus table lookup
 An implementation of Tate's algorithm that works for Frey curves
 ** tests/
 Code for (automated) testing
-*** cache problem.sage (%)
-Temporary code
-*** chen.sage (%)
-Old example
-! Uses removed code DiophantineAnalyzer
 *** cleanup.sh (+)
 Cleanup script
 *** code/
 Temporary directory for code to be tested
-*** galois_hash.sage (%)
-Temporary test to check hashing of galois homomorphisms
 *** generate.sh
 Script to generate code from a template
 *** Q-curve sage vs magma.sage (-)
@@ -226,11 +196,7 @@ Template for a test on a Q-curve with a 3-isogeny
 Template for a wrapper script around a file.
 **** test.sage (%)
 Old test file
-*** test1.sage (%)
-Also in examples
 *** testrun_database.sh
 A script that tests all .sage files in the database
 *** testrun.sh
 A script that tests all .sage files in the code directory
-*** test.sage (%)
-Also exists in examples/
