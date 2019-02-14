@@ -1,99 +1,4 @@
-def galois_on_poly(s, f):
-    r"""
-    Computes the outcome of a map acting on the coefficients
-    of a polynomial.
-
-    INPUT:
-
-    - ``s`` -- A map from a ring R to a ring S
-    - ``f`` -- A polynomial or multivariate polynomial
-      over the ring R
-
-    OUTPUT:
-
-    A polynomial or multivariate polynomial over the ring S
-    such that each monomial has the coefficient s(c) where
-    c is the coefficient of the same monomial in f.
-    """
-    return sum(s(f.coefficient(m).constant_coefficient()) * m for m in f.monomials())
-
-@cached_function
-def galois_on_units(K):
-    r"""
-    Computes how the galois group of a field acts on the
-    units of its ring of integers.
-
-    INPUT:
-
-    - ``K`` -- A galois number field.
-    
-    OUTPUT:
-    
-    A dictionary indexed by the elements of the galois group
-    of K, such that the value with key s is a matrix with
-    integer coefficients. If u1, ..., un are the units given
-    by K.unit_group().gens() and a1, ..., an are the entries
-    of the i-th row of this matrix, then ui is mapped to
-    u1^a1 * ... * un^an by s.
-    """
-    G = K.galois_group()
-    U = K.unit_group()
-    return {s : matrix([U(s(u)).list() for u in U.gens()]).transpose() for s in G}
-
-def mrange_i(n, s, e):
-    r"""
-    Gives all increasing sequences of a given length.
-
-    INPUT:
-
-    - ``n`` -- A non-negative integer.
-    - ``s`` -- An integer.
-    - ``e`` -- An integer.
-
-    OUTPUT:
-
-    A list of all sequences $(i_1, \ldots, i_n)$, where
-    $i_1, \ldots, i_n \in \Z$ and
-    $s \leq i_1 < \ldots < i_n < e$.
-    """
-    if n == 0:
-        yield []
-    for i0 in range(s, e):
-        for i_tail in mrange_i(n - 1, i0 + 1, e):
-            yield [i0] + i_tail
-
-def combinations(ls, n):
-    r"""
-    Gives all n-combinations of elements in a list.
-
-    INPUT:
-
-    - ``ls`` -- A list, tuple or other iterable object
-      which can be read as a list.
-    - ``n`` -- A non-negative integer.
-
-    OUTPUT:
-    
-    A list of all possible tuples of n different
-    elements of the given list.
-    """
-    return [tuple(ls[i] for i in i_ls) for i_ls in mrange_i(n, 0, len(ls))]
-
-def pairs(ls):
-    r"""
-    Gives all pairs of elements in a list.
-
-    INPUT:
-
-    - ``ls`` -- A list, tuple or other iterable object
-      which can be read as a list.
-
-    OUTPUT:
-
-    A list of all possible tuples of 2 different
-    elements of the given list.
-    """
-    return combinations(ls, 2)
+from sage.combinat.combination import Combinations
 
 class power_analyzer(SageObject):
     r"""
@@ -163,9 +68,9 @@ class power_analyzer(SageObject):
         if g is None:
             g = self.factor(K)
         if g.is_homogeneous():
-            return {s : g.macaulay_resultant(galois_on_poly(s, g)) for s in K.galois_group()}
+            return {s : g.macaulay_resultant(g.change_ring(s.as_hom())) for s in K.galois_group()}
         else:
-            return {s : g.resultant(galois_on_poly(s, g)) for s in K.galois_group()}
+            return {s : g.resultant(g.change_ring(s.as_hom())) for s in K.galois_group()}
 
     def relations(self, K, g=None):
         r"""
@@ -201,8 +106,8 @@ class power_analyzer(SageObject):
         G = K.galois_group()
         G_ls = [s for s in G if s != G(1)]
         result = []
-        for s_ls in combinations(G_ls, n - 1):
-            candidate = g * product(galois_on_poly(s, g) for s in s_ls)
+        for s_ls in Combinations(G_ls, n - 1):
+            candidate = g * product(g.change_ring(s.as_hom()) for s in s_ls)
             test = (candidate / self._f)
             if test.denominator() == 1:
                 # We found a relation
@@ -237,7 +142,7 @@ class power_analyzer(SageObject):
         result = reduce(lambda I, J: I + J,
                         [reduce(lambda I, J: I.intersection(J),
                                 [K.ideal(coprime[t*s^(-1)])
-                                 for s, t in pairs(s_ls)],
+                                 for s, t in Combinations(s_ls, 2)],
                                 K.ideal(C))
                          for s_ls, C in self.relations(K, g)])
         if result == K.ideal(0):
@@ -516,7 +421,7 @@ class power_analyzer(SageObject):
                         u_dict[cf][p] = u_dict[done_cases[case]][p]
                 else:
                     u = product(U.gens()[i]^ZZ(cf[i]) for i in range(len(cf)))
-                    xgl_poly = [galois_on_poly(s, g*(cg*u)^(-1)).change_ring(Fp) for s in G]
+                    xgl_poly = [(g*(cg*u)^(-1)).change_ring(s.as_hom()).change_ring(Fp) for s in G]
                     arg_ls = tuple(tuple(arg) for arg in mrange([p]*n)
                                    if gcd(arg) != 0 and
                                    all(xgl_arg == 0 or l.divides(xgl_arg.log(xp))

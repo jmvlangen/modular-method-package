@@ -1,21 +1,53 @@
-r"""
-Implements twisting methods for elliptic curves
+r"""Implements twisting methods for elliptic curves
 
-This file contains special methods that can twist a curve
-and find all possible twists that change the conductor.
+This file contains two main methods. The first :func:`is_twist`
+determines whether two curves are twists of one another. The second
+:func:`twist_elliptic_curve` computes the twist of an elliptic curve
+by some element.
 
 EXAMPLES::
 
-<Lots and lots of examples>
+    sage: E1 = EllipticCurve([1, 1]); E1
+    Elliptic Curve defined by y^2 = x^3 + x + 1 over Rational Field
+    sage: E2 = twist_elliptic_curve(E1, 2); E2
+    Elliptic Curve defined by y^2 = x^3 + 4*x + 8 over Rational Field
+    sage: is_twist(E1, E2)
+    -1
+
+One can also work over number fields::
+
+    sage: K.<v> = CyclotomicField(7)
+    sage: E1 = EllipticCurve([v, 1 + v^2])
+    sage: E1 = EllipticCurve([v, 1 + v^2]); E1
+    Elliptic Curve defined by y^2 = x^3 + v*x + (v^2+1) over Cyclotomic Field of order 7 and degree 6
+    sage: E2 = twist_elliptic_curve(E1, 7); E2
+    Elliptic Curve defined by y^2 = x^3 + 49*v*x + (343*v^2+343) over Cyclotomic Field of order 7 and degree 6
+    sage: is_twist(E1, E2)
+    -1
+    sage: E3 = twist_elliptic_curve(E1, -7); E3
+    Elliptic Curve defined by y^2 = x^3 + 49*v*x + (-343*v^2-343) over Cyclotomic Field of order 7 and degree 6
+    sage: is_twist(E1, E3)
+    1
+
+The methods also work over polynomial rings, or rather over their
+field of fractions::
+
+    sage: R.<a> = QQ[]
+    sage: E1 = EllipticCurve([a+1, a^2 + 2*a - 4]); E1
+    Elliptic Curve defined by y^2 = x^3 + (a+1)*x + (a^2+2*a-4) over Univariate Polynomial Ring in a over Rational Field
+    sage: E2 = twist_elliptic_curve(E1, (a - 1)); E2
+    Elliptic Curve defined by y^2 = x^3 + (a^3-a^2-a+1)*x + (a^5-a^4-7*a^3+17*a^2-14*a+4) over Univariate Polynomial Ring in a over Rational Field
+    sage: is_twist(E1, E2)
+    -1
 
 AUTHORS:
 
-- Joey van Langen (2018-07-13): initial version
+- Joey van Langen (2019-02-14): initial version
 
 """
 
 # ****************************************************************************
-#       Copyright (C) 2018 Joey van Langen <j.m.van.langen@outlook.com>
+#       Copyright (C) 2019 Joey van Langen <j.m.van.langen@outlook.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,21 +57,24 @@ AUTHORS:
 # ****************************************************************************
 
 def _is_twist_good_char(E1, E2):
-    """
-    Determines whether the curve E1 is a twist of E2.
+    """Determine whether the curve E1 is a twist of E2.
 
     INPUT:
 
-    - ``E1`` -- An elliptic curve over a field of
-      characteristic not 2 or 3.
-    - ``E2`` -- An ellitpic curve defined over the
-      same field as E1.
+    - ``E1`` -- An elliptic curve over a field of characteristic not 2
+      or 3.
+
+    - ``E2`` -- An elliptic curve defined over the same field as E1.
     
     OUTPUT:
-    1 if the two curves are isomorphic
-    -1 if the curves are twists of one another,
-    but not isomorphic over their base field.
+
+    1 if the two curves are isomorphic.
+
+    -1 if the curves are twists of one another, but not isomorphic
+    over their base field.
+
     0 if the curves are not twists of one another.
+
     """
     if E1.c4()^3 * E2.c6()^2 != E2.c4()^3 * E1.c6()^2:
         return 0
@@ -73,23 +108,24 @@ def _is_twist_good_char(E1, E2):
             return -1
 
 def _is_twist_char_2(E1, E2):
-    """
-    Determines whether the curve E1 is a twist of E2.
+    """Determine whether the curve E1 is a twist of E2.
 
     INPUT:
 
-    - ``E1`` -- An elliptic curve over a field of
-      characteristic 2.
-    - ``E2`` -- An ellitpic curve defined over the
-      same field as E1.
+    - ``E1`` -- An elliptic curve over a field of characteristic 2.
+
+    - ``E2`` -- An elliptic curve defined over the same field as E1.
     
     OUTPUT:
-    1 if the two curves are isomorphic
-    -1 if the curves are twists of one another,
-    but not isomorphic over their base field.
+
+    1 if the two curves are isomorphic.
+
+    -1 if the curves are twists of one another, but not isomorphic
+    over their base field.
+
     0 if the curves are not twists of one another.
+
     """
-    
     if (E1.a1() != 0 or
         E1.a3() != 0 or
         E2.a1() != 0 or
@@ -131,21 +167,23 @@ def _is_twist_char_2(E1, E2):
             return -1    
 
 def _is_twist_char_3(E1, E2):
-    """
-    Determines whether the curve E1 is a twist of E2.
+    """Determine whether the curve E1 is a twist of E2.
 
     INPUT:
 
-    - ``E1`` -- An elliptic curve over a field of
-      characteristic 3.
-    - ``E2`` -- An ellitpic curve defined over the
-      same field as E1.
+    - ``E1`` -- An elliptic curve over a field of characteristic 3.
+
+    - ``E2`` -- An elliptic curve defined over the same field as E1.
     
     OUTPUT:
-    1 if the two curves are isomorphic
-    -1 if the curves are twists of one another,
-    but not isomorphic over their base field.
+
+    1 if the two curves are isomorphic.
+
+    -1 if the curves are twists of one another, but not isomorphic
+    over their base field.
+
     0 if the curves are not twists of one another.
+
     """
     if (E1.b2()^2 * E2.b4() != E2.b2()^2 * E1.b4() or
         E1.b2()^3 * E2.b6() != E2.b2()^2 * E1.b6() or
@@ -188,20 +226,36 @@ def _is_twist_char_3(E1, E2):
             return -1
 
 def is_twist(E1, E2):
-    """
-    Determines whether the curve E1 is a twist of E2.
+    """Determine whether the curve E1 is a twist of E2.
 
     INPUT:
 
     - ``E1`` -- An elliptic curve over a field.
-    - ``E2`` -- An ellitpic curve defined over the
-      same field as E1.
+
+    - ``E2`` -- An elliptic curve defined over the same field as E1.
     
     OUTPUT:
-    1 if the two curves are isomorphic
-    -1 if the curves are twists of one another,
-    but not isomorphic over their base field.
+
+    1 if the two curves are isomorphic.
+
+    -1 if the curves are twists of one another, but not isomorphic
+    over their base field.
+
     0 if the curves are not twists of one another.
+
+    EXAMPLE::
+
+        sage: E1 = EllipticCurve([1, 1])
+        sage: E2 = EllipticCurve([2, 4])
+        sage: E3 = EllipticCurve([4, 8])
+        sage: E4 = EllipticCurve([16, 64])
+        sage: is_twist(E1, E2) # not twists
+        0
+        sage: is_twist(E1, E3) # twists, but not isomorphic
+        -1
+        sage: is_twist(E1, E4) # isomorphic
+        1
+
     """
     p = E1.base_ring().characteristic()
     if p == 2:
@@ -212,26 +266,24 @@ def is_twist(E1, E2):
         return _is_twist_good_char(E1, E2)
 
 def twist_elliptic_curve(E, d):
-    """
-    Returns the twists of an elliptic curve by 'd'.
+    """Give the twist of an elliptic curve by 'd'.
 
-    Twisting an elliptic curve with Weierstrass equation
-    ..MATH::
+    Twisting an elliptic curve with Weierstrass equation ..MATH::
     
         y^2 = x^3 + a_2 x^2 + a_4 x + a_6
 
-    means changing it into the curve given by
-    ..MATH::
+    means changing it into the curve given by ..MATH::
     
         y^2 = x^3 + d a_2 x^2 + d^2 a_4 x + d^3 a_6
 
-    which is isomorphic to the first curve over $R(\\sqrt{d})$,
-    where $R$ is the ring over which the curve was defined.
+    which is isomorphic to the first curve over $R(\\sqrt{d})$, where
+    $R$ is the ring over which the curve was defined.
 
     INPUT:
 
-    - ``E`` -- An elliptic curve given by a Weierstrass equation
-               with $a_1 = 0$ and $a_3 = 0$
+    - ``E`` -- An elliptic curve given by a Weierstrass equation with
+               $a_1 = 0$ and $a_3 = 0$
+
     - ``d`` -- A ring element that can be multiplied with the
                coefficients of E. In general this will be an element
                of the base ring of E, but any ring for which coercion
@@ -244,7 +296,7 @@ def twist_elliptic_curve(E, d):
 
     EXAMPLES:
     
-    A simple examples ::
+    A simple example::
 
         sage: E = EllipticCurve([1,2]); E
         Elliptic Curve defined by y^2 = x^3 + x + 2 over Rational Field
@@ -267,6 +319,7 @@ def twist_elliptic_curve(E, d):
         Elliptic Curve defined by y^2 = x^3 + (a^2+3)*x + (a-1) over Univariate Polynomial Ring in a over Rational Field
         sage: twist_elliptic_curve(E, a+1)
         Elliptic Curve defined by y^2 = x^3 + (a^4+2*a^3+4*a^2+6*a+3)*x + (a^4+2*a^3-2*a-1) over Univariate Polynomial Ring in a over Rational Field
+
     """
     if E.a1() != 0 or E.a3() != 0:
         raise ValueError("Can only twist if a1 and a3 are zero.")
@@ -274,151 +327,3 @@ def twist_elliptic_curve(E, d):
     a4 = d^2 * E.a4()
     a6 = d^3 * E.a6()
     return EllipticCurve([0,a2,0,a4,a6])
-
-def compute_possible_twists(K, P):
-    r"""
-    Computes twists that could change the conductor of an elliptic curve.
-
-    Given an elliptic curve over a number field, the conductor exponent
-    at a given prime might change if the curve is twisted. This function
-    computes a list of elements of the number field, such that all these
-    changes in the conductor at a given prime can be achieved by twisting
-    by one of the elements in this list.
-
-    INPUT:
-    
-    - ``K`` -- A number field, possibly $\\Q$, over which the elliptic
-               curve would be defined.
-    - ``P`` -- A prime ideal of K.
-
-    OUTPUT:
-    A list of elements of K. Every change in the conductor exponent
-    at P of an elliptic curve defined over K, corresponds to at least
-    one twist of the curve by an element in this list. The trivial
-    twist (1) is always part of this list.
-
-    EXAMPLES:
-
-    Well known results for $\\Q$ ::
-
-        sage: compute_possible_twists(QQ, 2)
-        [1, 3, 2, 6]
-        sage: compute_possible_twists(QQ, 5)
-        [1, 5]
-
-    Works over bigger number fields ::
-
-        sage: K = CyclotomicField(7)
-        sage: compute_possible_twists(K, K.prime_above(2))
-        [1,
-        -zeta7^5 + zeta7^4 - zeta7^3,
-        -zeta7^5 + zeta7^4 + zeta7^3,
-        -zeta7^5 - zeta7^4 + zeta7^3,
-        zeta7^5 - zeta7^4 + zeta7^3,
-        zeta7^5 + zeta7^4 - zeta7^3,
-        -zeta7^5 - zeta7^4 - zeta7^3,
-        zeta7^5 + zeta7^4 + zeta7^3,
-        zeta7^3 + zeta7 + 1,
-        2*zeta7^5 + 2*zeta7^4 + zeta7^3 + 2*zeta7^2 + zeta7 + 3,
-        2*zeta7^4 + zeta7^3 - zeta7 + 1,
-        -2*zeta7^5 + zeta7^3 - zeta7 - 1,
-        -2*zeta7^5 - 2*zeta7^4 - zeta7^3 - 2*zeta7^2 - zeta7 - 3,
-        2*zeta7^5 - zeta7^3 + zeta7 + 1,
-        zeta7^3 + 2*zeta7^2 + zeta7 + 1,
-        -zeta7^3 - 2*zeta7^2 - zeta7 - 1]
-        sage: compute_possible_twists(K, K.prime_above(3))
-        [1, 3]
-
-    """
-    base = pAdicBase(K, P)
-    pi = base.uniformizer()
-    if base.characteristic() != 2:
-        return [K(1), pi]
-    else:
-        result =  _compute_possible_unit_twists(base)
-        return result + [c * pi for c in result]
-
-def _compute_possible_unit_twists(base):
-    r"""
-    Returns the different twists of an elliptic curve by units.
-
-    INPUT:
-    - ``base`` -- A pAdicBase object that contains the field and prime
-
-    OUTPUT:
-    Similar to the output of :func: compute_possible_twists,
-    but only computes those that are units modulo the prime.
-    """
-    K = base.number_field()
-    T_unram = _compute_unramified_unit_tree(base)
-    T_ram = T_unram.complement()
-    T_ram.root().children.get((K(0),)).remove()
-    k = T_unram.root().minimum_full_level()
-    unram = [node.quotient_tuple()[0] for node in T_unram.nodes_at_level(k)]
-    ram = [node.quotient_tuple()[0] for node in T_ram.nodes_at_level(k)]
-    result = [K(1)]
-    while len(ram) > 0:
-        val = ram[0]
-        result.append(val.lift())
-        for val2 in unram:
-            if val * val2 in ram:
-                ram.remove(val * val2)
-            else:
-                "Warning: possibly a mistake in `_compute_possible_unit_twists`"
-    return result
-
-def _tree_of_unit_squares_mod(base, mod):
-    r"""
-    Compute the squares modulo some power of a prime in a local ring.
-
-    INPUT:
-    - ``base`` -- a pAdicBase object that describes the local ring.
-    - ``mod`` -- the power of the prime modulo which we want to
-                 consider squares.
-
-    OUTPUT:
-    A pAdicTree that contains all numbers in the local ring,
-    that are squares modulo the prime to the power mod.
-    """
-    K = base.number_field()
-    k = base.valuation(2)
-    n = min(mod - k, floor((mod + 1)/2))
-    T = pAdicTree(variables='x', pAdics=base)
-    T.root().children.get((K(0),)).remove()
-    T2 = pAdicTree(variables='x', pAdics=base, full=False)
-    for node in T.nodes_at_level(n):
-        val = node.representative()[0]^2
-        node = T2.root()
-        for coeff in base.power_series(val, mod):
-            coeffs = (coeff,)
-            if not node.children.contains(coeffs):
-                node.children.add(pAdicNode(parent=node,
-                                            coefficients=coeffs))
-            node = node.children.get(coeffs)
-        if not node.is_full():
-            node.children = pAdicNodeCollection_inverted(node)
-    return T2
-        
-def _compute_unramified_unit_tree(base):
-    r"""
-    Computes the tree of units of a local ring that give unramified
-    quadratic extensions.
-
-    INPUT:
-    - ``base`` -- A pAdicBase object that describes the local ring
-
-    OUTPUT:
-    A pAdicTree that contains all units of the local ring, such that
-    the extension by the square root of these remains unramified.
-    """
-    k = base.valuation(2)
-    T = _tree_of_unit_squares_mod(base, 2*k)
-    for i in reversed(range(0,2*k,2)):
-        for node in T.nodes_at_level(i):
-            for coeffs in base.representatives():
-                if not node.children.contains(coeffs) \
-                and not (i == 0 and coeffs[0] == 0):
-                    node.children.add(pAdicNode(parent=node,
-                                                coefficients=coeffs,
-                                                full=True))
-    return T

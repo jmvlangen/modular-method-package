@@ -20,24 +20,17 @@ Conditions on diophantine variables
 *** Frey_curve_construction.sage
 Some functions to make Frey curves
 
-*** newform_elimination.sage (*-) -> modular_forms/
-Methods for eliminating newforms
-- Add better tracking system for primes
-
 *** prime_power.sage (*+)
 Methods for analyzing diophantine equations of the form polynomial equals prime power
+- Integrate with conditions??
 ** elliptic_curves/
 Code for elliptic curves
-*** conjugate.sage (*-)
-Method for conjugating curve
-- Does this do the same as change_ring?
-- Move to other file or scrap
 *** frey_curves.sage (*+)
 Frey curve classes
 *** Q-curves.sage (*#)
 Implementation of Q-curves
 - Replace guessed degrees by sage isogeny code
-*** twist.sage (*+)
+*** twist.sage (*#!)
 Methods for computing (with) twists of elliptic curves
 ** examples/
 Examples of various things
@@ -134,6 +127,10 @@ Method to solve a linear equation over Z with torsion
 Code to analyze modular forms
 *** newform wrapper.sage (*+)
 Wrapper classes around newforms and a new method to get newforms
+*** elimination.sage (*-)
+Methods for eliminating newforms
+- Add better tracking system for primes
+
 ** number_fields/
 Code to analyze number fields
 *** dirichlet characters.sage (*#)

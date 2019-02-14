@@ -346,7 +346,7 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
-        return conjugate_curve(self, sigma)
+        return EllipticCurve(self.a_invariants()).change_ring(sigma.as_hom())
 
     # Isogeny related stuff
     def _init_isogenies(self):

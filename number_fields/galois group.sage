@@ -227,3 +227,26 @@ def cyclotomic_galois_isomorphism(s, N=None):
         zeta_s = zeta_s/zeta
         i += 1
     return i
+
+@cached_function
+def galois_on_units(K):
+    r"""
+    Computes how the galois group of a field acts on the
+    units of its ring of integers.
+
+    INPUT:
+
+    - ``K`` -- A galois number field.
+    
+    OUTPUT:
+    
+    A dictionary indexed by the elements of the galois group
+    of K, such that the value with key s is a matrix with
+    integer coefficients. If u1, ..., un are the units given
+    by K.unit_group().gens() and a1, ..., an are the entries
+    of the i-th row of this matrix, then ui is mapped to
+    u1^a1 * ... * un^an by s.
+    """
+    G = K.galois_group()
+    U = K.unit_group()
+    return {s : matrix([U(s(u)).list() for u in U.gens()]).transpose() for s in G}
