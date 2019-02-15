@@ -37,6 +37,7 @@ Examples of various things
 *** counter example alpha in OK.sage
 Data to show that not every cocycle with values in {\pm 1} is the
 coboundary of a function to the ring of integers of a field.
+- Modify to not use matrix_operations.sage
 *** Dieulefait.sage
 Repeated conductor computations from an article of Dieulefait
 Considering the diophantine equation x^4 + c*y^2 = z^l
@@ -104,8 +105,9 @@ Equations x^l + y^l = z^2 and x^l + y^l = z^3
 ! Uses the remove DiophantineAnalyzer
 ** group cohomology/
 Results about group cohomology
-*** calculations.sage (*+)
+*** calculations.sage (*#!)
 Some useful computations in group cohomology
+- Add generic group cohomology methods
 - Make code look nicer
 - Rename file?
 ** L-functions/
@@ -115,14 +117,9 @@ elliptic curves.
 - Move into newform wrapper and Q-curve class respectively
 ** linear algebra/
 Linear algebra tools
-*** matrix operations.sage (*+)
-Operations to simplify matrices
-! Most functions are very slow
-- Is this still in use?
-- Remove all unused functions
-*** solver.sage (*#)
+*** solver.sage (*#!)
 Method to solve a linear equation over Z with torsion
-- Make the code nicer?
+- Make the code use left multiplication?
 ** modular_forms/
 Code to analyze modular forms
 *** newform wrapper.sage (*+)

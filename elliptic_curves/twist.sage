@@ -17,7 +17,6 @@ EXAMPLES::
 One can also work over number fields::
 
     sage: K.<v> = CyclotomicField(7)
-    sage: E1 = EllipticCurve([v, 1 + v^2])
     sage: E1 = EllipticCurve([v, 1 + v^2]); E1
     Elliptic Curve defined by y^2 = x^3 + v*x + (v^2+1) over Cyclotomic Field of order 7 and degree 6
     sage: E2 = twist_elliptic_curve(E1, 7); E2
@@ -126,10 +125,7 @@ def _is_twist_char_2(E1, E2):
     0 if the curves are not twists of one another.
 
     """
-    if (E1.a1() != 0 or
-        E1.a3() != 0 or
-        E2.a1() != 0 or
-        E2.a3() != 0):
+    if (E1.a1() != 0 or E1.a3() != 0 or E2.a1() != 0 or E2.a3() != 0):
         return 0
     b1 = E1.a2()^2 + E1.a4()
     b2 = E2.a2()^2 + E2.a4()
