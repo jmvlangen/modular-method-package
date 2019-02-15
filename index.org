@@ -130,21 +130,13 @@ Methods for eliminating newforms
 
 ** number_fields/
 Code to analyze number fields
-*** dirichlet characters.sage (*#)
+*** dirichlet characters.sage (*#!)
 Methods related to dirichlet characters
-*** field constructors.sage (*#)
+*** field constructors.sage (*#!)
 Methods to make number fields
-- Look into making methods smarter/faster
-*** field information.sage (*#)
-Methods to analyze number fields
-- Join with something else?
-*** galois group.sage (*#)
+*** galois group.sage (*#!)
 Methods to change galois homomorphisms
 - Change name?
-*** QuotientIterators (*+)
-Methods to iterate over certain quotients
-- Is it still used?
-- Remove if possible
 ** p-adics/
 Code related to p-adic numbers
 *** pAdic_base.sage (*+)
@@ -156,7 +148,7 @@ precision
 Classes for storing pAdic data in a tree like format
 ** polynomial/
 Code for working with polynomials
-*** symmetric_polynomials.sage (*+)
+*** symmetric_polynomials.sage (*#!)
 Method for computing with a symmetric polynomial
 ** Tates_algorithm/ -> elliptic_curves/
 Methods for computing conductors of frey curves

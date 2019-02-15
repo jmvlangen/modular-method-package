@@ -1,6 +1,58 @@
+r"""Code for using dirichlet characters as galois characters.
+
+Since the galois group of the cyclotomicfield $\Q(\zeta_N)$ is
+naturally isomorphic to $(\Z / N\Z)^*$ there is a natural
+correspondence between galois characters of such fields and Dirichlet
+characters. By the Kronecker-Weber theorem this can be exended to all
+abelian extension of $\Q$.
+
+This file provides methods to work with Dirichlet characters as galois
+characters. For example there is a method to convert them into galois
+characters, a method to compute the fixed field of their kernel as a
+galois character and there is a method to compute the quadratic
+Dirichlet character corresponding to the quadratic galois character of
+a quadratic field.
+
+EXAMPLES:
+
+We can interpret a Dirichlet character as a galois character over the
+fixed field of its kernel::
+
+    sage: eps = DirichletGroup(24)[5]; eps
+    Dirichlet character modulo 24 of conductor 12 mapping 7 |--> -1, 13 |--> 1, 17 |--> -1
+    sage: K = dirichlet_fixed_field(eps); K
+    Number Field in zeta0 with defining polynomial x^2 - 3
+    sage: G = K.galois_group()
+    sage: eps_gal = dirichlet_to_galois(eps)
+    sage: [eps_gal(s) for s in G]
+    [1, -1]
+
+Conversely we can find the dirichlet character corresponding to a
+quadratic galois character::
+
+    sage: eps = character_for_root(-5); eps
+    Dirichlet character modulo 20 of conductor 20 mapping 11 |--> -1, 17 |--> -1
+    sage: dirichlet_fixed_field(eps)
+    Number Field in zeta0 with defining polynomial x^2 + 5
+
+AUTHORS:
+
+- Joey van Langen (2019-02-15): initial version
+
+"""
+
+# ****************************************************************************
+#       Copyright (C) 2019 Joey van Langen <j.m.van.langen@vu.nl>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#                  https://www.gnu.org/licenses/
+# ****************************************************************************
+
 def dirichlet_fixed_field(eps):
-    r"""
-    Gives the fixed field of the kernel of a Dirichlet chracter.
+    r"""Give the fixed field of the kernel of a Dirichlet chracter.
 
     INPUT:
     
@@ -8,14 +60,14 @@ def dirichlet_fixed_field(eps):
 
     OUTPUT:
     
-    A subfield K of $\Q(\zeta_N)$ such that
-     - $N$ is the conductor of eps
-     - For each n in the kernel of eps, K is invariant
-       under the map $ \zeta_N \mapsto \zeta_N^n $.
+    A subfield $K$ of $\Q(\zeta_N)$ where $N$ is the conductor of eps.
+    For each $n$ in the kernel of eps, $K$ is invariant under the map
+    $ \zeta_N \mapsto \zeta_N^n $.
 
     EXAMPLES:
 
-    Generators of the Dirichlet group of modulus 8 have quadratic fixed fields::
+    Generators of the Dirichlet group of modulus 8 have quadratic
+    fixed fields::
 
         sage: D = DirichletGroup(8)
         sage: for eps in D.gens():
@@ -31,13 +83,14 @@ def dirichlet_fixed_field(eps):
         sage: dirichlet_fixed_field(eps)
         Rational Field
     
-    A primitive character with a prime modulus has the entire field as a
-    fixed field::
+    A primitive character with a prime modulus has the entire
+    cyclotomic field as a fixed field::
     
         sage: eps = DirichletGroup(7).gen(); eps
         Dirichlet character modulo 7 of conductor 7 mapping 3 |--> zeta6
         sage: dirichlet_fixed_field(eps)
         Cyclotomic Field of order 7 and degree 6
+
     """
     eps = eps.primitive_character()
     N = eps.conductor()
@@ -54,25 +107,24 @@ def dirichlet_fixed_field(eps):
     #     return result
 
 def dirichlet_to_galois(eps):
-    r"""
-    Gives the galois character associated to a Dirichlet character.
+    r"""Give the galois character associated to a Dirichlet character.
 
     INPUT:
     
-    - ``eps`` -- A Dirichlet character.
+    - ``eps`` -- A Dirichlet character $\varepsilon$.
 
     OUTPUT:
     
-    A function f that is the galois version of the Dirichlet character
-    eps, e.g. we have
-    ..MATH:
+    A function $f$ that is the galois version of the Dirichlet character
+    $\varepsilon$, e.g. we have ..MATH:
     
-        f( \zeta_N \mapsto \zeta_N^n ) = eps(n)
+        f( \zeta_N \mapsto \zeta_N^n ) = \varepsilon(n)
 
-    where $N$ is any number divisible by the conductor of eps. Note that
-    this function also gives output on any element that is not necessary
-    of the right galois group, by taking an extension and restriction
-    via the common composite field.
+    where $N$ is any number divisible by the conductor of
+    $\varepsilon$. This function takes any element of a galois group
+    of a number field and returns the appropiate value on a galois
+    homomorphism of $\Q(\zeta_N)$ that has a common extension to the
+    absolute galois group of~$\Q$.
 
     EXAMPLE::
     
@@ -86,6 +138,7 @@ def dirichlet_to_galois(eps):
         zeta4
         -1
         -zeta4
+
     """
     eps = eps.primitive_character()
     N = eps.conductor()
@@ -94,12 +147,11 @@ def dirichlet_to_galois(eps):
     return eps_galois
 
 def character_for_root(a):
-    r"""
-    Gives the Kronecker character of a given number.
+    r"""Give the Kronecker character of a given number.
 
     INPUT:
 
-    - A non-zero integer a
+    - ``a`` -- A non-zero integer.
 
     OUTPUT:
 
@@ -121,6 +173,11 @@ def character_for_root(a):
         Dirichlet character modulo 24 of conductor 24 mapping 7 |--> -1, 13 |--> -1, 17 |--> -1
         sage: K = dirichlet_fixed_field(eps); K
         Number Field in zeta0 with defining polynomial x^2 - 6
+
+    .. SEEALSO::
+
+        :func:`dirichlet_fixed_field`
+
     """
     a = a.squarefree_part()
     ls = a.prime_factors()
@@ -151,17 +208,18 @@ def character_for_root(a):
     return eps
 
 def _character_for_2(a):
-    r"""
-    Gives the Kronecker character of some numbers that have to do with 2.
+    r"""Give the Kronecker character of some numbers that have to do with
+    2.
 
     INPUT:
 
-    - An integer from the list [-1, 2, -2]
+    - ``a`` -- An integer from the list [-1, 2, -2]
 
     OUTPUT:
 
     A Dirichlet character eps such that the associated galois
     character has fixed field $ \Q(\sqrt{a}) $
+
     """
     D = DirichletGroup(8)
     if a == -1:
