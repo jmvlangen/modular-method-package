@@ -139,7 +139,7 @@ Methods to change galois homomorphisms
 - Change name?
 ** p-adics/
 Code related to p-adic numbers
-*** pAdic_base.sage (*+)
+*** pAdic_base.sage (*#!)
 A class giving easy acces to things needed for p-adic computations
 *** pAdic_solver.sage (*+)
 Methods for finding all pAdic roots of a polynomial up to a given

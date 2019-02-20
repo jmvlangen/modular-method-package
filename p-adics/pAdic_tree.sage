@@ -1,12 +1,86 @@
-r"""
-A tree implementation for storing sets of p-adic numbers
+r"""A tree implementation for storing sets of p-adic numbers known as a
+p-adic tree.
 
-This file contains the classes that are used to store sets
-of elements in the completion of a number field at a
-finite prime using only elements of the number field and
-a tree like structure.
+A p-adic tree is a tree that satisfies the following properties:
 
-EXAMPLES::
+ - There is a single p-adics used throughout the tree defined by a
+   common pAdicBase object stored in each node.
+
+ - Each node is labeled by a tuple of elements of the number field of
+   the p-adics. The length of this tuple is the same for each node in
+   the tree and is known as the width of the tree. Furthermore the
+   elements of this tuple can only be those defined by the method
+   :meth:`representatives` of the pAdicBase object defining the
+   p-adics.
+
+ - Each node can have nodes that are its children, which will have
+   that node as their parent. All children of a node should have
+   distinct labels.
+
+ - There exists a unique node that has no parent, called the root of
+   the tree.
+
+Furthermore we have the following properties and definitions
+
+ - Each infinite path of the tree starting at the root uniquely
+   defines a tuple of p-adic numbers of length equal to the width. If
+   the nodes this path passes through, excluding the root, are labeled
+   in order by $(a_{1,1}, \ldots, a_{1,n}), (a_{2,1}, \ldots,
+   a_{2,n}), ldots$ then the corresponding unique tuple of p-adic
+   numbers is ..MATH::
+
+       (a_{1,1} + a_{2,1} \pi + a_{3,1} \pi^2 + \ldots, \ldots,
+       a_{1,n} + a_{2,n} \pi + a_{3,n} \pi^2 + \ldots),
+
+   where $\pi$ is the uniformizer of the p-adics associated with this
+   tree.
+
+ - We will say that a tuple of p-adic numbers of length the width of
+   this tree is in the tree if and only if the corresponding infinite
+   branch is in the tree. This makes the tree represent sets of p-adic
+   numbers. In this sense all set theoretic operations on p-adics
+   trees are defined.
+
+ - The path from the root to a node in the tree defines all tuples of
+   p-adic numbers corresponding to infinite paths through that node up
+   to a power of the prime of the p-adics. This means we can get a
+   tuple of elements of the number field of the p-adics that defines
+   this element. We will call this the representative of a node.
+
+ - We will call the length of a path from the root to a node the level
+   of that node. Note that the representative of a node of level $n$
+   defines all tuples of p-adics numbers corresponding to paths
+   through that node up to the prime of the p-adics to the power $n$.
+
+For the implementation of a p-adic tree there are several
+classes. First of all there is the class pAdicNode which implements
+the basic behavior of a node in a p-adic tree. It makes use of the
+class pAdicNodeCollection, which represents a collection of pAdicNodes
+that do not all have the same label, to store its children. Using the
+class pAdicNodeCollection_inverted which immitates a
+pAdicNodeCollection in which all nodes are the root of a tree with all
+possible infinite paths but only a few exceptions, one can make trees
+out of pAdicNodes that do not represent the empty set.
+
+The second class is pAdicTree, which provides a set like interface to
+a p-adic tree defined by pAdicNodes. Furthermore a pAdicTree stores a
+list of names, known as variables, of length equal to the with of the
+tree. For a tuple of p-adic numbers in this p-adic tree, the i-th
+entry will be linked to the i-th variable. Set theoretic operations on
+a pAdicTree will keep into account to which value a variable is
+linked.
+
+It is important to note that performing operations directly on a
+pAdicNode will change the tree it defines. The p-adic tree stored in a
+pAdicTree is assumed to be immutable however. Any operations performed
+on a pAdicTree will be performed on a copy of the stored p-adic
+tree. Even methods that present nodes in the tree will give nodes of a
+copy of the original tree. For long computations in which intermediate
+steps don't have to be saved it might therefore be useful to work with
+the root of the underlying p-adic tree, rather than a pAdicTree
+object.
+
+ EXAMPLES::
 
 <Lots and lots of examples>
 
@@ -27,63 +101,59 @@ import weakref
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
-def _count_zeroes(iterable):
-    r"""
-    Counts the number of zeroes in a list.
-    
-    INPUT:
-    
-    - ``iterable`` -- A list or other iterable
-    item containing numbers.
-    
-    OUTPUT:
-    A non-negative integer equal to the number
-    of zeroes in the given list or iterable object.
-    """
-    return sum(i == 0 for i in iterable)
-
 class pAdicNode(SageObject):
-    r"""
-    A node of a p-adic tree.
+    r"""A node of a p-adic tree.
     
-    A p-adic node consist of the following data, which
-    together constitute a node in a unique p-adic tree:
-    - A pAdicBase object that determines the p-adics.
-    - A tuple of representatives of the residue field of these p-adics,
-      called the coefficients of this node.
-    - A reference to the parent of this node if it has one.
-    - A pAdicNodeCollection of children of this node.
-    
-    A p-adic tree consists of p-adic nodes that are linked
-    together via parent - child connections. A p-adic tree
-    satisfies the following properties:
-    - If a node is a child of another node, than that second
-      node has the first as its parent.
-    - There is a unique node without a parent, called the root.
-    - Each node has at most one child with a specific tuple of
-      representatives.
-    
-    Note that each node can recursively find the root of
-    the tree through its parents. Furthermore, each node has
-    a level, i.e. the number of parents above that node,
-    which can again be retrieved recursively.
-    
-    Using the coefficients p-adic nodes also have an interpretation
-    as tuples of numbers. For this let `R`, `P` and `\pi` be respectively
-    the maximal order, the prime ideal and a uniformizer of the
-    p-adics for this node, then we can represent the node as
-    ..MATH::
-        
-        r + c * \pi^(l-1)
-        
-    where `r` is a representative of its parent (or zero if it has
-    none), `c` is the coefficients of this node, and `l` is the
-    level of this node.
-    
-    Note that all p-adic nodes of a specific level `n` give
-    unique representatives of a free module over `R / (P^n)`.
-    Also appending such representations up to infinity, will
-    result in unique representations of p-adic integers.
+    A p-adic tree is a tree that satisfies the following properties:
+
+     - There is a single p-adics used throughout the tree defined by a
+       common pAdicBase object stored in each node.
+
+     - Each node is labeled by a tuple of elements of the number field of
+       the p-adics. The length of this tuple is the same for each node in
+       the tree and is known as the width of the tree. Furthermore the
+       elements of this tuple can only be those defined by the method
+       :meth:`representatives` of the pAdicBase object defining the
+       p-adics.
+
+     - Each node can have nodes that are its children, which will have
+       that node as their parent. All children of a node should have
+       distinct labels.
+
+     - There exists a unique node that has no parent, called the root of
+       the tree.
+
+    Furthermore we have the following properties and definitions
+
+     - Each infinite path of the tree starting at the root uniquely
+       defines a tuple of p-adic numbers of length equal to the width. If
+       the nodes this path passes through, excluding the root, are labeled
+       in order by $(a_{1,1}, \ldots, a_{1,n}), (a_{2,1}, \ldots,
+       a_{2,n}), ldots$ then the corresponding unique tuple of p-adic
+       numbers is ..MATH::
+
+           (a_{1,1} + a_{2,1} \pi + a_{3,1} \pi^2 + \ldots, \ldots,
+           a_{1,n} + a_{2,n} \pi + a_{3,n} \pi^2 + \ldots),
+
+       where $\pi$ is the uniformizer of the p-adics associated with this
+       tree.
+
+     - We will say that a tuple of p-adic numbers of length the width of
+       this tree is in the tree if and only if the corresponding infinite
+       branch is in the tree. This makes the tree represent sets of p-adic
+       numbers. In this sense all set theoretic operations on p-adics
+       trees are defined.
+
+     - The path from the root to a node in the tree defines all tuples of
+       p-adic numbers corresponding to infinite paths through that node up
+       to a power of the prime of the p-adics. This means we can get a
+       tuple of elements of the number field of the p-adics that defines
+       this element. We will call this the representative of a node.
+
+     - We will call the length of a path from the root to a node the level
+       of that node. Note that the representative of a node of level $n$
+       defines all tuples of p-adics numbers corresponding to paths
+       through that node up to the prime of the p-adics to the power $n$.
     
     EXAMPLES:
     Let us explore the possibilities working with a full tree::
@@ -92,51 +162,57 @@ class pAdicNode(SageObject):
         sage: T = pAdicNode(pAdics=pAdics, full=True, width=2)
         sage: for n in T.children_at_level(3):
         ....:     ???
+
     """
     
     def __init__(self, parent=None, children=None, pAdics=None,
                  coefficients=None, full=False, width=1):
-        r"""
-        Initializes this p-adic node.
+        r"""Initialize this p-adic node.
         
         INPUT:
         
-        - ``parent`` -- A pAdicNode or None (default: None) which
-          is either the parent of this node or None if it should
-          be the root of a p-adic tree.
-        - ``children`` -- A pAdicNodeCollection or None
-          (default: None). If it is a pAdicNodeCollection it
-          should be the collection of children of this node. If
-          it is None it will be initialized as an empty or full
-          connection depending on the argument ``full``
+        - ``parent`` -- A pAdicNode or None (default: None) which is
+          either the parent of this node or None if it should be the
+          root of a p-adic tree.
+
+        - ``children`` -- A pAdicNodeCollection or None (default:
+          None). If it is a pAdicNodeCollection it should be the
+          collection of children of this node. If it is None it will
+          be initialized as an empty or full collection depending on
+          the argument ``full``
+
         - ``pAdics`` -- A pAdicBase object or None (default:None).
-          This is the p-adics that should be used for this node.
-          It should be specified unless ``parent`` is given, in
-          which case it can be None. If the ``parent`` argument is given
-          the p-adics will be set to that of the parent node.
-        - ``coefficients`` -- A tuple of numbers or None
-          (default: None). This is the coefficients of this node.
-          Note that for working correctly the tuple must consist
-          of representatives of the residue field of the p-adics
-          of this node, as returned by this node's pAdicBase object,
-          however there is no check to ensure that this is the case.
-          If this argument is None, the coefficients will be set
-          to a tuple of zeroes.
-        - ``full`` -- A boolean value (default: False). This
-          determines whether this node has all possible nodes
-          on a level below it or no children at all, respectively
-          True and False. If the argument ``children`` is specified
-          this argument will be ignored.
+          This is the p-adics that should be used for this node.  It
+          should be specified unless `parent` is given, in which case
+          it can be None. If the `parent` argument is given the
+          p-adics will be set to that of the parent node. Note that
+          the p-adics should be the same throughout the tree.
+
+        - ``coefficients`` -- A tuple of numbers or None (default:
+          None). This is the label of this node.  Note that for
+          working correctly the tuple must consist of representatives
+          of the residue field of the p-adics of this node, as given
+          by the pAdicBase object that defines the p-adics, however
+          there is no check to ensure that this is the case.  If this
+          argument is None, the coefficients will be set to a tuple of
+          zeroes.
+
+        - ``full`` -- A boolean value (default: False). If set to True
+          this node will be assumed to be the root of a p-adic tree
+          that contains all possible infinite paths. If set to False
+          this node will be assumed to have no children at all. If the
+          argument `children` is specified this argument will be
+          ignored.
+
         - ``width`` -- A strictly positive integer (default: 1)
-          describing how many numbers the coefficients of this
-          node should contain. Note that this argument will be
-          ignored if either the ``coefficients`` or the ``parent``
-          argument is given. If the ``parent`` argument is given,
-          it will revert to the width of the parent. If the
-          ``parent`` argument is not given, but the ``coefficients``
-          argument is, it will revert to the length of the
-          tuple given as ``coefficients``.
-          
+          describing the length of the argument `coefficients`. This
+          should be the same throughout the tree. It will be ignored
+          if either the `coefficients` or the `parent` argument is
+          given. If the `parent` argument is given, it will be set to
+          the width of the parent. If the `parent` argument is not
+          given, but the `coefficients` argument is, it will be set to
+          the length of the tuple given as `coefficients`.
+
         """
         if parent is None:
             self._parent = None
@@ -161,7 +237,8 @@ class pAdicNode(SageObject):
                 if len(coefficients) == self.width:
                     self.coefficients = coefficients
                 else:
-                    raise ValueError("The coefficients argument has the wrong length.")
+                    raise ValueError("The coefficients argument has the wrong"+
+                                     "length.")
             else:
                 raise ValueError("The argument coefficients is not a tuple.")
         else:
