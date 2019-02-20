@@ -6,11 +6,36 @@ code.
 
 EXAMPLES::
 
-<Lots and lots of examples>
+    sage: pAdics = pAdicBase(QQ, 7)
+    sage: pAdics.order()
+    Integer Ring
+    sage: pAdics.prime()
+    7
+    sage: pAdics.quotient_ring(3)
+    Ring of integers modulo 343
+    sage: pi = pAdics.uniformizer(); pi
+    7
+    sage: pAdics.power_series(2 + 3*pi + 5*pi^2, precision=3)
+    [2, 3, 5]
+
+::
+
+    sage: K = QuadraticField(-3)
+    sage: pAdics = pAdicBase(K, K.prime_above(7))
+    sage: pAdics.order()
+    Eisenstein Integers in Number Field in a with defining polynomial x^2 + 3
+    sage: pAdics.prime()
+    Fractional ideal (-3/2*a - 1/2)
+    sage: pAdics.quotient_ring(3)
+    Quotient of Eisenstein Integers in Number Field in a with defining polynomial x^2 + 3 by the ideal (9*a + 10)
+    sage: pi = pAdics.uniformizer(); pi
+    7
+    sage: pAdics.power_series(2 + 3*pi + 5*pi^2, precision=3)
+    [3*a + 3, 3/2*a + 3/2, 3*a + 3]
 
 AUTHORS:
 
-- Joey van Langen (2019-02-19): initial version
+- Joey van Langen (2019-02-20): initial version
 
 """
 
@@ -678,7 +703,6 @@ class pAdicBase(SageObject):
         if other.number_field() == QQ:
             if self.number_field() == QQ:
                 return P == self.prime_ideal()
-            P = P.gens()[0]
         PL = L.ideal([iota_ls[0](a) for a in P.gens()])
         return self.prime_ideal() in L.primes_above(PL)
         
@@ -810,9 +834,15 @@ class pAdicBase(SageObject):
         default we will assume that the p-adics of this object extends
         the other.
 
-        EXAMPLES::
+        EXAMPLE::
 
-
+            sage: L = CyclotomicField(12)
+            sage: pAdicsL = pAdicBase(L, L.prime_above(3))
+            sage: pAdicsQ = pAdicsL.pAdics_below(QQ)
+            sage: F = pAdicsL.residue_field()
+            sage: phi = pAdicsL.extension_vector_space(pAdicsQ)
+            sage: [phi(a) for a in F]
+            [(0, 0), (1, 2), (2, 2), (0, 1), (2, 0), (2, 1), (1, 1), (0, 2), (1, 0)]
 
         """
         if self.is_extension_of(other):
