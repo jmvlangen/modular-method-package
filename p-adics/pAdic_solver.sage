@@ -17,7 +17,7 @@ AUTHORS:
 """
 
 # ****************************************************************************
-#       Copyright (C) 2018 Joey van Langen <j.m.van.langen@outlook.com>
+#       Copyright (C) 2018 Joey van Langen <j.m.van.langen@vu.nl>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

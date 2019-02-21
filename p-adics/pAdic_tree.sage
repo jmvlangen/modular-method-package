@@ -92,7 +92,7 @@ AUTHORS:
 import weakref
 
 # ****************************************************************************
-#       Copyright (C) 2018 Joey van Langen <j.m.van.langen@outlook.com>
+#       Copyright (C) 2018 Joey van Langen <j.m.van.langen@vu.nl>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -155,13 +155,22 @@ class pAdicNode(SageObject):
        defines all tuples of p-adics numbers corresponding to paths
        through that node up to the prime of the p-adics to the power $n$.
     
-    EXAMPLES:
-    Let us explore the possibilities working with a full tree::
-        
-        sage: pAdics = pAdicBase(ZZ,3)
-        sage: T = pAdicNode(pAdics=pAdics, full=True, width=2)
-        sage: for n in T.children_at_level(3):
-        ....:     ???
+    EXAMPLE::
+
+        sage: pAdics = pAdicBase(ZZ, 3)
+        sage: R = pAdicNode(pAdics=pAdics)
+        sage: R.children
+        []
+        sage: N = pAdicNode(pAdics=pAdics, coefficients=(2,), full=True)
+        sage: R.children.add(N)
+        sage: R.children
+        [p-adic node represented by (2,) with 3 children.]
+        sage: N.parent() == R
+        True
+        sage: N.children.list()
+        [p-adic node represented by (2,) with 3 children.,
+         p-adic node represented by (5,) with 3 children.,
+         p-adic node represented by (8,) with 3 children.]
 
     """
     
@@ -213,6 +222,20 @@ class pAdicNode(SageObject):
           given, but the `coefficients` argument is, it will be set to
           the length of the tuple given as `coefficients`.
 
+        EXAMPLES::
+
+            sage: pAdics = pAdicBase(ZZ, 5)
+            sage: N = pAdicNode(pAdics=pAdics); N
+            p-adic node represented by (0,) with 0 children.
+            sage: pAdicNode(parent=N)
+            p-adic node represented by (0,) with 0 children.
+            sage: pAdicNode(pAdics=pAdics, full=True)
+            p-adic node represented by (0,) with 5 children.
+            sage: pAdicNode(pAdics=pAdics, coefficients=(2, 3))
+            p-adic node represented by (2, 3) with 0 children.
+            sage: pAdicNode(pAdics=pAdics, width=3)
+            p-adic node represented by (0, 0, 0) with 0 children.
+
         """
         if parent is None:
             self._parent = None
@@ -256,49 +279,48 @@ class pAdicNode(SageObject):
         self._update_sub_tree()
         
     def _check_similar_node(self, other):
-        r"""
-        Checks whether this and another node are compatible.
+        r"""Check whether this and another node are compatible.
+                
+        Two nodes are compatible iff they both have the same p-adics
+        and width.
         
-        ..NOTE:
-        For internal purposes only.
-        
-        Two nodes are compatible if:
-        - they have the same width.
-        - they have the same p-adics.
-        
-        Note that this function also checks whether ``other`` is a p-adic node.
+        Note that this function also checks whether the other object
+        given is a p-adic node.
         
         INPUT:
         
         - ``other`` -- Any object.
         
         OUTPUT:
-        True if ``other`` is an instance of pAdicNode with the same p-adics and
-        width. False in all other cases.
+
+        True if `other` is an instance of pAdicNode with the same
+        p-adics and width. False in all other cases.
+
         """
         if not isinstance(other, pAdicNode):
             raise ValueError("%s is not a p-adic node."%other)
         if self.pAdics() != other.pAdics():
-            raise ValueError("The p-adics (%s and %s) do not match."%(self.pAdics(), other.pAdics()))
+            raise ValueError("The p-adics (" + str(self.pAdics()) + " and " +
+                             str(other.pAdics()) + ") do not match.")
         if self.width != other.width:
-            raise ValueError("The widths of these p-adic ndoes do note match.")
+            raise ValueError("The widths of these p-adic nodes do note match.")
             
     def _set_parent(self, parent):
-        r"""
-        Sets the parent of this node and updates subtree accordingly.
+        r"""Set the parent of this node and update subtree accordingly.
+
+        Changes the parent of this node to the given parent if the
+        parent is similar according to :func:`_check_similar_node`.
+        It will also reset all values that depend on the hierarchy of
+        the nodes for this node and all nodes below it.
         
-        .. NOTE:
+        .. NOTE::
+
         Do not use! For internal purposes only.
-        
-        Changes the parent of this node to the given parent if the parent
-        is similar according to :func:`_check_similar_node`.
-        It will also reset all values that depend on the hierarchy of the
-        nodes for this node ann all nodes below it.
 
         INPUT:
         
         - ``parent`` -- A pAdicNode similar to this one.
-        
+
         """
         self._check_similar_node(parent)
         self._parent = weakref.ref(parent)
@@ -306,49 +328,76 @@ class pAdicNode(SageObject):
         self._update_sub_tree()
         
     def _update_sub_tree(self):
-        r"""
-        Resets hierarchy dependant variables of this node and all below it.
+        r"""Reset hierarchy dependent variables of this node and all below it.
         
-        .. NOTE:
-        For internal purposes only.
-        
-        To prevent having to repeat recursive computations, each pAdicNode
-        object caches information that has to be calculated recursively.
-        Since this information depends on the structure above the node,
-        this information has to be recalculated when this structure
-        changes. This method makes sure this happens.
+        To prevent having to repeat recursive computations, each
+        pAdicNode object caches information that has to be calculated
+        recursively.  Since this information depends on the structure
+        above the node, this information has to be recalculated when
+        this structure changes. This method makes sure this happens.
+
         """
         self._rep = None
         self.children._update_existing_children()
     
     def parent(self):
-        r"""
-        Gives the parent of this node
+        r"""Give the parent of this node
         
         OUTPUT:
-        A pAdicNode object that is the parent of this node
-        or None if it has no parent.
+
+        A pAdicNode object that is the parent of this node or None if
+        it has no parent.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 2)
+            sage: N = pAdicNode(pAdics=pAdics, full=True)
+            sage: N.parent() == None
+            True
+            sage: N.children.list()[1].parent() == N
+            True
+
         """
         if self._parent is None:
             return None
         return self._parent()
         
     def is_root(self):
-        r"""
-        Determines whether this node is a root.
+        r"""Determine whether this node is a root.
         
         OUTPUT:
-        True if this node is a root, i.e. it has no parent
-        and False otherwise.
+
+        True if this node is the root of the p-adic tree it is part
+        of. False otherwise.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 7)
+            sage: N = pAdicNode(pAdics=pAdics, full=True)
+            sage: N.is_root()
+            True
+            sage: N.children.list()[0].is_root()
+            False
+
         """
         return self.parent() is None
         
     def root(self):
-        r"""
-        Returns the root of the tree of which node is part.
+        r"""Give the root of the p-adic tree this node is in.
         
         OUTPUT:
+
         The unique node above this one that has no parent.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 5)
+            sage: N = pAdicNode(pAdics=pAdics, full=True)
+            sage: N.root() == N
+            True
+            sage: N.children.list()[0].root() == N
+            True
+
         """
         if self.is_root():
             return self
@@ -356,8 +405,7 @@ class pAdicNode(SageObject):
             return self.parent().root()
         
     def representative(self):
-        r"""
-        A representation of this node as a tuple of numbers.
+        r"""A representation of this node as a tuple of numbers.
         
         The representation of this node will be a tuple of zeroes
         if it is the root and it will be
@@ -367,20 +415,37 @@ class pAdicNode(SageObject):
             
         where `r` is the representation of its parent, `c` is the
         coefficients of this node and `\pi` is the uniformizer
-        returned by this nodes p-adics.
+        returned by the p-adics of the tree this node belongs to.
         
-        .. NOTE:
+        .. NOTE::
+
         This function is cached.
         
         OUTPUT:
-        A representation as described above.
+
+        A tuple of elements of the number field of the p-adics of the
+        tree this node is part of, such that all infinite paths from
+        the root through this node correspond to tuples of p-adic
+        numbers that are equivalent to this tuple modulo $P^n$, where
+        $P$ is the prime of the p-adics and $n$ is the level of this
+        node.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 7)
+            sage: N = pAdicNode(pAdics=pAdics, full=True, width=2)
+            sage: N.representative()
+            (0, 0)
+            sage: N.children.list()[11].representative()
+            (4, 1)
+
         """
         if self.is_root():
             return self.coefficients
         if not hasattr(self, "_rep") or self._rep is None:
             self._rep = list(self.parent().representative())
             for i in range(self.width):
-                self._rep[i] += self.coefficients[i] \
+                self._rep[i] += (self.coefficients[i] *
                               * (self.pAdics().uniformizer()**(self.level()-1))
             self._rep = tuple(self._rep)
         return self._rep
