@@ -1541,45 +1541,61 @@ class pAdicNode(SageObject):
         return hash((self.coefficients, self.children))
         
 class pAdicNodeCollection(SageObject):
-    r"""
-    A collection of p-adic nodes indexed by their coefficients.
+    r"""A collection of p-adic nodes indexed by their coefficients.
     
-    A pAdicNodeCollection is a collection of pAdicNode objects
-    that never contains two pAdicNode objects with the same
-    coefficients. All p-adic nodes in this collection should
-    have the same p-adics and width, hence the amount of such
-    nodes that can be in this collection is limited.
+    A pAdicNodeCollection is a collection of p-adic nodes with the
+    same p-adics and width such that no two nodes have the same
+    coefficients.
     
-    This class provides a basic implementation of such a
-    collection, but similar classes overwrite this class
-    and its methods.
-    
-    For convenience this class can also store the following data
-    - A pAdicNode called the parent, which is a node that
-      has this collection as its collection of children.
-    - A pAdicBase object giving the p-adics shared by the nodes
-      in this collection.
-    - An strictly positive integer that is the width shared by
-      the nodes in this collection.
+    Furthermore this collection can be the set of children of a node,
+    in which case it also stores the common parent of these children.
+
+    Since the collection might be empty, a pAdicNodeCollection stores
+    the common p-adics and width of the nodes in the collection as
+    well.
+
+    EXAMPLES:
+
+    TODO
+
     """
     
     def __init__(self, parent, pAdics=None, width=1):
-        r"""
-        Initializes a pAdicNodeCollection object.
+        r"""Initialize a pAdicNodeCollection.
         
         INPUT:
         
-        - ``parent`` -- A pAdicNode that contains this object as
-          its collection of children, or None if no such node
-          exists.
-        - ``pAdics`` -- A pAdicBase object or None
-          (default: None). This gives the p-adics that will be
-          shared by the p-adic nodes in this collection. If the
-          argument ``parent`` is specified it will revert to the
-          p-adics of this parent. Otherwise it is not allowed
-          to be None.
-        - ``width`` -- A strictly positive integer that is the
-          common width among the p-adic nodes in this collection.
+        - ``parent`` -- A pAdicNode that is the common parent of the
+          nodes in this collection, or None if no such node exists.
+
+        - ``pAdics`` -- A pAdicBase object or None (default: None),
+          giving the shared p-adics of the nodes in this
+          collection. If the argument `parent` is not None it will be
+          initialized as the p-adics of this parent. Otherwise it is
+          not allowed to be None.
+
+        - ``width`` -- A strictly positive integer that is the common
+          width among the nodes in this collection. If the argument
+          `parent` is not None it will be initialized as the width of
+          this parent.
+
+        EXAMPLES::
+
+            sage: pAdics = pAdicBase(QQ, 5)
+            sage: pAdicNodeCollection(None, pAdics=pAdics)
+            []
+
+        By giving a parent, no other arguments are required::
+
+            sage: pAdics = pAdicBase(ZZ, 7)
+            sage: N = pAdicNode(pAdics=pAdics)
+            sage: pAdicNodeCollection(N)
+            []
+            sage: pAdicNodeCollection(None)
+            Traceback (most recent call last):
+            ...
+            ValueError: Should specify pAdics.
+
         """
         if parent is None and pAdics is None:
             raise ValueError("Should specify pAdics.")
@@ -1602,16 +1618,16 @@ class pAdicNodeCollection(SageObject):
         self._dict = {}
         
     def update_parent(self, parent):
-        r"""
-        Changes the parent of this collection and the nodes therein.
+        r"""Change the parent of this collection and the nodes therein.
         
         The parent of this collection and of each node in this
-        collection will be set to the argument ``parent``.
+        collection will be set to the argument `parent`.
         
         INPUT:
         
-        - ``parent`` -- A pAdicNode that contains this collection
-          as its collection of children.
+        - ``parent`` -- A pAdicNode that contains this collection as
+          its collection of children.
+
         """
         self._check_pAdic_node(parent)
         self._parent = weakref.ref(parent)
@@ -1619,25 +1635,21 @@ class pAdicNodeCollection(SageObject):
             v._set_parent(parent)
             
     def _update_existing_children(self):
-        r"""
-        Resets the hierarchy dependant variables of all the nodes in
-        this collection and all below it.
+        r"""Reset hierarchy dependent variables of all nodes in this collection.
         
-        .. NOTE:
-        For internal purposes only.
-        
-        To prevent having to repeat recursive computations, each pAdicNode
-        object caches information that has to be calculated recursively.
-        Since this information depends on the structure above the node,
-        this information has to be recalculated when this structure
-        changes. This method makes sure this happens.
+        To prevent having to repeat recursive computations, each
+        pAdicNode object caches information that has to be calculated
+        recursively. Since this information depends on the structure
+        above the node, this information has to be recalculated when
+        this structure changes. This method makes sure this happens.
+
         """
         for v in self._dict.itervalues():
             v._update_sub_tree()
     
     def _check_pAdic_node(self, node):
-        r"""
-        Checks whether a given object is a suitable p-adic node.
+        r"""Check whether a given object is a suitable p-adic node.
+
         """
         if not isinstance(node, pAdicNode):
             raise ValueError("%s is not a pAdicNode"%node)
@@ -1648,30 +1660,56 @@ class pAdicNodeCollection(SageObject):
             raise ValueError("%s does not have width%s"%(node, self.width))
             
     def pAdics(self):
-        r"""
-        Gives the shared p-adics of the nodes in this collection.
+        r"""Give the shared p-adics of the nodes in this collection.
         
         OUTPUT:
-        A pAdicBase object that is the p-adics for all nodes in
-        this collection.
+
+        A pAdicBase object that gives the p-adics for all nodes in this
+        collection.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 5)
+            sage: N = pAdicNode(pAdics=pAdics, full=True)
+            sage: isinstance(N.children, pAdicNodeCollection)
+            True
+            sage: N.children.pAdics() == N.pAdics()
+            True
+
         """
         return self._pAdics
 
     def parent(self):
-        r"""
-        Gives the parent of the nodes in this collection.
+        r"""Give the common parent of nodes in this collection.
         
         OUTPUT:
-        A pAdicNode object that is the parent of the nodes
-        in this collection or None if they have no parent.
+
+        A pAdicNode object that is the parent of all nodes in this
+        collection or None if they have no (common) parent.
+
+        EXAMPLES::
+
+            sage: pAdics = pAdicBase(ZZ, 2)
+            sage: N = pAdicNode(pAdics=pAdics, full=True)
+            sage: isinstance(N.children, pAdicNodeCollection)
+            True
+            sage: N.children.parent() == N
+            True
+
+        There might not be a parent::
+
+            sage: pAdics = pAdicBase(ZZ, 11)
+            sage: S = pAdicNodeCollection(None, pAdics=pAdics)
+            sage: S.parent() == None
+            True
+
         """
         if self._parent is None:
             return None
         return self._parent()
                
     def add(self, node):
-        r"""
-        Adds a node to this collection.
+        r"""Add a p-adic node to this collection.
         
         If there already exists a node in this collection with
         the same coefficients as the given node, this function
@@ -1681,6 +1719,9 @@ class pAdicNodeCollection(SageObject):
         
         - ``node`` -- A pAdicNode with the same p-adics and width
           as shared among nodes of this collection.
+
+        
+
         """
         self._check_pAdic_node(node)
         if self._dict.has_key(node.coefficients):

@@ -148,6 +148,7 @@ precision
 Classes for storing pAdic data in a tree like format
 - Method pAdicNode.sub_tree() is nowhere used and weird, remove?
 - Optimize _merge_with_list
+- Add sequence/set like behavior to pAdicNodeCollection
 ** polynomial/
 Code for working with polynomials
 *** symmetric_polynomials.sage (*#!)
