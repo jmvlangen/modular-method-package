@@ -146,6 +146,8 @@ Methods for finding all pAdic roots of a polynomial up to a given
 precision
 *** pAdic_tree.sage (*+)
 Classes for storing pAdic data in a tree like format
+- Method pAdicNode.sub_tree() is nowhere used and weird, remove?
+- Optimize _merge_with_list
 ** polynomial/
 Code for working with polynomials
 *** symmetric_polynomials.sage (*#!)

@@ -639,8 +639,8 @@ class pAdicBase(SageObject):
         return self._R.zero()
         
     def _repr_(self):
-        return ("p-adic information of " + str(self.number_field) +
-                "with respect to " + str(self._P._repr_short()))
+        return ("p-adic information of " + str(self.number_field()) +
+                " with respect to " + str(self._P._repr_short()))
                                                            
     def is_extension_of(self, other):
         r"""Determine whether these p-adics extend another.

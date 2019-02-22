@@ -164,13 +164,13 @@ class pAdicNode(SageObject):
         sage: N = pAdicNode(pAdics=pAdics, coefficients=(2,), full=True)
         sage: R.children.add(N)
         sage: R.children
-        [p-adic node represented by (2,) with 3 children.]
+        [p-adic node represented by (2,) with 3 children]
         sage: N.parent() == R
         True
         sage: N.children.list()
-        [p-adic node represented by (2,) with 3 children.,
-         p-adic node represented by (5,) with 3 children.,
-         p-adic node represented by (8,) with 3 children.]
+        [p-adic node represented by (2,) with 3 children,
+         p-adic node represented by (5,) with 3 children,
+         p-adic node represented by (8,) with 3 children]
 
     """
     
@@ -226,15 +226,15 @@ class pAdicNode(SageObject):
 
             sage: pAdics = pAdicBase(ZZ, 5)
             sage: N = pAdicNode(pAdics=pAdics); N
-            p-adic node represented by (0,) with 0 children.
+            p-adic node represented by (0,) with 0 children
             sage: pAdicNode(parent=N)
-            p-adic node represented by (0,) with 0 children.
+            p-adic node represented by (0,) with 0 children
             sage: pAdicNode(pAdics=pAdics, full=True)
-            p-adic node represented by (0,) with 5 children.
+            p-adic node represented by (0,) with 5 children
             sage: pAdicNode(pAdics=pAdics, coefficients=(2, 3))
-            p-adic node represented by (2, 3) with 0 children.
+            p-adic node represented by (2, 3) with 0 children
             sage: pAdicNode(pAdics=pAdics, width=3)
-            p-adic node represented by (0, 0, 0) with 0 children.
+            p-adic node represented by (0, 0, 0) with 0 children
 
         """
         if parent is None:
@@ -278,7 +278,7 @@ class pAdicNode(SageObject):
         self.children.update_parent(self)
         self._update_sub_tree()
         
-    def _check_similar_node(self, other):
+    def _similar_node(self, other):
         r"""Check whether this and another node are compatible.
                 
         Two nodes are compatible iff they both have the same p-adics
@@ -309,7 +309,7 @@ class pAdicNode(SageObject):
         r"""Set the parent of this node and update subtree accordingly.
 
         Changes the parent of this node to the given parent if the
-        parent is similar according to :func:`_check_similar_node`.
+        parent is similar according to :func:`_similar_node`.
         It will also reset all values that depend on the hierarchy of
         the nodes for this node and all nodes below it.
         
@@ -322,7 +322,7 @@ class pAdicNode(SageObject):
         - ``parent`` -- A pAdicNode similar to this one.
 
         """
-        self._check_similar_node(parent)
+        self._similar_node(parent)
         self._parent = weakref.ref(parent)
         #reset variables that are not correct after changing the parent
         self._update_sub_tree()
@@ -439,6 +439,10 @@ class pAdicNode(SageObject):
             sage: N.children.list()[11].representative()
             (4, 1)
 
+        .. SEEALSO::
+
+            :meth:`level`
+
         """
         if self.is_root():
             return self.coefficients
@@ -446,35 +450,70 @@ class pAdicNode(SageObject):
             self._rep = list(self.parent().representative())
             for i in range(self.width):
                 self._rep[i] += (self.coefficients[i] *
-                              * (self.pAdics().uniformizer()**(self.level()-1))
+                                 self.pAdics().uniformizer()^(self.level()-1))
             self._rep = tuple(self._rep)
         return self._rep
         
     def quotient_tuple(self):
-        r"""
-        A representation of this node as a tuple of numbers in a
+        r"""A representation of this node as a tuple of numbers in a
         corresponding quotient ring.
         
-        This representation is simply the one returned by
-        :func:`representative` modulo `P^l`, where `P` is the
-        prime ideal corresponding to the p-adics of this node
-        and `l` is the level of this node.
+        A representation as a tuple of elements of a quotient ring is
+        the same representation as returned by :meth:`representative`
+        but then considered as an element of $R / (P^n)$, where $R$ is
+        the ring of integers of the p-adics of this tree, $P$ is the
+        prime ideal of the p-adics of this tree and $n$ is the level of this
+        node.
         
         OUTPUT:
-        A tuple of elements of `R/(P^l)` where `R`, `P` and `l`
-        are respectively the maximal order, prime ideal and
-        level corresponding to this node. This tuple is a
-        reduction of the one returned by :func:`representative`.
+
+        A tuple of elements of $R / (P^n)$ where $R$ is the ring of
+        integers of the p-adics of this node, $P$ is the prime ideal
+        of the p-adics of this tree and $n$ is the level of this
+        node. This is the reduction modulo $P^n$ of each tuple of
+        p-adic numbers that corresonds to an infinite path from the
+        root through this node.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 5)
+            sage: N = pAdicNode(pAdics=pAdics, full=True, width=2)
+            sage: N.quotient_tuple()
+            (0, 0)
+            sage: N.quotient_tuple()[0].parent()
+            Ring of integers modulo 1
+            sage: N2 = N.children.list()[7].children.list()[13]
+            sage: N2.quotient_tuple()
+            (17, 11)
+            sage: N2.quotient_tuple()[0].parent()
+            Ring of integers modulo 25
+
+        .. SEEALSO::
+
+            :meth:`representative`
+            :meth:`level`
+
         """
         S = self.pAdics().quotient_ring(self.level())
         return tuple([S(a) for a in self.representative()])
         
     def pAdics(self):
-        r"""
-        Returns the p-adics corresponding to this node.
+        r"""Return the p-adics of the p-adic tree.
         
         OUTPUT:
-        The pAdicBase object corresponding to this node.
+
+        A pAdicBase object that has the p-adics of the p-adic tree
+        this node belongs to.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: N = pAdicNode(pAdics=pAdics, full=True)
+            sage: N.pAdics()
+            p-adic information of Rational Field with respect to (3)
+            sage: N.children.list()[0].pAdics()
+            p-adic information of Rational Field with respect to (3)
+
         """
         if not hasattr(self, "_pAdics") or self._pAdics is None:
             if self.is_root():
@@ -483,12 +522,25 @@ class pAdicNode(SageObject):
         return self._pAdics
         
     def level(self):
-        r"""
-        Returns the level of this node.
+        r"""Give the level of this node.
         
         OUTPUT:
-        0 if this node is a root, otherwise 1 plus the
-        level of its parent.
+
+        The length of the shortest path from the root to this node.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 2)
+            sage: R = pAdicNode(pAdics=pAdics, full=True)
+            sage: N = R; N.level()
+            0
+            sage: N = N.children.list()[0]; N.level()
+            1
+            sage: N = N.children.list()[0]; N.level()
+            2
+            sage: N = N.children.list()[0]; N.level()
+            3
+
         """
         if self.is_root():
             return 0
@@ -496,23 +548,54 @@ class pAdicNode(SageObject):
             return self.parent().level() + 1
             
     def parent_at_level(self, n, my_level=None):
-        r"""
-        Gives a node above this node that lives at level `n`.
+        r"""Give the node at level `n` above this node.
         
         INPUT:
         
-        - `n` -- A non-negative integer that is the level of the
-          node we are looking for. This should not be larger than the
-          level of this node.
-        - `my_level` -- Non-negative integer (default: self.level()).
-          This argument should equal the level of this node.
-          It is used internally to prevent the recursion needed
-          for self.level(). Do not use unless you know the level
-          of this node beforehand.
+        - `n` -- A non-negative integer that is the level of the node
+          we are looking for. This should at most be the level of this
+          node.
+
+        - `my_level` -- A non-negative integer (default:
+          self.level()).  This argument should equal the level of this
+          node.  It is used internally to prevent the recursion needed
+          for self.level(). Do not use unless you know the level of
+          this node beforehand.
           
         OUTPUT:
+
         The pAdicNode at level `n` that is in the parent chain of this
         node.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 2)
+            sage: R = pAdicNode(pAdics=pAdics, full=True)
+            sage: N = R.children_at_level(4)[13]
+            sage: N.parent_at_level(0)
+            p-adic node represented by (0,) with 2 children
+            sage: N.parent_at_level(0) == R
+            True
+            sage: N.parent_at_level(1)
+            p-adic node represented by (1,) with 2 children
+            sage: N.parent_at_level(2)
+            p-adic node represented by (3,) with 2 children
+            sage: N.parent_at_level(3)
+            p-adic node represented by (3,) with 2 children
+            sage: N.parent_at_level(4)
+            p-adic node represented by (11,) with 2 children
+            sage: N.parent_at_level(4) == N
+            True
+            sage: N.parent_at_level(5)
+            Traceback (most recent call last):
+            ...
+            ValueError: p-adic node represented by (11,) with 2 children does not have a parent at level 5
+
+        .. SEEALSO::
+
+            :meth:`level`
+            :meth:`parent`
+        
         """
         if my_level is None:
             my_level = self.level()
@@ -521,26 +604,48 @@ class pAdicNode(SageObject):
         elif n < my_level:
             return self.parent().parent_at_level(n, my_level=my_level-1)
         else:
-            raise ValueError("Node %s does not have a parent at level %d"%(self, n))
+            raise ValueError(str(self) + " does not have a parent at level " +
+                             str(n))
     
     def count_children_at_level(self, n, my_level=None):
-        r"""
-        Returns the amount of nodes at level `n` below this one.
+        r"""Give the number of nodes at level `n` below this one.
         
         INPUT:
         
-        - `n` -- A non-negative integer that is the level of
-          which we want to count the amount of nodes. This
-          should be at least the level of this node.
-        - `my_level` -- A non-negative integer (default: self.level()).
-          This should always equal the level of this node. It
-          is used internally to prevent the recursion needed for
-          self.level(). Do not use unless you know the level
-          of this node beforehand.
+        - `n` -- A non-negative integer that is the level of which we
+          want to count the number of nodes.
+
+        - `my_level` -- A non-negative integer (default:
+          self.level()).  This should always equal the level of this
+          node. It is used internally to prevent the recursion needed
+          for self.level(). Do not use unless you know the level of
+          this node beforehand.
           
         OUTPUT:
-        A non-negative number equal to the number of nodes at level `n`
-        that are connected through a child chain to this one.
+
+        A non-negative integer equal to the number of nodes at level
+        `n` that have a path to them from the root through this node.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 5)
+            sage: R = pAdicNode(pAdics=pAdics, full=True)
+            sage: N = R.children_at_level(2)[13]
+            sage: N.count_children_at_level(4)
+            25
+            sage: N.count_children_at_level(3)
+            5
+            sage: N.count_children_at_level(2)
+            1
+            sage: N.count_children_at_level(1)
+            0
+
+        .. SEEALSO::
+
+            :meth:`children_at_level`
+            :meth:`level`
+            :meth:`parent_at_level`
+
         """
         if my_level is None:
             my_level = self.level()
@@ -559,23 +664,42 @@ class pAdicNode(SageObject):
             return result
     
     def children_at_level(self, n, my_level=None):
-        r"""
-        Returns a list of nodes at level `n` below this one.
+        r"""Give a list of nodes at level `n` below this one.
         
         INPUT:
         
-        - `n` -- A non-negative integer that is the level of
-          which we want to get the nodes. This should be at
-          least the level of this node.
-        - `my_level` -- A non-negative integer (default: self.level()).
-          This should always equal the level of this node. It
-          is used internally to prevent the recursion needed for
-          self.level(). Do not use unless you know the level
-          of this node beforehand.
+        - `n` -- A non-negative integer that is the level of the nodes
+          we want to get.
+
+        - `my_level` -- A non-negative integer (default:
+          self.level()). This should always equal the level of this
+          node. It is used internally to prevent the recursion needed
+          for self.level(). Do not use unless you know the level of
+          this node beforehand.
           
         OUTPUT:
-        A list of all nodes at level `n` that have are connected
-        to this node through a child chain.
+
+        A list of all nodes at level `n` that have a path to them from
+        the root through this node.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 2)
+            sage: R = pAdicNode(pAdics=pAdics, full=True)
+            sage: N = R.children_at_level(2)[3]
+            sage: N.children_at_level(4)
+            [p-adic node represented by (3,) with 2 children,
+             p-adic node represented by (11,) with 2 children,
+             p-adic node represented by (7,) with 2 children,
+             p-adic node represented by (15,) with 2 children]
+            sage: N.children_at_level(3)
+            [p-adic node represented by (3,) with 2 children,
+             p-adic node represented by (7,) with 2 children]
+            sage: N.children_at_level(2)
+            [p-adic node represented by (3,) with 2 children]
+            sage: N.children_at_level(1)
+            []
+
         """
         if my_level is None:
             my_level = self.level()
@@ -589,26 +713,48 @@ class pAdicNode(SageObject):
         elif n == my_level:
             return [self]
         else:
-            raise ValueError("Node %s does not have children at level %d"%(self, n))
+            return []
             
     def minimum_full_level(self, my_level=None):
-        r"""
-        Returns the smallest level at which each node below
-        this one is full.
+        r"""Give the smallest level at which all nodes below this one are full.
+
+        A node is called full if every possible infinite path from the
+        root through that node exist.
         
         INPUT:
         
-        - `my_level` -- A non-negative inger
-        (default: self.level()). This should always
-        equal the level of this node. This is used internally
-        to prevent the recursion neede for self.level().
-        Do not use unless you know the level of this node
-        for certain.
+        - `my_level` -- A non-negative integer (default:
+        self.level()). This should always equal the level of this
+        node. This is used internally to prevent the recursion needed
+        for self.level(). Do not use unless you know the level of this
+        node for certain.
         
         OUTPUT:
-        A non-negative integer n if all nodes at level n below this one
-        are full. Infinity if no node below this one is full, including
-        this node itself.
+
+        The smallest integer $n$, such that all nodes at level $n$ and
+        below this node are full. Infinity if no such integer exists.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 3)
+            sage: R = pAdicNode(pAdics=pAdics, width=2)
+            sage: N1 = pAdicNode(pAdics=pAdics, coefficients=(1, 1))
+            sage: R.children.add(N1)
+            sage: N2 = pAdicNode(pAdics=pAdics, coefficients=(1, 2), full=True)
+            sage: R.children.add(N2)
+            sage: R.minimum_full_level()
+            2
+            sage: N1.minimum_full_level()
+            2
+            sage: N2.minimum_full_level()
+            1
+
+        .. SEE_ALSO::
+
+            :meth:`is_full`,
+            :meth:`level`,
+            :meth:`children_at_level`
+
         """
         if my_level is None:
             my_level = self.level()
@@ -620,159 +766,313 @@ class pAdicNode(SageObject):
                     for child in self.children])
             
     def is_full(self):
-        r"""
-        Determines whether this node is full.
+        r"""Determine whether this node is full.
+
+        A node is called full if every possible infinite path from the
+        root through that node exist.
         
         OUTPUT:
-        True if this node and all below it contain all possible
+
+        True if this node and all nodes below it contain all possible
         children. False otherwise.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 3)
+            sage: R = pAdicNode(pAdics=pAdics, width=2)
+            sage: N1 = pAdicNode(pAdics=pAdics, coefficients=(1, 1))
+            sage: N2 = pAdicNode(pAdics=pAdics, coefficients=(1, 2), full=True)
+            sage: R.children.add(N1)
+            sage: R.children.add(N2)
+            sage: R.is_full()
+            False
+            sage: N1.is_full()
+            False
+            sage: N2.is_full()
+            True
+
+        .. SEEALSO::
+
+            :meth:`is_empty`
+
         """
         return self.children.is_full()
         
     def is_empty(self):
-        r"""
-        Determines whether this node is empty
+        r"""Determine whether this node is empty
+
+        A node is called empty if there is no infinite paths from the
+        root through this node.
         
         OUTPUT:
-        True if this node contains no children.
-        False otherwise.
+
+        True if all children of this node are empty. False otherwise.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 3)
+            sage: R = pAdicNode(pAdics=pAdics, width=2)
+            sage: N1 = pAdicNode(pAdics=pAdics, coefficients=(1, 1))
+            sage: N2 = pAdicNode(pAdics=pAdics, coefficients=(1, 2), full=True)
+            sage: R.children.add(N1)
+            sage: R.children.add(N2)
+            sage: R.is_empty()
+            False
+            sage: N1.is_empty()
+            True
+            sage: N2.is_empty()
+            False
+
+        .. SEE_ALSO::
+
+            :meth:`is_full`
+
         """
         return self.children.is_empty()
         
     def copy(self):
-        r"""
-        Gives a copy of this node.
+        r"""Give a copy of this node.
         
-        .. NOTE:
-        The copy does not have a parent, since the
-        copy process copies children. Therefore
-        copying the parent would lead to a double
-        copy. A copy of the root would result in a
-        deep copy of this tree.
+        .. NOTE::
+
+        The copy does not have a parent, since the copy process copies
+        children. Therefore copying the parent would lead to a double
+        copy. A copy of the root would result in a deep copy of this
+        tree.
         
         OUTPUT:
+
         A pAdicNode object that is a copy of this one.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 5)
+            sage: R = pAdicNode(pAdics=pAdics, full=True)
+            sage: R.copy()
+            p-adic node represented by (0,) with 5 children
+            sage: N = R.children.list()[3]
+            sage: N.copy()
+            p-adic node represented by (3,) with 5 children
+            sage: N.copy().parent() == None
+            True
+
         """
         return pAdicNode(pAdics=self.pAdics(),
                          children=self.children.copy(),
                          coefficients=self.coefficients,
                          width=self.width)
                          
-    def extend_variables(self, n, pAdics=None, coefficients=None):
-        r"""
-        Returns a new tree with width increased by n.
+    def increase_width(self, n, pAdics=None, coefficients=None):
+        r"""Give a new tree with width increased by n.
         
         INPUT:
         
-        - ``n`` -- A non negative integer equal to the
-          number of additional coefficients you want the
-          result to have.
+        - ``n`` -- A non negative integer equal to the number of
+          additional coefficients in the new width.
+
         - ``pAdics`` -- A pAdicBase object (default self.pAdics())
-          that contains the p-adic information on which the
-          resulting p-adic node should be based. This argument
-          should be redundant.
-        - ``coefficients`` -- A tuple of numbers of length equal
-          to the width of this node plus the given argument ``n``.
-          This tuple must consist of representatives of the
-          residue field as returned by the pAdicBase object
-          given in the previous argument. The first `w` numbers
-          should be equal to those stored in this node's
-          coefficients, in order. By default this will be set
-          to the tuple starting with the coefficients of this
-          node extended by zeroes.
+          that contains the p-adic information on which the resulting
+          p-adic node should be based. This argument should be
+          redundant.
+
+        - ``coefficients`` -- A tuple of numbers of length `n`. The
+          label of the new node will be the coefficients of this node
+          extended with the numbers in this tuple. Note that for
+          working correctly the tuple must consist of representatives
+          of the residue field of the p-adics of this node, as given
+          by the argument `pAdics`, however there is no check to
+          ensure that this is the case. If this argument is None, this
+          will be initialized as a tuple of zeroes.
           
         OUTPUT:
-        A pAdicNode consisting of
-        - The p-adics given by the argument ``pAdics``
-        - The coefficients given by the argument ``coefficients``.
-        - All possible children that can be obtained by extending
-          the coefficients of a child of this node.
+
+        A pAdicNode with p-adics as given by the argument `pAdics`,
+        coefficients equal to the coefficients of this node extended
+        by the given tuple `coefficients`, and as children all
+        possible increased width versions of children of this node.
+
+        EXAMPLES::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: N = pAdicNode(pAdics = pAdics, width=2); N
+            p-adic node represented by (0, 0) with 0 children
+            sage: N.increase_width(1)
+            p-adic node represented by (0, 0, 0) with 0 children
+
+        The number of nodes increases accordingly when increasing the
+        width::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: N = pAdicNode(pAdics = pAdics, width=2, full=True); N
+            p-adic node represented by (0, 0) with 9 children
+            sage: N.increase_width(2)
+            p-adic node represented by (0, 0, 0, 0) with 81 children
+
+        One can decide what coefficients should fit in the new spots::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: N = pAdicNode(pAdics = pAdics, width=2, full=True); N
+            p-adic node represented by (0, 0) with 9 children
+            sage: N.increase_width(2, coefficients=(2, 1))
+            p-adic node represented by (0, 0, 2, 1) with 81 children
+
+        .. SEEALSO::
+
+            :meth:`decrease_width`
+            :meth:`permute_coefficients`
+
         """
         if pAdics is None:
             pAdics = self.pAdics()
-        return pAdicNode(pAdics=pAdics, coefficients=coefficients,
-                         children=self.children._extend_variables(n, pAdics),
-                         width=self.width+n)
+        if coefficients is None:
+            coefficients = tuple([pAdics.zero()]*n)
+        return pAdicNode(pAdics=pAdics,
+                         coefficients=(self.coefficients + coefficients),
+                         children=self.children._increase_width(n, pAdics),
+                         width=(self.width + n))
                          
-    def limit_variables(self, indices, pAdics=None):
-        r"""
-        Gives a copy of this node wherein all coefficients are
-        limited to the given indices.
+    def decrease_width(self, indices, pAdics=None):
+        r"""Give a copy of this node with a smaller width.
         
         INPUT:
         
         - ``indices`` -- An iterable object containing distinct
-          integers between 0 and the width of this node
-          (0 inclusive, width exclusive). These are the indices
-          of the coefficients that should be present in the
-          returned node.
+          integers between 0 and the width of this node (0 inclusive,
+          width exclusive). These are the indices of the coefficients
+          that should be present in the returned node.
+
         - ``pAdics`` -- A pAdicBase object (default: self.pAdics())
-          describing the p-adic information for the node that
-          should be returned. Note that this should always
-          be the same as the p-adics of this node.
+          describing the p-adics of tree that the returned node should
+          be part of.
           
         OUTPUT:
-        A pAdicNode consisting of
-        - As i-th coefficient the inidices[i]-th coefficient of
-          this node.
-        - As children all possible children of width len(indices)
-          which can be obtained by calling limit_variables
-          on a child of this node with the same arguments.
+
+        A pAdicNode with the p-adics given by `pAdics` and labeled by
+        a tuple of numbers in which the i-th number is the
+        indices[i]-th number of the coefficients of this
+        node. Furthermore the children of the returned node are those
+        obtained from calling :meth:`decrease_width` on the children
+        of this node with the same arguments.
+
+        EXAMPLES::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: N = pAdicNode(pAdics = pAdics, width=5); N
+            p-adic node represented by (0, 0, 0, 0, 0) with 0 children
+            sage: N.decrease_width(range(2))
+            p-adic node represented by (0, 0) with 0 children
+
+        The number of children changes accordingly when decreasing the
+        width::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: N = pAdicNode(pAdics = pAdics, width=5, full=True); N
+            p-adic node represented by (0, 0, 0, 0, 0) with 243 children
+            sage: N.decrease_width(range(3))
+            p-adic node represented by (0, 0, 0) with 27 children
+
+        We can also choose which indices to keep and in what order::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: N = pAdicNode(pAdics = pAdics, width=5, full=True); N
+            p-adic node represented by (0, 0, 0, 0, 0) with 243 children
+            sage: N2 = N.children.list()[137]; N2
+            p-adic node represented by (2, 0, 0, 2, 1) with 243 children
+            sage: N2.decrease_width([1, 4, 0])
+            p-adic node represented by (0, 1, 2) with 27 children
+
+        .. SEEALSO::
+
+            :meth:`increase_width`
+            :meth:`permute_coefficients`
+
         """
         if pAdics is None:
             pAdics = self.pAdics()
-        coefficients = tuple([self.coefficients[i] for i in indices])
+        coefficients = tuple(self.coefficients[i] for i in indices)
         return pAdicNode(pAdics=pAdics, coefficients=coefficients,
-                         children=self.children._limit_variables(indices, pAdics),
+                         children=self.children._decrease_width(indices,
+                                                                pAdics),
                          width=len(indices))
                          
-    def resort_coefficients(self, permutation, from_root=True):
-        """
-        Resorts the coefficients of this node.
+    def permute_coefficients(self, permutation, from_root=True):
+        """Permute the coefficients of this node.
         
-        The resorting will take place such that the i-th coefficient
-        of the new ordering will be the permutation[i]-th coefficient
-        of the original order.
+        The permutation will be done in such a way that the i-th entry
+        in the new odering will be permutation[i]-th entry of the
+        original coefficient.
         
         INPUT:
         
-        - ``permutation`` -- a list consisting of the integers 0
-          to the width of this node (0 inclusive, width exclusive),
-          which should all appear exactly once. The i-th entry of
-          this list should be the index of the coefficient in this
-          node that should become the i-th coefficient after
-          permutation.
-        - ``from_root`` -- A boolean value (default: True). If set
-          to true the coefficients of all nodes in the tree will be
-          resorted, whilst the resorting will be limited to this
-          node and the ones below otherwise.
+        - ``permutation`` -- a list consisting of the integers 0 to
+          the width of this node (0 inclusive, width exclusive), which
+          should all appear exactly once. The i-th entry of this list
+          should be the index of the coefficient in this node that
+          should become the i-th coefficient after permutation.
+
+        - ``from_root`` -- A boolean value (default: True). If set to
+          true the coefficients of all nodes in the tree will be
+          permuted, whilst the permutation will be limited to this
+          node and the ones below it otherwise.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 5)
+            sage: R = pAdicNode(pAdics=pAdics, full=True, width=4)
+            sage: N = R.children.list()[358]; N
+            p-adic node represented by (3, 1, 4, 2) with 625 children
+            sage: N.permute_coefficients([1, 3, 0, 2])
+            sage: N
+            p-adic node represented by (1, 2, 3, 4) with 625 children
+
+        .. SEEALSO::
+
+            :meth:`increase_width`
+            :meth:`decrease_width`
+
         """
         if from_root:
-            self.root().resort_coefficients(permutation, from_root=False)
+            self.root().permute_coefficients(permutation, from_root=False)
         else:
             self.coefficients = tuple([self.coefficients[permutation[i]]
                                        for i in range(self.width)])
             self._rep = None
-            self.children.resort_coefficients(permutation)
+            self.children.permute_coefficients(permutation)
     
     def sub_tree(self, children=None):
-        r"""
-        Obtains the subtree of this tree that contains this node.
+        r"""Obtain the subtree of this tree containing this node.
+
+        The subtree containing this node is the p-adic tree that
+        contains only those nodes in this tree through which there is
+        a path from the root that also goes through this node.
         
         INPUT:
-        - ``children`` -- A list of pAdicNode that are children
-          of this node, or None (default: None). If None the
-          subtree will contain all possible children of this
-          node, whilst it will otherwise be only limited to
-          the children given in this list.
+
+        - ``children`` -- A list of nodes that are copies of children
+          of this node, or None (default: None). If None the subtree
+          will contain all possible children of this node. Otherwise
+          the subtree will be limited to only those children given in
+          this list.
         
         OUTPUT:
-        A pAdicNode that is part of a p-adic tree. This p-adic
-        tree consists of copies of nodes that are in either a
-        parent or child connection to this node. Besides, if
-        the argument ``children`` was specified it will only
-        have copies of children of this node specified in that
-        list.
+
+        A pAdicNode that is a copy of the root of the p-adic tree that
+        this node is part of. This new tree consists of copies of all
+        those nodes in the old tree that have a path through them from
+        the root that also passes through this node. If the argument
+        `children` was not None, the copy of this node in the new tree
+        will have as children precisely the nodes in the list given.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 2)
+            sage: R = pAdicNode(pAdics=pAdics, full=True, width=2)
+            sage: N = R.children_at_level(2)[7]; N
+            p-adic node represented by (3, 2) with 4 children
+            sage: R2 = N.sub_tree()
+            sage: R2.children_at_level(2)
+            [p-adic node represented by (3, 2) with 4 children]
+
         """
         if children is None:
             node = self.copy()
@@ -780,7 +1080,7 @@ class pAdicNode(SageObject):
             node = pAdicNode(pAdics=self.pAdics(),
                              coefficients=self.coefficients,
                              width=self.width)
-            for child in self.children:
+            for child in children:
                 node.children.add(child)
         if self.is_root():
             return node
@@ -788,19 +1088,48 @@ class pAdicNode(SageObject):
             return self.parent().sub_tree(children=[node])
         
     def remove(self, child=None):
-        r"""
-        Removes a node from the tree it is part of.
+        r"""Remove a node from the p-adic tree.
+
+        This method removes this node from the tree, or if the
+        argument `child` is not None, removes that child of this
+        node. If by removing a node a node that is not the root has no
+        children left that node will also be removed.
         
-        .. NOTE:
-        The root of a tree can never be removed and attempting
-        to remove it will result in a ValueError.
+        .. NOTE::
+
+        The root of a tree can never be removed and attempting to
+        remove it will result in a ValueError.
         
         INPUT:
         
-        - ``child`` -- A pAdicNode that is a child of this node,
-          or the value None (default: None). If specified, i.e.
-          not None, the specified node will be removed as a child
-          from this node. Otherwise, this node will be removed.
+        - ``child`` -- A pAdicNode that is a child of this node, or
+          the value None (default: None). If not None that child of
+          this node wil be removed. If None this node will be removed.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 2)
+            sage: R = pAdicNode(pAdics=pAdics, full=True, width=2)
+            sage: N = R.children_at_level(2)[7]; N
+            p-adic node represented by (3, 2) with 4 children
+            sage: N.remove()
+            sage: R.children_at_level(2)
+            [p-adic node represented by (0, 0) with 4 children,
+             p-adic node represented by (2, 0) with 4 children,
+             p-adic node represented by (0, 2) with 4 children,
+             p-adic node represented by (2, 2) with 4 children,
+             p-adic node represented by (1, 0) with 4 children,
+             p-adic node represented by (3, 0) with 4 children,
+             p-adic node represented by (1, 2) with 4 children,
+             p-adic node represented by (0, 1) with 4 children,
+             p-adic node represented by (2, 1) with 4 children,
+             p-adic node represented by (0, 3) with 4 children,
+             p-adic node represented by (2, 3) with 4 children,
+             p-adic node represented by (1, 1) with 4 children,
+             p-adic node represented by (3, 1) with 4 children,
+             p-adic node represented by (1, 3) with 4 children,
+             p-adic node represented by (3, 3) with 4 children]
+
         """
         if child is None:
             if self.is_root():
@@ -813,8 +1142,11 @@ class pAdicNode(SageObject):
                 self.remove()
     
     def _from_root_list(self):
-        r"""
-        Gives a list of the nodes between the root and this node (inclusive).
+        r"""Give a path from the root to this node as a list.
+
+        This list consists of all nodes along the path, including the
+        root and this node.
+
         """
         if self.is_root():
             return [self]
@@ -824,19 +1156,29 @@ class pAdicNode(SageObject):
             return result
 
     def _merge_with_list(self, ls, index=None):
-        r"""
-        Merges this node with a list of nodes.
-        
-        .. NOTE:
-        Only for internal use. For merging use func:`merge`
-        instead.
+        r"""Merge a list of nodes into this node.
+
+        Part of the implementation of merging. Use the method
+        :meth:`merge` to merge nodes.
+
+        INPUT:
+
+        - ``ls`` -- A list of pAdicNodes with the same p-adics and
+          width as this node. The list should start with the root of a
+          p-adic tree. Each node in this list should be the parent of
+          the next node in the list if there is one.
+
+        - ``index`` -- A non-negative integer equal to the level of
+          this node plus one. Will be set to that value by
+          default. Used to prevent unnecessary recursion in
+          meth:`level`
+
         """
         if index is None:
             index = self.level()+1
         if index >= len(ls):
             self._merge(ls[-1])
         else:
-            #Needs optimization!
             a_child = None
             if self.children.contains(ls[index].coefficients):
                 a_child = self.children.get(ls[index].coefficients)
@@ -844,7 +1186,7 @@ class pAdicNode(SageObject):
                 if index >= len(ls)-1:
                     a_child = ls[index].copy()
                     self.children.add(a_child)
-                    return None #The child does not have to merge anymore!
+                    return None # The child does not have to merge anymore!
                 else:
                     a_child = pAdicNode(pAdics=ls[index].pAdics(),
                                         coefficients=ls[index].coefficients,
@@ -853,15 +1195,19 @@ class pAdicNode(SageObject):
             a_child._merge_with_list(ls, index=index+1)
     
     def _merge(self, other):
-        r"""
-        Merges this node with another node.
+        r"""Merge another node into this node.
         
-        .. NOTE:
-        Only for internal use. For merging use func:`merge`
-        instead.
+        Part of the implementation of merging. Use the method
+        :meth:`merge` to merge nodes.
+
+        INPUT:
+
+        - ``other`` -- A pAdicNode with the same p-adics and width as
+          this node.
+
         """
         if self.is_full():
-            return None #Nothing to add
+            return None # Nothing to add
         for child in other.children:
             if self.children.contains(child.coefficients):
                 self.children.get(child.coefficients)._merge(child)
@@ -869,45 +1215,70 @@ class pAdicNode(SageObject):
                 self.children.add(child.copy())
         
     def merge(self, other, from_root=True):
-        r"""
-        Merges this node with another node.
+        r"""Merge another node into this node.
         
-        Merging a node with this one implies that all nodes
-        below the other node that are not present below this
-        node, will be added below this node. If merging
-        from the root, this will all be done relative to
-        the root, meaning that a node will be added at the
-        level it existed in the other tree. If not merging
-        from the root the node will be added as many levels
-        below this node as it was below the other node.
-        
-        Note that merging from the root might add nodes that
-        are not below this one, as it considers everything
-        relative to the root and not this node. It will
-        however not add any node on a level above that
-        of the other node that is not in a parent relationship
-        with that node.
+        To merge another node into this node means to add copies of
+        all children of that node into this node. If a child with the
+        same coefficients already exists in this node the new copied
+        child will be merged into that child.
+
+        If the option `from_root` was set to True, will make sure that
+        the path from the root to the other node in the other p-adic
+        tree exists in this p-adic tree and merge the other node with
+        the corresponding node in this tree, rather then this
+        node.
         
         INPUT:
-        - ``other`` -- A pAdicNode with the same p-adics
-          and width as this one.
-        - ``from_root`` -- A boolean value (default: True).
-          This determines whether the two nodes should be merged
-          relative to the root or directly.
+
+        - ``other`` -- A pAdicNode with the same p-adics and width as
+          this node.
+
+        - ``from_root`` -- A boolean value (default: True). This
+          determines whether the two nodes should be merged relative
+          to the root or directly.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: R1 = pAdicNode(pAdics=pAdics, width=2, full=False)
+            sage: R2 = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: N = R2.children_at_level(2)[51]; N
+            p-adic node represented by (2, 7) with 9 children
+            sage: R1.merge(N)
+            sage: R1.children_at_level(2)
+            [p-adic node represented by (2, 7) with 9 children]
+
+        .. SEEALSO::
+
+            :meth:`cut`,
+            :meth:`limit_to`,
+            :meth:`complement`
+
         """
-        self._check_similar_node(other)
+        self._similar_node(other)
         if from_root:
             self.root()._merge_with_list(other._from_root_list())
         else:
             self._merge(other)
     
     def _cut_list(self, ls, index=None):
-        r"""
-        Cuts a list of nodes out of the tree of this node.
+        r"""Cut a list of nodes out of this p-adic tree.
         
-        .. NOTE:
-        Only for internal use. For cutting use func:`cut`
-        instead.
+        Part of the implementation of cutting. Use the method
+        :meth:`cut` to cut out nodes.
+
+        INPUT:
+
+        - ``ls`` -- A list of pAdicNodes with the same p-adics and
+          width as this node. The list should start with the root of a
+          p-adic tree. Each node in this list should be the parent of
+          the next node in the list if there is one.
+
+        - ``index`` -- A non-negative integer equal to the level of
+          this node plus one. Will be set to that value by
+          default. Used to prevent unnecessary recursion in
+          meth:`level`
+
         """
         if index is None:
             index = self.level()+1
@@ -916,14 +1287,19 @@ class pAdicNode(SageObject):
         elif self.children.contains(ls[index].coefficients):
             child = self.children.get(ls[index].coefficients)
             child._cut_list(ls, index=index+1)
+        # In the remaining case there is nothing to do
     
     def _cut(self, other):
-        r"""
-        Cuts a node out of the tree of this node.
+        r"""Cut a node out of this p-adic tree.
         
-        .. NOTE:
-        Only for internal use. For cutting use func:`cut`
-        instead.
+        Part of the implementation of cutting. Use the method
+        :meth:`cut` to cut out nodes.
+
+        INPUT:
+
+        - ``other`` -- A pAdicNode with the same p-adics and width as
+          this node.
+
         """
         if (not self.is_root()) and other.is_full():
             self.remove()
@@ -933,45 +1309,87 @@ class pAdicNode(SageObject):
                     self.children.get(child.coefficients)._cut(child)
             
     def cut(self, other, from_root=True):
-        r"""
-        Cut away a node from the tree of this node.
+        r"""Cut out a node from this node.
         
-        To cut away a node from the tree of this node,
-        we remove all nodes from this tree of which
-        their subtrees form a subtree of the subtree
-        given by the other node. If this is done
-        from the root all subtrees will be taken relative
-        to the root. If not from the root all subtrees
-        will be taken relative to this and the other node.
-        
-        Alternatively one could interpret cutting another
-        node from this one as removing all (infinite)
-        branches from this tree that are (infinite) branches
-        in the other tree passing through the other node.
-        If doing this from the root all branches originate
-        from the root, whilst they originate from this node
-        and the other node otherwise.
-        
+        To cut out a node from this node means to remove all infinite
+        paths from this node through its children which correspond to
+        infinite paths from the other node through its children. In
+        practice this means removing all children from this node for
+        which their counterparts in the other node are full and
+        cutting out those children of the other node that are not full
+        from the corresponding children in this node recursively.
+
+        If the argument `from_root` was set to True, will try to find
+        the counterpart of the other node in this p-adic tree and cut
+        out the other node from that node. By counterpart we mean the
+        node in this tree whose representative is the same as the
+        representative of the other node. If such a node does not
+        exist, this method does nothing.
+
         INPUT:
-        - ``other`` -- A pAdicNode with the same p-adics
-          and width as this one.
-        - ``from_root`` -- A boolean value (default: True).
-          This determines whether the node should be cut
-          relative to the root or directly from this one.
+
+        - ``other`` -- A pAdicNode with the same p-adics and width as
+          this node.
+
+        - ``from_root`` -- A boolean value (default: True). This
+          determines whether the other node should be cut out relative
+          to the root or directly from this node.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 2)
+            sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: N = R.children_at_level(2)[7]; N
+            p-adic node represented by (3, 2) with 4 children
+            sage: R.cut(N)
+            sage: R.children_at_level(2)
+            [p-adic node represented by (0, 0) with 4 children,
+             p-adic node represented by (2, 0) with 4 children,
+             p-adic node represented by (0, 2) with 4 children,
+             p-adic node represented by (2, 2) with 4 children,
+             p-adic node represented by (1, 0) with 4 children,
+             p-adic node represented by (3, 0) with 4 children,
+             p-adic node represented by (1, 2) with 4 children,
+             p-adic node represented by (0, 1) with 4 children,
+             p-adic node represented by (2, 1) with 4 children,
+             p-adic node represented by (0, 3) with 4 children,
+             p-adic node represented by (2, 3) with 4 children,
+             p-adic node represented by (1, 1) with 4 children,
+             p-adic node represented by (3, 1) with 4 children,
+             p-adic node represented by (1, 3) with 4 children,
+             p-adic node represented by (3, 3) with 4 children]
+
+        .. SEEALSO::
+
+            :meth:`merge`,
+            :meth:`limit_to`,
+            :meth:`complement`
+
         """
-        self._check_similar_node(other)
+        self._similar_node(other)
         if from_root:
             self.root()._cut_list(other._from_root_list())
         else:
             self._cut(other)
     
     def _limit_to_list(self, ls, index=None):     
-        r"""
-        Limits the tree of this node to only contain nodes in a list
+        r"""Limit this p-adic tree to a list of nodes.
         
-        .. NOTE:
-        Only for internal use. For limiting use func:`limit_to`
-        instead.
+        Part of the implementation of limiting. Use the method
+        :meth:`limit_to` to limit nodes.
+
+        INPUT:
+
+        - ``ls`` -- A list of pAdicNodes with the same p-adics and
+          width as this node. The list should start with the root of a
+          p-adic tree. Each node in this list should be the parent of
+          the next node in the list if there is one.
+
+        - ``index`` -- A non-negative integer equal to the level of
+          this node plus one. Will be set to that value by
+          default. Used to prevent unnecessary recursion in
+          meth:`level`
+
         """
         if index is None:
             index = self.level() + 1
@@ -986,12 +1404,16 @@ class pAdicNode(SageObject):
                 self.children.add(child)
             
     def _limit_to(self, other):    
-        r"""
-        Limits the tree of this node to nodes below a given node.
+        r"""Limit this p-adic tree to a node.
         
-        .. NOTE:
-        Only for internal use. For limiting use func:`limit_to`
-        instead.
+        Part of the implementation of limiting. Use the method
+        :meth:`limit_to` to limit nodes.
+
+        INPUT:
+
+        - ``other`` -- A pAdicNode with the same p-adics and width as
+          this node.
+
         """
         if self.is_full():
             self.children = other.children.copy()
@@ -1007,57 +1429,113 @@ class pAdicNode(SageObject):
             child.remove()
     
     def limit_to(self, other, from_root=False):    
-        r"""
-        Limits the nodes that can be part of this tree.
+        r"""Limit this node to another node.
         
-        Limiting to another node will remove all nodes
-        below this node that do not have a counterpart below
-        the other node. If doing this from the root the
-        counterpart is determined as the node along the
-        same path from the root. If doing this not from
-        the root is determined by the path relative to
-        this respectivelty the other node.
+        Limiting this node to another node means that we remove all
+        children of this node that are not also children of the other
+        node and limit the other children of this node to their
+        counterparts in the other node.
+
+        If the argument `from_root` was set to True, will try to find
+        the counterpart of the other node in this p-adic tree and
+        limit that node to the other node. By counterpart we mean the
+        node in this tree whose representative is the same as the
+        representative of the other node. If such a node does not
+        exist, this method does nothing.
         
         INPUT:
-        - ``other`` -- A pAdicNode with the same p-adics
-          and width as this one.
-        - ``from_root`` -- A boolean value (default: False).
-          This determines whether the node should be limited
-          relative to the root or directly from this one.
+
+        - ``other`` -- A pAdicNode with the same p-adics and width as
+          this node.
+
+        - ``from_root`` -- A boolean value (default: True). This
+          determines whether the other node should be cut out relative
+          to the root or directly from this node.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 2)
+            sage: R1 = pAdicNode(pAdics=pAdics, width=2, full=False)
+            sage: R2 = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: N = R2.children_at_level(2)[7]; N
+            p-adic node represented by (3, 2) with 4 children
+            sage: R1.merge(N)
+            sage: R2.limit_to(R1)
+            sage: R2.children_at_level(2)
+            [p-adic node represented by (3, 2) with 4 children]
+
+        .. SEEALSO::
+
+            :meth:`merge`,
+            :meth:`cut`,
+            :meth:`complement`
+
         """
-        self._check_similar_node(other)
+        self._similar_node(other)
         if from_root:
             self.root()._limit_to_list(other._from_root_list())
         else:
             self._limit_to(other)
             
     def complement(self):
-        r"""
-        Gives the complement of this node.
+        r"""Give the complement of this node.
         
-        The complement of a node is a node that has all
-        nodes below it that are not below the original
-        node, i.e. it contains exactly all thoses (infinite)
-        branches in a tree that are not part of the original
-        tree and pass through this node.
+        The complement of a node is a full node with this node cut
+        out.
+
+        OUTPUT:
+
+        A pAdicNode that is the complement of this node.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 2)
+            sage: R1 = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: R1.children_at_level(1)[3].remove()
+            sage: R1.children_at_level(2)[0].remove()
+            sage: R1.children_at_level(2)[4].remove()
+            sage: R1.children_at_level(2)[7].remove()
+            sage: R1.children_at_level(2)
+            [p-adic node represented by (2, 0) with 4 children,
+             p-adic node represented by (0, 2) with 4 children,
+             p-adic node represented by (2, 2) with 4 children,
+             p-adic node represented by (1, 0) with 4 children,
+             p-adic node represented by (1, 2) with 4 children,
+             p-adic node represented by (3, 2) with 4 children,
+             p-adic node represented by (0, 1) with 4 children,
+             p-adic node represented by (0, 3) with 4 children,
+             p-adic node represented by (2, 3) with 4 children]
+            sage: R2 = R1.complement()
+            sage: R2.children_at_level(2)
+            [p-adic node represented by (0, 0) with 4 children,
+             p-adic node represented by (3, 0) with 4 children,
+             p-adic node represented by (2, 1) with 4 children,
+             p-adic node represented by (1, 1) with 4 children,
+             p-adic node represented by (3, 1) with 4 children,
+             p-adic node represented by (1, 3) with 4 children,
+             p-adic node represented by (3, 3) with 4 children]
+
+        .. SEEALSO::
+
+            :meth:`merge`,
+            :meth:`cut`,
+            :meth:`limit_to`
+
         """
         return pAdicNode(pAdics=self.pAdics(), coefficients=self.coefficients,
                          children=self.children.complement(),
                          width=self.width)
         
     def _repr_(self):
-        return "p-adic node represented by " + str(self.representative()) \
-                + " with " + str(self.children.size()) + " children."
+        return ("p-adic node represented by " + str(self.representative()) +
+                " with " + str(self.children.size()) + " children")
         
     def __eq__(self, other):
-        return isinstance(other, pAdicNode) \
-               and self.pAdics() == other.pAdics() \
-               and self.children == other.children
+        return (self._similar_node(other) and
+                self.children == other.children)
                
     def __ne__(self, other):
-        return not isinstance(other, pAdicNode) \
-               or self.pAdics() != other.pAdics() \
-               or self.children != other.children
+        return not self.__eq__(other)
 
     def __hash__(self):
         return hash((self.coefficients, self.children))
@@ -1393,7 +1871,7 @@ class pAdicNodeCollection(SageObject):
             result.get(node.coefficients).cut(node, from_root=False)
         return result
         
-    def resort_coefficients(self, permutation):
+    def permute_coefficients(self, permutation):
         r"""
         Permutes the coefficients of nodes.
         
@@ -1402,7 +1880,7 @@ class pAdicNodeCollection(SageObject):
         the i-th coefficient equal to the the
         permutation[i]-th coefficient of the original
         coefficient tuple. For more information see the
-        function :func:`resort_coefficients` of each
+        function :func:`permute_coefficients` of each
         node.
         
         INPUT:
@@ -1418,11 +1896,11 @@ class pAdicNodeCollection(SageObject):
         """
         resorted_dict = {}
         for node in self._dict.itervalues():
-            node.resort_coefficients(permutation, from_root=False)
+            node.permute_coefficients(permutation, from_root=False)
             resorted_dict[node.coefficients] = node
         self._dict = resorted_dict
         
-    def _extend_variables(self, n, pAdics):
+    def _increase_width(self, n, pAdics):
         r"""
         Increases the width of all nodes in this collection.
         
@@ -1431,16 +1909,13 @@ class pAdicNodeCollection(SageObject):
         """
         result = pAdicNodeCollection(None, pAdics=pAdics,
                                      width=self.width+n)
-        F = pAdics.residue_field()
-        for node in self:
-            for m in pAdics.representatives(width=n):
-                coefficients = tuple(list(node.coefficients) +
-                                     [c for c in m])
-                result.add(node.extend_variables(n, pAdics=pAdics,
-                                                 coefficients=coefficients))
+        for cfs in pAdics.representatives(width=n):
+            for node in self:
+                result.add(node.increase_width(n, pAdics=pAdics,
+                                               coefficients=cfs))
         return result
         
-    def _limit_variables(self, indices, pAdics):
+    def _decrease_width(self, indices, pAdics):
         r"""
         Limits the coefficients of nodes to certain given indices.
         
@@ -1449,7 +1924,7 @@ class pAdicNodeCollection(SageObject):
         """
         result = pAdicNodeCollection(None, pAdics=pAdics, width=len(indices))
         for node in self:
-            new_node = node.limit_variables(indices, pAdics=pAdics)
+            new_node = node.decrease_width(indices, pAdics=pAdics)
             if result.contains(new_node.coefficients):
                 result.get(new_node.coefficients).merge(new_node,
                                                           from_root=False)
@@ -1616,7 +2091,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
         if coefficients not in self._removed:
             self._removed.append(coefficients)
             
-    def _extend_variables(self, n, pAdics):
+    def _increase_width(self, n, pAdics):
         r"""
         Increases the width of all nodes in this collection.
         
@@ -1627,19 +2102,15 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
                                               width=self.width + n)
         F = pAdics.residue_field()
         M = pAdics.residue_field()**n
-        for cfs in self._removed:
-            for m in M:
-                coefficients = tuple(list(cfs) + [F.lift(c) for c in m])
-                result.remove_by_coefficients(coefficients)
-        for node in self._dict.itervalues():
-            for m in M:
-                coefficients = tuple(list(node.coefficients) +
-                                     [F.lift(c) for c in m])
-                result._dict[coefficients] = node.extend_variables(n, pAdics=pAdics,
-                                                         coefficients=coefficients)
+        for cfs in pAdics.representatives(width=n):
+            for cfs0 in self._removed:
+                result.remove_by_coefficients(cfs0 + cfs)
+            for node in self._dict.itervalues():
+                result._dict[coefficients] = node.increase_width(n, pAdics=pAdics,
+                                                                 coefficients=cfs)
         return result
         
-    def _limit_variables(self, indices, pAdics):
+    def _decrease_width(self, indices, pAdics):
         r"""
         Limits the coefficients of nodes to certain given indices.
         
@@ -1659,7 +2130,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
                 result.remove_by_coefficients(removal_candidates[i])
             i += c
         for node in self._dict.itervalues():
-            new_node = node.limit_variables(indices, pAdics=pAdics)
+            new_node = node.decrease_width(indices, pAdics=pAdics)
             if result.contains(new_node.coefficients):
                 result.get(new_node.coefficients).merge(new_node,
                                                           from_root=False)
@@ -1750,7 +2221,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
             result._dict[k] = v.copy()
         return result
         
-    def resort_coefficients(self, permutation):
+    def permute_coefficients(self, permutation):
         r"""
         Permutes the coefficients of nodes.
         
@@ -1759,7 +2230,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
         the i-th coefficient equal to the the
         permutation[i]-th coefficient of the original
         coefficient tuple. For more information see the
-        function :func:`resort_coefficients` of each
+        function :func:`permute_coefficients` of each
         node.
         
         INPUT:
@@ -1773,7 +2244,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
           should become the i-th entry in the new
           coefficients.
         """
-        pAdicNodeCollection.resort_coefficients(self, permutation)
+        pAdicNodeCollection.permute_coefficients(self, permutation)
         resorted_removed = []
         for coefficients in self._removed:
             coefficients = tuple([coefficients[permutation[i]]
@@ -2011,7 +2482,7 @@ class pAdicTree(SageObject):
             if var not in new_variables:
                 new_variables.append(var)
         return pAdicTree(variables=new_variables,
-                         root=self.root().extend_variables(len(new_variables)))
+                         root=self.root().increase_width(len(new_variables)))
         
     def remove_variables(self, variables):
         r"""
@@ -2031,7 +2502,7 @@ class pAdicTree(SageObject):
         
         ..SEEALSO:
         
-            :func:`pAdicNode.limit_variables`
+            :func:`pAdicNode.decrease_width`
         
         INPUT:
         
@@ -2058,7 +2529,7 @@ class pAdicTree(SageObject):
                 variables_to_keep.remove(var)     
         indices = [all_variables.index(var) for var in variables_to_keep]
         return pAdicTree(variables=variables_to_keep,
-                         root=self.root().limit_variables(indices))
+                         root=self.root().decrease_width(indices))
         
     def resort_variables(self, variables):
         r"""
@@ -2092,7 +2563,7 @@ class pAdicTree(SageObject):
         except ValueError:
             raise ValueError("The variables %s and %s do not correspond 1 to 1."%(variables, myvars))
         return pAdicTree(variables=variables,
-                         root=self.root().resort_coefficients(permutation))
+                         root=self.root().permute_coefficients(permutation))
         
     def change_variables_to(self, variables, ignore_order=False):
         r"""
