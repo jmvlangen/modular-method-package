@@ -856,6 +856,10 @@ class pAdicNode(SageObject):
             sage: N.copy().parent() == None
             True
 
+        .. SEEALSO::
+
+             :meth:`pAdicNodeCollection.copy`
+
         """
         return pAdicNode(pAdics=self.pAdics(),
                          children=self.children.copy(),
@@ -1520,6 +1524,7 @@ class pAdicNode(SageObject):
             :meth:`merge`,
             :meth:`cut`,
             :meth:`limit_to`
+            :meth:`pAdicNodeCollection.complement`
 
         """
         return pAdicNode(pAdics=self.pAdics(), coefficients=self.coefficients,
@@ -1652,12 +1657,12 @@ class pAdicNodeCollection(SageObject):
 
         """
         if not isinstance(node, pAdicNode):
-            raise ValueError("%s is not a pAdicNode"%node)
+            raise ValueError("%s is not a pAdicNode"%(node,))
         if node.pAdics() != self.pAdics():
-            raise ValueError("%s does not have p-adics like %s"%(node,
-                                                                 self.pAdics()))
+            raise ValueError(str(node) + " does not have p-adics like " +
+                             str(self.pAdics()))
         if node.width != self.width:
-            raise ValueError("%s does not have width%s"%(node, self.width))
+            raise ValueError("%s does not have width %s"%(node, self.width))
             
     def pAdics(self):
         r"""Give the shared p-adics of the nodes in this collection.
@@ -1720,62 +1725,141 @@ class pAdicNodeCollection(SageObject):
         - ``node`` -- A pAdicNode with the same p-adics and width
           as shared among nodes of this collection.
 
-        
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 3)
+            sage: R = pAdicNode(pAdics=pAdics, width=2)
+            sage: N1 = pAdicNode(pAdics=pAdics, coefficients=(1, 2))
+            sage: N2 = pAdicNode(pAdics=pAdics, coefficients=(2, 1))
+            sage: N3 = pAdicNode(pAdics=pAdics, coefficients=(2, 1))
+            sage: isinstance(R.children, pAdicNodeCollection)
+            True
+            sage: R.children.add(N1)
+            sage: R.children.add(N2)
+            sage: R.children.add(N3)
+            Traceback (most recent call last):
+            ...
+            ValueError: A node like p-adic node represented by (2, 1) with 0 children already exists: p-adic node represented by (2, 1) with 0 children
+            sage: R.children
+            [p-adic node represented by (1, 2) with 0 children,
+            p-adic node represented by (2, 1) with 0 children]
+
+        .. SEEALSO::
+
+            :meth:`remove`
+            :meth:`remove_by_coefficients`
 
         """
         self._check_pAdic_node(node)
         if self._dict.has_key(node.coefficients):
-            raise ValueError("A node like %s already exists: %s"%(node,
-                                               self._dict[node.coefficients]))
+            raise ValueError("A node like " + str(node) + " already exists: " +
+                             str(self._dict[node.coefficients]))
         self._dict[node.coefficients] = node
         if not self.parent() is None:
             node._set_parent(self.parent())
         
     def contains(self, coefficients):
-        r"""
-        Checks whether this collection contains a node with
-        given coefficients.
+        r"""Check whether this collection contains a node with given
+        coefficients.
         
         INPUT:
         
-        - ``coefficients`` -- A tuple of numbers of length equal
-          to the common width of nodes in this collection. All
-          numbers must be representatives of the residue field
-          of the p-adics shared among the nodes in this collection.
+        - ``coefficients`` -- A tuple of numbers that could be the
+          label of a p-adic node in this collection, i.e. the length
+          of the tuple should equal the common width of the nodes, the
+          numbers must be in the number field of the common p-adics of
+          the nodes, and they must be representatives of the residue
+          field of this common p-adics as returned by the pAdicBase
+          object that gives the p-adics.
         
         OUTPUT:
-        True - if there exists a node in this collection with
-               coefficients equal to the argument ``coefficients``.
-        False - otherwise
+
+        True, if there exists a node in this collection with
+        coefficients equal to the argument `coefficients`. False,
+        otherwise.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 5)
+            sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: R.children.list()[7].remove()
+            sage: isinstance(R.children, pAdicNodeCollection)
+            True
+            sage: R.children.contains((0,0))
+            True
+            sage: R.children.contains((2,1))
+            False
+
+        .. SEEALSO::
+
+            :meth:`pAdicBase.representatives`
+
         """
         return self._dict.has_key(coefficients)
         
     def get(self, coefficients):
-        r"""
-        Retrieves a node from this collection based on its coefficients.
+        r"""Get a node from this collection by its coefficients.
         
         INPUT:
         
-        - ``coefficients`` -- A tuple of numbers of length equal
-          to the common width of nodes in this collection. All
-          numbers must be representatives of the residue field
-          of the p-adics shared among the nodes in this collection.
+        - ``coefficients`` -- A tuple of numbers that could be the
+          label of a p-adic node in this collection, i.e. the length
+          of the tuple should equal the common width of the nodes, the
+          numbers must be in the number field of the common p-adics of
+          the nodes, and they must be representatives of the residue
+          field of this common p-adics as returned by the pAdicBase
+          object that gives the p-adics.
         
         OUTPUT:
+
         A pAdicNode object in this collection with coefficients equal
-        to the argument ``coefficients``. The function will raise an
+        to the argument `coefficients`. The function will raise an
         error if no such node exists.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: isinstance(R.children, pAdicNodeCollection)
+            True
+            sage: N = R.children.get((1,2)); N
+            p-adic node represented by (1, 2) with 9 children
+            sage: N.remove()
+            sage: R.children.get((1,2))
+            Traceback (most recent call last):
+            ...
+            ValueError: No node with coefficients (1, 2) exists.
+
+        .. SEEALSO::
+
+            :meth:`pAdicBase.representatives`,
+            :meth:`contains`
+
         """
         if not self._dict.has_key(coefficients):
-            raise ValueError("No node with coefficients %s exists"&(coefficients,))
+            raise ValueError("No node with coefficients " + str(coefficients) +
+                             " exists")
         return self._dict[coefficients]
         
     def list(self):
-        r"""
-        Gives a list of the nodes in this collection.
+        r"""Give the nodes in this collection as a list.
         
         OUTPUT:
-        A list of pAdicNode objects that are in this collection.
+
+        A list of the nodes in this collection.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 2)
+            sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: isinstance(R.children, pAdicNodeCollection)
+            True
+            sage: R.children.list()
+            [p-adic node represented by (0, 0) with 4 children,
+             p-adic node represented by (1, 0) with 4 children,
+             p-adic node represented by (0, 1) with 4 children,
+             p-adic node represented by (1, 1) with 4 children]
+
         """
         return self._dict.values()
         
@@ -1783,34 +1867,95 @@ class pAdicNodeCollection(SageObject):
         return self._dict.itervalues()
         
     def size(self):
-        r"""
-        Gives the amount of nodes in this collection.
+        r"""Give the number of nodes in this collection.
         
         OUTPUT:
+
         A non-negative integer equal to the number of nodes in this
         collection.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: isinstance(R.children, pAdicNodeCollection)
+            True
+            sage: R.children.size()
+            9
+
+        .. SEEALSO::
+
+            :meth:`maximal_size`
+
         """
         return len(self._dict)
         
     def maximal_size(self):
-        r"""
-        Gives the maximal amount of nodes in this collection.
+        r"""Give the maximal amount of nodes in this collection.
+
+        Since each node in this collection must have a unique label
+        and each label is a tuple of representatives of the residue
+        fields of the common p-adics of the nodes, chosen from a fixed
+        set of representatives, the number of nodes in this collection
+        is limited.
         
         OUTPUT:
-        A non-negative integer equal to the number of possible
-        tuples that can be coefficients for nodes in this
-        collection.
+
+        A non-negative integer equal to the number of possible tuples
+        that can be coefficients for nodes in this collection.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 7)
+            sage: C = pAdicNodeCollection(None, pAdics=pAdics, width=2)
+            sage: C.maximal_size()
+            49
+            sage: C.size()
+            0
+
+        .. SEE_ALSO::
+
+            :meth:`size`
+            :meth:`pAdicBase.representatives`
+
         """
         return self.pAdics().size_residue_field()^self.width
         
     def is_full(self):
-        r"""
-        Determine whether this collection is full.
+        r"""Determine whether this collection is full.
+
+        A collection of p-adic nodes is full if it contains the
+        maximal amount of nodes and each node in the collection is
+        full.
         
         OUTPUT:
-        True - If there is a full node in this collection for
-               each possible tuple of coefficients.
-        False - Otherwise.
+
+        True, if this collections contains the maximal amount
+        of nodes and each node is full. False, otherwise.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 3)
+            sage: R = pAdicNode(pAdics=pAdics, full=True)
+            sage: isinstance(R.children, pAdicNodeCollection)
+            True
+            sage: C1 = R.children
+            sage: C2 = pAdicNodeCollection(None, pAdics=pAdics)
+            sage: C3 = C2.copy()
+            sage: C3.add(pAdicNode(pAdics=pAdics))
+            sage: C1.is_full()
+            True
+            sage: C2.is_full()
+            False
+            sage: C3.is_full()
+            False
+
+        .. SEEALSO::
+
+            :meth:`is_empty`,
+            :meth:`pAdicNode.is_full`,
+            :meth:`maximal_size`
+
         """
         if self.size() != self.maximal_size():
             return False
@@ -1820,12 +1965,38 @@ class pAdicNodeCollection(SageObject):
         return True
         
     def is_empty(self):
-        r"""
-        Determine whether this collection is empty.
+        r"""Determine whether this collection is empty.
+
+        A collection of p-adic nodes is called empty if all the nodes
+        in the collection are empty.
         
         OUTPUT:
-        True - If each node in this collection is empty.
-        False - Otherwise.
+
+        True, if each node in this collection is empty. False,
+        otherwise.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 3)
+            sage: R = pAdicNode(pAdics=pAdics, full=True)
+            sage: isinstance(R.children, pAdicNodeCollection)
+            True
+            sage: C1 = R.children
+            sage: C2 = pAdicNodeCollection(None, pAdics=pAdics)
+            sage: C3 = C2.copy()
+            sage: C3.add(pAdicNode(pAdics=pAdics))
+            sage: C1.is_empty()
+            False
+            sage: C2.is_empty()
+            True
+            sage: C3.is_empty()
+            True
+
+        .. SEEALSO::
+
+            :meth:`is_full`,
+            :meth:`pAdicNode.is_empty`
+
         """
         if self.size() == 0:
             return True
@@ -1835,16 +2006,36 @@ class pAdicNodeCollection(SageObject):
         return True
         
     def remove(self, node):
-        r"""
-        Removes a node from this collection
+        r"""Remove a node from this collection
         
-        A node is only removed if it was in the
-        collection in the first place.
+        A node is only removed if it was in the collection in the
+        first place.
         
         INPUT:
         
-        - ``node`` -- A pAdicNode object that is in
-          this collection.
+        - ``node`` -- A pAdicNode object with the same p-adics and
+          with as the common p-adics and width of nodes in this
+          collection. If it is in the collection it will be removed
+          from the collection.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 2)
+            sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: isinstance(R.children, pAdicNodeCollection)
+            True
+            sage: N = R.children.get((1,0))
+            sage: R.children.remove(N)
+            sage: R.children.list()
+            [p-adic node represented by (0, 0) with 4 children,
+             p-adic node represented by (0, 1) with 4 children,
+             p-adic node represented by (1, 1) with 4 children]
+
+        .. SEEALSO::
+
+            :meth:`add`,
+            :meth:`remove_by_coefficients`
+
         """
         self._check_pAdic_node(node)
         try:
@@ -1854,37 +2045,78 @@ class pAdicNodeCollection(SageObject):
             pass
             
     def remove_by_coefficients(self, coefficients):
-        r"""
-        Removes the node with given coefficients from this
-        collection.
+        r"""Remove the node with given coefficients from this collection.
         
-        A node is only removed if a node with the given
-        coefficients was in this collection in the first
-        place.
+        A node is only removed if a node with the given coefficients
+        was in this collection in the first place.
         
         INPUT:
         
-        - ``coefficients`` -- A tuple of numbers of length equal
-          to the common width of nodes in this collection. All
-          numbers must be representatives of the residue field
-          of the p-adics shared among the nodes in this collection.
+        - ``coefficients`` -- A tuple of numbers that could be the
+          label of a p-adic node in this collection, i.e. the length
+          of the tuple should equal the common width of the nodes, the
+          numbers must be in the number field of the common p-adics of
+          the nodes, and they must be representatives of the residue
+          field of this common p-adics as returned by the pAdicBase
+          object that gives the p-adics. The p-adic node with the
+          given coefficients will be removed from this collection.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 2)
+            sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: isinstance(R.children, pAdicNodeCollection)
+            True
+            sage: R.children.remove_by_coefficients((1, 0))
+            sage: R.children.list()
+            [p-adic node represented by (0, 0) with 4 children,
+             p-adic node represented by (0, 1) with 4 children,
+             p-adic node represented by (1, 1) with 4 children]
+
+        .. SEEALSO::
+
+            :meth:`add`,
+            :meth:`remove`,
+            :meth:`pAdicBase.representatives`
+
         """
         if coefficients in self._dict:
             self._dict.pop(coefficients)
 
     def copy(self):
-        r"""
-        Gives a copy of this collection.
+        r"""Give a copy of this collection.
         
-        .. NOTE:
-        The copy does not have a parent, since the
-        copy process copies children. Therefore
-        copying the parent would lead to a double
-        copy.
+        .. NOTE::
+
+        The copy does not have a parent, since copies of nodes do not.
         
         OUTPUT:
-        A pAdicNodeCollection object that contains
-        copies of the nodes in this collection.
+
+        A pAdicNodeCollection object that contains copies of the nodes
+        in this collection.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 3)
+            sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: isinstance(R.children, pAdicNodeCollection)
+            True
+            sage: C = R.children.copy()
+            sage: C.list()
+            [p-adic node represented by (0, 0) with 9 children,
+             p-adic node represented by (1, 0) with 9 children,
+             p-adic node represented by (2, 0) with 9 children,
+             p-adic node represented by (0, 1) with 9 children,
+             p-adic node represented by (1, 1) with 9 children,
+             p-adic node represented by (2, 1) with 9 children,
+             p-adic node represented by (0, 2) with 9 children,
+             p-adic node represented by (1, 2) with 9 children,
+             p-adic node represented by (2, 2) with 9 children]
+
+        .. SEEALSO::
+
+             :meth:`pAdicNode.copy`
+
         """
         result = pAdicNodeCollection(None, pAdics=self.pAdics(),
                                      width=self.width)
@@ -1893,15 +2125,57 @@ class pAdicNodeCollection(SageObject):
         return result
         
     def complement(self):
-        r"""
-        Gives the complement of this collection.
+        r"""Give the complement of this collection.
+
+        The complement of a collection of p-adic nodes is a collection
+        of p-adic nodes with the same p-adics and width as the nodes
+        in this collection. Furthermore for each tuple $c$ of
+        coefficients for such a node we have
+
+        - If $c$ was the coefficients of a full node in the original,
+          it does not appear as the coefficients of a node in the
+          complement.
+
+        - If $c$ did not appear as the coefficients of a node in the
+          original or as the coefficients of an empty node, then $c$
+          is the coefficients of a full node in the complement.
+
+        - In any other case the node with coefficients $c$ exists in
+          the complement and is the complement of the node with the
+          same coefficients in the original.
         
         OUTPUT:
-        A pAdicNodeCollection that contains
-        - For each node in this collection its complement.
-        - For all possible tuples of coefficients that do not
-          have a node in this collection a full node, i.e. a
-          node with all possible nodes below it.
+
+        A pAdicNodeCollection that is the complement of this
+        collection.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 3)
+            sage: C = pAdicNodeCollection(None, pAdics=pAdics, width=2)
+            sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(1,2), full=True))
+            sage: N = pAdicNode(pAdics=pAdics, coefficients=(2,1), full=True)
+            sage: N.children.remove_by_coefficients((0,1))
+            sage: C.add(N)
+            sage: C.list()
+            [p-adic node represented by (1, 2) with 9 children,
+             p-adic node represented by (2, 1) with 8 children]
+            sage: C.complement().list()
+            [p-adic node represented by (0, 0) with 9 children,
+             p-adic node represented by (1, 0) with 9 children,
+             p-adic node represented by (2, 0) with 9 children,
+             p-adic node represented by (0, 1) with 9 children,
+             p-adic node represented by (1, 1) with 9 children,
+             p-adic node represented by (2, 1) with 1 children,
+             p-adic node represented by (0, 2) with 9 children,
+             p-adic node represented by (2, 2) with 9 children]
+        
+        .. SEE_ALSO::
+
+            :meth:`pAdicNode.complement`,
+            :meth:`pAdicNode.is_full`,
+            :meth:`pAdicNode.is_empty`,
+
         """
         if self.is_full():
             return pAdicNodeCollection(None, pAdics=self.pAdics(),
@@ -1909,31 +2183,49 @@ class pAdicNodeCollection(SageObject):
         result = pAdicNodeCollection_inverted(None, pAdics=self.pAdics(),
                                               width=self.width)
         for node in self:
-            result.get(node.coefficients).cut(node, from_root=False)
+            if node.is_full():
+                result.remove_by_coefficients(node.coefficients)
+            else:
+                result.get(node.coefficients).cut(node, from_root=False)
         return result
         
     def permute_coefficients(self, permutation):
-        r"""
-        Permutes the coefficients of nodes.
+        r"""Permute the coefficients of the nodes in this collection.
         
-        When called change the coefficients of each node
-        in this collection and all below them by making
-        the i-th coefficient equal to the the
-        permutation[i]-th coefficient of the original
-        coefficient tuple. For more information see the
-        function :func:`permute_coefficients` of each
-        node.
+        The permutation will be done in such a way that the i-th entry
+        in the new odering will be permutation[i]-th entry of the
+        original coefficient.
         
         INPUT:
         
-        - ``permutation`` -- A list of length equal to
-          the common width of nodes in this collection,
-          of which each entry is a unique non-negative
-          integer smaller than that width. The i-th
-          entry of this list should be the index of
-          the original entry in the coefficients that
-          should become the i-th entry in the new
-          coefficients.
+        - ``permutation`` -- a list consisting of the integers 0 to
+          the common width of the nodes in this collection (0
+          inclusive, width exclusive), which should all appear exactly
+          once. The i-th entry of this list should be the index of the
+          coefficient each node that should become the i-th
+          coefficient after permutation.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 11)
+            sage: C = pAdicNodeCollection(None, pAdics=pAdics, width=4)
+            sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(1,2,3,4)))
+            sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(7,4,1,6)))
+            sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(9,2,8,3)))
+            sage: C.list()
+            [p-adic node represented by (9, 2, 8, 3) with 0 children,
+             p-adic node represented by (1, 2, 3, 4) with 0 children,
+             p-adic node represented by (7, 4, 1, 6) with 0 children]
+            sage: C.permute_coefficients([1,3,2,0])
+            sage: C.list()
+            [p-adic node represented by (4, 6, 1, 7) with 0 children,
+             p-adic node represented by (2, 3, 8, 9) with 0 children,
+             p-adic node represented by (2, 4, 3, 1) with 0 children]
+
+        .. SEEALSO::
+
+            :meth:`pAdicNode.permute_coefficients`
+
         """
         resorted_dict = {}
         for node in self._dict.itervalues():
@@ -1942,14 +2234,28 @@ class pAdicNodeCollection(SageObject):
         self._dict = resorted_dict
         
     def _increase_width(self, n, pAdics):
-        r"""
-        Increases the width of all nodes in this collection.
+        r"""Increase the width of all nodes in this collection.
+
+        INPUT:
         
-        .. NOTE:
-        For internal purposes only.
+        - ``n`` -- A non negative integer equal to the number of
+          additional coefficients in the new width.
+
+        - ``pAdics`` -- A pAdicBase object that contains the p-adic
+          information on which the resulting p-adic nodes should be
+          based. This argument should be redundant.
+
+        OUTPUT:
+
+        A pAdicNodeColection containing all nodes with increased width
+        that can be made with nodes in this collection.
+
+        .. SEEALSO::
+
+            :meth:`pAdicNode.increase_width`
+
         """
-        result = pAdicNodeCollection(None, pAdics=pAdics,
-                                     width=self.width+n)
+        result = pAdicNodeCollection(None, pAdics=pAdics, width=self.width+n)
         for cfs in pAdics.representatives(width=n):
             for node in self:
                 result.add(node.increase_width(n, pAdics=pAdics,
@@ -1957,18 +2263,37 @@ class pAdicNodeCollection(SageObject):
         return result
         
     def _decrease_width(self, indices, pAdics):
-        r"""
-        Limits the coefficients of nodes to certain given indices.
+        r"""Limit the coefficients of nodes in this collection.
+
+        INPUT:
         
-        .. NOTE:
-        For internal purposes only.
+        - ``indices`` -- An iterable object containing distinct
+          integers between 0 and the common width of nodes in this
+          collection (0 inclusive, width exclusive). These are the
+          indices of the coefficients that should be present in the
+          returned node.
+
+        - ``pAdics`` -- A pAdicBase object that contains the p-adic
+          information on which the resulting p-adic nodes should be
+          based. This argument should be redundant.
+
+        OUTPUT:
+
+        A pAdicNodeCollection containing all nodes formed by limiting
+        the coefficients of nodes in this collection to the given
+        indices.
+
+        .. SEEALSO::
+
+            :meth:`decrease_width`
+
         """
         result = pAdicNodeCollection(None, pAdics=pAdics, width=len(indices))
         for node in self:
             new_node = node.decrease_width(indices, pAdics=pAdics)
             if result.contains(new_node.coefficients):
                 result.get(new_node.coefficients).merge(new_node,
-                                                          from_root=False)
+                                                        from_root=False)
             else:
                 result.add(new_node)
         return result
@@ -1980,22 +2305,17 @@ class pAdicNodeCollection(SageObject):
             if firstLoop:
                 firstLoop = False
             else:
-                result += ",\n"
+                result += ",\n "
             result += str(c)
         result += "]"
         return result
         
     def __eq__(self, other):
-        if not isinstance(other, pAdicNodeCollection):
-            return False
-        if self.pAdics() != other.pAdics():
-            return False
-        if self.size() != other.size():
-            return False
-        for c in self._dict:
-            if not other.contains(c) or self.get(c) != other.get(c):
-                return False
-        return True
+        return (isinstance(other, pAdicNodeCollection) and
+                self.pAdics() == other.pAdics() and
+                self.size() == other.size() and
+                all(other.contains(c) and self.get(c) == other.get(c)
+                    for c in self._dict))
         
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -2083,7 +2403,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
         error if no such node exists.
         """
         if coefficients in self._removed:
-            raise ValueError("No node with coefficients %s exists."&(coefficients,))
+            raise ValueError("No node with coefficients %s exists."%(coefficients,))
         if coefficients not in self._dict:
             self._dict[coefficients] = pAdicNode(parent=self.parent(),
                                                  coefficients=coefficients,
