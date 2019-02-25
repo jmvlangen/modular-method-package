@@ -80,19 +80,50 @@ steps don't have to be saved it might therefore be useful to work with
 the root of the underlying p-adic tree, rather than a pAdicTree
 object.
 
- EXAMPLES::
+EXAMPLES:
 
-<Lots and lots of examples>
+Creation of a tree::
+
+    sage: T = pAdicTree('x', prime=7); T
+    p-adic tree for the variables ('x',) with respect to p-adics given by Rational Field and (7)
+    sage: T.root()
+    p-adic node represented by (0,) with 7 children
+    sage: T.pAdics()
+    p-adics given by Rational Field and (7)
+
+Operations on trees::
+
+    sage: T1 = pAdicTree(('x', 'y'), prime=2)
+    sage: T2 = pAdicTree(('y', 'z'), prime=2)
+    sage: T1.union(T2)
+    p-adic tree for the variables ('x', 'y', 'z') with respect to p-adics given by Rational Field and (2)
+    sage: T1.complement()
+    p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (2)
+
+Manipulating the tree manually::
+
+    sage: T = pAdicTree(('a', 'b'), prime=2)
+    sage: N = T.root()
+    sage: N.children.remove_by_coefficients((0,1))
+    sage: N.children.remove_by_coefficients((1,1))
+    sage: N.children.add(pAdicNode(pAdics=N.pAdics(), coefficients=(0,1)))
+    sage: N.children.get((0,1)).children.add(pAdicNode(pAdics=N.pAdics(), width=2, full=True))
+    sage: T = pAdicTree(('a', 'b'), root=N)
+    sage: ls, I = T.give_as_congruence_condition()
+    sage: ls
+    [(0, 0), (0, 1), (0, 2), (1, 0), (1, 2), (2, 0), (2, 2), (3, 0), (3, 2)]
+    sage: I
+    Principal ideal (4) of Integer Ring
 
 AUTHORS:
 
-- Joey van Langen (2018-07-13): initial version
+- Joey van Langen (2019-02-25): initial version
 
 """
 import weakref
 
 # ****************************************************************************
-#       Copyright (C) 2018 Joey van Langen <j.m.van.langen@vu.nl>
+#       Copyright (C) 2019 Joey van Langen <j.m.van.langen@vu.nl>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -3057,7 +3088,51 @@ class pAdicTree(SageObject):
     
     EXAMPLES:
 
-        To be added
+    Manipulating the variables in a p-adic tree::
+
+        sage: T = pAdicTree(('a', 'b'), prime=3); T
+        p-adic tree for the variables ('a', 'b') with respect to p-adics given by Rational Field and (3)
+        sage: T.add_variable('c')
+        p-adic tree for the variables ('a', 'b', 'c') with respect to p-adics given by Rational Field and (3)
+        sage: T.remove_variable('b')
+        p-adic tree for the variables ('a',) with respect to p-adics given by Rational Field and (3)
+        sage: T.reorder_variables(('b', 'a'))
+        p-adic tree for the variables ('b', 'a') with respect to p-adics given by Rational Field and (3)
+        sage: T.change_variables_to(('a', 'c'))
+        p-adic tree for the variables ('a', 'c') with respect to p-adics given by Rational Field and (3)
+
+    Set like operations on p-adic trees::
+
+        sage: pAdics = pAdicBase(ZZ, 2)
+        sage: N1 = pAdicNode(pAdics=pAdics, width=2, full=True)
+        sage: N1.children.remove_by_coefficients((0, 0))
+        sage: N2 = N1.copy()
+        sage: T1 = pAdicTree(('x','y'), root=N1)
+        sage: T2 = pAdicTree(('y','z'), root=N2)
+        sage: T = T1.union(T2); T
+        p-adic tree for the variables ('x', 'y', 'z') with respect to p-adics given by Rational Field and (2)
+        sage: ls, I = T.give_as_congruence_condition(); ls
+        [(0, 0, 1), (0, 1, 0), (0, 1, 1), (1, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1)]
+        sage: I
+        Principal ideal (2) of Integer Ring
+        sage: T = T1.intersection(T2); T
+        p-adic tree for the variables ('x', 'y', 'z') with respect to p-adics given by Rational Field and (2)
+        sage: ls, I = T.give_as_congruence_condition(); ls
+        [(0, 1, 0), (0, 1, 1), (1, 0, 1), (1, 1, 0), (1, 1, 1)]
+        sage: I
+        Principal ideal (2) of Integer Ring
+        sage: T = T1.difference(T2); T
+        p-adic tree for the variables ('x', 'y', 'z') with respect to p-adics given by Rational Field and (2)
+        sage: ls, I = T.give_as_congruence_condition(); ls
+        [(1, 0, 0)]
+        sage: I
+        Principal ideal (2) of Integer Ring
+        sage: T = T1.complement(); T
+        p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (2)
+        sage: ls, I = T.give_as_congruence_condition(); ls
+        [(0, 0)]
+        sage: I
+        Principal ideal (2) of Integer Ring
     
     ..SEEALSO:
         
@@ -3160,6 +3235,12 @@ class pAdicTree(SageObject):
         
         A copy of the unique level 0 node in this p-adic tree.
 
+        EXAMPLE::
+
+            sage: T = pAdicTree(('x', 'y'), prime=3)
+            sage: T.root()
+            p-adic node represented by (0, 0) with 9 children
+
         """
         return self._root.copy()
         
@@ -3184,6 +3265,27 @@ class pAdicTree(SageObject):
         A tuple consisting of: a list of copies of all nodes at level
         `level` that are in this tree; and the root of the tree that
         contains those nodes.
+
+        EXAMPLE::
+
+            sage: T = pAdicTree(('x', 'y'), prime=2)
+            sage: ls, Tc = T.nodes_at_level(2); ls
+            [p-adic node represented by (0, 0) with 4 children,
+             p-adic node represented by (2, 0) with 4 children,
+             p-adic node represented by (0, 2) with 4 children,
+             p-adic node represented by (2, 2) with 4 children,
+             p-adic node represented by (1, 0) with 4 children,
+             p-adic node represented by (3, 0) with 4 children,
+             p-adic node represented by (1, 2) with 4 children,
+             p-adic node represented by (3, 2) with 4 children,
+             p-adic node represented by (0, 1) with 4 children,
+             p-adic node represented by (2, 1) with 4 children,
+             p-adic node represented by (0, 3) with 4 children,
+             p-adic node represented by (2, 3) with 4 children,
+             p-adic node represented by (1, 1) with 4 children,
+             p-adic node represented by (3, 1) with 4 children,
+             p-adic node represented by (1, 3) with 4 children,
+             p-adic node represented by (3, 3) with 4 children]
         
         ..SEEALSO:
         
@@ -3201,6 +3303,12 @@ class pAdicTree(SageObject):
         The pAdicBase object that gives the p-adics of the p-adic tree
         in this object.
 
+        EXAMPLE::
+
+            sage: T = pAdicTree('a', prime=11)
+            sage: T.pAdics()
+            p-adics given by Rational Field and (11)
+
         """
         return self._root.pAdics()
                 
@@ -3212,86 +3320,108 @@ class pAdicTree(SageObject):
         A tuple of names of the variables associated to this
         tree.
 
+        EXAMPLE::
+
+            sage: T = pAdicTree(('a1','a2','a3','a4'), prime=2)
+            sage: T.variables()
+            ('a1', 'a2', 'a3', 'a4')
+
         """
         return self._variables
         
-    def add_variables(self, variables):
-        r"""
-        Adds a (list) of variable(s) to this tree.
+    def add_variable(self, *variables):
+        r"""Add one or multiple variables to this tree.
         
-        Will construct a new tree that is the same
-        as this one, but with any new variables given
-        added at the end. Any given variable will
-        only be added if it did not already exist
-        in the current tree. The order of the newly
-        added variables will remain the same. Newly
-        added variables will be assumed to attain
-        any possible value.
+        Will construct a new tree that is the same as this one, but
+        with any new variables given added. Any given variable will
+        only be added if it did not already exist in the current
+        tree. The order of the newly added variables will remain the
+        same. Newly added variables will be assumed to attain any
+        possible value.
         
         INPUT:
         
-        - ``variables`` -- An iterable object of
-          names for variables. These should be unique
-          strings.
+        Any number of arguments, each of which is the name of a
+        variable to be added to this tree. Each name should be a
+        string.
 
         OUTPUT:
   
-        A pAdicTree with the following characteristics:
-         - The variables of this tree are in this order:
-           the variables of this tree in order and then
-           any variables given in variables that are not
-           already part of this tree in order.
-         - For each value associated to the variables
-           in this tree there are all the possible values
-           for the variables in the returned tree.
+        A pAdicTree such that: Each variable in this pAdicTree is in
+        the new pAdicTree in the same order; Each variable of the ones
+        given is in this new pAdicTree and the once which were not
+        already in this tree are at the end in the same order; Each
+        variable is assumed to attain the same values as in this tree
+        and all possible values if it was not part of this tree.
+
+        EXAMPLE::
+
+            sage: T = pAdicTree(('x','y'), prime=3); T
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (3)
+            sage: T.add_variable('z')
+            p-adic tree for the variables ('x', 'y', 'z') with respect to p-adics given by Rational Field and (3)
+            sage: T.add_variable('a', 'b')
+            p-adic tree for the variables ('x', 'y', 'a', 'b') with respect to p-adics given by Rational Field and (3)
+            sage: T.add_variable('x', 'z')
+            p-adic tree for the variables ('x', 'y', 'z') with respect to p-adics given by Rational Field and (3)
+
+        .. SEEALSO::
+
+            :meth:`remove_variable`,
+            :meth:`reorder_variables`,
+            :meth:`change_variables_to`
+
         """
-        if not hasattr(variables, '__iter__'):
-            variables = [variables]
-        new_variables = self.variables()
+        new_variables = list(self.variables())
+        count = 0
         for var in variables:
             if var not in new_variables:
+                count += 1
                 new_variables.append(var)
         return pAdicTree(variables=new_variables,
-                         root=self.root().increase_width(len(new_variables)))
+                         root=self.root().increase_width(count))
         
-    def remove_variables(self, variables):
-        r"""
-        Removes a (list of) variable(s) from this tree.
+    def remove_variable(self, *variables):
+        r"""Remove one or multiple variables from this tree.
         
-        Will return a tree that is this tree with all
-        the given variables removed from them. Variables
-        are only removed if they were part of this tree
-        to begin with. The order of the remaining
-        variables will be the same as in this tree.
+        Will return a tree that is this tree with all the given
+        variables removed from them. Variables are only removed if
+        they were part of this tree to begin with. The order of the
+        remaining variables will be the same as in this tree.
         
-        The nodes in this tree will be changed accordingly,
-        assuming that removing these variables corresponds
-        to removing the corresponding coefficients in the
-        nodes. Multiple nodes with the same coefficients
-        will be merged.
-        
-        ..SEEALSO:
-        
-            :func:`pAdicNode.decrease_width`
+        The nodes in this tree will be changed accordingly, assuming
+        that removing these variables corresponds to removing the
+        corresponding coefficients in the nodes. Multiple nodes with
+        the same coefficients will be merged.
         
         INPUT:
         
-        - ``variables`` -- An iterable object containing
-          the names of the variables that have to be removed.
+        Any number of arguments, each of which is the name of a
+        variable. Each name should be a string.
 
         OUTPUT:
 
-        A pAdicTree satisfying the following:
-         - Its variables are the same as those in this tree
-           except for the ones among the given variables.
-           Furthermore their order is the same as it is in
-           this tree.
-         - The values associated to these variables are all
-           those for which there exist a value in this tree
-           in which the same variables have that value.
+        A pAdicTree containing only those variables of this tree that
+        were not given as an argument. All these variables attain the
+        values for which there is an assignment of values in this tree
+        with the same value for these variables.
+
+        EXAMPLE::
+
+            sage: T = pAdicTree(('a','b','c','d'), prime=5); T
+            p-adic tree for the variables ('a', 'b', 'c', 'd') with respect to p-adics given by Rational Field and (5)
+            sage: T.remove_variable('c')
+            p-adic tree for the variables ('a', 'b', 'd') with respect to p-adics given by Rational Field and (5)
+            sage: T.remove_variable(['a', 'd'])
+            p-adic tree for the variables ('b', 'c') with respect to p-adics given by Rational Field and (5)
+
+        .. SEEALSO::
+
+            :meth:`add_variable`,
+            :meth:`reorder_variables`,
+            :meth:`change_variables_to`
+
         """
-        if not hasattr(variables, '__iter__'):
-            variables = [variables]
         all_variables = self.variables()
         variables_to_keep = list(all_variables)
         for var in variables:
@@ -3301,70 +3431,99 @@ class pAdicTree(SageObject):
         return pAdicTree(variables=variables_to_keep,
                          root=self.root().decrease_width(indices))
         
-    def resort_variables(self, variables):
-        r"""
-        Resorts the variables in this tree.
+    def reorder_variables(self, variables):
+        r"""Reorder the variables in this tree.
 
-        Gives a pAdicTree with the same variables as in this
-        tree, except that the ordering is the same as the
-        ordering given.
+        Give a pAdicTree with the same variables as in this tree,
+        except that the ordering is the same as the ordering given.
 
         INPUT:
 
-        - ``variables`` -- A iterable object, containing
-          the names of the variables in this tree exactly
-          ones and ordered in the preferred ordering.
+        - ``variables`` -- An iterable object, containing the names of
+          the variables in this tree exactly once and ordered in the
+          preferred ordering.
 
         OUTPUT:
 
-        A pAdicTree with as variables those given in the
-        same order as they are given. These variables are
-        given the same values as they had in this tree.
+        A pAdicTree with as variables those given in the same order as
+        they are given. These variables are given the same values as
+        they had in this tree.
+
+        EXAMPLE::
+
+            sage: T = pAdicTree(('a','b','c'), prime=5); T
+            p-adic tree for the variables ('a', 'b', 'c') with respect to p-adics given by Rational Field and (5)
+            sage: T.reorder_variables(('b', 'c', 'a'))
+            p-adic tree for the variables ('b', 'c', 'a') with respect to p-adics given by Rational Field and (5)
+
+        .. SEEALSO::
+
+            :meth:`add_variable`,
+            :meth:`remove_variable`,
+            :meth:`change_variables_to`
+
         """
         if not hasattr(variables, '__iter__'):
             variables = [variables]
         variables = list(variables)
         myvars = self.variables()
         if not len(variables) == len(myvars):
-            raise ValueError("The given argument variables, does not have the same number of variables as this tree (%d != %d)"%(len(variables), len(myvars)))
+            raise ValueError("The given number of variables (" +
+                             str(len(variables)) + ") is not the same as " +
+                             "the number of variables as this tree (" +
+                             str(len(myvars)) + ")")
         try:
             permutation = [myvars.index(variables[i])
                            for i in range(self._root.width)]
         except ValueError:
-            raise ValueError("The variables %s and %s do not correspond 1 to 1."%(variables, myvars))
-        return pAdicTree(variables=variables,
-                         root=self.root().permute_coefficients(permutation))
+            raise ValueError("The variables " + str(variables) + " and " +
+                             str(myvars) + " do not correspond 1 to 1")
+        root = self.root()
+        root.permute_coefficients(permutation)
+        return pAdicTree(variables=variables, root=root)
         
     def change_variables_to(self, variables, ignore_order=False):
-        r"""
-        Changes the variables to a given set of variables.
+        r"""Change the variables to a given set of variables.
 
         Performs the actions of adding, removing and reordering
-        variables to obtain a pAdicTree with variables matching
-        the given argument variables.
+        variables to obtain a pAdicTree with variables matching the
+        given argument variables.
 
         INPUT
 
         - ``variables`` -- An iterable object of names of
-          variables. These are the variables the final tree
-          should have in the order it should have them.
+          variables. These are the variables the final tree should
+          have in the order it should have them. Each name should be a
+          string.
+
         - ``ignore_order`` -- A boolean (default: False)
           indicating whether the order of the variables
           should be ignored.
 
         OUTPUT:
 
-        A pAdicTree satisfying the following properties:
-         - The variables of the returned tree are those
-           specified in the argument variables. If
-           ignore_order was set to False they are also
-           in the same order.
-         - The values of the returned tree are such that
-           any variable that was not in the original tree
-           can have any possible value and any variable
-           that was part of the original tree can only have
-           values for which there was an appropiate value
-           in the original tree.
+        A pAdicTree containing precisely the variables given, which
+        attain those values for which there are values of the
+        variables in this tree for which corresponding variables have
+        the same value.
+
+        If the argument `ignore_order` was set to True the variables
+        can be in any order. Otherwise they will be in the order as
+        given.
+
+        EXAMPLE::
+
+            sage: T = pAdicTree(('a1','b1','c1'), prime=2); T
+            p-adic tree for the variables ('a1', 'b1', 'c1') with respect to p-adics given by Rational Field and (2)
+            sage: T.change_variables_to(('b1', 'b2', 'b3'))
+            p-adic tree for the variables ('b1', 'b2', 'b3') with respect to p-adics given by Rational Field and (2)
+
+        .. SEEALSO::
+
+            :meth:`add_variable`,
+            :meth:`remove_variable`,
+            :meth:`reorder_variables`
+
         """
         if not hasattr(variables, '__iter__'):
             variables = [variables]
@@ -3374,42 +3533,93 @@ class pAdicTree(SageObject):
         removeSet = myVarSet - varSet
         result = self
         if removeSet.cardinality() > 0:
-            result = result.remove_variables(removeSet)
+            result = result.remove_variable(*removeSet)
         addSet = varSet - myVarSet
         if addSet.cardinality() > 0:
-            result = result.add_variables(addSet)
-        if not ignore_order and self.variables() != variables:
-            result = result.resort_variables(variables)
+            result = result.add_variable(*addSet)
+        if not ignore_order and result.variables() != variables:
+            result = result.reorder_variables(variables)
         return result
 
     def is_empty(self):
-        r"""
-        Tells whether this tree is empty.
+        r"""Tell whether this tree is empty.
+
+        A p-adic tree is called empty if its root is empty, i.e. if
+        there is no infinite paths from the root. This is equivalent
+        to the variables taking on no values.
 
         OUTPUT:
 
-        True - If there exists no infinite branches in
-               this tree.
-        False - Otherwise
+        True if there exist no infinite paths in this tree, False
+        otherwise.
+
+        EXAMPLE::
+
+            sage: T = pAdicTree('x', prime=2)
+            sage: T1 = pAdicTree('x', prime=2)
+            sage: T2 = pAdicTree('y', prime=2, full=False)
+            sage: N = pAdicNode(pAdics=T2.pAdics())
+            sage: N.children.add(pAdicNode(pAdics=T2.pAdics(), coefficients=(1,), full=True))
+            sage: T3 = pAdicTree('z', root=N)
+            sage: T1.is_empty()
+            False
+            sage: T2.is_empty()
+            True
+            sage: T3.is_empty()
+            False
+        
+        .. SEEALSO::
+
+            :meth:`is_full`,
+            :meth:`pAdicNode.is_empty`
+
         """
         return self._root.is_empty()
 
     def is_full(self):
-        r"""
-        Tells whether this tree is full.
+        r"""Tell whether this tree is full.
+
+        A p-adic tree is called full if its root is full, i.e. if
+        every possible infinite path from the root exists. This is
+        equivalent to the variables taking on every possible value.
 
         OUTPUT:
 
-        True - If every possible branch in this tree
-               exists.
-        False - Otherwise
+        True if all possible infinite paths exist in this tree, False
+        otherwise.
+
+        EXAMPLE::
+
+            sage: T = pAdicTree('x', prime=2)
+            sage: T1 = pAdicTree('x', prime=2)
+            sage: T2 = pAdicTree('y', prime=2, full=False)
+            sage: N = pAdicNode(pAdics=T2.pAdics())
+            sage: N.children.add(pAdicNode(pAdics=T2.pAdics(), coefficients=(1,), full=True))
+            sage: T3 = pAdicTree('z', root=N)
+            sage: T1.is_full()
+            True
+            sage: T2.is_full()
+            False
+            sage: T3.is_full()
+            False
+
+        .. SEEALSO::
+
+            :meth:`is_empty`,
+            :meth:`pAdicNode.is_full`
+
         """
         return self._root.is_full()
 
     @cached_method
     def get_values_at_level(self, level):
-        r"""
-        Gives the values in this tree at a given level.
+        r"""Give the values in this tree at a given level.
+
+        Will give a list of tuples containing all the possible values
+        for the variables modulo $P^n$, where $P$ is the prime of the
+        corresponding p-adics and $n$ is the given level. In each
+        tuple the i-th value corresponds to the i-th variable of this
+        tree.
 
         INPUT:
 
@@ -3417,32 +3627,87 @@ class pAdicTree(SageObject):
 
         OUTPUT:
 
-        A list which contains for each node at the given level
-        its representative.
+        A list which contains for each node at the given level its
+        representative.
+
+        EXAMPLE::
+
+            sage: T = pAdicTree(('x', 'y'), prime=2)
+            sage: T.get_values_at_level(2)
+            [(0, 0),
+             (0, 1),
+             (0, 2),
+             (0, 3),
+             (1, 0),
+             (1, 1),
+             (1, 2),
+             (1, 3),
+             (2, 0),
+             (2, 1),
+             (2, 2),
+             (2, 3),
+             (3, 0),
+             (3, 1),
+             (3, 2),
+             (3, 3)]
+
+        .. SEEALSO::
+
+            :meth:`pAdicNode.representative`
+
         """
-        result = [node.representative() for node in self._root.children_at_level(level)]
+        result = [node.representative()
+                  for node in self._root.children_at_level(level)]
         result.sort()
         return result
 
     @cached_method
     def give_as_congruence_condition(self):
+        r"""Give the possible values of the variables as a congruence
+        condition.
+
+        Since we can only store a finite amount of information, each
+        p-adic tree must have a level at which all nodes are
+        full. Therefore we can express the possible values of the
+        variables by a number of congruence classes modulo a big
+        enough power of the prime associated with the p-adics.
+
+        OUTPUT:
+
+        A tuple consisting of: A list of tuples containing the
+        possible values of the variables modulo some ideal $I$; and
+        the ideal $I$. Note that for each tuple in the list the i-th
+        value corresponds to the i-th variable in this tree.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(QQ, 2)
+            sage: N = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: N.children.remove_by_coefficients((1, 0))
+            sage: T = pAdicTree(('a', 'b'), root=N)
+            sage: ls, I = T.give_as_congruence_condition(); ls
+            [(0, 0), (0, 1), (1, 1)]
+            sage: I
+            Principal ideal (2) of Integer Ring
+
+        .. SEE_ALSO::
+
+            :meth:`get_values_at_level`
+
+        """
         m = self._root.minimum_full_level()
         modulus = self.pAdics().prime_ideal()^m
         return self.get_values_at_level(m), modulus
         
     def _check_similar_tree(self, other):
-        r"""
-        Checks whether two trees have the same pAdics.
+        r"""Check whether two trees have the same pAdics.
+
+        Throws an error if the other object is not a pAdicTree with
+        the same p-adics.
 
         INPUT:
 
         - ``other`` -- Some object.
-
-        OUTPUT:
-
-        TRUE - If object is a pAdicTree using the same
-               pAdicBase as this pAdicTree.
-        FALSE - In all other cases.
 
         """
         if not isinstance(other, pAdicTree):
@@ -3451,63 +3716,89 @@ class pAdicTree(SageObject):
             raise ValueError("The two trees don't have the same pAdics.")
         
     def _get_similar_trees(self, other):
-        r"""
-        Turns two trees into trees with the same variables.
+        r"""Turn two p-adic trees into trees with the same variables.
 
         INPUT:
 
-        - ``other`` - A pAdicTree using the same pAdicBase
-          object as this pAdicTree.
+        - ``other`` - A pAdicTree with the same p-adics as this tree.
 
         OUTPUT:
 
-        A tuple of pAdicTree's with the same variables and
-        pAdics. The first has the same values for the variables
-        as this tree, whilst the second has the same values for
-        the variables in the pAdicTree other. The variables
-        are the union of the sets of variables of both these
-        original trees.
+        A tuple of pAdicTree's with the same variables and pAdics. The
+        variables are the union of the variables in this tree and the
+        given tree. The values for the variables in the first tree
+        corresond to the values for the variables in this tree, whilst
+        the values for the variables in the second tree correspond to
+        the values for the variables in the given tree.
+
         """
         self._check_similar_tree(other)
         variables = list(self.variables())
         for var in other.variables():
             if var not in variables:
                 variables.append(var)
-        return self.change_variables_to(variables), \
-               other.change_variables_to(variables)
+        return (self.change_variables_to(variables),
+                other.change_variables_to(variables))
         
     def copy(self):
-        r"""
-        Makes a copy of this pAdicTree.
+        r"""Make a copy of this pAdicTree.
 
         OUTPUT:
 
-        A pAdicTree that contains the same variables
-        and values as this pAdicTree.
+        A pAdicTree that contains the same variables and values as
+        this pAdicTree.
+
+        EXAMPLE::
+
+            sage: T = pAdicTree(('a', 'b'), prime=5); T
+            p-adic tree for the variables ('a', 'b') with respect to p-adics given by Rational Field and (5)
+            sage: T.copy()
+            p-adic tree for the variables ('a', 'b') with respect to p-adics given by Rational Field and (5)
+
         """
         return pAdicTree(variables=self.variables(), root=self.root())
         
     def union(self, other):
-        r"""
-        Gives the union of two pAdicTree's.
+        r"""Give the union of two p-adic trees.
+
+        The union of two p-adic trees is a p-adic tree with as
+        variables the union of the variables of the two p-adic
+        trees. Furthermore a tuple of values for these variables is in
+        the union if and only if at least one of the trees has a tuple
+        of values for its variables wherein each common variable with
+        the union has the same value.
 
         INPUT:
 
-        - ``other`` -- A pAdicTree using the same
-          pAdicBase as this pAdicTree.
+        - ``other`` -- A pAdicTree using the same p-adics as this
+          pAdicTree.
 
         OUTPUT:
 
-        A pAdicTree satisfying the following properties
-        - The pAdics of that tree are the same as those
-          for this tree.
-        - The variables of that tree are the union of the
-          variables of this tree and the given tree other.
-        - For each value in that tree, there is either a
-          value in this tree which assigns the same values
-          to the same variables or a value in the given tree
-          other which assigns the same values to the same
-          variables.
+        A pAdicTree that is the union of this p-adic tree and the
+        given p-adic tree.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 2)
+            sage: N1 = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: N1.children.remove_by_coefficients((0, 0))
+            sage: N2 = N1.copy()
+            sage: T1 = pAdicTree(('x','y'), root=N1)
+            sage: T2 = pAdicTree(('y','z'), root=N2)
+            sage: T = T1.union(T2); T
+            p-adic tree for the variables ('x', 'y', 'z') with respect to p-adics given by Rational Field and (2)
+            sage: ls, I = T.give_as_congruence_condition(); ls
+            [(0, 0, 1), (0, 1, 0), (0, 1, 1), (1, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1)]
+            sage: I
+            Principal ideal (2) of Integer Ring
+
+        .. SEE_ALSO::
+
+            :meth:`intersection`,
+            :meth:`difference`,
+            :meth:`complement`
+
         """
         T1, T2 = self._get_similar_trees(other)
         T = T1.root()
@@ -3515,26 +3806,46 @@ class pAdicTree(SageObject):
         return pAdicTree(variables=T1.variables(), root=T)
         
     def intersection(self, other):
-        r"""
-        Gives the intersection of two pAdicTree's.
+        r"""Give the intersection of two p-adic trees.
+
+        The intersection of two p-adic trees is a p-adic tree with as
+        variables the union of the variables of the two p-adic
+        trees. Furthermore a tuple of values for these variables is in
+        the intersection if and only if both trees have a tuple of
+        values for its variables wherein each common variable with the
+        intersection has the same value.
 
         INPUT:
 
-        - ``other`` -- A pAdicTree using the same
-          pAdicBase as this pAdicTree.
+        - ``other`` -- A pAdicTree using the same p-adics as this
+          pAdicTree.
 
         OUTPUT:
 
-        A pAdicTree satisfying the following properties
-        - The pAdics of that tree are the same as those
-          for this tree.
-        - The variables of that tree are the union of the
-          variables of this tree and the given tree other.
-        - For each value in that tree, there is both a
-          value in this tree which assigns the same values
-          to the same variables and a value in the given tree
-          other which assigns the same values to the same
-          variables.
+        The pAdicTree that is the intersection of this p-adic tree and
+        the given p-adic tree.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 2)
+            sage: N1 = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: N1.children.remove_by_coefficients((0, 0))
+            sage: N2 = N1.copy()
+            sage: T1 = pAdicTree(('x','y'), root=N1)
+            sage: T2 = pAdicTree(('y','z'), root=N2)
+            sage: T = T1.intersection(T2); T
+            p-adic tree for the variables ('x', 'y', 'z') with respect to p-adics given by Rational Field and (2)
+            sage: ls, I = T.give_as_congruence_condition(); ls
+            [(0, 1, 0), (0, 1, 1), (1, 0, 1), (1, 1, 0), (1, 1, 1)]
+            sage: I
+            Principal ideal (2) of Integer Ring
+
+        .. SEE_ALSO::
+
+            :meth:`union`,
+            :meth:`difference`,
+            :meth:`complement`
+
         """
         T1, T2 = self._get_similar_trees(other)
         T = T1.root()
@@ -3542,26 +3853,47 @@ class pAdicTree(SageObject):
         return pAdicTree(variables=T1.variables(), root=T)
         
     def difference(self, other):
-        r"""
-        Gives the difference of two pAdicTree's.
+        r"""Gives the difference of this tree and another.
+
+        The difference of a p-adic tree with another p-adic tree is a
+        p-adic tree with as variables the union of the variables of
+        the two p-adic trees. Furthermore a tuple of values for these
+        variables is in the difference if and only if the first tree
+        has a tuple of values for its variables wherein each common
+        variable with the difference has the same value, and the
+        second tree does not have such a tuple.
 
         INPUT:
 
-        - ``other`` -- A pAdicTree using the same
-          pAdicBase as this pAdicTree.
+        - ``other`` -- A pAdicTree using the same p-adics as this
+          pAdicTree.
 
         OUTPUT:
 
-        A pAdicTree satisfying the following properties
-        - The pAdics of that tree are the same as those
-          for this tree.
-        - The variables of that tree are the union of the
-          variables of this tree and the given tree other.
-        - For each value in that tree, there is  a value in
-          this tree which assigns the same values to the
-          same variables and not a value in the given tree
-          other which assigns the same values to the same
-          variables.
+        The pAdicTree that is the difference of this p-adic tree and
+        the given p-adic tree.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 2)
+            sage: N1 = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: N1.children.remove_by_coefficients((0, 0))
+            sage: N2 = N1.copy()
+            sage: T1 = pAdicTree(('x','y'), root=N1)
+            sage: T2 = pAdicTree(('y','z'), root=N2)
+            sage: T = T1.difference(T2); T
+            p-adic tree for the variables ('x', 'y', 'z') with respect to p-adics given by Rational Field and (2)
+            sage: ls, I = T.give_as_congruence_condition(); ls
+            [(1, 0, 0)]
+            sage: I
+            Principal ideal (2) of Integer Ring
+
+        .. SEE_ALSO::
+
+            :meth:`union`,
+            :meth:`intersection`,
+            :meth:`complement`
+
         """
         T1, T2 = self._get_similar_trees(other)
         T = T1.root()
@@ -3569,20 +3901,37 @@ class pAdicTree(SageObject):
         return pAdicTree(variables=T1.variables(), root=T)
         
     def complement(self):
-        r"""
-        Gives the complement of this pAdicTree.
+        r"""Give the complement of this p-adic tree.
+
+        The complement of a p-adic tree is the difference of a full
+        p-adic tree with the same variables and p-adics and that tree.
 
         OUTPUT:
 
-        A pAdicTree satisfying the following properties
-        - The pAdics of that tree are the same as those
-          for this tree.
-        - The variables of that tree are the same as those
-          of this tree.
-        - For each value not in this tree, there is a value
-          in the returned tree and vice versa.
+        A pAdicTree that is the complement of this p-adic tree.
+
+        EXAMPLE::
+
+            sage: pAdics = pAdicBase(ZZ, 2)
+            sage: N1 = pAdicNode(pAdics=pAdics, width=2, full=True)
+            sage: N1.children.remove_by_coefficients((0, 0))
+            sage: T1 = pAdicTree(('x','y'), root=N1)
+            sage: T = T1.complement(); T
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (2)
+            sage: ls, I = T.give_as_congruence_condition(); ls
+            [(0, 0)]
+            sage: I
+            Principal ideal (2) of Integer Ring
+
+        .. SEE_ALSO::
+
+            :meth:`union`,
+            :meth:`intersection`,
+            :meth:`difference`
+
         """
-        return pAdicTree(variables=self.variables(), root=self.root().complement())
+        return pAdicTree(variables=self.variables(),
+                         root=self.root().complement())
 
     def _cache_key(self):
         return self.variables(), self._root

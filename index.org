@@ -144,11 +144,12 @@ A class giving easy acces to things needed for p-adic computations
 *** pAdic_solver.sage (*+)
 Methods for finding all pAdic roots of a polynomial up to a given
 precision
-*** pAdic_tree.sage (*+)
+*** pAdic_tree.sage (*#!)
 Classes for storing pAdic data in a tree like format
 - Method pAdicNode.sub_tree() is nowhere used and weird, remove?
 - Optimize _merge_with_list
 - Add sequence/set like behavior to pAdicNodeCollection
+- Add set like behavior to pAdicTree
 ** polynomial/
 Code for working with polynomials
 *** symmetric_polynomials.sage (*#!)
