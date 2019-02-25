@@ -64,7 +64,7 @@ class pAdicBase(SageObject):
         
         sage: pAdics = pAdicBase(ZZ, 5)
         sage: pAdics
-        p-adic information of Rational Field with respect to (5).
+        p-adics given by Rational Field and (5)
         sage: pAdics.valuation(100)
         2
         
@@ -73,7 +73,7 @@ class pAdicBase(SageObject):
         sage: K = QuadraticField(-7)
         sage: pAdics = pAdicBase(K, K.prime_above(2))
         sage: pAdics
-        p-adic information of Number Field in a with defining polynomial x^2 + 7 with respect to (-1/2*a + 1/2).
+        p-adics given by Number Field in a with defining polynomial x^2 + 7 and (-1/2*a + 1/2)
         sage: pAdics.characteristic()
         2
 
@@ -93,13 +93,13 @@ class pAdicBase(SageObject):
         EXAMPLES::
             
             sage: pAdicBase(QQ,3)
-            p-adic information of Rational Field with respect to (3).
+            p-adics given by Rational Field and (3)
             
         Example using a number field::
         
             sage: K = CyclotomicField(5)
             sage: pAdicBase(K, K.prime_above(5))
-            p-adic information of Cyclotomic Field of order 5 and degree 4 with respect to (zeta5 - 1).
+            p-adics given by Cyclotomic Field of order 5 and degree 4 and (zeta5 - 1)
 
         """
         if isinstance(ring, Order):
@@ -291,11 +291,11 @@ class pAdicBase(SageObject):
             sage: K = QuadraticField(5)
             sage: L = CyclotomicField(5)
             sage: pAdics = pAdicBase(L, L.prime_above(11)); pAdics
-            p-adic information of Cyclotomic Field of order 5 and degree 4 with respect to (zeta5^3 + 2*zeta5^2 + zeta5 + 2).
+            p-adics given by Cyclotomic Field of order 5 and degree 4 and (zeta5^3 + 2*zeta5^2 + zeta5 + 2)
             sage: pAdics.pAdics_below(K)
-            p-adic information of Number Field in a with defining polynomial x^2 - 5 with respect to (3/2*a - 1/2).
+            p-adics given by Number Field in a with defining polynomial x^2 - 5 and (3/2*a - 1/2)
             sage: pAdics.pAdics_below(QQ)
-            p-adic information of Rational Field with respect to (11).
+            p-adics given by Rational Field and (11)
 
         .. SEEALSO::
 
@@ -639,8 +639,8 @@ class pAdicBase(SageObject):
         return self._R.zero()
         
     def _repr_(self):
-        return ("p-adic information of " + str(self.number_field()) +
-                " with respect to " + str(self._P._repr_short()))
+        return ("p-adics given by " + str(self.number_field()) +
+                " and " + str(self._P._repr_short()))
                                                            
     def is_extension_of(self, other):
         r"""Determine whether these p-adics extend another.
