@@ -9,7 +9,7 @@ EXAMPLES::
 
     sage: R.<x,y> = QQ[]
     sage: f = x^2 + y^2 - 1
-    sage: T, _ = find_pAdicRoots(f, prime=3, precision=2)
+    sage: T, _ = find_pAdic_roots(f, prime=3, precision=2)
     sage: T.children_at_level(2)
     [p-adic node represented by (6, 1) with 9 children,
      p-adic node represented by (3, 1) with 9 children,
@@ -28,7 +28,7 @@ Working with coefficients with negative valuation::
 
     sage: R.<x, y> = QQ[]
     sage: f = x^2 / 9 + y^3 / 27
-    sage: T1, _ = find_pAdicRoots(f, prime = 2, precision=2)
+    sage: T1, _ = find_pAdic_roots(f, prime = 2, precision=2)
     sage: T1.children_at_level(2)
     [p-adic node represented by (0, 2) with 4 children,
      p-adic node represented by (2, 0) with 4 children,
@@ -36,14 +36,14 @@ Working with coefficients with negative valuation::
      p-adic node represented by (2, 2) with 4 children,
      p-adic node represented by (3, 1) with 4 children,
      p-adic node represented by (1, 1) with 4 children]
-    sage: T2, _ = find_pAdicRoots(f, prime=3, precision=1)
+    sage: T2, _ = find_pAdic_roots(f, prime=3, precision=1)
     sage: T2.minimum_full_level()
     2
     sage: T2.children_at_level(2)
     [p-adic node represented by (3, 6) with 9 children,
      p-adic node represented by (0, 0) with 9 children,
      p-adic node represented by (6, 6) with 9 children]
-    sage: T3, _ = find_pAdicRoots(f, prime=3, precision=-1)
+    sage: T3, _ = find_pAdic_roots(f, prime=3, precision=-1)
     sage: T3.minimum_full_level()
     1
     sage: T3.children_at_level(1)
@@ -53,9 +53,9 @@ Different ways of giving the p-adics::
 
     sage: R.<x, y> = ZZ[]
     sage: f = y^2 - x^3 - 1
-    sage: T1, _ = find_pAdicRoots(f, pAdics=pAdicBase(QQ, 5), precision=2)
-    sage: T2, _ = find_pAdicRoots(f, ring=QQ, prime=5, precision=2)
-    sage: T3, _ = find_pAdicRoots(f, prime=5, precision=2)
+    sage: T1, _ = find_pAdic_roots(f, pAdics=pAdicBase(QQ, 5), precision=2)
+    sage: T2, _ = find_pAdic_roots(f, ring=QQ, prime=5, precision=2)
+    sage: T3, _ = find_pAdic_roots(f, prime=5, precision=2)
     sage: T1 == T2
     True
     sage: T1 == T3
@@ -66,10 +66,10 @@ variables that actually occur::
 
     sage: R.<x,y> = QQ[]
     sage: f = x^2 + x + 1
-    sage: T1, _ = find_pAdicRoots(f, prime=3, precision=2)
+    sage: T1, _ = find_pAdic_roots(f, prime=3, precision=2)
     sage: T1.width
     1
-    sage: T2, _ = find_pAdicRoots(f, prime=3, variables=(x,y), precision=2)
+    sage: T2, _ = find_pAdic_roots(f, prime=3, variables=(x,y), precision=2)
     sage: T2.width
     2
 
@@ -80,7 +80,7 @@ Using an initial tree to limit the possibilities::
     sage: pAdics = pAdicBase(QQ, 5)
     sage: N = pAdicNode(pAdics=pAdics, width=2, full=True)
     sage: N.children.remove_by_coefficients((0,0))
-    sage: T, _ = find_pAdicRoots(f, pAdics=pAdics, value_tree=N, precision=2)
+    sage: T, _ = find_pAdic_roots(f, pAdics=pAdics, value_tree=N, precision=2)
     sage: T.children_at_level(2)
     [p-adic node represented by (24, 7) with 25 children,
      p-adic node represented by (9, 2) with 25 children,
@@ -110,7 +110,7 @@ Letting $K$ be a strict subfield of $L$::
     sage: f = x^2 + z*x*y + z^2*y^2
     sage: pAdics = pAdicBase(L, L.prime_above(3))
     sage: N = pAdicNode(pAdics=pAdics.pAdics_below(QQ), width=2, full=True)
-    sage: T, _ = find_pAdicRoots(f, pAdics=pAdics, value_tree=N, precision=4)
+    sage: T, _ = find_pAdic_roots(f, pAdics=pAdics, value_tree=N, precision=4)
     sage: T.children_at_level(2)
     [p-adic node represented by (0, 3) with 9 children,
      p-adic node represented by (3, 6) with 9 children,
@@ -132,7 +132,7 @@ Using the `precision_cap` argument::
 
     sage: R.<x,y> = QQ[]
     sage: f = y^3 - x^2 - x*y
-    sage: T, _ = find_pAdicRoots(f, prime=3, precision_cap=2)
+    sage: T, _ = find_pAdic_roots(f, prime=3, precision_cap=2)
     Warning: Lowering precision on root to 2 to accomodate for precision cap 2 on variables
     sage: T.children_at_level(2)
     [p-adic node represented by (0, 3) with 9 children,
@@ -154,7 +154,7 @@ modulo 2 and the third are roots modulo 4::
 
     sage: R.<x,y> = QQ[]
     sage: f = x^2 + y^2 - 4
-    sage: Tls, s = find_pAdicRoots(f, prime=2, precision=2, give_list=True)
+    sage: Tls, s = find_pAdic_roots(f, prime=2, precision=2, give_list=True)
     sage: s
     0
     sage: Tls[0].children_at_level(2)
@@ -198,7 +198,7 @@ from sage.all import Infinity
 from sage.rings.polynomial.multi_polynomial import MPolynomial
 from sage.rings.polynomial.polynomial_element import Polynomial
 
-def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
+def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
                     variables=None, value_tree=None, precision=20,
                     precision_cap=20, give_list=False, verbose=False):
     r"""Find the p-adic roots of a polynomial up to some precision.
@@ -308,7 +308,7 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
 
         sage: R.<x,y> = QQ[]
         sage: f = x^2 + y^2 - 1
-        sage: Ty, Tn = find_pAdicRoots(f, prime=3, precision=2)
+        sage: Ty, Tn = find_pAdic_roots(f, prime=3, precision=2)
         sage: Ty.children_at_level(2)
         [p-adic node represented by (6, 1) with 9 children,
          p-adic node represented by (3, 1) with 9 children,
@@ -327,7 +327,7 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
 
         sage: R.<x, y> = QQ[]
         sage: f = x^2 / 9 + y^3 / 27
-        sage: T1, _ = find_pAdicRoots(f, prime = 2, precision=2)
+        sage: T1, _ = find_pAdic_roots(f, prime = 2, precision=2)
         sage: T1.children_at_level(2)
         [p-adic node represented by (0, 2) with 4 children,
          p-adic node represented by (2, 0) with 4 children,
@@ -335,14 +335,14 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
          p-adic node represented by (2, 2) with 4 children,
          p-adic node represented by (3, 1) with 4 children,
          p-adic node represented by (1, 1) with 4 children]
-        sage: T2, _ = find_pAdicRoots(f, prime=3, precision=1)
+        sage: T2, _ = find_pAdic_roots(f, prime=3, precision=1)
         sage: T2.minimum_full_level()
         2
         sage: T2.children_at_level(2)
         [p-adic node represented by (3, 6) with 9 children,
          p-adic node represented by (0, 0) with 9 children,
          p-adic node represented by (6, 6) with 9 children]
-        sage: T3, _ = find_pAdicRoots(f, prime=3, precision=-1)
+        sage: T3, _ = find_pAdic_roots(f, prime=3, precision=-1)
         sage: T3.minimum_full_level()
         1
         sage: T3.children_at_level(1)
@@ -352,9 +352,9 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
 
         sage: R.<x, y> = ZZ[]
         sage: f = y^2 - x^3 - 1
-        sage: T1, _ = find_pAdicRoots(f, pAdics=pAdicBase(QQ, 5), precision=2)
-        sage: T2, _ = find_pAdicRoots(f, ring=QQ, prime=5, precision=2)
-        sage: T3, _ = find_pAdicRoots(f, prime=5, precision=2)
+        sage: T1, _ = find_pAdic_roots(f, pAdics=pAdicBase(QQ, 5), precision=2)
+        sage: T2, _ = find_pAdic_roots(f, ring=QQ, prime=5, precision=2)
+        sage: T3, _ = find_pAdic_roots(f, prime=5, precision=2)
         sage: T1 == T2
         True
         sage: T1 == T3
@@ -365,10 +365,10 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
 
         sage: R.<x,y> = QQ[]
         sage: f = x^2 + x + 1
-        sage: T1, _ = find_pAdicRoots(f, prime=3, precision=2)
+        sage: T1, _ = find_pAdic_roots(f, prime=3, precision=2)
         sage: T1.width
         1
-        sage: T2, _ = find_pAdicRoots(f, prime=3, variables=(x,y), precision=2)
+        sage: T2, _ = find_pAdic_roots(f, prime=3, variables=(x,y), precision=2)
         sage: T2.width
         2
 
@@ -379,7 +379,7 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
         sage: pAdics = pAdicBase(QQ, 5)
         sage: N = pAdicNode(pAdics=pAdics, width=2, full=True)
         sage: N.children.remove_by_coefficients((0,0))
-        sage: T, _ = find_pAdicRoots(f, pAdics=pAdics, value_tree=N, precision=2)
+        sage: T, _ = find_pAdic_roots(f, pAdics=pAdics, value_tree=N, precision=2)
         sage: T.children_at_level(2)
         [p-adic node represented by (24, 7) with 25 children,
          p-adic node represented by (9, 2) with 25 children,
@@ -409,7 +409,7 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
         sage: f = x^2 + z*x*y + z^2*y^2
         sage: pAdics = pAdicBase(L, L.prime_above(3))
         sage: N = pAdicNode(pAdics=pAdics.pAdics_below(QQ), width=2, full=True)
-        sage: T, _ = find_pAdicRoots(f, pAdics=pAdics, value_tree=N, precision=4)
+        sage: T, _ = find_pAdic_roots(f, pAdics=pAdics, value_tree=N, precision=4)
         sage: T.children_at_level(2)
         [p-adic node represented by (0, 3) with 9 children,
          p-adic node represented by (3, 6) with 9 children,
@@ -431,7 +431,7 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
 
         sage: R.<x,y> = QQ[]
         sage: f = y^3 - x^2 - x*y
-        sage: T, _ = find_pAdicRoots(f, prime=3, precision_cap=2)
+        sage: T, _ = find_pAdic_roots(f, prime=3, precision_cap=2)
         Warning: Lowering precision on root to 2 to accomodate for precision cap 2 on variables
         sage: T.children_at_level(2)
         [p-adic node represented by (0, 3) with 9 children,
@@ -453,7 +453,7 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
 
         sage: R.<x,y> = QQ[]
         sage: f = x^2 + y^2 - 4
-        sage: Tls, s = find_pAdicRoots(f, prime=2, precision=2, give_list=True)
+        sage: Tls, s = find_pAdic_roots(f, prime=2, precision=2, give_list=True)
         sage: s
         0
         sage: Tls[0].children_at_level(2)
@@ -492,11 +492,11 @@ def find_pAdicRoots(polynomial, pAdics=None, ring=None, prime=None,
         print ("Finding roots of " + str(polynomial) + " modulo " +
                str(pAdics.prime_ideal()._repr_short()) + "^" + str(precision))
        
-    result = _find_pAdicRoots(polynomial, polynomial_derivatives, value_tree,
-                              precision, var_precision, multiplicity, pAdics,
-                              verbose=(verbose-1 if verbose > 0 else verbose),
-                              give_list=give_list,
-                              quit_on_empty=give_list)
+    result = _find_pAdic_roots(polynomial, polynomial_derivatives, value_tree,
+                               precision, var_precision, multiplicity, pAdics,
+                               verbose=(verbose-1 if verbose > 0 else verbose),
+                               give_list=give_list,
+                               quit_on_empty=give_list)
     if give_list:
         return result, least_power
     else:
@@ -670,9 +670,9 @@ def _pAdic_level_check(f, fder, T, level, step_size, pAdics, verbose=False):
                                       verbose=verbose)
     raise ValueError("The level %s is not valid."%level)
         
-def _find_pAdicRoots(f, fder, T, prec, var_prec, m, pAdics, verbose=False,
+def _find_pAdic_roots(f, fder, T, prec, var_prec, m, pAdics, verbose=False,
                      give_list=False, quit_on_empty=False):
-    r"""The recursive implementation of :func:`find_pAdicRoots`
+    r"""The recursive implementation of :func:`find_pAdic_roots`
 
     INPUT:
 
@@ -704,7 +704,7 @@ def _find_pAdicRoots(f, fder, T, prec, var_prec, m, pAdics, verbose=False,
 
     OUTPUT:
 
-    A similar output as the function :func:`find_pAdicRoots`, except
+    A similar output as the function :func:`find_pAdic_roots`, except
     without the `give_list` argument.
 
     """

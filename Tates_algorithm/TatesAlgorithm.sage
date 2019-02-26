@@ -1,8 +1,7 @@
-r"""
-An implementation of Tate's algorithm for Frey curves
+r"""An implementation of Tate's algorithm for Frey curves
 
-This code allows for the computation of the possible conductors
-for an elliptic curve which depends on some (rational) parameters.
+This code allows for the computation of the possible conductors of an
+elliptic curve which depends on some integral parameters.
 
 EXAMPLES::
 
@@ -58,11 +57,11 @@ def _number_of_zero_entries(iterable):
 def get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
                         verbose=False, precision=20, result=[],
                         precision_cap=20, **kwds):
-    Tlist, v_min = find_pAdicRoots(poly, pAdics=pAdics,
-                                   variables=variables, value_tree=T,
-                                   precision=20, verbose=verbose,
-                                   give_list=True,
-                                   precision_cap=precision_cap)
+    Tlist, v_min = find_pAdic_roots(poly, pAdics=pAdics,
+                                    variables=variables, value_tree=T,
+                                    precision=20, verbose=verbose,
+                                    give_list=True,
+                                    precision_cap=precision_cap)
     for i in range(len(Tlist)):
         if not Tlist[i].is_empty():
             case = general_case.copy()
@@ -75,10 +74,10 @@ def get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
 def get_two_cases_invariant(poly, pAdics, T, bndry, case_big, case_small,
                             variables=None, verbose=False, result=[],
                             precision_cap=20, **kwds):
-    Tbig, Tsmall = find_pAdicRoots(poly, pAdics=pAdics,
-                                   variables=variables, value_tree=T,
-                                   precision=bndry, verbose=verbose,
-                                   precision_cap=precision_cap)
+    Tbig, Tsmall = find_pAdic_roots(poly, pAdics=pAdics,
+                                    variables=variables, value_tree=T,
+                                    precision=bndry, verbose=verbose,
+                                    precision_cap=precision_cap)
     if not Tbig.is_empty():
         case_big['T'] = Tbig
         result.append(case_big)
