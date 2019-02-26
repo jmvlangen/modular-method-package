@@ -141,9 +141,12 @@ Methods to change galois homomorphisms
 Code related to p-adic numbers
 *** pAdic_base.sage (*#!)
 A class giving easy acces to things needed for p-adic computations
-*** pAdic_solver.sage (*+)
+*** pAdic_solver.sage (*#!)
 Methods for finding all pAdic roots of a polynomial up to a given
 precision
+- give_list is funky and only seems to work when K = L
+- quit_on_empty is not used?!
+- Improved algorithm???
 *** pAdic_tree.sage (*#!)
 Classes for storing pAdic data in a tree like format
 - Method pAdicNode.sub_tree() is nowhere used and weird, remove?
