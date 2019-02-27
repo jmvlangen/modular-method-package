@@ -26,7 +26,7 @@ for i in range(size):
     #print p
     E = randomCurve(K)
     #print E
-    cases = performTatesAlgorithm(E, prime=p, coefficient_ring=S, base_ring=K)
+    cases = tates_algorithm(E, prime=p, coefficient_ring=S, base_ring=K)
     answer = cases[0]
     if not same_local_data(answer, E.local_data(p)):
         problems.append((E, p))

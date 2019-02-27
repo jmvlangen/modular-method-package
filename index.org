@@ -163,7 +163,7 @@ Methods for computing conductors of frey curves
 Unfinished code for Papadopoulus table lookup
 - Remove from load path
 - Remove or rewrite
-*** TatesAlgorithm.sage (*-)
+*** TatesAlgorithm.sage (*+!)
 An implementation of Tate's algorithm that works for Frey curves
 ** tests/
 Code for (automated) testing

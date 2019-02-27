@@ -9,7 +9,7 @@ for p in prime_range(40):
     T.apply_congruence_restriction(x, [6], 8)
     T.apply_congruence_anti_restriction(x, [1], 3)
     T.apply_congruence_anti_restriction(x, [19], 37)
-    answers = performTatesAlgorithm(E, initial_values=T,
+    answers = tates_algorithm(E, initial_values=T,
                                    only_calculate=['conductor','minimal_model'])
     print "Conductor valuations for %d:"%p
     for answer in answers:

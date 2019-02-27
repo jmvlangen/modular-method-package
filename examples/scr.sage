@@ -6,7 +6,7 @@ while count < 1:
     if R != ZZ:
         print R
     if R == ZZ:
-        r = performTatesAlgorithm( E , p , R[x] )
+        r = tates_algorithm( E , p , R[x] )
         t = r[0][0][0]
         if t.find('In*') != -1:
             if p == 2:
@@ -21,7 +21,7 @@ while count < 1:
             problemCases.append(E)
     else:
         for f in R.number_field().factor(p):
-            r = performTatesAlgorithm( E , f[0] , R[x] )
+            r = tates_algorithm( E , f[0] , R[x] )
             t = r[0][0][0]
             if t.find('In\*') != -1:
                 if p == 2:
