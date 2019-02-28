@@ -30,6 +30,8 @@ Frey curve classes
 *** Q-curves.sage (*#)
 Implementation of Q-curves
 - Replace guessed degrees by sage isogeny code
+*** tates_algorithm.sage (*+!)
+An implementation of Tate's algorithm that works for Frey curves
 *** twist.sage (*#!)
 Methods for computing (with) twists of elliptic curves
 ** examples/
@@ -157,14 +159,6 @@ Classes for storing pAdic data in a tree like format
 Code for working with polynomials
 *** symmetric_polynomials.sage (*#!)
 Method for computing with a symmetric polynomial
-** Tates_algorithm/ -> elliptic_curves/
-Methods for computing conductors of frey curves
-*** Papadopoulos.sage (*-)
-Unfinished code for Papadopoulus table lookup
-- Remove from load path
-- Remove or rewrite
-*** TatesAlgorithm.sage (*+!)
-An implementation of Tate's algorithm that works for Frey curves
 ** tests/
 Code for (automated) testing
 *** cleanup.sh (+)

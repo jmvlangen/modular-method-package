@@ -148,6 +148,13 @@ class Qcurve(EllipticCurve_number_field):
     element s of the galois group of K a tuple containing the scalar
     and degree associated to the isogeny from s(E) to E.
 
+    .. NOTE::
+
+    This class is intended for Q-curves without complex
+    multiplication. Although Q-curves with complex multiplication
+    might work, the theory behind many of the methods in this class
+    was only intended for Q-curves without complex multiplication.
+
     EXAMPLE::
 
         sage: K.<t> = QuadraticField(-2)
@@ -213,13 +220,8 @@ class Qcurve(EllipticCurve_number_field):
            print comments to stdout about the computations being done
            whilst busy. If set to False or 0 will not print such
            comments. If set to any negative value will also prevent
-           the printing of any warnings.  If this method calls any
-           method that accepts an argument verbose will pass this
-           argument to it. If such a method fulfills a minor task
-           within this method and the argument verbose was larger than
-           0, will instead pass 1 less than the given argument. This
-           makes it so a higher value will print more details about
-           the computation than a lower one.
+           the printing of any warnings. A higher value will cause
+           more messages to be printed.
 
         EXAMPLES:
 
@@ -268,7 +270,8 @@ class Qcurve(EllipticCurve_number_field):
             if flag:
                 break
         if not flag:
-            raise ValueError("There is not sufficient isogeny information to make %s a Q-curve"%curve)
+            raise ValueError("There is not sufficient isogeny information " +
+                             "to make " + str(curve) + " a Q-curve")
         # Check that c^2 is the coboundary of the degree map.
         G = self.definition_field().galois_group()
         d = self.degree_map
@@ -298,9 +301,8 @@ class Qcurve(EllipticCurve_number_field):
         return self.base_ring()
     
     def _init_curve(self, curve):
-        r"""
-        Internal method to initialize the underlying elliptic
-        curve. For internal use only.
+        r"""Initialize the underlying elliptic curve.
+
         """
         if not isinstance(curve, EllipticCurve_number_field):
             curve = EllipticCurve(curve)
@@ -310,13 +312,14 @@ class Qcurve(EllipticCurve_number_field):
         if not K.is_galois():
             Kgal = K.galois_closure(names=K.variable_name() + 'g')
             G = Kgal.galois_group()
-            iota = K.hom([a.minpoly().change_ring(Kgal).roots()[0][0] for a in K.gens()], Kgal)
+            iota = K.embeddings(Kgal)[0]
             ainvs = [iota(a) for a in curve.a_invariants()]
             EllipticCurve_number_field.__init__(self, Kgal, ainvs)
         else:
             EllipticCurve_number_field.__init__(self, K, curve.a_invariants())
 
     def _galois_cache_key(self, sigma):
+        r"""Give a cache key for an element of a galois group"""
         return str(sigma), sigma.parent().number_field()
         
     @cached_method(key=_galois_cache_key)
@@ -352,21 +355,22 @@ class Qcurve(EllipticCurve_number_field):
     def _init_isogenies(self):
         r"""Initialize the isogeny data.
 
-        For internal use only.
         """
-        self._l = dict() # $\lambda$'s of isogenies.
-        self._d = dict() # degrees of isogenies.
-        self._Kl = self.definition_field() # Common definition field of the $\lambda$'s
-        self._to_Kl = self._Kl.hom(self._Kl) # Map from the base field of the elliptic curve.
-        # Initialize the trivial isogeny that is there.
+        # Scalars of isogenies:
+        self._l = dict()
+        # Degrees of isogenies:
+        self._d = dict() 
+        # Common definition field of the $\lambda$'s:
+        self._Kl = self.definition_field()
+        # Map from the base field of the elliptic curve:
+        self._to_Kl = self._Kl.hom(self._Kl)
+        # Initialize the trivial isogeny that is there:
         e = self._Kl.galois_group().identity()
         self._l[e] = QQ(1) 
         self._d[e] = 1
 
     def _add_isogeny(self, sigma, phi):
         r"""Add an isogeny to the stored isogeny data.
-
-        For internal use only.
 
         INPUT:
 
@@ -387,13 +391,14 @@ class Qcurve(EllipticCurve_number_field):
     def _update_isogeny_field(self):
         r"""Update the field over which all isogenies are defined
 
-        For internal use only.
-
         """
         G = list(self.definition_field().galois_group())
         for i in range(len(G)):
-            if G[i] in self._l and self._l[G[i]] != None and self._l[G[i]].parent() != self._Kl:
-                self._Kl, old_to_new, i_to_new = composite_field(self._Kl, self._l[G[i]].parent(), give_maps=True)
+            if (G[i] in self._l and self._l[G[i]] != None and
+                self._l[G[i]].parent() != self._Kl):
+                new_Kl_data = composite_field(self._Kl, self._l[G[i]].parent(),
+                                              give_maps=True)
+                self._Kl, old_to_new, i_to_new = new_Kl_data
                 self._to_Kl = old_to_new * self._to_Kl
                 self._l[G[i]] = i_to_new(self._l[G[i]])
                 for j in range(i):
@@ -409,16 +414,14 @@ class Qcurve(EllipticCurve_number_field):
     def _fill_isogenies(self):
         r"""Attempt to fill in missing isogenies by combining known ones.
 
-        For internal use only.
-
         """
         G = self.definition_field().galois_group()
         Kl = self._Kl
         for s in G:
             for t in G:
-                if (s*t not in self._l or self._l[s*t] == None) and \
-                   (s in self._l and self._l[s] != None) and \
-                   (t in self._l and self._l[t] != None):
+                if ((s*t not in self._l or self._l[s*t] == None) and
+                    (s in self._l and self._l[s] != None) and
+                    (t in self._l and self._l[t] != None)):
                     tL = galois_field_extend(t, self._Kl, )
                     self._l[s*t] = tL(self._l[s]) * self._l[t]
                     self._d[s*t] = self._d[s] * self._d[t]
@@ -430,8 +433,6 @@ class Qcurve(EllipticCurve_number_field):
 
     def _add_isogenies_of_degree(self, degree, verbose=False):
         r"""Attempt to find isogenies of a given degree.
-
-        For internal use only.
 
         """
         G = self.definition_field().galois_group()
@@ -450,9 +451,11 @@ class Qcurve(EllipticCurve_number_field):
                 if Kdabs(Kd(self.galois_conjugate(s).j_invariant())) == j_t:
                     if verbose > 0:
                         print "Degree %s isogeny found for"%degree, s
-                    l1 = _scalar_of_isomorphism(self.galois_conjugate(s).change_ring(yotad),E_t)
+                    E_s = self.galois_conjugate(s).change_ring(yotad)
+                    l1 = _scalar_of_isomorphism(E_s, E_t)
                     l2 = _scalar_of_isogeny(psi.dual())
-                    Kl, p1, p2 = composite_field(l1.parent(), l2.parent(), give_maps=True)
+                    Kl, p1, p2 = composite_field(l1.parent(), l2.parent(),
+                                                 give_maps=True)
                     l = p1(l1) * p2(l2)
                     l = l.parent().subfield(l)[0](l)
                     self._add_isogeny(s, (l, psi.degree()))
@@ -462,8 +465,9 @@ class Qcurve(EllipticCurve_number_field):
         r"""Return the scalar of the isogeny from the sigma conjugate of this
         curve to this curve.
 
-        The $\lambda$ of an isogeny is the constant such that the
-        isogeny becomes $z \mapsto \lambda z$ on the complex numbers.
+        The scalar of an isogeny is the constant $\lambda$ such that
+        the isogeny becomes $z \mapsto \lambda z$ on the complex
+        numbers.
 
         INPUT:
         
@@ -634,9 +638,9 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
 
          - ``a1`` -- Optional parameter (default: None). If set to a
-           non-square integer which square root is part of the degree
-           field, will ensure that this is the first entry of the
-           first list returned.
+           non-square integer of which the square root is part of the
+           degree field, will ensure that this is the first entry of
+           the first list returned.
 
         OUTPUT:
         
@@ -706,13 +710,42 @@ class Qcurve(EllipticCurve_number_field):
         return ai, di
 
     def _galois_cache_key2(self, sigma, tau):
+        r"""Give a cache key for a pair of elements of a galois group"""
         return (self._galois_cache_key(sigma),
                 self._galois_cache_key(tau))
     
     @cached_method(key=_galois_cache_key2)
     def c(self, sigma, tau):
-        r"""Return the value of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2 \to \Q^*$
-        associated to this Q-curve.
+        r"""Return the value of the 2-cocycle $c$ associated to this Q-curve.
+
+        For two galois homomorphisms $\sigma$ and $\tau$ of the
+        absolute galois group of $\Q$ we have two isogenies from this
+        curve conjugated by $\sigma \tau$ to itself, which are the
+        isogeny $\phi_{\sigma \tau}$ defining the Q-curve structure
+        and the isogeny $\phi_{\sigma} \circ \sigma(\phi(\tau))$ where
+        $\phi_{\sigma}$ and $\phi_{\tau}$ are the isogenies from the
+        $\sigma$ conjugate and the $\tau$ conjugate of this curve to
+        itself respectively. The difference between these two curves
+        is a non-zero element c(\sigma, \tau) of $\Q \otimes End(E)$.
+
+        If this curve is non-CM we can identify c(\sigma, \tau) with
+        an element of $\Q^*$, hence it defines a map $c: G_\Q^2 \to
+        \Q^*$ satisfying .. MATH::
+
+            c(\sigma, \tau) \phi_{\sigma, \tau}
+            = \phi_{\sigma} \sigma(\phi_{\tau})
+
+        for all $\sigma, \tau \in G_\Q$, where $G_\Q$ is the absolute
+        galois group of $\Q$. Furthermore $c$ is a 2-cocycle.
+
+        In practise the function $c$ can be computed by the fact that
+        .. MATH::
+
+            c(\sigma, \tau) = \lambda_\sigma \sigma(\lambda_\tau)
+            \lambda_{\sigma \tau}^{-1}
+
+        where $\lambda_\sigma$ is the scalar of the isogeny
+        $\phi_\sigma$.
 
         INPUT:
 
@@ -722,14 +755,9 @@ class Qcurve(EllipticCurve_number_field):
 
         OUTPUT:
 
-        The value .. MATH::
-
-            \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot
-            lambda_{\sigma \tau}^{-1}
-
-        where $\sigma$ and $\tau$ are extensions of sigma and tau to
-        $\bar{\Q}$ respectively and where $\lambda_\sigma$ is the
-        function :meth:`Qcurve.isogeny_scalar` at $\sigma$.
+        The value $c(\sigma, \tau)$ as an element of $\Q$, where
+        $\sigma$ and $\tau$ are extensions of sigma and tau to
+        $\bar{\Q}$ respectively.
 
         EXAMPLES::
 
@@ -761,8 +789,36 @@ class Qcurve(EllipticCurve_number_field):
         return QQ(l(sigma) * sigma(l(tau)) * l(sigma*tau)^(-1))
 
     def c_pm(self, sigma, tau):
-        r"""Return the sign of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2 \to \Q^*$
-        associated to a Q-curve.
+        r"""Return the sign of the 2-cocycle $c$.
+
+        For two galois homomorphisms $\sigma$ and $\tau$ of the
+        absolute galois group of $\Q$ we have two isogenies from this
+        curve conjugated by $\sigma \tau$ to itself, which are the
+        isogeny $\phi_{\sigma \tau}$ defining the Q-curve structure
+        and the isogeny $\phi_{\sigma} \circ \sigma(\phi(\tau))$ where
+        $\phi_{\sigma}$ and $\phi_{\tau}$ are the isogenies from the
+        $\sigma$ conjugate and the $\tau$ conjugate of this curve to
+        itself respectively. The difference between these two curves
+        is a non-zero element c(\sigma, \tau) of $\Q \otimes End(E)$.
+
+        If this curve is non-CM we can identify c(\sigma, \tau) with
+        an element of $\Q^*$, hence it defines a map $c: G_\Q^2 \to
+        \Q^*$ satisfying .. MATH::
+
+            c(\sigma, \tau) \phi_{\sigma, \tau}
+            = \phi_{\sigma} \sigma(\phi_{\tau})
+
+        for all $\sigma, \tau \in G_\Q$, where $G_\Q$ is the absolute
+        galois group of $\Q$. Furthermore $c$ is a 2-cocycle.
+
+        In practise the function $c$ can be computed by the fact that
+        .. MATH::
+
+            c(\sigma, \tau) = \lambda_\sigma \sigma(\lambda_\tau)
+            \lambda_{\sigma \tau}^{-1}
+
+        where $\lambda_\sigma$ is the scalar of the isogeny
+        $\phi_\sigma$.
 
         INPUT:
 
@@ -772,14 +828,9 @@ class Qcurve(EllipticCurve_number_field):
 
         OUTPUT:
 
-        The sign of .. MATH::
-
-            \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot
-            lambda_{\sigma \tau}^{-1}
-
-        where $\sigma$ and $\tau$ are extensions of sigma and tau to
-        $\bar{\Q}$ respectively and where $\lambda_\sigma$ is the
-        function :meth:`Qcurve.isogeny_scalar` at $\sigma$.
+        The sign of $c(\sigma, \tau)$ as an element of $\Q$, where
+        $\sigma$ and $\tau$ are extensions of sigma and tau to
+        $\bar{\Q}$ respectively.
 
         EXAMPLE::
 
@@ -802,8 +853,36 @@ class Qcurve(EllipticCurve_number_field):
         return sign(self.c(sigma,tau))
 
     def c_abs(self, sigma, tau):
-        r"""Return the absolute value of the 2-cocycle $c: Gal(\bar{\Q}/\Q)^2
-        \to \Q^*$ associated to a Q-curve.
+        r"""Return the absolute value of the 2-cocycle $c$.
+
+        For two galois homomorphisms $\sigma$ and $\tau$ of the
+        absolute galois group of $\Q$ we have two isogenies from this
+        curve conjugated by $\sigma \tau$ to itself, which are the
+        isogeny $\phi_{\sigma \tau}$ defining the Q-curve structure
+        and the isogeny $\phi_{\sigma} \circ \sigma(\phi(\tau))$ where
+        $\phi_{\sigma}$ and $\phi_{\tau}$ are the isogenies from the
+        $\sigma$ conjugate and the $\tau$ conjugate of this curve to
+        itself respectively. The difference between these two curves
+        is a non-zero element c(\sigma, \tau) of $\Q \otimes End(E)$.
+
+        If this curve is non-CM we can identify c(\sigma, \tau) with
+        an element of $\Q^*$, hence it defines a map $c: G_\Q^2 \to
+        \Q^*$ satisfying .. MATH::
+
+            c(\sigma, \tau) \phi_{\sigma, \tau}
+            = \phi_{\sigma} \sigma(\phi_{\tau})
+
+        for all $\sigma, \tau \in G_\Q$, where $G_\Q$ is the absolute
+        galois group of $\Q$. Furthermore $c$ is a 2-cocycle.
+
+        In practise the function $c$ can be computed by the fact that
+        .. MATH::
+
+            c(\sigma, \tau) = \lambda_\sigma \sigma(\lambda_\tau)
+            \lambda_{\sigma \tau}^{-1}
+
+        where $\lambda_\sigma$ is the scalar of the isogeny
+        $\phi_\sigma$.
 
         INPUT:
 
@@ -813,14 +892,9 @@ class Qcurve(EllipticCurve_number_field):
 
         OUTPUT:
 
-        The absolute value of .. MATH::
-
-            \lambda_\sigma \cdot \sigma(\lambda_tau) \cdot
-            lambda_{\sigma \tau}^{-1}
-
+        The absolute value of $c(\sigma, \tau)$ as an element of $\Q$,
         where $\sigma$ and $\tau$ are extensions of sigma and tau to
-        $\bar{\Q}$ respectively and where $\lambda_\sigma$ is the
-        function :meth:`Qcurve.isogeny_scalar` at $\sigma$.
+        $\bar{\Q}$ respectively.
 
         EXAMPLE::
 
@@ -922,9 +996,11 @@ class Qcurve(EllipticCurve_number_field):
         if p not in self._xi_pm_primes():
             return 1
         else:
-            return product([hilbert_symbol(ai,di,p) for (ai,di) in self.xi_pm()])
+            return product([hilbert_symbol(ai,di,p)
+                            for (ai,di) in self.xi_pm()])
 
     def _first_splitting_character(self):
+        r"""Compute the first splitting character"""
         N = 1
         L = CyclotomicField(lcm(euler_phi(p) for p in self._xi_pm_primes()))
         eps_ls = [DirichletGroup(1, base_ring=L)[0]]
@@ -936,12 +1012,12 @@ class Qcurve(EllipticCurve_number_field):
                 else:
                     N *= p
                     eps_ls.append(DirichletGroup(p, base_ring=L).gen())
-        return product([eps_p.extend(N) for eps_p in eps_ls]).primitive_character()
+        return product([eps_p.extend(N)
+                        for eps_p in eps_ls]).primitive_character()
 
     def _splitting_character_data(self, i, j):
-        r"""Manages data related to splitting characters, i.e. for each
-        splitting character we have a list containing the following
-        entries
+        r"""Give data related to splitting characters, i.e. for each splitting
+        character we have a list containing the following entries
 
          0 - the splitting character as a dirichlet character
 
@@ -1036,7 +1112,7 @@ class Qcurve(EllipticCurve_number_field):
 
         OUTPUT:
 
-        Returns the splitting character of the given index, given as a
+        The splitting character of the given index, given as a
         galois character if galois is set to True or as a Dirichlet
         character otherwise. If the index was 'all' or 'conjugacy'
         will return a tuple of such characters corresponding to the
@@ -1135,7 +1211,7 @@ class Qcurve(EllipticCurve_number_field):
         return self._splitting_character_data(index, 1)
 
     def _splitting_image_field(self, eps, Keps):
-        r"""Computes the image field of a splitting map.
+        r"""Compute the image field of a splitting map.
         
         INPUT:
 
@@ -1150,7 +1226,8 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         if isinstance(eps, tuple):
-            return tuple(self._splitting_image_field(eps[i], Keps[i]) for i in range(len(eps)))
+            return tuple(self._splitting_image_field(eps[i], Keps[i])
+                         for i in range(len(eps)))
         b = None
         if 2.divides(Keps.degree()):
             b = Keps.subfields(degree=2)[0][0].discriminant().squarefree_part()
@@ -1159,7 +1236,8 @@ class Qcurve(EllipticCurve_number_field):
         for i in range(len(di)):
             Kdi = QuadraticField(di[i])
             if ai[i] == b:
-                Lbig, L_to_Lbig, Kdi_to_Lbig = composite_field(L, Kdi, give_maps=True)
+                Lbig, L_to_Lbig, Kdi_to_Lbig = composite_field(L, Kdi,
+                                                               give_maps=True)
                 alpha = L_to_Lbig(L.gen()) * Kdi_to_Lbig(Kdi.gen())
                 L = Lbig.subfield(alpha)[0]
             else:
@@ -1216,6 +1294,7 @@ class Qcurve(EllipticCurve_number_field):
         return self._splitting_image_field(eps, Keps)
 
     def _splitting_field(self, Keps):
+        r"""Imlementation of :meth:`splitting_field`"""
         if isinstance(Keps, tuple):
             return tuple(self._splitting_field(Keps_i) for Keps_i in Keps)
         Kd = self.degree_field()
@@ -1225,7 +1304,15 @@ class Qcurve(EllipticCurve_number_field):
     def splitting_field(self, index=0):
         r"""Give a splitting field of this Q-curve.
 
-        A splitting field is the fixed field of a splitting map.
+        A splitting map $\beta : G_\Q \to \overline{\Q}$ where $G_\Q$
+        is the absolute galois group of $\Q$ and $\overline{\Q}$ is
+        the algebraic closure of $\Q$ can be seen as a map to
+        $\overline{\Q} / \Q$. Since its coboundary with respect to the
+        trivial action of $G_\Q$ takes values in $\Q$, regarding
+        $\beta$ in this way makes it a 1-cocycle hence a
+        homomorphism. Let $H$ be the kernel of the homomorphism $\beta
+        : G_\Q \to \overline{\Q} / \Q$. We call the fixed field of $H$
+        the fixed field of $\beta$.
 
         ALGORITHM:
         
@@ -1379,7 +1466,7 @@ class Qcurve(EllipticCurve_number_field):
         return all(c(s,t) == c_beta(s,t) for s in G for t in G)
 
     def _splitting_map_first_guess(self):
-        r"""Gives a naive guess of a splitting map.
+        r"""Give a naive guess of a splitting map.
 
         """
         eps = self.splitting_character(galois=True)
@@ -1391,7 +1478,7 @@ class Qcurve(EllipticCurve_number_field):
         return beta
 
     def _first_splitting_map(self, verbose=False):
-        r"""Computes a splitting map corresponding to the first splitting
+        r"""Compute a splitting map corresponding to the first splitting
         character.
 
         """
@@ -1418,15 +1505,15 @@ class Qcurve(EllipticCurve_number_field):
                 raise ValueError("Should be impossible to reach this code!");
         except ArithmeticError:
             if verbose >= 0:
-                print "Warning: The restriction of scalars of this Q-curve over the "+\
-                      "decomposition field does not decompose into abelian varieties"+\
-                      " of GL_2-type. Use the method decomposable_twist to "+\
-                      "find a twist that does."
+                print ("Warning: The restriction of scalars of this Q-curve " +
+                       "over the decomposition field does not decompose into "+
+                       "abelian varieties of GL_2-type. Use the method " +
+                       "decomposable_twist to find a twist that does.")
         return self._beta
 
     def _indexed_splitting_map(self, i):
-        r"""Computes the i-th splitting map from the first splitting map and
-        the corresponding twist.
+        r"""Compute the i-th splitting map from the first splitting map and the
+        corresponding twist.
 
         """
         beta0 = self.splitting_map()
@@ -1445,15 +1532,16 @@ class Qcurve(EllipticCurve_number_field):
         r"""Give a splitting map of this Q-curve.
 
         A splitting map is a function from the absolute galois group
-        of $\QQ$ to the units in the algebraic closure of $\Q$ such
-        that its coboundary gives the same cohomology class as the
+        of $\QQ$ to the units in the algebraic closure of $\QQ$ such
+        that its coboundary with respect to the trivial action of the
+        absolute galois group gives the same cohomology class as the
         cocycle associated to this Q-curve in $H^2(G_\QQ,
         \QQ^*)$. Here $G_\QQ$ is the absolute galois group of $\Q$.
 
-        This method only returns splitting maps that arise as functions
-        on the galois group of the decomposition field. Furthermore
-        all splitting maps returned by this function will have the
-        same coboundary.
+        This method only returns splitting maps that arise as
+        functions on the galois group of the decomposition
+        field. Furthermore all splitting maps returned by this
+        function will have the same coboundary.
 
         .. NOTE::
 
@@ -1563,7 +1651,8 @@ class Qcurve(EllipticCurve_number_field):
             else:
                 return self._indexed_splitting_map(index)
         if index == 'all':
-            return self.splitting_map(tuple(range(self.number_of_splitting_maps())), verbose=verbose)
+            n = self.number_of_splitting_maps()
+            return self.splitting_map(tuple(range(n)), verbose=verbose)
         if index == 'conjugacy':
             return tuple(self.splitting_map(index=ii[0], verbose=verbose)
                          for ii in self._conjugacy_determination())
@@ -1573,7 +1662,9 @@ class Qcurve(EllipticCurve_number_field):
     def c_splitting_map(self, sigma, tau):
         r"""Evaluate the coboundary of a splitting map of this Q-curve.
 
-        .. NOTE:: This is independent of the chosen splitting map.
+        .. NOTE::
+
+        This is independent of the chosen splitting map.
 
         .. SEEALSO::
 
@@ -1590,13 +1681,8 @@ class Qcurve(EllipticCurve_number_field):
           print comments to stdout about the computations being done
           whilst busy. If set to False or 0 will not print such
           comments.  If set to any negative value will also prevent
-          the printing of any warnings.  If this method calls any
-          method that accepts an argument verbose will pass this
-          argument to it.  If such a method fulfills a minor task
-          within this method and the argument verbose was larger than
-          0, will instead pass 1 less than the given argument. This
-          makes it so a higher value will print more details about the
-          computation than a lower one.
+          the printing of any warnings. Higher values will cause more
+          messages to be printed.
 
         OUTPUT:
         
@@ -1652,15 +1738,16 @@ class Qcurve(EllipticCurve_number_field):
         """
         if not self._is_cached('_beta'):
             self.splitting_map(verbose=verbose);
-        return QQ(self._beta(sigma) * self._beta(tau) * self._beta(sigma*tau)^(-1))
+        return QQ(self._beta(sigma) * self._beta(tau) *
+                  self._beta(sigma*tau)^(-1))
 
     def _Kl_roots(self):
-        r"""Gives a basis for the field of complete definition.
+        r"""Give a basis for the field of complete definition.
 
         OUTPUT:
         
-        Gives a list of squarefree integers such that the field of
-        complete definition is $\Q$ adjoint all roots of these
+        A list of squarefree integers such that the field of complete
+        definition is $\Q$ adjoint all roots of these
         integers. Furthermore this list has minimal length in this
         regard.
 
@@ -1674,8 +1761,9 @@ class Qcurve(EllipticCurve_number_field):
                 result.append(c)
                 products.extend([(c*b).squarefree_part() for b in products])
         if len(products) < Kl.degree():
-            raise ValueError("This Q-curve is not completely defined over a 2-...-2 extension. "+\
-                             "This method only works when it is.")
+            raise ValueError("This Q-curve is not completely defined over a " +
+                             "2-...-2 extension. This method only works " +
+                             "when it is.")
         return result
 
     def cyclotomic_order(self):
@@ -1695,8 +1783,7 @@ class Qcurve(EllipticCurve_number_field):
         
         The smallest non-negative integer $N$ such that the
         decomposition field of this Q-curve as given by
-        :meth:`decomposition_field` is completely contained in
-        $\Q(\zeta_N)$.
+        :meth:`decomposition_field` is a subfield of $\Q(\zeta_N)$.
 
         EXAMPLE::
 
@@ -1736,8 +1823,8 @@ class Qcurve(EllipticCurve_number_field):
                 self._chi.append([chi])
 
     def _twist_character_data(self, i, j):
-        r"""Keeps track of the twist characters, storing for each splitting
-        map the following data
+        r"""Give data of the twist characters, storing for each splitting map
+        the following data
 
          0 - The dirichlet character which twists the first splitting
              map into this one.
@@ -1767,9 +1854,11 @@ class Qcurve(EllipticCurve_number_field):
                 self._chi[i].append(dirichlet_to_galois(self._chi[i][0]))
             return self._chi[i][j]
         if i == 'all':
-            return tuple(self._twist_character_data(ii, j) for ii in range(self.number_of_splitting_maps()))
+            return tuple(self._twist_character_data(ii, j)
+                         for ii in range(self.number_of_splitting_maps()))
         if i == 'conjugacy':
-            return tuple(self._twist_character_data(ii[0], j) for ii in self._conjugacy_determination())
+            return tuple(self._twist_character_data(ii[0], j)
+                         for ii in self._conjugacy_determination())
         raise Exception("Invalid index %s."%i)
     
     def twist_character(self, index=0, galois=False):
@@ -1900,7 +1989,7 @@ class Qcurve(EllipticCurve_number_field):
                     for tau in M.galois_group():
                         flag = True
                         for sigma in G:
-                            if tau(L0_to_M(beta0(sigma))) != L_to_M(beta(sigma)):
+                            if tau(L0_to_M(beta0(sigma)))!=L_to_M(beta(sigma)):
                                 flag = False
                                 break
                         if flag:
@@ -1922,7 +2011,7 @@ class Qcurve(EllipticCurve_number_field):
 
         A dictionary of which the keys are the elements of the galois
         group of K, and the value for each element sigma is a tuple
-        containing the lambda and the degree of the isogeny from the
+        containing the scalar and the degree of the isogeny from the
         conjugate of this curve by sigma to itself, in that order.
 
         """
@@ -1930,7 +2019,8 @@ class Qcurve(EllipticCurve_number_field):
         l = self.isogeny_scalar
         d = self.degree_map
         return {s: (l(galois_field_change(s, self.definition_field())),
-                    d(galois_field_change(s, self.definition_field()))) for s in G}
+                    d(galois_field_change(s, self.definition_field())))
+                for s in G}
 
     def base_extend(self, R):
         result = EllipticCurve_number_field.base_extend(self, R)
@@ -1947,11 +2037,12 @@ class Qcurve(EllipticCurve_number_field):
 
         If this Q-curve was given by .. MATH::
 
-        E : y^2 = x^3 + a_2 x^2 + a_4 x + a_6
+            E : y^2 = x^3 + a_2 x^2 + a_4 x + a_6
 
         the twisted Q-curve is given by .. MATH::
         
-        E : y^2 = x^3 + \gamma a_2 x^2 + \gamma^2 a_4 x + \gamma^3 a_6
+            E : y^2 = x^3 + \gamma a_2 x^2 + \gamma^2 a_4 x
+                      + \gamma^3 a_6
 
         INPUT:
 
@@ -1962,6 +2053,8 @@ class Qcurve(EllipticCurve_number_field):
         A Q-curve which is the twist of this Q-curve by gamma. This
         curve will be defined over the smallest possible field over
         which it is completely defined.
+
+        EXAMPLE::
 
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2]); E
@@ -1987,14 +2080,17 @@ class Qcurve(EllipticCurve_number_field):
         from_old_K = K.hom(K)
         for i in range(len(G)):
             s = G[i]
-            K, to_new_K, alpha = field_with_root(K, s(gamma)/gamma, give_embedding=True)
+            K, to_new_K, alpha = field_with_root(K, s(gamma)/gamma,
+                                                 give_embedding=True)
             from_old_K = to_new_K * from_old_K
             isogenies[s] = (from_old_K(iota(l(s))) * alpha, d(s))
             for j in range(i):
-                isogenies[G[j]] = (to_new_K(isogenies[G[j]][0]), isogenies[G[j]][1])
+                isogenies[G[j]] = (to_new_K(isogenies[G[j]][0]),
+                                   isogenies[G[j]][1])
         ainvs = [from_old_K(a) for a in ainvs]
         G2 = K.galois_group()
-        H = [t for t in G2 if (all(t(isogenies[s][0]) == isogenies[s][0] for s in G) and
+        H = [t for t in G2 if (all(t(isogenies[s][0]) == isogenies[s][0]
+                                   for s in G) and
                                all(t(a) == a for a in ainvs))]
         Kmin = fixed_field(H)
         if Kmin != K:
@@ -2039,7 +2135,8 @@ class Qcurve(EllipticCurve_number_field):
             return self
         K = self.decomposition_field()
         CG = K.class_group(proof=False)
-        Pgen = [CG(product(K.primes_above(p))) for p in K.discriminant().prime_factors()]
+        Pgen = [CG(product(K.primes_above(p)))
+                for p in K.discriminant().prime_factors()]
         Pord = [P.order() for P in Pgen]
         H = []
         for k in mrange(Pord):
@@ -2107,12 +2204,14 @@ class Qcurve(EllipticCurve_number_field):
             True
 
         """
-        # Calculate all elements generated by absolute roots mod squares and how to obtain them
+        # Calculate all elements generated by absolute roots mod squares
+        # and how to obtain them
         roots_image = {1 : []}
         for i in range(len(roots)):
             if abs(roots[i]).squarefree_part() not in roots_image:
                 for b in list(roots_image):
-                    roots_image[abs(roots[i]*b).squarefree_part()] = roots_image[b] + [i]
+                    bi = abs(roots[i]*b).squarefree_part()
+                    roots_image[bi] = roots_image[b] + [i]
 
         # Check if roots is valid:
         d_image = self.degree_map_image()
@@ -2122,7 +2221,8 @@ class Qcurve(EllipticCurve_number_field):
                 break
             flag = abs(a) not in d_image
         if flag:
-            raise ValueError("The set %s does not give a valid set of roots"%roots)
+            raise ValueError("The set " + str(roots) +
+                             " does not give a valid set of roots")
 
         # Let's compute the fields and corresponding embeddings
         Kbase = self.definition_field()
@@ -2131,15 +2231,18 @@ class Qcurve(EllipticCurve_number_field):
         for i, a in enumerate(roots):
             Kroots = field_with_root(Kroots, a, names=('sqrt_a'+str(i)))
         base_to_old = self._to_Kl
-        Knew, base_to_new, roots_to_new = composite_field(Kbase, Kroots, give_maps=True)
-        Kbig, old_to_big, new_to_big = composite_field(Kold, Knew, give_maps=True)
+        Knew, base_to_new, roots_to_new = composite_field(Kbase, Kroots,
+                                                          give_maps=True)
+        Kbig, old_to_big, new_to_big = composite_field(Kold, Knew,
+                                                       give_maps=True)
         base_to_big = new_to_big * base_to_new
 
-        # The map we want as lambda for the new curve
+        # The map we want as scalars for the new curve
         d = self.degree_map
         @cached_function(key=lambda s: (str(s), s.parent().number_field()))
         def mu(s):
-            return sqrt(Knew(product(roots[i] for i in roots_image[d(s).squarefree_part()])))
+            my_iter = (roots[i] for i in roots_image[d(s).squarefree_part()])
+            return sqrt(Knew(product(my_iter)))
 
         # The correction map
         l = self.isogeny_scalar
@@ -2150,18 +2253,23 @@ class Qcurve(EllipticCurve_number_field):
         gamma = hilbert90(Kbig, alpha)
 
         # Check if we can twist by an element of Kbase
-        gamma_ls = [x for x,e in gamma.minpoly().change_ring(Kbase).roots() if base_to_big(x) == gamma]
+        gamma_ls = [x for x,e in gamma.minpoly().change_ring(Kbase).roots()
+                    if base_to_big(x) == gamma]
         if len(gamma_ls) > 0:
             gamma = gamma_ls[0]
             isogenies = {s : (mu(s), d(s)) for s in Kbase.galois_group()}
-            return Qcurve(twist_elliptic_curve(self, gamma), isogenies=isogenies)
+            return Qcurve(twist_elliptic_curve(self, gamma),
+                          isogenies=isogenies)
 
         # General case
-        print "Warning: Chosen twist is not defined over the same field anymore."
+        print ("Warning: Chosen twist is not defined over the same field " +
+               "anymore.")
         E = twist_elliptic_curve(self.change_ring(base_to_big), gamma)
-        ainvs = [[x for x,e in a.minpoly().change_ring(Knew).roots() if new_to_big(x) == a] for a in E.a_invariants()]
+        ainvs = [[x for x,e in a.minpoly().change_ring(Knew).roots()
+                  if new_to_big(x) == a] for a in E.a_invariants()]
         if product(len(a) for a in ainvs) == 0:
-            raise ArithmeticError("The sought twist is not defined over the given field.")
+            raise ArithmeticError("The sought twist is not defined over " +
+                                  "the given field.")
         ainvs = [a[0] for a in ainvs]
         isogenies = {s : (mu(s),d(s)) for s in Kbase.galois_group()}
         return Qcurve(ainvs, isogenies=isogenies)
@@ -2190,13 +2298,16 @@ class Qcurve(EllipticCurve_number_field):
         K0 = self.definition_field()
         K = self.decomposition_field()
         if K0 != K:
-            iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
+            iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0]
+                           for a in K0.gens()], K)
             # Proposition 1 of Milne, On the arithmetic of Abelian varieties
-            return self.change_ring(iota).conductor().absolute_norm() * K.discriminant()^2
+            return (self.change_ring(iota).conductor().absolute_norm() *
+                    K.discriminant()^2)
         else:
             return self.conductor().absolute_norm() * K.discriminant()^2
 
-    def _newform_levels(self, prime=None, alpha=None, beta=None, gamma=None, d=None, N=None):
+    def _newform_levels(self, prime=None, alpha=None, beta=None, gamma=None,
+                        d=None, N=None):
         r"""Give the possible levels of newforms associated to this Q-curve.
 
         INPUT:
@@ -2246,9 +2357,9 @@ class Qcurve(EllipticCurve_number_field):
         eps = []
         chi = []
         if alpha is None or gamma is None:
-            eps = [character^(-1) for character in self.splitting_character(index='conjugacy')]
+            eps = [c^(-1) for c in self.splitting_character(index='conjugacy')]
         if beta is None or gamma is None:
-            chi = [character^(-1) for character in self.twist_character(index='conjugacy')]
+            chi = [c^(-1) for c in self.twist_character(index='conjugacy')]
         if alpha is None or beta is None or gamma is None:
             M = lcm(character.modulus() for character in (eps + chi))
             L = QQ
@@ -2262,13 +2373,16 @@ class Qcurve(EllipticCurve_number_field):
         if alpha is None:
             alpha = tuple(eps[i].conductor() for i in range(len(eps)))
         if beta is None:
-            beta = tuple(tuple((chi[j] * chi[i]^(-1)).conductor() for j in range(len(eps)))
-                                                                  for i in range(len(eps)))
+            beta = tuple(tuple((chi[j] * chi[i]^(-1)).conductor()
+                               for j in range(len(eps)))
+                         for i in range(len(eps)))
         if gamma is None:
-            gamma = tuple(tuple((chi[j] * chi[i]^(-1) * eps[i]).conductor() for j in range(len(eps)))
-                                                                            for i in range(len(eps)))
+            gamma = tuple(tuple((chi[j] * chi[i]^(-1) * eps[i]).conductor()
+                                for j in range(len(eps)))
+                          for i in range(len(eps)))
         if d is None:
-            d = [Kf.degree() for Kf in self.splitting_image_field(index='conjugacy')]
+            d = [Kf.degree()
+                 for Kf in self.splitting_image_field(index='conjugacy')]
         if N is None:
             N = self.conductor_restriction_of_scalars()
 
@@ -2276,21 +2390,27 @@ class Qcurve(EllipticCurve_number_field):
             level_dict = {}
             primes = ZZ(N).prime_factors()
             for p in primes:
-                level_dict[p] = self._newform_levels(prime=p, alpha=alpha, beta=beta,
-                                                     gamma=gamma, d=d, N=N)
-            return [tuple(product(primes[i]^level_dict[primes[i]][x[i]][j] # Specific factor
+                level_dict[p] = self._newform_levels(prime=p, alpha=alpha,
+                                                     beta=beta, gamma=gamma,
+                                                     d=d, N=N)
+            return [tuple(product(primes[i]^level_dict[primes[i]][x[i]][j]
                                   for i in range(len(primes))) # All primes
-                                  for j in range(len(d))) # All entries
-                                  for x in mrange([len(level_dict[p]) for p in primes])] # All options
+                          for j in range(len(d))) # All entries
+                    for x in mrange([len(level_dict[p]) for p in primes])]
         
         else: # prime case
             alpha = tuple(alpha[i].ord(prime) for i in range(len(alpha)))
-            beta = tuple(tuple(beta[i][j].ord(prime) for j in range(len(beta[i]))) for i in range(len(beta)))
-            gamma = tuple(tuple(gamma[i][j].ord(prime) for j in range(len(gamma[i]))) for i in range(len(gamma)))
+            beta = tuple(tuple(beta[i][j].ord(prime)
+                               for j in range(len(beta[i])))
+                         for i in range(len(beta)))
+            gamma = tuple(tuple(gamma[i][j].ord(prime)
+                                for j in range(len(gamma[i])))
+                          for i in range(len(gamma)))
             N = N.ord(prime)
             # Small cases
-            x_max = max(max(max(beta[i][j] + 1, beta[i][j] + gamma[i][j]) for j in range(len(beta[i])))
-                                                                          for i in range(len(beta)))
+            x_max = max(max(max(beta[i][j] + 1, beta[i][j] + gamma[i][j])
+                            for j in range(len(beta[i])))
+                        for i in range(len(beta)))
             x_ls = []
             if sum(d) * x_max >= N: # Only small possibilities
                 for x in mrange([x_max + 1]*len(alpha)): 
@@ -2304,16 +2424,20 @@ class Qcurve(EllipticCurve_number_field):
                                 break
                             if beta[i][j] == 0:
                                 candidate = (x[j] == x[i])
-                            elif x[i] > max(beta[i][j] + 1, beta[i][j] + gamma[i][j]) \
-                                 or (x[i] < max(beta[i][j] + 1, beta[i][j] + gamma[i][j]) and \
-                                     gamma[i][j] >= 2) \
-                                     or (x[i] == 1 and \
-                                         alpha[i] == 1 and \
-                                         beta[i][j] == 1 and \
-                                         gamma[i][j] == 1):
-                                candidate = (x[j] == max(x[i], beta[i][j] + 1, beta[i][j] + gamma[i][j]))
+                            elif (x[i] > max(beta[i][j] + 1,
+                                             beta[i][j] + gamma[i][j]) or
+                                  (x[i] < max(beta[i][j] + 1,
+                                              beta[i][j] + gamma[i][j]) and
+                                   gamma[i][j] >= 2) or
+                                  (x[i] == 1 and alpha[i] == 1 and
+                                   beta[i][j] == 1 and gamma[i][j] == 1)):
+                                candidate = (x[j] == max(x[i], beta[i][j] + 1,
+                                                         beta[i][j] +
+                                                         gamma[i][j]))
                             else:
-                                candidate = (x[j] <= max(x[i], beta[i][j] + 1, beta[i][j] + gamma[i][j]))
+                                candidate = (x[j] <= max(x[i], beta[i][j] + 1,
+                                                         beta[i][j] +
+                                                         gamma[i][j]))
                     if candidate:
                         x_ls.append(tuple(x))
             elif sum(d).divides(N): # Big possibility
@@ -2363,24 +2487,23 @@ class Qcurve(EllipticCurve_number_field):
           respectively.  This program is used for computing newforms
           and Euler factors of the L-series associated to the curve.
 
-        - ``verify`` -- A non-negative integer determining what
-          the biggest prime is for which the result should be
-          verified using the Euler factors of the L-series.
+        - ``verify`` -- A non-negative integer determining what the
+          biggest prime is for which the result should be verified
+          using the Euler factors of the L-series.
 
         OUTPUT:
 
         A tuple consisting of
 
-          - a newform such that this curve is a quotient of the
-            abelian variety associated to that newform, i.e. a newform
-            associated to this Q-curve by modularity
+        - a newform such that this curve is a quotient of the abelian
+          variety associated to that newform, i.e. a newform
+          associated to this Q-curve by modularity
 
-          - A list of Dirichlet characters that twist this newform
-            into other newforms, such that the restriction of scalars
-            of this Q-curve over the decomposition field is isogenous
-            (over $\Q$) to the product of the abelian varieties
-            associated to the twists of the first newform by the given
-            characters.
+        - A list of Dirichlet characters that twist this newform into
+          other newforms, such that the restriction of scalars of this
+          Q-curve over the decomposition field is isogenous (over
+          $\Q$) to the product of the abelian varieties associated to
+          the twists of the first newform by the given characters.
 
         .. NOTE::
         
@@ -2419,13 +2542,14 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         if not self.does_decompose():
-            raise ValueError("Can not compute newform if the restriction of scalars does not decompose.")
+            raise ValueError("Can not compute newform if the restriction of " +
+                             "scalars does not decompose.")
 
         # Getting this curve over the decomposition field as E
         Kl = self.complete_definition_field()
         to_Kl = self._to_Kl
         K = self.decomposition_field()
-        iota = Kl.hom([a.minpoly().change_ring(K).roots()[0][0] for a in Kl.gens()], K)
+        iota = Kl.embeddings(K)[0]
         E = self.change_ring(iota * to_Kl)
         
         levels = self._newform_levels()
@@ -2433,7 +2557,9 @@ class Qcurve(EllipticCurve_number_field):
         # Find a common base for all twists
         M = lcm(chi.modulus() for chi in twists_base)
         twists_base = [chi.extend(M)^(-1) for chi in twists_base]
-        eps_ls = [(eps^(-1)).primitive_character() for eps in self.splitting_character('conjugacy')]  # characters of newform
+        # Characters of the newforms
+        eps_ls = [(eps^(-1)).primitive_character()
+                  for eps in self.splitting_character('conjugacy')]
         Lbeta_ls = self.splitting_image_field('conjugacy') # coefficient fields
 
         use_magma = (algorithm == 'magma')
