@@ -1065,7 +1065,7 @@ class Qcurve(EllipticCurve_number_field):
                          for ii in range(self.number_of_splitting_maps()))
         if i == 'conjugacy':
             return tuple(self._splitting_character_data(ii[0], j)
-                         for ii in self._conjugacy_determination())
+                         for ii in self._conjugacy_classes())
         raise Exception("Invalid index %s."%i)
     
     def splitting_character(self, index=0, galois=False):
@@ -1655,7 +1655,7 @@ class Qcurve(EllipticCurve_number_field):
             return self.splitting_map(tuple(range(n)), verbose=verbose)
         if index == 'conjugacy':
             return tuple(self.splitting_map(index=ii[0], verbose=verbose)
-                         for ii in self._conjugacy_determination())
+                         for ii in self._conjugacy_classes())
         raise Exception("Invalid index %s"%index)
 
     @cached_method(key=_galois_cache_key2)
@@ -1803,8 +1803,9 @@ class Qcurve(EllipticCurve_number_field):
             self._N = N
             L.<zeta> = CyclotomicField(N)
             a = K.gen().minpoly().change_ring(L).roots()[0][0]
-            self._ker = [n for n in range(N) if gcd(n, N) == 1 \
-                         and a == sum(ai * zeta^(i*n) for (i,ai) in enumerate(a.list()))]
+            self._ker = [n for n in range(N) if gcd(n, N) == 1 and
+                         a == sum(ai * zeta^(i*n)
+                                  for (i,ai) in enumerate(a.list()))]
         return self._N
 
     def _init_twist_characters(self):
@@ -1858,7 +1859,7 @@ class Qcurve(EllipticCurve_number_field):
                          for ii in range(self.number_of_splitting_maps()))
         if i == 'conjugacy':
             return tuple(self._twist_character_data(ii[0], j)
-                         for ii in self._conjugacy_determination())
+                         for ii in self._conjugacy_classes())
         raise Exception("Invalid index %s."%i)
     
     def twist_character(self, index=0, galois=False):
@@ -1962,10 +1963,10 @@ class Qcurve(EllipticCurve_number_field):
                 self._init_twist_characters()
             return len(self._chi)
         else:
-            return len(self._conjugacy_determination())
+            return len(self._conjugacy_classes())
 
     @cached_method
-    def _conjugacy_determination(self):
+    def _conjugacy_classes(self):
         r"""Give a tuple of indices that contains for each conjugacy class of
         splitting maps the index of exactly one element thereof.
 
@@ -2573,19 +2574,24 @@ class Qcurve(EllipticCurve_number_field):
         # the Euler factors.
         done_cases = []
         for k in range(len(levels)):
-            i_min, N = min(enumerate(levels[k]), key=(lambda x: x[1])) #newform with smallest level
+            # Newform with smallest level:
+            i_min, N = min(enumerate(levels[k]), key=(lambda x: x[1]))
             chi = twists_base[i_min]
-            twists = [chi_j * chi^(-1) for chi_j in twists_base] # twists relative to i_min
+            # Twists relative to i_min
+            twists = [chi_j * chi^(-1) for chi_j in twists_base]
             eps = eps_ls[i_min]
             Lbeta = Lbeta_ls[i_min]
             expected_matches = sum(eps_ls[i] in eps.galois_orbit() and
-                                   levels[k][i] == N for i in range(len(levels[k])))
-            if (N, eps.galois_orbit(), Lbeta) in done_cases: # Prevent getting the same newform twice.
+                                   levels[k][i] == N
+                                   for i in range(len(levels[k])))
+            # Prevent getting the same newform twice:
+            if (N, eps.galois_orbit(), Lbeta) in done_cases: 
                 continue
             done_cases.append((N, eps.galois_orbit(), Lbeta))
 
             if use_magma:
-                Dm = magma.DirichletGroup(eps.conductor(), magma(eps.base_ring()))
+                Dm = magma.DirichletGroup(eps.conductor(),
+                                          magma(eps.base_ring()))
                 for eps_m in Dm.Elements():
                     candidate = True
                     for i in Integers(eps.conductor()).unit_gens():
@@ -2596,8 +2602,10 @@ class Qcurve(EllipticCurve_number_field):
                     if candidate: # Found the right one
                         break
                 if not candidate:
-                    raise ValueError("No matching magma dirichlet character for %s"%candidate)
-                eps_m = magma.DirichletGroup(N, magma(eps.base_ring()))(eps_m) # Right level
+                    raise ValueError("No matching magma dirichlet character " +
+                                     "for %s"%(candidate,))
+                # The right level:
+                eps_m = magma.DirichletGroup(N, magma(eps.base_ring()))(eps_m)
                 cfs = magma.CuspForms(eps_m)
                 nfs = magma.Newforms(cfs)
                 nfs = [f[1] for f in nfs]
@@ -2605,14 +2613,14 @@ class Qcurve(EllipticCurve_number_field):
             else:
                 nfs = Newforms(eps.extend(N), names='a')
 
-            # See if the coefficient field matches good enough to be a candidate
+            # See if the coefficient field matches good enough:
             for f in nfs:
                 if f.parent() == magma:
                     Kf = f.BaseField().sage()
                 else:
                     Kf = f.base_ring()
-                if Kf.absolute_degree() == Lbeta.absolute_degree() and \
-                   Kf.absolute_discriminant() == Lbeta.absolute_discriminant():
+                if (Kf.absolute_degree() == Lbeta.absolute_degree() and
+                    Kf.absolute_discriminant() == Lbeta.absolute_discriminant()):
                     candidates.append((f, twists, N, eps))
 
         valid_options = []
@@ -2642,7 +2650,8 @@ class Qcurve(EllipticCurve_number_field):
                     sub_option[key] += 1
                 else:
                     sub_option[key] = 1
-            return any(is_submultiset(sub_option, option) for option in valid_options)
+            return any(is_submultiset(sub_option, option)
+                       for option in valid_options)
                     
         p = 1
         while p.divides(max_level):
@@ -2677,6 +2686,7 @@ class Qcurve(EllipticCurve_number_field):
 
         This is a direct copy from the code included
         in EllipticCurve_number_field
+
         """
         b = self.ainvs()
         a = [z._coeff_repr() for z in b]

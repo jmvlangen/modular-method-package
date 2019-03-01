@@ -27,9 +27,11 @@ Methods for analyzing diophantine equations of the form polynomial equals prime 
 Code for elliptic curves
 *** frey_curves.sage (*+)
 Frey curve classes
-*** Q-curves.sage (*#)
+*** Q-curves.sage (*#!)
 Implementation of Q-curves
 - Replace guessed degrees by sage isogeny code
+- Split up the method _newform_levels
+- Use new newform wrappers in method newform and split up code
 *** tates_algorithm.sage (*+!)
 An implementation of Tate's algorithm that works for Frey curves
 *** twist.sage (*#!)
