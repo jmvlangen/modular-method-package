@@ -1,3 +1,41 @@
+r"""A class for working with $\Q$-curves
+
+A $\Q$-curve is an elliptic curve defined over some number field that
+is isogenous to all its galois conjugates. This file contains the
+class Qcurve that represents $\Q$-curves that do not have complex
+multiplication.
+
+EXAMPLES::
+
+    sage: K.<t> = QuadraticField(-2)
+    sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : (-t, 2)})
+    Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
+
+Q-curves without CM are modular and are linked to classical newforms
+that can be computed::
+
+    sage: K.<t> = QuadraticField(3)
+    sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+    sage: E2 = E.decomposable_twist()
+    sage: E2.newform() # long
+    (q + (-a + 1)*q^3 + a*q^5 + 3*a*q^7 + (-2*a - 1)*q^9 + 4*q^11 + O(q^12),
+     [Dirichlet character modulo 12 of conductor 1 mapping 7 |--> 1, 5 |--> 1])
+
+AUTHORS:
+
+- Joey van Langen (2019-03-01): initial version
+
+"""
+
+# ****************************************************************************
+#       Copyright (C) 2019 Joey van Langen <j.m.van.langen@vu.nl>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#                  https://www.gnu.org/licenses/
+# ****************************************************************************
 from sage.schemes.elliptic_curves.ell_number_field import EllipticCurve_number_field
 
 def _scalar_of_isogeny(phi):
