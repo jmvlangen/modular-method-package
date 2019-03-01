@@ -132,6 +132,7 @@ Methods for eliminating newforms
 
 *** newform wrapper.sage (*+)
 Wrapper classes around newforms and a new method to get newforms
+- Can the argument minimal_coeffs of get_newforms be removed?
 ** number_fields/
 Code to analyze number fields
 *** dirichlet characters.sage (*#!)

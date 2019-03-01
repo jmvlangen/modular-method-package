@@ -1,50 +1,88 @@
+r"""Tools to work with newforms from different sources.
+
+This file provides a wrapper class that has subclasses wrapping around
+different kinds of newforms to provide a uniform way of working with
+newforms from different sources.
+
+The base class for wrapped newforms is :class:`Newform_wrapped`. It
+has subclasses wrapping around a newform produced by Sage
+(:class:`Newform_wrapped_sage`), wrapping around a newform produced by
+Magma (:class:`Newform_wrapped_magma`) and wrapping around a newform
+produced by reading fourier coefficients from a file
+(:class:`Newform_wrapped_stored`).
+
+This file also contains methods for saving and loading wrapped
+newforms. To store a newform we store its level, the corresponding
+character and some of its fourier coefficients. Saving can be done
+with the function :func:`save_newforms` and loading can be done with
+the function :func:`load_newforms`. The files storing newforms are
+human readable.
+
+This file also gives a single method to compute newforms and returned
+them as wrapped version, called :func:`get_newforms`. This method has
+the option of choosing between Sage, magma and loading from a file to
+compute the newforms.
+
+EXAMPLES:
+
+TODO
+
+AUTHORS:
+
+- Joey van Langen (2019-03-01): initial version
+
+"""
+
+# ****************************************************************************
+#       Copyright (C) 2019 Joey van Langen <j.m.van.langen@vu.nl>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#                  https://www.gnu.org/licenses/
+# ****************************************************************************
 import re
 
 from sage.modular.dirichlet import is_DirichletCharacter
 
-def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, names='a', path=None):
-    r"""
-    Computes the newforms of a given level and character.
+def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
+                 names='a', path=None):
+    r"""Compute the newforms of a given level and character.
 
     INPUT:
 
-    - ``level`` -- A strictly positive integer indicating
-      the level of the newforms.
-    - ``character`` -- A dirichlet character of which the
-      conductor divides the given level.
-    - ``algorithm`` -- One of the following possible
-      arguments:
-       - 'sage' - (default) If sage should be used to
-         compute the newforms.
-       - 'magma' - If magma should be used to compute
-         the newforms.
-       - 'file' - If the newforms should be loaded from
-         a file.
-    - ``minimal_coeffs`` -- A number field or the rationals
-      (default: QQ) that should be contained inf the
-      coefficient field of each newform computed.
-    - ``names`` -- An argument required by the sage
-      implementation of newforms to be used as the names
-      for the generator of coefficient fields of newforms
-      that are not QQ.
-    - ``path`` -- A string or None (default: None). Only
-      used in case the algorithm is set to file, in which
-      case it should be the path to the file from which
-      to load the newforms as a string.
+    - ``level`` -- A strictly positive integer which is the level of
+      the newforms.
+
+    - ``character`` -- A dirichlet character of which the conductor
+      divides the given level.
+
+    - ``algorithm`` -- One of the following possible arguments: 'sage'
+      (default) if sage should be used to compute the newforms;
+      'magma' if magma should be used to compute the newforms; or
+      'file' if the newforms should be loaded from a file.
+
+    - ``minimal_coeffs`` -- A number field or the rationals (default:
+      QQ) that should be contained in the coefficient field of each
+      newform computed.
+
+    - ``names`` -- An argument required by the sage implementation of
+      newforms to be used as the names for the generator of
+      coefficient fields of newforms that are not QQ.
+
+    - ``path`` -- A string or None (default: None). Only used in case
+      the algorithm is set to file, in which case it should be the
+      path to the file from which to load the newforms as a string.
     
     OUTPUT:
     
-    A list of instances of Newform_wrapped that contains
-    exactly one newform in each galois orbit of newforms
-    that are invariant under \gamma_1(level) with as
-    character the given character. Furthermore the
-    coefficient field of each of these newforms extends
-    the given field minimal_coeffs.
+    A list of instances of Newform_wrapped that contains exactly one
+    newform in each galois orbit of newforms in $S(\Gamma_1(N),
+    \varepsilon)$, wher $N$ is the given level and $\varepsilon$ is
+    the given character. Furthermore the coefficient field of each of
+    these newforms extends the given field minimal_coeffs.
 
-    Note that these are instances of Newform_wrapped to
-    provide a uniform way of computing with the newforms
-    after they are created that is independant of the
-    algorithm used to compute them.
     """
     if algorithm == 'sage':
         if character is None:
@@ -67,18 +105,21 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, nam
                 if candidate:
                     break
             if candidate: # We found a matching character
-                eps_m = magma.DirichletGroup(level, magma(eps.base_ring()))(eps_m)
+                eps_m = magma.DirichletGroup(level,
+                                             magma(eps.base_ring()))(eps_m)
                 cfs = magma.CuspForms(eps_m)
                 nfs = magma.Newforms(cfs)
             else:
-                raise ValueError("There is no dirichlet character in magma matching %s"%(eps,))
+                raise ValueError("There is no dirichlet character in magma " +
+                                 "matching %s"%(eps,))
         result = [Newform_wrapped_magma(orbit[1]) for orbit in nfs]
     elif algorithm == 'file':
         if character is None:
             character = DirichletGroup(1)[0]
         character = character.primitive_character()
         if path is None:
-            raise ValueError("Argument path should be set if algorithm file is chosen.")
+            raise ValueError("Argument path should be set if algorithm file " +
+                             "is chosen.")
         to_do = [load_newforms(path)]
         result = []
         while len(to_do) > 0:
@@ -99,19 +140,32 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ, nam
         return result
     else:
         poly = minimal_coeffs.gen().minpoly()
-        return [f for f in result if len(poly.change_ring(f.coefficient_field()).roots()) > 0]
+        return [f for f in result
+                if len(minimal_coeffs.embeddings(f.coefficient_field())) > 0]
 
 class LabeledElement:
+    r"""A helper class that stores an element and a label."""
     def __init__(self, label, element):
         self.label = label
         self.element = element
     
-def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True, save_cm=True):
-    r"""
-    Saves newforms to a file.
+def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
+                  save_cm=True):
+    r"""Save newforms to a file.
 
-    A file that stores newforms will adhere to the following
-    formatting rules in which we shall use:
+    Saves a newform or a list of newforms to a file. This file will
+    store for each newform information about its level, its character
+    and some fourier coefficients. It can also store whether or not
+    the newform has complex multiplication, but this is optional.
+
+    The file is written in such a format that it should be human
+    readable, using whitespace to lay out the file in a more readable
+    way. Independent of the whitespace the file can be read again by
+    the function :func:`load_newforms` to get again a list of wrapped
+    newforms.
+
+    In the file in which the newforms are save we use the following
+    notation, written here as regular expressions:
  
     <list> := '[' ( <element> ( ',' <element> )* )? ']'
     <element> := ( '<' <identifier> '>' ':=' )? ( <list> | <rational> )
@@ -124,29 +178,39 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True, 
     <zero> := '0'
     <letter> := [a-zA-Z]
 
-    - A boolean value is represented by the integer 1 if it is
-      True and the integer 0 if it is False.
+    Note that for <list>, <element> and <identifier> whitespace
+    between the different building blocks is ignored. Furthermore we
+    have the following ways of representing different bits of data.
+
+    - A boolean value is represented by the integer 1 if it is True
+      and the integer 0 if it is False.
+
     - An element of a number field is represented as the list of
       rational coefficients with respect to the power basis in the
       generator, preceded by the identifier 'element'
-    - A polynomial with rational coefficients is represented by
-      a list of its coefficients (starting at the constant term)
-      preceded by the identifier 'polynomial'
+
+    - A polynomial with rational coefficients is represented by a list
+      of its coefficients (starting at the constant term) preceded by
+      the identifier 'polynomial'
+
     - A number field is represented by a list containing a polynomial,
       preceded by the identifier 'field'. The polynomial is the
       defining polynomial of the number field.
-    - A list of values of a function is represented by a list containing
-      lists of exactly two elements, all preceded by the identifier
-      'values'. The function maps the first element of a list in the
-      corresponding list to the second element thereof.
+
+    - A list of values of a function is represented by a list
+      containing lists of exactly two elements, all preceded by the
+      identifier 'values'. The function maps the first element of a
+      list in the corresponding list to the second element thereof.
+
     - A character is represented by a list containing an integer
       preceded by the identifier 'conductor' and a list of values of
-      the character, all preceded by the identifier 'character'.
-      The integer with identifier 'conductor' will be the conductor
-      of the character. The entry labeled values will be pairs of
-      integers, such that if zeta is the relevant n-th root of unity
-      a pair (k, e) appears in this list if the character takes the
-      value zeta^e at k.
+      the character preceded by the identifier 'values', all preceded
+      by the identifier 'character'. The integer with identifier
+      'conductor' will be the conductor of the character. The entry
+      labeled values will be pairs of integers, such that if $\zeta$
+      is the relevant $n$-th root of unity a pair $(k, e)$ appears in
+      this list if the character takes the value $zeta^e$ at $k$.
+
     - A newform is represented by a list containing an integer
       preceded by the identifier 'level', a boolean preceded by the
       identifier 'cm', a character, a number field and a list of
@@ -157,35 +221,43 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True, 
       field of the newform and the last the coefficients of the newform
       (at some) indices. The entry with label 'cm' may be left out
       or set to -1 to indicate that this information is not known.
+
     - A list of things will be represented as a list of the
       corresponding representations.
 
     INPUT:
 
-    - ``newforms`` -- An instance of Newform_wrapped. This may also
-      be a list or other iterable containing as elements instances
-      of Newform_wrapped or lists that satisfy the same property.
-      These are the newforms that will be saved to the file.
-    - ``file_name`` -- A string containing the file name to which
-      the given newforms should be saved.
-    - ``coefficients`` -- An iterable object of non-negative
-      integers or a non-negative integer (default: 50). This
-      determines the coefficients of the newform that will be
-      saved. If it is an iterable object, will save all the
-      coefficients with the indices given in that object. If it
-      is a single non-negative integer will make this to be
-      the list of all non-negative integers up to the given
-      integer (including the integer itself).
-    - ``repr_coefficients`` -- A boolean value (default: True).
-      If set to true, will always save the first 20 coeficients
-      of this newform. This is recommmended as the string
-      representation of this newform will break if loaded back
-      in.
+    - ``newforms`` -- An instance of Newform_wrapped. This may also be
+      a list or other iterable containing as elements instances of
+      Newform_wrapped or lists that satisfy the same property. These
+      are the newforms that will be saved to the file.
+
+    - ``file_name`` -- A string containing the file name to which the
+      given newforms should be saved.
+
+    - ``coefficients`` -- An iterable object of non-negative integers
+      or a non-negative integer (default: 50). This determines the
+      coefficients of the newform that will be saved. If it is an
+      iterable object, will save all the coefficients with the indices
+      given in that object. If it is a single non-negative integer
+      will make this to be the list of all non-negative integers up to
+      the given integer (excluding the integer itself).
+
+    - ``repr_coefficients`` -- A boolean value (default: True).  If
+      set to true, will always save the first 20 coeficients of this
+      newform. This is recommmended as otherwise the string
+      representation of the newforms will break if loaded back in.
+
     - ``save_cm`` -- A boolean value (default: True) indicating
-      whether for each newform saved the information whether or
-      not it has complex multiplication should also be computed
-      and saved. If set to False, this will not be done and the
-      field 'cm' of a newform will be set to -1.
+      whether for each newform saved the information whether or not it
+      has complex multiplication should also be computed and saved. If
+      set to False, this will not be done and the field 'cm' of a
+      newform will be set to -1.
+
+    EXAMPLE::
+
+    TODO
+
     """
     if coefficients in ZZ and coefficients > 0:
         coefficients = range(coefficients)
@@ -197,6 +269,29 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True, 
         _write_element(newforms, f, coefficients, save_cm)
 
 def _write_list(ls, f, coefficients, save_cm, indent=0, indent_start=True):
+    r"""Write a list to a file.
+
+    Uses the rules specified in :func:`save_newforms` to write a list
+    to a file.
+
+    INPUT:
+
+    - ``ls`` -- The list to be written
+
+    - ``f`` -- The file to be written to
+    
+    - ``coefficients`` -- The indices of coefficients of newforms to
+      be saved
+
+    - ``save_cm`` -- A boolean indicating whether information about
+      newforms having CM should be saved
+
+    - ``indent`` -- An integer indicating the level of indentation to be used
+
+    - ``indent_start`` -- A boolean indicating whether the first
+      symbol written should be indented.
+
+    """
     if indent_start:
         f.write(" "*4*indent)
     f.write('[')
@@ -210,6 +305,26 @@ def _write_list(ls, f, coefficients, save_cm, indent=0, indent_start=True):
     f.write(']')
 
 def _write_element(element, f, coefficients, save_cm, indent=0):
+    r"""Write an element to a file.
+
+    Uses the rules specified in :func:`save_newforms` to write an
+    element to a file.
+
+    INPUT:
+
+    - ``element`` -- The element to be written
+
+    - ``f`` -- The file to be written to
+    
+    - ``coefficients`` -- The indices of coefficients of newforms to
+      be saved
+
+    - ``save_cm`` -- A boolean indicating whether information about
+      newforms having CM should be saved
+
+    - ``indent`` -- An integer indicating the level of indentation to be used
+
+    """
     if isinstance(element, Newform_wrapped):
         _write_newform(element, f, coefficients, save_cm, indent=indent)
     elif is_DirichletCharacter(element):
@@ -217,7 +332,8 @@ def _write_element(element, f, coefficients, save_cm, indent=0):
     elif is_NumberField(element):
         _write_field(element, f, coefficients, save_cm, indent=indent)
     elif isinstance(element, LabeledElement):
-        _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
+        _write_labeled_element(element, f, coefficients, save_cm,
+                               indent=indent)
     elif is_Polynomial(element):
         _write_polynomial(element, f, coefficients, save_cm, indent=indent)
     elif element in QQ or element in ZZ:
@@ -228,6 +344,26 @@ def _write_element(element, f, coefficients, save_cm, indent=0):
         raise ValueError("Do not know how to write %s to file."%(element,))
 
 def _write_newform(nf, f, coefficients, save_cm, indent=0):
+    r"""Write a newform to a file.
+
+    Uses the rules specified in :func:`save_newforms` to write a
+    newform to a file.
+
+    INPUT:
+
+    - ``nf`` -- The newform to be written
+
+    - ``f`` -- The file to be written to
+    
+    - ``coefficients`` -- The indices of coefficients of newforms to
+      be saved
+
+    - ``save_cm`` -- A boolean indicating whether information about
+      newforms having CM should be saved
+
+    - ``indent`` -- An integer indicating the level of indentation to be used
+
+    """
     level = LabeledElement('level', nf.level())
     if save_cm:
         cm = LabeledElement('cm', ZZ(nf.has_cm()))
@@ -238,13 +374,34 @@ def _write_newform(nf, f, coefficients, save_cm, indent=0):
     if not field.is_absolute():
         field = field.absolute_field(names='a')
     values = [(n, (QQ(nf.coefficient(n)) if nf.coefficient(n) in QQ
-                   else LabeledElement('element', field(nf.coefficient(n)).list())))
+                   else LabeledElement('element',
+                                       field(nf.coefficient(n)).list())))
               for n in coefficients]
     values = LabeledElement('values', values)
     element = LabeledElement('newform', [level, cm, character, field, values])
     _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
 def _write_character(eps, f, coefficients, save_cm, indent=0):
+    r"""Write a character to a file.
+
+    Uses the rules specified in :func:`save_newforms` to write a
+    character to a file.
+
+    INPUT:
+
+    - ``eps`` -- The character to be written
+
+    - ``f`` -- The file to be written to
+    
+    - ``coefficients`` -- The indices of coefficients of newforms to
+      be saved
+
+    - ``save_cm`` -- A boolean indicating whether information about
+      newforms having CM should be saved
+
+    - ``indent`` -- An integer indicating the level of indentation to be used
+
+    """
     eps = eps.primitive_character()
     conductor = LabeledElement('conductor', eps.conductor())
     ls_values = zip(eps.parent().unit_gens(), eps.element())
@@ -253,6 +410,26 @@ def _write_character(eps, f, coefficients, save_cm, indent=0):
     _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
 def _write_field(field, f, coefficients, save_cm, indent=0):
+    r"""Write a field to a file.
+
+    Uses the rules specified in :func:`save_newforms` to write a field
+    to a file.
+
+    INPUT:
+
+    - ``field`` -- The field to be written
+
+    - ``f`` -- The file to be written to
+    
+    - ``coefficients`` -- The indices of coefficients of newforms to
+      be saved
+
+    - ``save_cm`` -- A boolean indicating whether information about
+      newforms having CM should be saved
+
+    - ``indent`` -- An integer indicating the level of indentation to be used
+
+    """
     if field is QQ:
         polynomial = PolynomialRing(QQ, names='x').gen()
     else:
@@ -261,23 +438,85 @@ def _write_field(field, f, coefficients, save_cm, indent=0):
     _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
 def _write_polynomial(poly, f, coefficients, save_cm, indent=0):
+    r"""Write a polynomial to a file.
+
+    Uses the rules specified in :func:`save_newforms` to write a
+    polynomial to a file.
+
+    INPUT:
+
+    - ``poly`` -- The polynomial to be written
+
+    - ``f`` -- The file to be written to
+    
+    - ``coefficients`` -- The indices of coefficients of newforms to
+      be saved
+
+    - ``save_cm`` -- A boolean indicating whether information about
+      newforms having CM should be saved
+
+    - ``indent`` -- An integer indicating the level of indentation to be used
+
+    - ``indent_start`` -- A boolean indicating whether the first
+      symbol written should be indented.
+
+    """
     element = LabeledElement('polynomial', poly.list())
     _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
 def _write_rational(q, f, indent=0, indent_start=True):
+    r"""Write a rational to a file.
+
+    Uses the rules specified in :func:`save_newforms` to write a
+    rational to a file.
+
+    INPUT:
+
+    - ``q`` -- The rational to be written
+
+    - ``f`` -- The file to be written to
+
+    - ``indent`` -- An integer indicating the level of indentation to be used
+
+    - ``indent_start`` -- A boolean indicating whether the first
+      symbol written should be indented.
+
+    """
     if indent_start:
         f.write(" "*4*indent)
     f.write(str(QQ(q)))
 
 def _write_labeled_element(element, f, coefficients, save_cm, indent=0):
+    r"""Write a labeled element to a file.
+
+    Uses the rules specified in :func:`save_newforms` to write a
+    labeled element to a file.
+
+    INPUT:
+
+    - ``element`` -- The labeled element to be written
+
+    - ``f`` -- The file to be written to
+    
+    - ``coefficients`` -- The indices of coefficients of newforms to
+      be saved
+
+    - ``save_cm`` -- A boolean indicating whether information about
+      newforms having CM should be saved
+
+    - ``indent`` -- An integer indicating the level of indentation to be used
+
+    """
     f.write(" "*4*indent)
     f.write("<%s> := "%(element.label,))
     if element.element in QQ:
         _write_rational(element.element, f, indent=indent, indent_start=False)
     elif hasattr(element.element, "__iter__"):
-        _write_list(element.element, f, coefficients, save_cm, indent=indent, indent_start=False)
+        _write_list(element.element, f, coefficients, save_cm, indent=indent,
+                    indent_start=False)
     else:
-        raise ValueError("%s, %s is not a valid labeled element"%(element.label, element.element))
+        raise ValueError(str(elemnet.label) + ", " + str(element.element) +
+                         " is not a valid labeled element")
 
 def load_newforms(file_name):
     r"""
