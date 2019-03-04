@@ -4,12 +4,12 @@ This file provides a wrapper class that has subclasses wrapping around
 different kinds of newforms to provide a uniform way of working with
 newforms from different sources.
 
-The base class for wrapped newforms is :class:`Newform_wrapped`. It
+The base class for wrapped newforms is :class:`WrappedNewform`. It
 has subclasses wrapping around a newform produced by Sage
-(:class:`Newform_wrapped_sage`), wrapping around a newform produced by
-Magma (:class:`Newform_wrapped_magma`) and wrapping around a newform
+(:class:`WrappedNewform_sage`), wrapping around a newform produced by
+Magma (:class:`WrappedNewform_magma`) and wrapping around a newform
 produced by reading fourier coefficients from a file
-(:class:`Newform_wrapped_stored`).
+(:class:`WrappedNewform_stored`).
 
 This file also contains methods for saving and loading wrapped
 newforms. To store a newform we store its level, the corresponding
@@ -116,7 +116,7 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
     
     OUTPUT:
     
-    A list of instances of Newform_wrapped that contains exactly one
+    A list of instances of WrappedNewform that contains exactly one
     newform in each galois orbit of newforms in $S_2(\Gamma_1(N),
     \varepsilon)$, wher $N$ is the given level and $\varepsilon$ is
     the given character. Furthermore the coefficient field of each of
@@ -157,7 +157,7 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
         else:
             eps = character.primitive_character().extend(level)
             nfs = Newforms(eps, names=names)
-        result = [Newform_wrapped_sage(f) for f in nfs]
+        result = [WrappedNewform_sage(f) for f in nfs]
     elif algorithm == 'magma':
         if character is None:
             cfs = magma.CuspForms(level)
@@ -179,7 +179,7 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
             else:
                 raise ValueError("There is no dirichlet character in magma " +
                                  "matching %s"%(eps,))
-        result = [Newform_wrapped_magma(orbit[1]) for orbit in nfs]
+        result = [WrappedNewform_magma(orbit[1]) for orbit in nfs]
     elif algorithm == 'file':
         if character is None:
             character = DirichletGroup(1)[0]
@@ -195,7 +195,7 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
             for element in check:
                 if isinstance(element, list):
                     to_do.extend(element)
-                elif (isinstance(element, Newform_wrapped) and
+                elif (isinstance(element, WrappedNewform) and
                       element.level() == level and
                       element.character().primitive_character() == character):
                     result.append(element)
@@ -294,9 +294,9 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
 
     INPUT:
 
-    - ``newforms`` -- An instance of Newform_wrapped. This may also be
+    - ``newforms`` -- An instance of WrappedNewform. This may also be
       a list or other iterable containing as elements instances of
-      Newform_wrapped or lists that satisfy the same property. These
+      WrappedNewform or lists that satisfy the same property. These
       are the newforms that will be saved to the file.
 
     - ``file_name`` -- A string containing the file name to which the
@@ -443,7 +443,7 @@ def _write_element(element, f, coefficients, save_cm, indent=0):
     - ``indent`` -- An integer indicating the level of indentation to be used
 
     """
-    if isinstance(element, Newform_wrapped):
+    if isinstance(element, WrappedNewform):
         _write_newform(element, f, coefficients, save_cm, indent=indent)
     elif is_DirichletCharacter(element):
         _write_character(element, f, coefficients, save_cm, indent=indent)
@@ -715,7 +715,7 @@ def load_newforms(file_name):
 
     OUTPUT:
 
-    An instance of :class:`Newform_wrapped_stored` or a list thereof
+    An instance of :class:`WrappedNewform_stored` or a list thereof
     representing the newforms found in the given file.
 
     EXAMPLES::
@@ -963,7 +963,7 @@ def _interpret_newform(element):
         raise ValueError("Not enough arguments to make a newform.")
     for key in coefficients:
         coefficients[key] = field(coefficients[key])
-    return Newform_wrapped_stored(level, character, field, coefficients, cm)
+    return WrappedNewform_stored(level, character, field, coefficients, cm)
 
 def _read_element(f):
     r"""Read an element from a file.
@@ -1245,7 +1245,7 @@ def _read_zero(f):
         raise ValueError("Attempting to read 0, but read %s"%(s,))
     return s
     
-class Newform_wrapped(SageObject):
+class WrappedNewform(SageObject):
     r"""A wrapper class around a newform of weight 2.
 
     This acts as a common interface to work with a newform,
@@ -1617,7 +1617,7 @@ class Newform_wrapped(SageObject):
 
         return latex(self.q_expansion())
 
-class Newform_wrapped_sage(Newform_wrapped):
+class WrappedNewform_sage(WrappedNewform):
     r"""A wrapper class around a Sage newform of weight 2.
 
     This acts as a common interface to work with a newform,
@@ -1644,7 +1644,7 @@ class Newform_wrapped_sage(Newform_wrapped):
 
         EXAMPLE::
 
-            sage: Newform_wrapped_sage(Newforms(19)[0])
+            sage: WrappedNewform_sage(Newforms(19)[0])
             q - 2*q^3 - 2*q^4 + 3*q^5 + O(q^6)
 
         """
@@ -1799,7 +1799,7 @@ class Newform_wrapped_sage(Newform_wrapped):
 
     qexp = q_expansion
 
-class Newform_wrapped_magma(Newform_wrapped):
+class WrappedNewform_magma(WrappedNewform):
     r"""A wrapper class around a magma newform of weight 2.
 
     This acts as a common interface to work with a newform,
@@ -1827,7 +1827,7 @@ class Newform_wrapped_magma(Newform_wrapped):
         EXAMPLE::
 
             sage: cfs = magma.CuspForms(19)
-            sage: Newform_wrapped_magma(magma.Newforms(cfs)[1][1])
+            sage: WrappedNewform_magma(magma.Newforms(cfs)[1][1])
             q - 2*q^3 - 2*q^4 + 3*q^5 - q^7 + q^9 + 3*q^11 + O(q^12)
 
         """
@@ -1955,7 +1955,7 @@ class Newform_wrapped_magma(Newform_wrapped):
         """Give a latex representation of this newform."""
         return latex(self._f)
 
-class Newform_wrapped_stored(Newform_wrapped):
+class WrappedNewform_stored(WrappedNewform):
     r"""A wrapper class around a newform of weight 2 defined by stored
     data.
 
@@ -2004,7 +2004,7 @@ class Newform_wrapped_stored(Newform_wrapped):
             sage: nf = get_newforms(16, character=eps)[0]
             sage: K = nf.coefficient_field()
             sage: c = {n : nf.coefficient(n) for n in range(50)}
-            sage: Newform_wrapped_stored(16, eps, K, c, nf.has_cm())
+            sage: WrappedNewform_stored(16, eps, K, c, nf.has_cm())
             q + (-zeta4 - 1)*q^2 + (zeta4 - 1)*q^3 + 2*zeta4*q^4 + (-zeta4 - 1)*q^5 + 2*q^6 - 2*zeta4*q^7 + (-2*zeta4 + 2)*q^8 + zeta4*q^9 + 2*zeta4*q^10 + (zeta4 + 1)*q^11 + (-2*zeta4 - 2)*q^12 + (zeta4 - 1)*q^13 + (2*zeta4 - 2)*q^14 + 2*q^15 - 4*q^16 - 2*q^17 + (-zeta4 + 1)*q^18 + (-3*zeta4 + 3)*q^19 + O(q^20)
 
         """
