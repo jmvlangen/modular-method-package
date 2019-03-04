@@ -1,7 +1,7 @@
 load("diophantine_equations/conditions.sage")
 load("diophantine_equations/prime_power.sage")
-load('elliptic_curves/frey_curves.sage')
 load('elliptic_curves/Q-curves.sage')
+load('elliptic_curves/frey_curves.sage')
 load('elliptic_curves/twist.sage')
 load('elliptic_curves/tates_algorithm.sage')
 load("group cohomology/calculations.sage")
