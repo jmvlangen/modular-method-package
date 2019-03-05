@@ -143,7 +143,7 @@ def _init_traces(curves, condition, primes, precision_cap, verbose):
                                            verbose=(verbose - 1 if verbose > 0
                                                     else verbose))
               for i in range(len(curves))]
-    pAdics = pAdicBase(curves[0].definition_ring(),
+    pAdics = pAdicBase(curves[0].definition_field(),
                        primes[0]).pAdics_below(curves[0]._R)
     default_tree = condition.pAdic_tree(pAdics=pAdics,
                                         verbose=(max(0, verbose - 3)

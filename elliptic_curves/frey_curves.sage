@@ -1,3 +1,40 @@
+r"""Classes to work with Frey-Hellegouarch curves.
+
+A Frey-Hellegouarch curve, often referred to simply as a Frey curve,
+is an elliptic curve of which the coefficients depend on an (unknown)
+solution of a diophantine equation. For our purposes a Frey curve will
+be an elliptic curve defined over a ring $R$, that is a (multivariate)
+polynomial ring over some number field $L$. The variables of $R$ are
+assumed to take on undetermined values in the ring of integers of some
+subfield $K$ of $L$, which might satisfy some constraints. These
+variables are known as the parameters of the Frey curve.
+
+This file provides two variants of Frey curves. The class
+:class:`FreyCurve` provides the basic implementation of a Frey
+curve. However computing newforms for such a Frey curve only works if
+its defined over the rationals. The class :class:`FreyQcurve` extends
+the class :class:`FreyCurve` and the class :class:`Qcurve` and
+provides a way to work with Frey curves that are also $\Q$-curves.
+
+EXAMPLES:
+
+TODO
+
+AUTHORS:
+
+- Joey van Langen (2019-03-05): initial version
+
+"""
+
+# ****************************************************************************
+#       Copyright (C) 2019 Joey van Langen <j.m.van.langen@vu.nl>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#                  https://www.gnu.org/licenses/
+# ****************************************************************************
 from sage.schemes.elliptic_curves.ell_generic import EllipticCurve_generic
 from sage.rings.polynomial.polynomial_ring import is_PolynomialRing
 from sage.rings.polynomial.multi_polynomial_ring_base import is_MPolynomialRing
@@ -10,125 +47,152 @@ from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol_class
 from sage.rings.number_field.number_field import is_NumberField
 
 class FreyCurve(EllipticCurve_generic):
-    r"""
-    A Frey-curve.
+    r"""A Frey-Hellegouarch curve.
 
-    A Frey-curve is a curve defined by the (unknown) solution
-    of some Diophantine equation. This is represented by an
-    elliptic curve over some polynomial ring, where the
-    coefficient ring is the actual field of definition of the
-    curve and the variables represent the values of the
-    solution.
+    A Frey-Hellegouarch curve, or simply a Frey curve, is an elliptic
+    curve defined over a (multivariate) polynomial ring $R$ defined
+    over some number field $L$. The variables of $R$ are assumed to
+    have undetermined values in the ring of integers of some subfield
+    $K$ of $L$ and are considered to be parameters of $E$. Therefore
+    this elliptic curve is considered as an elliptic curve over $L$.
+
+    This class provides some functionality to compute with this
+    elliptic curve as if it is defined over the number field
+    $L$. Since the answer of some of these computations might depend
+    on the values of the parameters, the result is often given as
+    :class:`ConditionalValue`. Most methods also given te option of
+    providing additional constraints on the parameters in the form of
+    instances of :class:`Condition` and this curve can also internally
+    stores a condition on the parameters which is used as a default
+    restraint.
+
+    EXAMPLES:
+
+    TODO
+
     """
-    def __init__(self, curve, parameter_ring=ZZ, conversion=None, condition=None):
-        r"""
-        Constructor of a Frey curve
+    def __init__(self, curve, parameter_ring=ZZ, condition=None):
+        r"""Initialize a Frey curve
 
         INPUT:
 
-        - ``curve`` -- An elliptic curve defined over some
-          polynomial ring or any argument that would produce
-          such a curve when passed to the constructor
-          EllipticCurve. This will become the Frey curve.
-        - ``parameter_ring`` -- A ring (default: ZZ) that
-          has a natural map into the base ring of the
-          polynomial ring over which this elliptic curve
-          is defined. This is the ring in which the variables
-          of the polynomial ring over which this curve is
+        - ``curve`` -- An elliptic curve or any argument that would
+          produce such a curve when passed to the constructor
+          :func:`EllipticCurve`. The elliptic curve should be defined
+          over some (multivariate) polynomial ring $R$ which in turn
+          is defined over some number field $L$. This will be the Frey
+          curve.
+
+        - ``parameter_ring`` -- The ring of integers of a subfield $K$
+          of $L$ (default: ZZ). This is the ring in which the
+          variables of the polynomial ring over which this curve is
           defined can take values.
-        - ``conversion`` -- A map (default: None) from the
-          solution ring to the base ring of the polynomial
-          ring over which the coefficients of this curve
-          are defined. If set to None, will attempt to find
-          such a map by trying in this order maps given by:
-           - coerce_map_from
-           - convert_map_from
-           - Hom( , ).an_element()
-        - ``condition`` -- A Condition object or None
-          (default: None) giving a condition which must hold
-          on the variables in this Frey-curve. If set to
-          None will assume that all values for these variables
-          are possible instead.
+
+        - ``condition`` -- An instance of :class:`Condition` or None
+          (default: None) giving a condition which must hold for the
+          values of the variables of $R$. If set to None will assume
+          that all values for these variables are allowed.
+
         """
         if not isinstance(curve, EllipticCurve_generic):
             curve = EllipticCurve(curve)
         S = curve.base_ring()
         if not (is_PolynomialRing(S) or is_MPolynomialRing(S)):
-            raise ValueError("The coefficient ring %s is not a polynomial ring."%S)
+            raise ValueError("The coefficient ring " + str(S) +
+                             " is not a polynomial ring.")
         base = S.base_ring()
         EllipticCurve_generic.__init__(self, S, curve.a_invariants())
         self._R = parameter_ring
-        if conversion is None:
-            conversion = base.coerce_map_from(parameter_ring)
-        if conversion is None:
-            conversion = base.convert_map_from(parameter_ring)
-        if conversion is None:
-            conversion = Hom(parameter_ring, base).an_element()
-        self._R_to_base = conversion
+        if self._R == ZZ:
+            self._R_to_base = QQ.embedding(base)
+        else:
+            self._R_to_base = self._R.number_field().embedding(base)
         self._condition = condition
 
-    def definition_ring(self):
-        r"""
-        Gives the ring over which this Frey curve is defined.
+    def definition_field(self):
+        r"""Give the field over which this Frey curve is defined.
 
-        Even though the base ring of a Frey curve is a polynomial
-        ring, it is assumed that the Frey curve is defined over
-        the base ring of this polynomial ring, since the variables
-        of this polynomial ring are assumed to take on unknown
-        values in this ring.
+        Even though the Frey curve is defined over some (multivariate)
+        polynomial ring $R$ over some number field $L$, since the
+        variables of $R$ are assumed to have values in some subfield
+        $K$ of $L$ the curve can be assumed to be defined over $L$.
 
         OUTPUT:
         
-        The base ring of the polynomial ring over which this
-        Frey curve is defined.
+        The base ring of the polynomial ring over which this Frey
+        curve is defined.
+
+        .. SEE_ALSO::
+
+            :meth:`base_ring`,
+            :meth:`parameters`
+
         """
         return self.base_ring().base()
-
-    def definition_field(self):
-        r"""
-        Gives the field over which this Frey curve is defined.
-
-        OUTPUT:
-
-        The number field over which this Frey curve is defined.
-        """
-        return self.definition_ring()
     
     def parameters(self):
-        r"""
-        Gives the parameters on which this Frey curve depends.
+        r"""Give the parameters on which this Frey curve depends.
 
         OUTPUT:
 
-        The generators of the polynomial ring over which this
-        Frey curve is defined.
+        The variables of the polynomial ring over which this Frey
+        curve is defined.
+
+        .. SEE_ALSO::
+
+            :meth:`base_ring`,
+            :meth:`definition_field`
+
         """
         return self.base().gens()
 
     def parameter_ring(self):
-        r"""
-        Gives the ring in which the parameters can take values.
+        r"""Give the ring in which the parameters can take values.
 
         OUTPUT:
 
         A ring in which the parameters of this Frey curve take
-        values. 
+        values.
+
         """
         return self._R
 
     @cached_method
     def primes_of_possible_additive_reduction(self):
-        r"""
-        Computes the primes at which this curve could have additive reduction.
+        r"""Compute the primes at which this curve could have additive
+        reduction.
+
+        Tries to find all the primes that divide both the discriminant
+        $D$ and the invariant $c_4$ of this Frey curve. Since both of
+        these invariants are elements of a (multivariate) polynomial
+        ring $R$ these primes are not necessarily uniquely determined.
+        In case an additional condition is needed on the values of the
+        variables of the polynomials, a warning will be printed with
+        the additional condition required.
 
         OUTPUT:
 
-        A list of primes, i.e. prime numbers if the base ring of this
-        frey curve is a polynomial ring over a subring of QQ or maximal
-        ideals if it is a polynomial ring over a subring of a number
-        field. This list aims to contain all primes at which this Frey
-        curve might have additive reduction, but could not be sufficient.
-        In case of uncertainty, will print a warning.
+        A list of primes of the definition field of this Frey
+        curve. In case the definition field is $\QQ$ these will be
+        prime numbers. In case it is a number field they will be
+        maximal ideals of its ring of integers. In any case they
+        satisfy one of the following conditions.
+
+        - If the curve has no parameters, the list will contain all the primes
+          dividing the greatest common divisor of $D$ and $c_4$
+
+        - If the curve has one parameter, the list will contain all the
+          primes dividing the resultant of $D$ and $c_4$
+
+        - If the curve has two parameters, the parameters will be
+          assumed to be coprime and the list will contain all the
+          primes dividing the Macaulay resultant of $D$ and $c_4$.
+        
+        - If the curve has more than two parameters, the list will
+          contain all the primes dividing all the coefficients of $D$
+          and $c_4$. Furthermore $D$ and $c_4$ will be assumed to be
+          coprime.
+
         """
         R = self.base()
         n = len(R.gens())
@@ -139,6 +203,8 @@ class FreyCurve(EllipticCurve_generic):
             if n == 1:
                 return QQ(c4.resultant(D)).numerator().prime_factors()
             elif n == 2 and c4.is_homogeneous() and D.is_homogeneous():
+                print ("Warning: Assuming that " + str(self.parameters()[0]) +
+                       " and " + str(self.parameters()[1]) + " are coprime.")
                 return QQ(c4.macaulay_resultant(D)).numerator().prime_factors()
             else:
                 N = lcm(lcm(QQ(c).denominator() for c in c4.coefficients()),
@@ -146,57 +212,53 @@ class FreyCurve(EllipticCurve_generic):
                 M = gcd(gcd([ZZ(c) for c in (N * c4).coefficients()]),
                         gcd([ZZ(c) for c in (N * D).coefficients()]))
                 result = QQ(M/N).numerator().prime_factors()
-                print "Warning: Assuming that %s and %s "%(c4,D) + \
-                      "are coprime outside %s."%(tuple(result),)
+                print ("Warning: Assuming that %s and %s "%(c4,D) +
+                       "are coprime outside %s."%(tuple(result),))
                 return result
         if n == 1:
             return K.ideal(c4.resultant(D)).prime_factors()
         elif n == 2 and c4.is_homogeneous() and D.is_homogeneous():
+            print ("Warning: Assuming that " + str(self.parameters()[0]) +
+                   " and " + str(self.parameters()[1]) + " are coprime.")
             return K.ideal(c4.macaulay_resultant(D)).prime_factors()
         else:
             I = sum(K.ideal(c) for c in c4.coefficients())
             J = sum(K.ideal(c) for c in D.coefficients())
             result = (I + J).prime_factors()
-            print "Warning: Assuming that %s and %s"%(c4,D) + \
-                  "are coprime outside %s."%(tuple(P._repr_short() for P in result),)
+            print ("Warning: Assuming that %s and %s"%(c4,D) +
+                   "are coprime outside %s."%(tuple(P._repr_short()
+                                                    for P in result),))
             return result
 
-    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
+    @cached_method(key=(lambda self, p, c, v, pc:
+                        (p, (self._condition if c is None else c), pc)))
     def _initial_tree(self, prime, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Gives the tree of possible values of the parameters for
-        a given prime.
+        r"""Give a p-adic tree of possible values for the parameters.
 
         INPUT:
 
-        - ``prime`` -- A (maximal) prime ideal of the ring in
-          which the parameters take value or any generator
-          thereof if it is principal.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
+        - ``prime`` -- A (maximal) prime ideal of the ring in which
+          the parameters take values or any generator thereof if it is
+          principal.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
         
         OUTPUT:
 
-        A pAdicTree containing all the possible values of the
-        the parameters satisfying the given condition in the
-        completion at the given prime.
+        A p-adic tree containing all the possible p-adic values of the
+        the parameters satisfying the given condition.
+
         """
         Tfull = pAdicTree(variables=self.parameters(),
                           pAdics=pAdicBase(self._R, prime))
@@ -208,459 +270,474 @@ class FreyCurve(EllipticCurve_generic):
             return condition.pAdic_tree(pAdic_tree=Tfull, verbose=verbose,
                                         precision_cap=precision_cap)
 
-    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
-    def local_data(self, prime, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Gives a minimal model of this curve at a given prime.
+    @cached_method(key=(lambda self, p, c, v, pc:
+                        (p, (self._condition if c is None else c), pc)))
+    def local_data(self, prime, condition=None, verbose=False,
+                   precision_cap=20):
+        r"""Give the local data of this curve at a given prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` -- A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
         
-        The local data of this Frey curve at the given prime
-        under the given condition on the parameters.
-        This could be a ConditionalValue as the local data
-        might depend on the value of the parameters in this
-        Frey curve.
+        The local data of this Frey curve at the given prime under the
+        given condition on the parameters. This could be a conditional
+        value as the local data might depend on the value of the
+        parameters in this Frey curve.
+
+        .. SEEALSO::
+
+            :meth:`local_data`,
+            :meth:`kodaira_symbol`,
+            :meth:`minimal_model`,
+            :meth:`conductor_exponent`,
+            :meth:`reduction_type`,
+
         """
-        pAdics = pAdicBase(self.definition_ring(), prime)
+        pAdics = pAdicBase(self.definition_field(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R),
                                 condition=condition,
                                 verbose=(verbose-1 if verbose>0 else verbose))
-        result = tates_algorithm(self,
-                                       initial_values=Tp,
-                                       coefficient_ring=self.base(),
-                                       pAdics=pAdics,
-                                       verbose=verbose,
-                                       precision_cap=precision_cap)
+        result = tates_algorithm(self, initial_values=Tp,
+                                 coefficient_ring=self.base(), pAdics=pAdics,
+                                 verbose=verbose, precision_cap=precision_cap)
         if len(result) == 1:
             return result[0][0]
         else:
             return result
 
-    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
-    def minimal_model(self, prime, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Gives a minimal model of this curve at a given prime.
+    @cached_method(key=(lambda self, p, c, v, pc:
+                        (p, (self._condition if c is None else c), pc)))
+    def minimal_model(self, prime, condition=None, verbose=False,
+                      precision_cap=20):
+        r"""Give a minimal model of this curve at a given prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
         
-        An elliptic curve that is a minimal model of this curve
-        at the given prime under the given condition on the
-        parameters. This could be a ConditionalValue as
-        the minimal model might depend on the value of the
-        parameters in this Frey curve.
+        An elliptic curve that is a minimal model of this curve at the
+        given prime under the given condition on the parameters. This
+        could be a conditional value as the minimal model might depend
+        on the value of the parameters in this Frey curve.
+
+        .. SEEALSO::
+
+            :meth:`local_data`,
+
         """
-        if self.local_data.is_in_cache(prime, condition, verbose, precision_cap):
-            local_data = self.local_data(prime, condition, verbose, precision_cap)
+        if self.local_data.is_in_cache(prime, condition, verbose,
+                                       precision_cap):
+            local_data = self.local_data(prime, condition, verbose,
+                                         precision_cap)
             return apply_to_conditional_value(lambda x: x.minimal_model(),
                                               local_data)
-        pAdics = pAdicBase(self.definition_ring(), prime)
-        Tp = self._initial_tree(pAdics.prime_below(self._R),
-                                condition,
+        pAdics = pAdicBase(self.definition_field(), prime)
+        Tp = self._initial_tree(pAdics.prime_below(self._R), condition,
                                 verbose=(verbose-1 if verbose>0 else verbose))
-        result = tates_algorithm(self,
-                                       initial_values=Tp,
-                                       coefficient_ring=self.base(),
-                                       pAdics=pAdics,
-                                       verbose=verbose,
-                                       precision_cap=precision_cap,
-                                       only_calculate=['minimal_model'])
+        result = tates_algorithm(self, initial_values=Tp,
+                                 coefficient_ring=self.base(), pAdics=pAdics,
+                                 verbose=verbose, precision_cap=precision_cap,
+                                 only_calculate=['minimal_model'])
         if len(result) == 1:
             return result[0][0][0]
         else:
             return ConditionalValue([(val[0], con) for val, con in result])
 
-    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
-    def kodaira_symbol(self, prime, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Gives the kodaira symbol of the reduction at a given prime.
+    @cached_method(key=(lambda self, p, c, v, pc:
+                        (p, (self._condition if c is None else c), pc)))
+    def kodaira_symbol(self, prime, condition=None, verbose=False,
+                       precision_cap=20):
+        r"""Give the kodaira symbol of this curve at a given prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
         
-        The KodairaSymbol representing the type of reduction of
-        this curve at the given prime for the parameters
-        satisfying the given condition. This could be a
-        ConditionalValue as it might depend on the value of
-        the parameters in this curve.
+        The KodairaSymbol representing the type of reduction of this
+        curve at the given prime for the parameters satisfying the
+        given condition. This could be a conditional value as it might
+        depend on the value of the parameters in this curve.
+
+        .. SEEALSO::
+
+            :meth:`local_data`,
+
         """
-        if self.local_data.is_in_cache(prime, condition, verbose, precision_cap):
-            local_data = self.local_data(prime, condition, verbose, precision_cap)
+        if self.local_data.is_in_cache(prime, condition, verbose,
+                                       precision_cap):
+            local_data = self.local_data(prime, condition, verbose,
+                                         precision_cap)
             return apply_to_conditional_value(lambda x: x.kodaira_symbol(),
                                               local_data)
         
-        pAdics = pAdicBase(self.definition_ring(), prime)
+        pAdics = pAdicBase(self.definition_field(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R),
                                 condition=condition,
                                 verbose=(verbose-1 if verbose>0 else verbose))
-        result = tates_algorithm(self,
-                                       initial_values=Tp,
-                                       coefficient_ring=self.base(),
-                                       pAdics=pAdics,
-                                       verbose=verbose,
-                                       precision_cap=precision_cap,
-                                       only_calculate=['minimal_model'])
+        result = tates_algorithm(self, initial_values=Tp,
+                                 coefficient_ring=self.base(), pAdics=pAdics,
+                                 verbose=verbose, precision_cap=precision_cap,
+                                 only_calculate=['minimal_model'])
         if len(result) == 1:
             return result[0][0][0]
         else:
             return ConditionalValue([(val[0], con) for val, con in result])
     
-    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
-    def conductor_exponent(self, prime, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Gives the conductor exponent at a given prime.
+    @cached_method(key=(lambda self, p, c, v, pc:
+                        (p, (self._condition if c is None else c), pc)))
+    def conductor_exponent(self, prime, condition=None, verbose=False,
+                           precision_cap=20):
+        r"""Give the conductor exponent of this curve at a given prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
-        The exponent of the conductor of this Frey curve at
-        the given prime for parameters satisfying the given
-        condition. This could be a ConditionalValue as
-        the conductor exponent might depend on the value of
-        the parameters in this Frey curve.
+        The exponent of the conductor of this Frey curve at the given
+        prime for parameters satisfying the given condition. This
+        could be a conditional value as the conductor exponent might
+        depend on the value of the parameters in this Frey curve.
+
+        .. SEEALSO::
+
+            :meth:`local_data`,
+            :meth:`conductor`
+
         """
-        if self.local_data.is_in_cache(prime, condition, verbose, precision_cap):
-            local_data = self.local_data(prime, condition, verbose, precision_cap)
-            return apply_to_conditional_value(lambda x: x.conductor_valuation(),
+        if self.local_data.is_in_cache(prime, condition, verbose,
+                                       precision_cap):
+            local_data = self.local_data(prime, condition, verbose,
+                                         precision_cap)
+            return apply_to_conditional_value(lambda x:
+                                              x.conductor_valuation(),
                                               local_data)
         
-        pAdics = pAdicBase(self.definition_ring(), prime)
+        pAdics = pAdicBase(self.definition_field(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R),
                                 condition=condition,
                                 verbose=(verbose-1 if verbose>0 else verbose))
-        result = tates_algorithm(self,
-                                       initial_values=Tp,
-                                       coefficient_ring=self.base(),
-                                       pAdics=pAdics,
-                                       verbose=verbose,
-                                       precision_cap=precision_cap,
-                                       only_calculate=['conductor'])
+        result = tates_algorithm(self, initial_values=Tp,
+                                 coefficient_ring=self.base(), pAdics=pAdics,
+                                 verbose=verbose, precision_cap=precision_cap,
+                                 only_calculate=['conductor'])
         if(len(result) == 1):
             return result[0][0][0]
         else:
             return ConditionalValue([(val[0], con) for val,con in result])
 
-    @cached_method(key=lambda self, p, c, v, pc: (p, (self._condition if c is None else c), pc))
-    def reduction_type(self, prime, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Gives the reduction type of this curve at a given type.
+    @cached_method(key=(lambda self, p, c, v, pc:
+                        (p, (self._condition if c is None else c), pc)))
+    def reduction_type(self, prime, condition=None, verbose=False,
+                       precision_cap=20):
+        r"""Give the reduction type of this curve at a given prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
         One of the following values
-          None - If the elliptic curve has good reduction at the
-                 given prime.
-          1 - If the elliptic curve has split multiplicative
-              reduction at the given prime.
-          -1 - If the elliptic curve has non-split multiplicative
-               reduction at the given prime.
-          0 - If the elliptic curve has additive reduction at the
-              given prime.
-        If there is multiple options for the possible reductions,
-        will return a ConditionalValue instead containing the above
-        values and the cases in which these occur.
+
+        - None, if the elliptic curve has good reduction at the given
+          prime.
+
+        - 1, if the elliptic curve has split multiplicative reduction
+          at the given prime.
+
+        - -1, if the elliptic curve has non-split multiplicative
+          reduction at the given prime.
+
+        - 0, if the elliptic curve has additive reduction at the given
+          prime.
+
+        If there is multiple options for the possible reductions, will
+        return a conditional value instead containing the above values
+        and the cases in which these occur.
+
+        .. SEEALSO::
+
+            :meth:`local_data`,
+            :meth:`has_good_reduction`,
+            :meth:`has_bad_reduction`,
+            :meth:`has_additive_reduction`,
+            :meth:`has_multiplicative_reduction`,
+            :meth:`has_split_multiplicative_reduction`,
+            :meth:`has_non_split_multiplicative_reduction`
+
         """
-        if self.local_data.is_in_cache(prime, condition, verbose, precision_cap):
-            local_data = self.local_data(prime, condition, verbose, precision_cap)
+        if self.local_data.is_in_cache(prime, condition, verbose,
+                                       precision_cap):
+            local_data = self.local_data(prime, condition, verbose,
+                                         precision_cap)
             return apply_to_conditional_value(lambda x: x._reduction_type,
-                                              local_data)        
-        pAdics = pAdicBase(self.definition_ring(), prime)
+                                              local_data)
+        pAdics = pAdicBase(self.definition_field(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R),
                                 condition=condition,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
-        result = tates_algorithm(self,
-                                       initial_values=Tp,
-                                       coefficient_ring=self.base(),
-                                       pAdics=pAdics,
-                                       verbose=verbose,
-                                       precision_cap=precision_cap,
-                                       only_calculate=['reduction_type'])
+        result = tates_algorithm(self, initial_values=Tp,
+                                 coefficient_ring=self.base(), pAdics=pAdics,
+                                 verbose=verbose, precision_cap=precision_cap,
+                                 only_calculate=['reduction_type'])
         if(len(result) == 1):
             return result[0][0][0]
         else:
             return ConditionalValue([(val[0], con) for val,con in result])
 
-    def has_good_reduction(self, prime, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Tells whether this curve has good reduction at a given prime.
+    def has_good_reduction(self, prime, condition=None, verbose=False,
+                           precision_cap=20):
+        r"""Tell whether this curve has good reduction at a given prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
-        True - if this Frey curve has good reduction at the given
-               prime.
-        False - if this Frey curve has bad reduction at the given
-                prime.
-        If the answer depends on the chosen parameters for this
-        Frey curve will return a ConditionalValue containing the
-        above values and the conditions for which they occur.
+        True, if this Frey curve has good reduction at the given
+        prime.
+
+        False, if this Frey curve has bad reduction at the given
+        prime.
+
+        If the answer depends on the chosen parameters for this Frey
+        curve, will return a conditional value containing the above
+        values and the conditions for which they occur.
+
+        .. SEEALSO::
+
+            :meth:`reduction_type`
+
         """
         red_type = self.reduction_type(prime, verbose=verbose,
                                        condition=condition,
                                        precision_cap=precision_cap)
         return apply_to_conditional_value(lambda x: (x == None), red_type)
 
-    def has_bad_reduction(self, prime, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Tells whether this curve has bad reduction at a given prime.
+    def has_bad_reduction(self, prime, condition=None, verbose=False,
+                          precision_cap=20):
+        r"""Tell whether this curve has bad reduction at a given prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
-        True - if this Frey curve has bad reduction at the given
-               prime.
-        False - if this Frey curve has good reduction at the given
-                prime.
-        If the answer depends on the chosen parameters for this
-        Frey curve will return a ConditionalValue containing the
-        above values and the conditions for which they occur.
+        True, if this Frey curve has bad reduction at the given prime.
+
+        False, if this Frey curve has good reduction at the given
+        prime.
+
+        If the answer depends on the chosen parameters for this Frey
+        curve will return a conditional value containing the above
+        values and the conditions for which they occur.
+
+        .. SEEALSO::
+
+            :meth:`reduction_type`
+
         """
         red_type = self.reduction_type(prime, verbose=verbose,
                                        condition=condition,
                                        precision_cap=precision_cap)
         return apply_to_conditional_value(lambda x: (x != None), red_type)
 
-    def has_additive_reduction(self, prime, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Tells whether this curve has additive reduction at a given prime.
+    def has_additive_reduction(self, prime, condition=None, verbose=False,
+                               precision_cap=20):
+        r"""Tell whether this curve has additive reduction at a given prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
-        True - if this Frey curve has additive reduction at the given
-               prime.
-        False - if this Frey curve does not have additive reduction
-                at the given prime.
-        If the answer depends on the chosen parameters for this
-        Frey curve will return a ConditionalValue containing the
-        above values and the conditions for which they occur.
+        True, if this Frey curve has additive reduction at the given
+        prime.
+
+        False, if this Frey curve does not have additive reduction at
+        the given prime.
+
+        If the answer depends on the chosen parameters for this Frey
+        curve will return a conditional value containing the above
+        values and the conditions for which they occur.
+
+        .. SEEALSO::
+
+            :meth:`reduction_type`
+
         """
         red_type = self.reduction_type(prime, verbose=verbose,
                                        condition=condition,
@@ -669,47 +746,49 @@ class FreyCurve(EllipticCurve_generic):
 
     def has_split_multiplicative_reduction(self, prime, condition=None,
                                            verbose=False, precision_cap=20):
-        r"""
-        Tells whether this curve has split multiplicative reduction at a given prime.
+        r"""Tell whether this curve has split multiplicative reduction at a
+        given prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
-        True - if this Frey curve has split multiplicative reduction at the given
-               prime.
-        False - if this Frey curve does not have split multiplicative reduction
-                at the given prime.
-        If the answer depends on the chosen parameters for this
-        Frey curve will return a ConditionalValue containing the
-        above values and the conditions for which they occur.
+        True, if this Frey curve has split multiplicative reduction at
+        the given prime.
+
+        False, if this Frey curve does not have split multiplicative
+        reduction at the given prime.
+
+        If the answer depends on the chosen parameters for this Frey
+        curve will return a conditional value containing the above
+        values and the conditions for which they occur.
+
+        .. SEEALSO::
+
+            :meth:`reduction_type`
+
         """
         red_type = self.reduction_type(prime, verbose=verbose,
                                        condition=condition,
@@ -717,208 +796,234 @@ class FreyCurve(EllipticCurve_generic):
         return apply_to_conditional_value(lambda x: (x == 1), red_type)
 
     def has_non_split_multiplicative_reduction(self, prime, condition=None,
-                                               verbose=False, precision_cap=20):
-        r"""
-        Tells whether this curve has non-split multiplicative reduction at a given prime.
+                                               verbose=False,
+                                               precision_cap=20):
+        r"""Tell whether this curve has non-split multiplicative reduction at
+        a given prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
-        True - if this Frey curve has non-split multiplicative
-               reduction at the given prime.
-        False - if this Frey curve does not have non-split multiplicative reduction
-                at the given prime.
-        If the answer depends on the chosen parameters for this
-        Frey curve will return a ConditionalValue containing the
-        above values and the conditions for which they occur.
+        True, if this Frey curve has non-split multiplicative
+        reduction at the given prime.
+
+        False, if this Frey curve does not have non-split
+        multiplicative reduction at the given prime.
+
+        If the answer depends on the chosen parameters for this Frey
+        curve will return a conditional value containing the above
+        values and the conditions for which they occur.
+
+        .. SEEALSO::
+
+            :meth:`reduction_type`
+
         """
         red_type = self.reduction_type(prime, verbose=verbose,
                                        condition=condition,
                                        precision_cap=precision_cap)
         return apply_to_conditional_value(lambda x: (x == -1), red_type)
 
-    def has_multiplicative_reduction(self, prime, condition=None, verbose=False, precision_cap=20):
-        r"""
-        Tells whether this curve has multiplicative reduction at a given prime.
+    def has_multiplicative_reduction(self, prime, condition=None,
+                                     verbose=False, precision_cap=20):
+        r"""Tell whether this curve has multiplicative reduction at a given
+        prime.
 
         INPUT:
 
-        - ``prime`` -- A prime, i.e. a prime number if this Frey
-          curve is defined over a subring of QQ or a maximal ideal
-          of the ring of integers if it is defined over a subring
-          of a number field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
-        True - if this Frey curve has multiplicative reduction at the given
-               prime.
-        False - if this Frey curve does not have multiplicative reduction
-                at the given prime.
-        If the answer depends on the chosen parameters for this
-        Frey curve will return a ConditionalValue containing the
-        above values and the conditions for which they occur.
+        True, if this Frey curve has multiplicative reduction at the
+        given prime.
+
+        False, if this Frey curve does not have multiplicative
+        reduction at the given prime.
+
+        If the answer depends on the chosen parameters for this Frey
+        curve will return a ConditionalValue containing the above
+        values and the conditions for which they occur.
+
+        .. SEEALSO::
+
+            :meth:`reduction_type`
+
         """
         red_type = self.reduction_type(prime, verbose=verbose,
                                        condition=condition,
                                        precision_cap=precision_cap)
-        return apply_to_conditional_value(lambda x: (x == 1 or x == -1), red_type)
+        return apply_to_conditional_value(lambda x: (x == 1 or x == -1),
+                                          red_type)
         
     def base_extend(self, R):
-        if (hasattr(R, 'domain') and
-            R.domain() == self.definition_ring()):
+        if (hasattr(R, 'domain') and R.domain() == self.definition_field()):
             dom = self.base_ring()
             codom = dom.change_ring(R.codomain())
             F = RingHomomorphism_from_base(dom.Hom(codom), R)
             result = EllipticCurve_generic.base_extend(self, F)
         else:
             result = EllipticCurve_generic.base_extend(self, R)
-        if ( (is_PolynomialRing(result.base_ring()) or
-              is_MPolynomialRing(result.base_ring())) and
-             (result.base_ring().variable_names() ==
-              tuple(str(v) for v in self.parameters()))):
-            return FreyCurve(result,
-                             parameter_ring=self._R,
-                             conversion=self._R_to_base,
+        if ((is_PolynomialRing(result.base_ring()) or
+             is_MPolynomialRing(result.base_ring())) and
+            (result.base_ring().variable_names() ==
+             tuple(str(v) for v in self.parameters()))):
+            return FreyCurve(result, parameter_ring=self._R,
                              condition=self._condition)
         return result
 
     def specialize(self, values):
-        r"""
-        Gives this curve in the case the parameters have a specific value.
+        r"""Give this curve for a specific value of the parameters.
 
         INPUT:
 
-        - ``values`` -- A list or tuple containing as the i-th
-          value the value that the i-th parameter in self.parameters()
-          should attain.
+        - ``values`` -- A list or tuple containing as the i-th entry
+          the value that the i-th parameter in should have. The order
+          of the parameters is the same as that returned by
+          :meth:`parameters`. All values should be elements of the
+          ring in which the parameters take value.
 
         OUTPUT:
 
-        The elliptic curve wherein each parameter is replaced with
-        the corresponding value of the given list values.
+        The elliptic curve wherein each parameter is replaced with the
+        corresponding value of the given list values.
+
+        .. SEEALSO::
+
+            :meth:`parameter_ring`
+
         """
-        a_invs = [a(tuple(self._R_to_base(val) for val in values)) for a in self.a_invariants()]
+        a_invs = [a(tuple(self._R_to_base(val) for val in values))
+                  for a in self.a_invariants()]
         return EllipticCurve(a_invs)
 
     def conductor(self, condition=None, additive_primes=None, verbose=False,
                   precision_cap=20):
-        r"""
-        Computes the possible conductors of this Frey curve.
+        r"""Compute the possible conductors of this Frey curve.
 
         INPUT:
 
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``additive_primes`` -- An iterable containing prime ideals
-          or prime numbers, if the field of definition is QQ, that
-          contains all the primes at which this curve can have
-          additive reduction. If set to None will compute this
-          by using the method primes_of_possible_additive_reduction
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``additive_primes`` -- A list containing primes of the
+          definition field of this curve or None (default: None). The
+          primes in this list should be given as prime number if the
+          definition field is $\QQ$ or as maximal ideals
+          otherwise. This list should include all the primes at which
+          this curve could have additive reduction. If set to None
+          will compute this by using the method
+          :meth:`primes_of_possible_additive_reduction`.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such
+          comments.  If set to any negative value will also prevent
+          the printing of any warnings.  A higher value will cause
+          more messages to be printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
-        A conditional expression that gives the conductor of
-        this Frey curve for each possible value of the
-        parameters on which it depends. The left side of this
-        expression is some expression that gives the part of
-        the conductor at all the primes given in additive_primes,
-        whilst the right side is a string describing how to
-        compute the part of the conductor that is coprime to
-        those primes. The latter contains the operator Rad_P
-        which refers to taking the radical of an expression
-        ignoring those primes in additive_primes.
+        A conditional expression that gives the conductor of this Frey
+        curve for each possible value of the parameters on which it
+        depends. The left side of this expression is some expression
+        that gives the part of the conductor at all the primes given
+        in `additive_primes`, whilst the right side is a string
+        describing how to compute the part of the conductor that is
+        coprime to those primes. The latter contains the operator
+        Rad_P which refers to taking the radical of an expression
+        ignoring those primes in `additive_primes`.
+
         """
         if additive_primes is None:
             additive_primes = self.primes_of_possible_additive_reduction()
         result = 1
         for P in additive_primes:
-            factor = P^self.conductor_exponent(P, condition=condition, verbose=verbose,
+            factor = P^self.conductor_exponent(P, condition=condition,
+                                               verbose=verbose,
                                                precision_cap=precision_cap)
             if result == 1:
                 result = factor
             elif isinstance(factor, ConditionalExpression):
-                result = ConditionalExpression(ConditionalExpression.PRODUCT_OPERATOR,
-                                               result,
-                                               factor)
+                operator = ConditionalExpression.PRODUCT_OPERATOR
+                result = ConditionalExpression(operator, result, factor)
             else:
                 result = result * factor
         return ConditionalExpression(ConditionalExpression.PRODUCT_OPERATOR,
                                      result,
-                                     "Rad_P( " + str(self.discriminant().factor()) + " )")
+                                     "Rad_P( " +
+                                     str(self.discriminant().factor()) + " )")
     
-    def _trace_of_frobenius(self, pAdics, red_type, condition, verbose, precision_cap):
+    def _trace_of_frobenius(self, pAdics, red_type, condition, verbose,
+                            precision_cap):
+        r"""Implementation of :meth:`trace_of_frobenius`
+
+        INPUT:
+
+        - `pAdics` -- The p-adics to be used for the Frobenius
+          element
+
+        - `red_type` -- The reduction type of this curve
+
+        - `condition` -- A condition on the parameters of this curve
+
+        - `verbose` -- Verbosity argument
+
+        - `precision_cap` -- Bound on the precision of the parameters
+
+        """
         T = condition.pAdic_tree(pAdics=pAdics.pAdics_below(self._R),
-                                 verbose=(verbose-1 if verbose > 0 else verbose),
+                                 verbose=(verbose-1 if verbose>0 else verbose),
                                  precision_cap=precision_cap).root()
         Fp = len(pAdics.residue_field())
         if red_type is None:
@@ -944,71 +1049,70 @@ class FreyCurve(EllipticCurve_generic):
         elif red_type == 1 or red_type == -1:
             return {red_type*(len(pAdics.residue_field()) + 1): T}
         else:
-            raise ValueError("Can not compute trace of frobenius for additive reduction.")
+            raise ValueError("Can not compute trace of frobenius " +
+                             "if the curve has additive reduction.")
 
     def trace_of_frobenius(self, prime, power=1, condition=None,
                            verbose=False, precision_cap=20):
-        r"""
-        Computes the trace of the frobenius map acting on this curve.
+        r"""Compute the trace of a Frobenius element acting on this curve.
 
         If the elliptic curve has good reduction at the given prime,
-        for every prime number l not divisible by the prime the l-adic
-        representation is unramified at the prime and the trace of
-        frobenius is given by his function.
+        for every prime number $l$ not divisible by that prime the
+        $l$-adic galois representation of this curve is unramified at
+        that prime and the trace of Frobenius at that prime is given
+        by his function.
 
-        If the elliptic curve has multiplicative reduction at the given
-        prime, for every prime number l not divisible by the prime,
-        the mod-l representation is unramified at the prime if and only
-        if the valuation of the discriminant is divisible by l. In this
-        case this function returns the trace of frobenius in such a
-        case, but does not check whether the valuation of the discriminant
-        is divisible by l.
+        If the elliptic curve has multiplicative reduction at the
+        given prime, for every prime number $l$ not divisible by the
+        prime, the mod $l$ galois representation of this curve is
+        unramified at that prime if and only if the valuation of the
+        discriminant is divisible by $l$. This function returns the
+        trace of the Frobenius element at that prime in such a case,
+        but does not check whether the valuation of the discriminant
+        is divisible by $l$.
 
         If the elliptic curve has additive reduction, will raise a
-        ValueError since the trace of frobenius is not well-defined
-        in that case.
+        ValueError since the trace of Frobenius is not well-defined in
+        that case.
 
         INPUT:
 
-        - ``prime`` -- A prime of the number field over which this
-          frey curve is defined. This may be a maximal ideal of the
-          ring of integers of that field or a prime number if it is
-          the field \Q.
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This must be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the corresponding ring of
+          integers otherwise.
+
         - ``power`` -- A strictly positive integer (default: 1). If
-          set to a value higher than 1 will compute the trace of
-          the frobenius to the given power.
-        - ``condition`` -- A Condition or None (default: None)
-          giving a condition that the parameters in this curve should
-          satisfy. If set to None will use the default condition
-          stored in this Frey curve.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+          set to a value higher than 1 will compute the trace of the
+          Frobenius element to the given power instead of the
+          Frobenius element itself.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
-        The trace of frobenius to the given power under the
-        l-adic or mod-l reprentation assuming that they are
-        unramified.
-        If this would depend on the parameters will return a
-        ConditionalValue of options instead.
+        The the Frobenius element at the given prime to the given
+        power under the $l$-adic or mod-$l$ reprentation assuming that
+        they are unramified. If this would depend on the parameters
+        will return a conditional value of possible values instead.
+
         """
-        pAdics = pAdicBase(self.definition_ring(), prime)
+        pAdics = pAdicBase(self.definition_field(), prime)
         if power > 1:
             D = len(pAdics.residue_field())
             T = self.trace_of_frobenius(prime, condition=condition,
@@ -1024,15 +1128,16 @@ class FreyCurve(EllipticCurve_generic):
         result = dict()
         if isinstance(red_type, ConditionalValue):
             for val, con in red_type:
-                for a, T in self._trace_of_frobenius(pAdics, val, con,
-                                                     verbose, precision_cap).iteritems():
+                for a, T in self._trace_of_frobenius(pAdics, val, con, verbose,
+                                                     precision_cap).iteritems():
                     if a in result:
                         result[a] = result[a].merge(T)
                     else:
                         result[a] = T
         else:
             for a, T in self._trace_of_frobenius(pAdics, red_type, condition,
-                                                 verbose, precision_cap).iteritems():
+                                                 verbose,
+                                                 precision_cap).iteritems():
                 if a in result:
                     result[a] = result[a].merge(T)
                 else:
@@ -1041,9 +1146,9 @@ class FreyCurve(EllipticCurve_generic):
         if len(result) == 1:
             return list(result)[0]
         else:
-            return ConditionalValue([(a, TreeCondition(pAdicTree(variables=self.parameters(),
-                                                                root=T)))
-                                     for a, T in result.iteritems()])
+            Tls = [(a, pAdicTree(variables=self.parameters(), root=T))
+                   for a, T in result.iteritems()]
+            return ConditionalValue([(a, TreeCondition(T)) for a, T in Tls])
 
     @cached_method
     def _power_trace_formula(self, n):
@@ -1213,7 +1318,7 @@ class FreyCurve(EllipticCurve_generic):
         of the parameters, will return a ConditionalValue
         containing such lists instead.
         """
-        if self.definition_ring() != QQ:
+        if self.definition_field() != QQ:
             raise ValueError("Can only find newforms associated to Frey curves over the rationals.")
         N = self.conductor(additive_primes=additive_primes,
                            condition=condition,
@@ -1313,7 +1418,7 @@ class FreyCurveLocalData(EllipticCurveLocalData):
         elif b[4]:
             s += "+ %s "%a[4]
         s = s.replace("+ -","- ")
-        s += "over %s "%(self.definition_ring(),)
+        s += "over %s "%(self.definition_field(),)
         s += "with parameters %s"%(self.parameters(),)
         return s
 
@@ -1394,7 +1499,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         - The number field is a galois field. If not it will be
           replaced by its galois closure.
         """
-        K = self.definition_ring()
+        K = self.definition_field()
         if not is_NumberField(K):
             raise ValueError("The ring %s is not a number field."%(K,))
         if not K.is_galois():
@@ -1412,14 +1517,14 @@ class FreyQcurve(FreyCurve, Qcurve):
 
         The number field over which this Frey Q-curve is defined.
         """
-        return self.definition_ring()
+        return self.definition_field()
 
     def base_extend(self, R):
         result = FreyCurve.base_extend(self, R)
         if (isinstance(result, FreyCurve) and
-            is_NumberField(result.definition_ring())):
+            is_NumberField(result.definition_field())):
             K = self.definition_field()
-            L = result.definition_ring()
+            L = result.definition_field()
             r = K.gen().minpoly().change_ring(L).roots()
             if len(r) > 0:
                 return FreyQcurve(result,
@@ -1815,6 +1920,6 @@ class FreyQcurve(FreyCurve, Qcurve):
         elif b[4]:
             s += "+ %s "%a[4]
         s = s.replace("+ -","- ")
-        s += "over %s "%(self.definition_ring(),)
+        s += "over %s "%(self.definition_field(),)
         s += "with parameters %s"%(self.parameters(),)
         return s

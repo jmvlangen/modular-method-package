@@ -27,6 +27,7 @@ Methods for analyzing diophantine equations of the form polynomial equals prime 
 Code for elliptic curves
 *** frey_curves.sage (*+)
 Frey curve classes
+- Add verbosity to primes_of_possible_additive_reduction
 *** Q-curves.sage (*#!)
 Implementation of Q-curves
 - Replace guessed degrees by sage isogeny code
