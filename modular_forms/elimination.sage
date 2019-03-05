@@ -50,7 +50,7 @@ TODO
 
 AUTHORS:
 
-- Joey van Langen (2019-03-04): initial version
+- Joey van Langen (2019-03-05): initial version
 
 """
 
@@ -231,20 +231,21 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
     domain of the afore mentioned representations. By comparing the
     traces of these representations at $F$ we can check if the
     representations are indeed the same. If not we eliminate the
-    newform for mod $l$ representations.
+    newform for mod $l$ representations. This method will perform this
+    elimination for a single Frobenius element.
 
-    Note that the value of this trace of Frobenius for the Frey curve
+    Note that the value of the trace of Frobenius for the Frey curve
     might depend on the value of the variables. In this case we
     eliminate the newform if the trace of Frobenius for the newform
     can not correspond to any of the possible traces for the elliptic
-    curve.
-
-    Note that if we have multiple Frey curves we compare traces
-    simultaneously for each combination of associated newforms.
+    curve. If we have multiple Frey curves we compare traces
+    simultaneously for each combination of associated newforms, in
+    which case we eliminate a tuple of newforms if there is no
+    associated possible tuple of traces.
 
     INPUT:
 
-    - ``curves`` -- A Frey curve or a list/tuple of frey curves that
+    - ``curves`` -- A Frey curve or a list/tuple of Frey curves that
       share the same parameters.
 
     - ``newforms`` -- A list of newforms that are associated to the
@@ -278,118 +279,128 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
       that both the given condition and the condition at which that
       value is attained hold.
 
-    - ``prime`` -- A prime number that lies below the primes over
-      which the traces of frobenius should be taken. Note that for the
-      newforms this will indeed be the prime corresponding to the
-      frobenius map considered, whilst for the elliptic curves a prime
-      above this prime number will be chosen if the curve is defined
-      over a number field rather than QQ.
+    - ``prime`` -- A prime number underlying the Frobenius element for
+      which the traces of the galois representations at that element
+      should be compared. If the Frobenius element should be chosen in
+      the absolute galois group of a number field, it will be chosen
+      as the Frobenius element associated to a prime above this prime
+      number.
 
-    - ``B`` -- A non-negative integer (default: 0). Whenever the
-      traces of frobenius disagree for the mod-l representations, the
-      prime factor l will only be removed from the corresponding last
-      entry of the tuple of newforms if the prime also divides this
-      number B.
+    - ``B`` -- A non-negative integer (default: 0). Will only
+      eliminate newforms based on their mod $l$ representation if $l$
+      divides this number.
 
-    - ``condition`` -- A Condition giving the
-      restrictions on the parameters of the given
-      Frey curve that should be considered. By default
-      this will be set to the condition stored in
-      the first given Frey curve.
-    - ``precision_cap`` -- A non-negative integer
-      (default: 1) giving the maximal precision used
-      to compute the reduction type of a Frey curve
-      at a prime. Note that setting this value to
-      a value higher than 1 might result in a long
-      computation time and heavy memory usage and
-      is strongly discouraged.
-    - ``verbose`` -- A boolean value or an integer
-      (default: False). When set to True or any value
-      larger then zero will print comments to stdout
-      about the computations being done whilst busy. If
-      set to False or 0 will not print such comments.
-      If set to any negative value will also prevent
-      the printing of any warnings.
-      If this method calls any method that accepts an
-      argument verbose will pass this argument to it.
-      If such a method fulfills a minor task within
-      this method and the argument verbose was larger
-      than 0, will instead pass 1 less than the given
-      argument. This makes it so a higher value will
-      print more details about the computation than a
-      lower one.
+    - ``condition`` -- A Condition giving the restrictions on the
+      parameters of the given Frey curve(s) that should be
+      considered. By default this will be set to the condition stored
+      in the first given Frey curve.
+
+    - ``precision_cap`` -- A non-negative integer (default: 1) giving
+      the maximal precision used to compute the reduction type of a
+      Frey curve at a prime. Note that setting this value to a value
+      higher than 1 might result in a long computation time and heavy
+      memory usage and is strongly discouraged.
+
+    - ``verbose`` -- A boolean value or an integer (default:
+      False). When set to True or any value larger then zero will
+      print comments to stdout about the computations being done
+      whilst busy. If set to False or 0 will not print such comments.
+      If set to any negative value will also prevent the printing of
+      any warnings.  A higher value will cause more messages to be
+      printed.
 
     OUTPUT:
     
     A list of tuples, wherein each tuple contains:
-    - for each frey curve given a corresponding newform
-      for which an isomorphism between the mod-l
-      representations of that curve and that newform
-      could not be excluded by this method.
-    - as its last entry an integer that is divisible
-      by all prime numbers l for which the mentioned
-      mod-l galois representations could still exist.
-      Note that this number is always 0 if there is
-      infinitely many such l remaining.
+
+    - for each frey curve given a corresponding newform for which an
+      isomorphism between the mod $l$ galois representations of that
+      curve and that newform could not be excluded by this method.
+
+    - as its last entry an integer that is divisible by all prime
+      numbers $l$ for which the mentioned mod $l$ galois
+      representations could still exist. Note that this number is
+      always 0 if there is infinitely many such $l$ remaining.
+
+    .. SEEALSO::
+
+        :func:`eliminate_by_traces`,
+        :func:`kraus_method`,
+        :func:`eliminate_cm_forms`,
+        :func:`eliminate_primes`
 
     """
-    curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
+    curves, newforms, condition = _init_elimination_data(curves, newforms,
+                                                         condition)
     if not (prime in ZZ and prime > 0 and prime.is_prime()):
         raise ValueError("Argument %s is not a prime number."%(prime,))
     if not (B in ZZ and B >= 0):
         raise ValueError("Argument %s is not a non-negative integer."%(B,))
     if B != 0:
         B = B.prime_factors()
-    return _eliminate_by_trace(curves, newforms, prime, B, condition, precision_cap, verbose)
+    return _eliminate_by_trace(curves, newforms, prime, B, condition,
+                               precision_cap, verbose)
 
 def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
-    """
-    Does the elimination of traces as described in
-    :meth:`eliminate_by_trace`
+    """An implementation of :func:`eliminate_by_trace`
 
-    NOTE:
+    INPUT:
 
-    B must be zero or a list of prime numbers
-    dividing the original B.
+    - ``curves`` -- The Frey curves
+
+    - ``newforms`` -- The newform list in the final format
+
+    - ``p`` -- The prime number
+
+    - ``B`` -- Zero or a list of prime numbers, the primes to be
+      eliminated.
+
+    - ``C`` -- The condition to be used
+
+    - ``prec_cap`` -- The precision cap on the variables
+
+    - ``verbose`` -- Verbosity argument
+
     """
     if len(newforms) == 0:
         return newforms
     if isinstance(newforms, ConditionalValue):
         return apply_to_conditional_value(lambda nfs, con:
-                                          _eliminate_by_trace(curves,
-                                                              nfs,
-                                                              p,
-                                                              B,
-                                                              con & C,
+                                          _eliminate_by_trace(curves, nfs, p,
+                                                              B, con & C,
                                                               prec_cap,
                                                               verbose),
-                                          newforms,
-                                          use_condition=True,
+                                          newforms, use_condition=True,
                                           default_condition=C)
     if verbose > 0:
-        print "Comparing traces of frobenius at %s for %s cases."%(p, len(newforms))
+        print ("Comparing traces of frobenius at " + str(p) + " for " +
+               str(len(newforms)) + " cases.")
     nE = len(curves)
     fields = tuple(curve.definition_field() for curve in curves)
     primes = tuple((p if K == QQ else K.prime_above(p)) for K in fields)
-    powers = tuple((1 if P in ZZ else
-                    P.residue_class_degree() * P.ramification_index()) for P in primes)
+    powers = tuple((1 if P in ZZ
+                    else P.residue_class_degree() * P.ramification_index())
+                   for P in primes)
     apE_ls = _init_traces(curves, C, primes, prec_cap,
                           (verbose - 1 if verbose > 0 else verbose))
     result = []
     Bprod = (B if B in ZZ else product(B))
     for nfs in newforms:
         Bold = nfs[-1]
-        if (gcd(Bprod, Bold) != 1 and # Only work if elemination might give a result
-            (B == 0 or Bold != 0) and # Can only eliminate finitely many primes if Bold != 0
-            all(not p.divides(nfs[i].level()) for i in range(nE))): # Avoid primes dividing the level
-            apf = [nfs[i].trace_of_frobenius(p, power=powers[i]) for i in range(nE)]
+        if (gcd(Bprod, Bold) != 1 and # Elimination might occur
+            # Elimination will result in a non-zero integer:
+            (B == 0 or Bold != 0) and
+            # Avoid primes dividing the level:
+            all(not p.divides(nfs[i].level()) for i in range(nE))):
+            apf = [nfs[i].trace_of_frobenius(p, power=powers[i])
+                   for i in range(nE)]
             Bnew = ZZ(p * lcm(gcd([(QQ(apE[i] - apf[i]) if apf[i] in QQ
                                     else (apE[i] - apf[i]).absolute_norm())
-                                   for i in range(nE)])
-                              for apE in apE_ls))
+                                   for i in range(nE)]) for apE in apE_ls))
             Bnew = gcd(Bold, Bnew)
             if B != 0:
-                Bnew = lcm(Bnew, ZZ(Bold / product(prime^(Bold.ord(prime)) for prime in B)))
+                Bnew = lcm(Bnew, ZZ(Bold / product(prime^(Bold.ord(prime))
+                                                   for prime in B)))
         else:
             Bnew = Bold
         if abs(Bnew) != 1:
@@ -398,231 +409,261 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
 
 def eliminate_by_traces(curves, newforms, condition=None, primes=50,
                         precision_cap=1, verbose=False):
-    r"""
-    Eliminates newforms associated to frey curves.
+    r"""Eliminate newforms associated to Frey curves by the traces of
+    Frobenius.
 
-    Given one or multiple frey curves with the same
-    parameters, compares traces of frobenius at different
-    primes to see which newforms can and which newforms
-    can not be associated to these curves.
+    Let $E$ be a Frey curve, $f$ be a newform of which the mod $l$
+    galois representations might agree with the mod $l$ galois
+    representation of $E$ and $F$ be a frobenius element of the common
+    domain of the afore mentioned representations. By comparing the
+    traces of these representations at $F$ we can check if the
+    representations are indeed the same. If not we eliminate the
+    newform for mod $l$ representations. This function will perform
+    this elimination for multiple Frobenius elements.
+
+    Note that the value of the trace of Frobenius for the Frey curve
+    might depend on the value of the variables. In this case we
+    eliminate the newform if the trace of Frobenius for the newform
+    can not correspond to any of the possible traces for the elliptic
+    curve. If we have multiple Frey curves we compare traces
+    simultaneously for each combination of associated newforms, in
+    which case we eliminate a tuple of newforms if there is no
+    associated possible tuple of traces.
 
     INPUT:
 
-    - ``curves`` -- A frey curve or a list/tuple of frey
-      curves that share the same parameters.
-    - ``newforms`` -- A list of newforms that are
-      associated to the given frey curve, i.e. such that
-      their mod-l representations could be isomorphic
-      to the mod-l representation of the frey curve.
-      Instead of a list one can also give the value
-      None, in which case the list will be retrieved
-      from the curve by the method
-      :meth:`newform_candidates` of the given Frey curve.
-      If multiple Frey curves are given this argument
-      should be a tuple of length equal to the number
-      of given Frey curves, containing for each Frey
-      curve an entry as described above in the same order
-      as the Frey curves are given.
-      Alternatively the input may also be a list of
-      tuples wherein each tuple has length equal to
-      the number of Frey curves and each entry thereof
-      is a newform associated to the corresponding Frey
-      curve.
-      In the last input format, each tuple may also be
-      1 longer than the number of Frey curves, in which
-      case the last entry must be an integer divisible
-      by all primes l for which the mod-l representations
-      of the given elliptic curves may still be
-      isomorphic to the corresponding newforms in this
-      tuple. This can be used to chain multiple
-      elimination methods.
-      Everywhere where a list is expected, one may also
-      give a ConditionalValue of which the possible
-      values are lists of the expected format. The
-      method will be applied to each entry individually
-      and the condition will be replaced by the condition
-      that both the given condition and the condition
-      at which that value is attained hold.
-    - ``condition`` -- A Condition giving the
-      restrictions on the parameters of the given
-      Frey curve that should be considered. By default
-      this will be set to the condition stored in
-      the first given Frey curve.
-    - ``primes`` -- A list of prime numbers or a
-      strictly positive integer (default: 50). This
-      list gives all the primes at which the traces
-      of frobenius of the different galois
-      representations should be compared. If set to
-      strictly positive integer, will be initialized
-      as the list of all prime numbers less than
-      the given number.
-    - ``precision_cap`` -- A non-negative integer
-      (default: 1) giving the maximal precision used
-      to compute the reduction type of a Frey curve
-      at a prime. Note that setting this value to
-      a value higher than 1 might result in a long
-      computation time and heavy memory usage and
-      is strongly discouraged.
-    - ``verbose`` -- A boolean value or an integer
-      (default: False). When set to True or any value
-      larger then zero will print comments to stdout
-      about the computations being done whilst busy. If
-      set to False or 0 will not print such comments.
-      If set to any negative value will also prevent
-      the printing of any warnings.
-      If this method calls any method that accepts an
-      argument verbose will pass this argument to it.
-      If such a method fulfills a minor task within
-      this method and the argument verbose was larger
-      than 0, will instead pass 1 less than the given
-      argument. This makes it so a higher value will
-      print more details about the computation than a
-      lower one.
+    - ``curves`` -- A Frey curve or a list/tuple of Frey curves that
+      share the same parameters.
+
+    - ``newforms`` -- A list of newforms that are associated to the
+      given frey curve, i.e. such that their mod-l representations
+      could be isomorphic to the mod-l representation of the frey
+      curve.  Instead of a list one can also give the value None, in
+      which case the list will be retrieved from the curve by the
+      method :meth:`newform_candidates` of the given Frey curve.
+
+      If multiple Frey curves are given this argument should be a
+      tuple of length equal to the number of given Frey curves,
+      containing for each Frey curve an entry as described above in
+      the same order as the Frey curves are given.
+
+      Alternatively the input may also be a list of tuples wherein
+      each tuple has length equal to the number of Frey curves and
+      each entry thereof is a newform associated to the corresponding
+      Frey curve.
+
+      In the last input format, each tuple may also be 1 longer than
+      the number of Frey curves, in which case the last entry must be
+      an integer divisible by all primes l for which the mod-l
+      representations of the given elliptic curves may still be
+      isomorphic to the corresponding newforms in this tuple. This can
+      be used to chain multiple elimination methods.
+
+      Everywhere where a list is expected, one may also give a
+      ConditionalValue of which the possible values are lists of the
+      expected format. The method will be applied to each entry
+      individually and the condition will be replaced by the condition
+      that both the given condition and the condition at which that
+      value is attained hold.
+
+    - ``condition`` -- A Condition giving the restrictions on the
+      parameters of the given Frey curve(s) that should be
+      considered. By default this will be set to the condition stored
+      in the first given Frey curve.
+
+    - ``primes`` -- A list of prime numbers or a strictly positive
+      integer (default: 50). This list gives all the prime numbers
+      underlying the Frobenius elements for which traces of the galois
+      representations at that element should be compared. If set to a
+      strictly positive integer it will be initialized as the list of
+      all prime numbers less than the given number. If a Frobenius
+      element should be chosen in the absolute galois group of a
+      number field, it will be chosen as the Frobenius element
+      associated to a prime above the associated prime number.
+
+    - ``precision_cap`` -- A non-negative integer (default: 1) giving
+      the maximal precision used to compute the reduction type of a
+      Frey curve at a prime. Note that setting this value to a value
+      higher than 1 might result in a long computation time and heavy
+      memory usage and is strongly discouraged.
+
+    - ``verbose`` -- A boolean value or an integer (default:
+      False). When set to True or any value larger then zero will
+      print comments to stdout about the computations being done
+      whilst busy. If set to False or 0 will not print such comments.
+      If set to any negative value will also prevent the printing of
+      any warnings.  A higher value will cause more messages to be
+      printed.
 
     OUTPUT:
     
     A list of tuples, wherein each tuple contains:
-    - for each frey curve given a corresponding newform
-      for which an isomorphism between the mod-l
-      representations of that curve and that newform
-      could not be excluded by this method.
-    - as its last entry an integer that is divisible
-      by all prime numbers l for which the mentioned
-      mod-l galois representations could still exist.
-      Note that this number is always 0 if there is
-      infinitely many such l remaining.
+
+    - for each frey curve given a corresponding newform for which an
+      isomorphism between the mod $l$ galois representations of that
+      curve and that newform could not be excluded by this method.
+
+    - as its last entry an integer that is divisible by all prime
+      numbers $l$ for which the mentioned mod $l$ galois
+      representations could still be isomorphic. Note that this number
+      is always 0 if there is infinitely many such $l$ remaining.
+
+    .. SEEALSO::
+
+        :func:`eliminate_by_trace`,
+        :func:`kraus_method`,
+        :func:`eliminate_cm_forms`,
+        :func:`eliminate_primes`
+
     """
-    curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
+    curves, newforms, condition = _init_elimination_data(curves, newforms,
+                                                         condition)
     if primes in ZZ and primes > 0:
         primes = prime_range(primes)
     return apply_to_conditional_value(lambda nfs, con:
-                                      _eliminate_by_traces(curves,
-                                                           nfs,
+                                      _eliminate_by_traces(curves, nfs,
                                                            con & condition,
                                                            primes,
                                                            precision_cap,
                                                            verbose),
-                                      newforms,
-                                      use_condition=True,
+                                      newforms, use_condition=True,
                                       default_condition=condition)
         
-def _eliminate_by_traces(curves, newforms, condition, primes,
-                         precision_cap, verbose):
-    r"""
-    Implementation of :meth:`eliminate_by_traces`
-    For internal use only.
+def _eliminate_by_traces(curves, newforms, condition, primes, precision_cap,
+                         verbose):
+    r"""Implementation of :func:`eliminate_by_traces`.
+
     """
     for prime in primes:
-        newforms = _eliminate_by_trace(curves, newforms, prime, 0,
-                                       condition, precision_cap, verbose)
+        newforms = _eliminate_by_trace(curves, newforms, prime, 0, condition,
+                                       precision_cap, verbose)
     return newforms
 
-def kraus_method(curves, newforms, l, polynomials, primes=200,
-                 condition=None, precision_cap=1, verbose=False):
-    r"""
-    Eliminates newforms associated to Frey curves with
-    the Kraus method.
+def kraus_method(curves, newforms, l, polynomials, primes=200, condition=None,
+                 precision_cap=1, verbose=False):
+    r"""Eliminate newforms associated to Frey curves by Kraus's method.
 
-    Given one or multiple frey curves with the same
-    parameters, a prime number l and a list of polynomials
-    in the variables that are l-th powers, computes
-    which of the given newforms can still be associated
-    when comparing traces of frobenius of primes which
-    are 1 mod l for their representations mod l.
+    Let $E$ be a Frey curve, $f$ be a newform of which the mod $l$
+    galois representations might agree with the mod $l$ galois
+    representation of $E$ and $F$ be a frobenius element of the common
+    domain of the afore mentioned representations. By comparing the
+    traces of these representations at $F$ we can check if the
+    representations are indeed the same. If not we eliminate the
+    newform for mod $l$ representations.
+
+    Note that the value of the trace of Frobenius for the Frey curve
+    might depend on the value of the variables. In this case we
+    eliminate the newform if the trace of Frobenius for the newform
+    can not correspond to any of the possible traces for the elliptic
+    curve. If we have multiple Frey curves we compare traces
+    simultaneously for each combination of associated newforms, in
+    which case we eliminate a tuple of newforms if there is no
+    associated possible tuple of traces.
+
+    If some polynomial in the common variables of the Frey curve(s) is
+    equal to an $l$-th power for $l$ prime, then this gives
+    limitations for the possible residues of the variables in a
+    residue field which has a number of elements congruent to $1$
+    modulo $l$. For a fixed prime number $l$ this function computes
+    the possible primes for which this happens and compares the traces
+    of the associated Frobenius elements to eliminate newforms.
 
     INPUT:
 
-    - ``curves`` -- A frey curve or a list/tuple of frey
-      curves that share the same parameters.
-    - ``newforms`` -- A list of newforms that are
-      associated to the given frey curve, i.e. such that
-      their mod-l representations could be isomorphic
-      to the mod-l representation of the frey curve.
-      Instead of a list one can also give the value
-      None, in which case the list will be retrieved
-      from the curve by the method
-      :meth:`newform_candidates` of the given Frey curve.
-      If multiple Frey curves are given this argument
-      should be a tuple of length equal to the number
-      of given Frey curves, containing for each Frey
-      curve an entry as described above in the same order
-      as the Frey curves are given.
-      Alternatively the input may also be a list of
-      tuples wherein each tuple has length equal to
-      the number of Frey curves and each entry thereof
-      is a newform associated to the corresponding Frey
-      curve.
-      In the last input format, each tuple may also be
-      1 longer than the number of Frey curves, in which
-      case the last entry must be an integer divisible
-      by all primes l for which the mod-l representations
-      of the given elliptic curves may still be
-      isomorphic to the corresponding newforms in this
-      tuple. This can be used to chain multiple
-      elimination methods.
-      Everywhere where a list is expected, one may also
-      give a ConditionalValue of which the possible
-      values are lists of the expected format. The
-      method will be applied to each entry individually
-      and the condition will be replaced by the condition
-      that both the given condition and the condition
-      at which that value is attained hold.
-    - ``prime`` -- A prime number.
-    - ``polynomials`` -- A polynomial or list thereof
-      in the common parameters of the given Frey curves,
-      such that these polynomials are l-th powers.
-    - ``primes`` -- A list of prime numbers or a
-      strictly positive integer (default: 200). This
-      list should contain all prime numbers for which
-      the traces of frobenius at that prime should be
-      compared. If it is set to a strictly positive
-      integer will initialize this as the list
-      prime_range(l, primes). Note that only those
-      primes for which the relevant residue fields
-      have order congruent to 1 mod l will be
-      actually considered.
-    - ``condition`` -- A Condition giving the
-      restrictions on the parameters of the given
-      Frey curve that should be considered. By default
-      this will be set to the condition stored in
-      the first given Frey curve.
-    - ``precision_cap`` -- A non-negative integer
-      (default: 1) giving the maximal precision used
-      to compute the reduction type of a Frey curve
-      at a prime. Note that setting this value to
-      a value higher than 1 might result in a long
-      computation time and heavy memory usage and
-      is strongly discouraged.
-    - ``verbose`` -- A boolean value or an integer
-      (default: False). When set to True or any value
-      larger then zero will print comments to stdout
-      about the computations being done whilst busy. If
-      set to False or 0 will not print such comments.
-      If set to any negative value will also prevent
-      the printing of any warnings.
-      If this method calls any method that accepts an
-      argument verbose will pass this argument to it.
-      If such a method fulfills a minor task within
-      this method and the argument verbose was larger
-      than 0, will instead pass 1 less than the given
-      argument. This makes it so a higher value will
-      print more details about the computation than a
-      lower one.
+    - ``curves`` -- A Frey curve or a list/tuple of Frey curves that
+      share the same parameters.
+
+    - ``newforms`` -- A list of newforms that are associated to the
+      given Frey curve, i.e. such that their mod-l representations
+      could be isomorphic to the mod-l representation of the Frey
+      curve.  Instead of a list one can also give the value None, in
+      which case the list will be retrieved from the curve by the
+      method :meth:`newform_candidates` of the given Frey curve.
+
+      If multiple Frey curves are given this argument should be a
+      tuple of length equal to the number of given Frey curves,
+      containing for each Frey curve an entry as described above in
+      the same order as the Frey curves are given.
+
+      Alternatively the input may also be a list of tuples wherein
+      each tuple has length equal to the number of Frey curves and
+      each entry thereof is a newform associated to the corresponding
+      Frey curve.
+
+      In the last input format, each tuple may also be 1 longer than
+      the number of Frey curves, in which case the last entry must be
+      an integer divisible by all primes l for which the mod-l
+      representations of the given elliptic curves may still be
+      isomorphic to the corresponding newforms in this tuple. This can
+      be used to chain multiple elimination methods.
+
+      Everywhere where a list is expected, one may also give a
+      ConditionalValue of which the possible values are lists of the
+      expected format. The method will be applied to each entry
+      individually and the condition will be replaced by the condition
+      that both the given condition and the condition at which that
+      value is attained hold.
+
+    - ``l`` -- The prime number $l$.
+
+    - ``polynomials`` -- A polynomial or list thereof in the common
+      variables of the given Frey curves, such that these polynomials
+      are l-th powers in all possible values of the variables.
+
+    - ``primes`` -- A list of prime numbers or a strictly positive
+      integer (default: 200). This list gives all the prime numbers
+      underlying the Frobenius elements for which traces of the galois
+      representations at that element should be compared. If set to a
+      strictly positive integer it will be initialized as the list of
+      all prime numbers less than the given number. If a Frobenius
+      element should be chosen in the absolute galois group of a
+      number field, it will be chosen as the Frobenius element
+      associated to a prime above the associated prime number. Note
+      that only those primes are considered for which the associated
+      residue field can be 1 modulo $l$.
+
+    - ``condition`` -- A Condition giving the restrictions on the
+      variables of the given Frey curve(s) that should be
+      considered. By default this will be set to the condition stored
+      in the first given Frey curve.
+
+    - ``precision_cap`` -- A non-negative integer (default: 1) giving
+      the maximal precision used to compute the reduction type of a
+      Frey curve at a prime. Note that setting this value to a value
+      higher than 1 might result in a long computation time and heavy
+      memory usage and is strongly discouraged.
+
+    - ``verbose`` -- A boolean value or an integer (default:
+      False). When set to True or any value larger then zero will
+      print comments to stdout about the computations being done
+      whilst busy. If set to False or 0 will not print such comments.
+      If set to any negative value will also prevent the printing of
+      any warnings.  A higher value will cause more messages to be
+      printed.
 
     OUTPUT:
     
     A list of tuples, wherein each tuple contains:
-    - for each frey curve given a corresponding newform
-      for which an isomorphism between the mod-l
-      representations of that curve and that newform
-      could not be excluded by this method.
-    - as its last entry an integer that is divisible
-      by all prime numbers l for which the mentioned
-      mod-l galois representations could still exist.
-      Note that this number is always 0 if there is
-      infinitely many such l remaining.
+
+    - for each frey curve given a corresponding newform for which an
+      isomorphism between the mod $l$ galois representations of that
+      curve and that newform could not be excluded by this method.
+
+    - as its last entry an integer that is divisible by all prime
+      numbers $l$ for which the mentioned mod $l$ galois
+      representations could still be isomorphic. Note that this number
+      is always 0 if there is infinitely many such $l$ remaining.
+
+    .. SEEALSO::
+
+        :func:`eliminate_by_trace`,
+        :func:`eliminate_by_traces`,
+        :func:`eliminate_cm_forms`,
+        :func:`eliminate_primes`
+
     """
-    curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
+    curves, newforms, condition = _init_elimination_data(curves, newforms,
+                                                         condition)
     if not (l in ZZ and l > 0 and l.is_prime()):
         raise ValueError("%s is not a prime number"%(prime,))
     if not isinstance(polynomials, list):
@@ -632,38 +673,54 @@ def kraus_method(curves, newforms, l, polynomials, primes=200,
             polynomials = [polynomials]
     if primes in ZZ and primes > 0:
         primes = prime_range(l, primes)
-    if not (isinstance(primes, list) and all(p in ZZ and p > 0 and p.is_prime() for p in primes)):
+    if not (isinstance(primes, list) and all(p in ZZ and p > 0 and p.is_prime()
+                                             for p in primes)):
         raise ValueError("%s is not a list of prime numbers"%(primes,))
     return apply_to_conditional_value(lambda nfs, con:
-                                      _kraus_method(curves,
-                                                    nfs,
-                                                    l,
-                                                    polynomials,
-                                                    primes,
+                                      _kraus_method(curves, nfs, l,
+                                                    polynomials, primes,
                                                     con & condition,
-                                                    precision_cap,
-                                                    verbose),
-                                      newforms,
-                                      use_condition=True,
+                                                    precision_cap, verbose),
+                                      newforms, use_condition=True,
                                       default_condition=condition)
 
-def _kraus_method(curves, newforms, l, polynomials, primes,
-                   condition, precision_cap, verbose):
-    r"""
-    Implementation of the kraus method as described in
-    :meth:`kraus_method`. Does not do any checking of the
-    input. Only for internal use.
+def _kraus_method(curves, newforms, l, polynomials, primes, condition,
+                  precision_cap, verbose):
+    r"""Implementation of :func:`kraus_method`.
+
     """
     fields = tuple(poly.base_ring() for poly in polynomials)
     for p in primes:
         Ps = [_primes_1_mod_l(K, p, l) for K in fields]
         for P in itertools.product(*Ps):
-            CP = [_init_kraus_condition(polynomials[i], P[i], l) for i in range(len(P))]
+            CP = [_init_kraus_condition(polynomials[i], P[i], l)
+                  for i in range(len(P))]
             C = reduce(lambda x, y: x & y, CP, condition)
-            newforms = _eliminate_by_trace(curves, newforms, p, [l], C, precision_cap, verbose)
+            newforms = _eliminate_by_trace(curves, newforms, p, [l], C,
+                                           precision_cap, verbose)
     return newforms
 
 def _primes_1_mod_l(K, p, l):
+    r"""Find the primes in $K$ above $p$ that are 1 mod $l$.
+
+    Find the primes $P$ in a number field $K$ above a prime number $p$
+    such that the residue field of $P$ has a number of elements that
+    is $1$ modulo $l$
+
+    INPUT:
+
+    - ``K`` -- The number field $K$
+
+    - ``p`` -- The prime number $p$
+
+    - ``l`` -- The prime number $l$
+
+    OUTPUT:
+
+    A list of primes of $K$ above $p$ for which the number of elements
+    of the residue field is $1$ modulo $l$.
+
+    """
     if K == QQ:
         if mod(p, l) == 1:
             return [p]
@@ -674,14 +731,34 @@ def _primes_1_mod_l(K, p, l):
                 if mod(P.residue_field().cardinality(), l) == 1]
                         
 def _init_kraus_condition(polynomial, prime, l):
+    r"""Get the condition on the variable given by Kraus's method.
+
+    INPUT:
+
+    - ``polynomial`` -- A polynomial whose possible values are $l$-th
+      powers.
+
+    - ``prime`` -- A finite prime of a number field.
+
+    - ``l`` -- The prime number $l$
+
+    OUTPUT:
+
+    The condition on the variables given by the fact that the values
+    of the polynomial in the residue field of the given prime should
+    be $l$-th powers.
+
+    """
     if prime in ZZ:
         F = Integers(prime)
         u = F.unit_gens()[0]
     else:
         F = prime.residue_field()
         u = F.primitive_element()
-    values = [F.lift(0)] + [F.lift(u^(n*l)) for n in range((F.cardinality() - 1)/l)]
-    conditions = [CongruenceCondition(polynomial - val, prime) for val in values]
+    values = [F.lift(0)] + [F.lift(u^(n*l))
+                            for n in range((F.cardinality() - 1)/l)]
+    conditions = [CongruenceCondition(polynomial - val, prime)
+                  for val in values]
     def combine_conditions(C1, C2):
         if C1 is None:
             return C2
@@ -692,99 +769,103 @@ def _init_kraus_condition(polynomial, prime, l):
     return reduce(combine_conditions, conditions, None)
 
 def eliminate_cm_forms(curves, newforms, has_cm=False, condition=None):
-    r"""
-    Eliminates those newforms that have CM.
+    r"""Eliminate CM newforms associated to non-CM Frey curves.
 
-    Given newforms corresponding to Frey curves,
-    determines which combinations of newforms are
-    impossible given that the corresponding Frey
-    curves do not have CM.
+    This function eliminates all those tuples of newforms for which
+    one of the newforms has complex multiplication, but the
+    corresponding Frey curve does not.
 
     INPUT:
 
-    - ``curves`` -- A frey curve or a list/tuple of frey
-      curves that share the same parameters.
-    - ``newforms`` -- A list of newforms that are
-      associated to the given frey curve, i.e. such that
-      their mod-l representations could be isomorphic
-      to the mod-l representation of the frey curve.
-      Instead of a list one can also give the value
-      None, in which case the list will be retrieved
-      from the curve by the method
-      :meth:`newform_candidates` of the given Frey curve.
-      If multiple Frey curves are given this argument
-      should be a tuple of length equal to the number
-      of given Frey curves, containing for each Frey
-      curve an entry as described above in the same order
-      as the Frey curves are given.
-      Alternatively the input may also be a list of
-      tuples wherein each tuple has length equal to
-      the number of Frey curves and each entry thereof
-      is a newform associated to the corresponding Frey
-      curve.
-      In the last input format, each tuple may also be
-      1 longer than the number of Frey curves, in which
-      case the last entry must be an integer divisible
-      by all primes l for which the mod-l representations
-      of the given elliptic curves may still be
-      isomorphic to the corresponding newforms in this
-      tuple. This can be used to chain multiple
-      elimination methods.
-      Everywhere where a list is expected, one may also
-      give a ConditionalValue of which the possible
-      values are lists of the expected format. The
-      method will be applied to each entry individually
-      and the condition will be replaced by the condition
-      that both the given condition and the condition
-      at which that value is attained hold.
-    - ``has_cm`` -- A boolean value or a list thereof
-      (default: False). If it is a list it must have
-      length equal to the number of considered Frey
-      curves. Each entry of this list should be False
-      if it is certain that the corresponding Frey
-      curve does not have complex multiplication and
-      True otherwise. If the given argument is a
-      boolean value it will be turned into a list of
-      the required length with each entry equal to
-      the given value.
-    - ``condition`` -- A Condition giving the
-      restrictions on the parameters of the given
-      Frey curve that should be considered. By default
-      this will be set to the condition stored in
-      the first given Frey curve. Note that this is
-      only relevant if the newforms are not given yet.
+    - ``curves`` -- A Frey curve or a list/tuple of Frey curves that
+      share the same parameters.
+
+    - ``newforms`` -- A list of newforms that are associated to the
+      given frey curve, i.e. such that their mod-l representations
+      could be isomorphic to the mod-l representation of the frey
+      curve.  Instead of a list one can also give the value None, in
+      which case the list will be retrieved from the curve by the
+      method :meth:`newform_candidates` of the given Frey curve.
+
+      If multiple Frey curves are given this argument should be a
+      tuple of length equal to the number of given Frey curves,
+      containing for each Frey curve an entry as described above in
+      the same order as the Frey curves are given.
+
+      Alternatively the input may also be a list of tuples wherein
+      each tuple has length equal to the number of Frey curves and
+      each entry thereof is a newform associated to the corresponding
+      Frey curve.
+
+      In the last input format, each tuple may also be 1 longer than
+      the number of Frey curves, in which case the last entry must be
+      an integer divisible by all primes l for which the mod-l
+      representations of the given elliptic curves may still be
+      isomorphic to the corresponding newforms in this tuple. This can
+      be used to chain multiple elimination methods.
+
+      Everywhere where a list is expected, one may also give a
+      ConditionalValue of which the possible values are lists of the
+      expected format. The method will be applied to each entry
+      individually and the condition will be replaced by the condition
+      that both the given condition and the condition at which that
+      value is attained hold.
+
+    - ``has_cm`` -- A boolean value or a list thereof (default:
+      False). If it is a list it must have length equal to the number
+      of considered Frey curves. Each entry of this list should be
+      False if it is certain that the corresponding Frey curve does
+      not have complex multiplication and True otherwise. If the given
+      argument is a boolean value it will be turned into a list of the
+      required length with each entry equal to the given value.
+
+    - ``condition`` -- A Condition giving the restrictions on the
+      parameters of the given Frey curve that should be considered. By
+      default this will be set to the condition stored in the first
+      given Frey curve. Note that this is only relevant if the
+      newforms are not given yet.
 
     OUTPUT:
     
     A list of tuples, wherein each tuple contains:
-    - for each frey curve given a corresponding newform
-      for which an isomorphism between the mod-l
-      representations of that curve and that newform
-      could not be excluded by this method, i.e. for
-      which the newform has CM only if the corresponding
-      Frey curve could have CM.
-    - as its last entry an integer that is divisible
-      by all prime numbers l for which the mentioned
-      mod-l galois representations could still exist.
-      Note that this number is always 0 if there is
-      infinitely many such l remaining.
+
+    - for each frey curve given a corresponding newform for which an
+      isomorphism between the mod $l$ galois representations of that
+      curve and that newform could not be excluded by this method.
+
+    - as its last entry an integer that is divisible by all prime
+      numbers $l$ for which the mentioned mod $l$ galois
+      representations could still be isomorphic. Note that this number
+      is always 0 if there is infinitely many such $l$ remaining.
+
+    .. SEEALSO::
+
+        :func:`eliminate_by_trace`,
+        :func:`eliminate_by_traces`,
+        :func:`kraus_method`,
+        :func:`eliminate_primes`
+
     """
-    curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
+    curves, newforms, condition = _init_elimination_data(curves, newforms,
+                                                         condition)
     if isinstance(has_cm, tuple):
         has_cm = list(has_cm)
     if not isinstance(has_cm, list):
         has_cm = [has_cm for i in range(len(curves))]
     if len(has_cm) != len(curves):
-        raise ValueError("Expected cm information for %s curves, but got it for %s curves"%(len(curves), len(has_cm)))
+        raise ValueError("Expected cm information for " + str(len(curves)) +
+                         " curves, but got it for " + str(len(has_cm)) +
+                         " curves")
     return _eliminate_cm_forms(newforms, has_cm)
 
 def _eliminate_cm_forms(newforms, has_cm):
-    r"""
-    The implementation of :meth:`eliminate_cm_forms`
-    For internal use only!
+    r"""The implementation of :func:`eliminate_cm_forms`.
+
     """
     if isinstance(newforms, ConditionalValue):
-        return apply_to_conditional_value(lambda nfs: _eliminate_cm_forms(nfs, has_cm), newforms)
+        return apply_to_conditional_value(lambda nfs:
+                                          _eliminate_cm_forms(nfs, has_cm),
+                                          newforms)
     result = []
     for nfs in newforms:
         keep = True
@@ -797,88 +878,93 @@ def _eliminate_cm_forms(newforms, has_cm):
     return result
 
 def eliminate_primes(curves, newforms, N, condition=None):
-    r"""
-    Eliminates newforms that can only appear for certain primes
+    r"""Eliminate newforms associated to Frey curves for certain primes.
 
-    Given newforms, eliminates the possibility of their
-    mod l representations being associated to the mod l
-    representations of the corresponding elliptic curves
-    for all those l that divide N. This allows one to
-    eliminate cases that can be eliminated by other means.
+    For multiple prime numbers $l$ this function eliminates all those
+    newforms for which the mod $l$ galois representation might agree
+    with the mod $l$ galois representation of the associated Frey
+    curve.
 
     INPUT:
 
-    - ``curves`` -- A frey curve or a list/tuple of frey
-      curves that share the same parameters.
-    - ``newforms`` -- A list of newforms that are
-      associated to the given frey curve, i.e. such that
-      their mod-l representations could be isomorphic
-      to the mod-l representation of the frey curve.
-      Instead of a list one can also give the value
-      None, in which case the list will be retrieved
-      from the curve by the method
-      :meth:`newform_candidates` of the given Frey curve.
-      If multiple Frey curves are given this argument
-      should be a tuple of length equal to the number
-      of given Frey curves, containing for each Frey
-      curve an entry as described above in the same order
-      as the Frey curves are given.
-      Alternatively the input may also be a list of
-      tuples wherein each tuple has length equal to
-      the number of Frey curves and each entry thereof
-      is a newform associated to the corresponding Frey
-      curve.
-      In the last input format, each tuple may also be
-      1 longer than the number of Frey curves, in which
-      case the last entry must be an integer divisible
-      by all primes l for which the mod-l representations
-      of the given elliptic curves may still be
-      isomorphic to the corresponding newforms in this
-      tuple. This can be used to chain multiple
-      elimination methods.
-      Everywhere where a list is expected, one may also
-      give a ConditionalValue of which the possible
-      values are lists of the expected format. The
-      method will be applied to each entry individually
-      and the condition will be replaced by the condition
-      that both the given condition and the condition
-      at which that value is attained hold.
-    - ``N`` -- A non-zero integer, divisible by all
-      those primes l for which the possibility of
-      a tuple of newforms being associated to the
-      given Frey curves by their mod-l representation
-      should be removed.
-    - ``condition`` -- A Condition giving the
-      restrictions on the parameters of the given
-      Frey curve that should be considered. By default
-      this will be set to the condition stored in
-      the first given Frey curve. Note that this is
-      only relevant if the newforms are not given yet.
+    - ``curves`` -- A Frey curve or a list/tuple of Frey curves that
+      share the same parameters.
+
+    - ``newforms`` -- A list of newforms that are associated to the
+      given frey curve, i.e. such that their mod-l representations
+      could be isomorphic to the mod-l representation of the frey
+      curve.  Instead of a list one can also give the value None, in
+      which case the list will be retrieved from the curve by the
+      method :meth:`newform_candidates` of the given Frey curve.
+
+      If multiple Frey curves are given this argument should be a
+      tuple of length equal to the number of given Frey curves,
+      containing for each Frey curve an entry as described above in
+      the same order as the Frey curves are given.
+
+      Alternatively the input may also be a list of tuples wherein
+      each tuple has length equal to the number of Frey curves and
+      each entry thereof is a newform associated to the corresponding
+      Frey curve.
+
+      In the last input format, each tuple may also be 1 longer than
+      the number of Frey curves, in which case the last entry must be
+      an integer divisible by all primes l for which the mod-l
+      representations of the given elliptic curves may still be
+      isomorphic to the corresponding newforms in this tuple. This can
+      be used to chain multiple elimination methods.
+
+      Everywhere where a list is expected, one may also give a
+      ConditionalValue of which the possible values are lists of the
+      expected format. The method will be applied to each entry
+      individually and the condition will be replaced by the condition
+      that both the given condition and the condition at which that
+      value is attained hold.
+
+    - ``N`` -- A non-zero integer, divisible by all those primes $l$
+      for which the newforms that could still be related by mod $l$
+      galois representations should be eliminated.
+
+    - ``condition`` -- A Condition giving the restrictions on the
+      parameters of the given Frey curve(s) that should be
+      considered. By default this will be set to the condition stored
+      in the first given Frey curve. Note that this is only relevant
+      if the newforms are not given yet.
 
     OUTPUT:
     
     A list of tuples, wherein each tuple contains:
-    - for each frey curve given a corresponding newform
-      for which an isomorphism between the mod-l
-      representations of that curve and that newform
-      could not be excluded by this method, i.e. for
-      which l does not divide N.
-    - as its last entry an integer that is divisible
-      by all prime numbers l for which the mentioned
-      mod-l galois representations could still exist.
-      Note that this number is always 0 if there is
-      infinitely many such l remaining.
+
+    - for each frey curve given a corresponding newform for which an
+      isomorphism between the mod $l$ galois representations of that
+      curve and that newform could not be excluded by this method.
+
+    - as its last entry an integer that is divisible by all prime
+      numbers $l$ for which the mentioned mod $l$ galois
+      representations could still be isomorphic. Note that this number
+      is always 0 if there is infinitely many such $l$ remaining.
+
+    .. SEEALSO::
+
+        :func:`eliminate_by_trace`,
+        :func:`eliminate_by_traces`,
+        :func:`kraus_method`,
+        :func:`eliminate_cm_forms`
+
     """
-    curves, newforms, condition = _init_elimination_data(curves, newforms, condition)
+    curves, newforms, condition = _init_elimination_data(curves, newforms,
+                                                         condition)
     if N not in ZZ or N == 0:
         raise ValueError("Argument N is not a non-zero integer.")
     return _eliminate_primes(newforms, N.prime_factors())
 
 def _eliminate_primes(newforms, ls):
-    r"""Implementation of meth:`eliminate_primes`"""
+    r"""Implementation of :func:`eliminate_primes`.
+
+    """
     if isinstance(newforms, ConditionalValue):
-        return apply_to_conditional_value(lambda nfs: _eliminate_primes(nfs, ls),
-                                          newforms)
+        return apply_to_conditional_value(lambda nfs:
+                                          _eliminate_primes(nfs, ls), newforms)
     result = []
     for nfs in newforms:
         nfs = list(nfs)
@@ -890,38 +976,38 @@ def _eliminate_primes(newforms, ls):
     return result
 
 def combine_newforms(*newforms):
-    r"""
-    Combines output of different newform eliminations into one
+    r"""Combine the output of different newform elimination methods into
+    one.
     
-    Given multiple lists of newforms given as output by one of
-    the methods :meth:`eliminate_by_traces`,
-    :meth:`eliminate_by_trace`, :meth:`kraus_method`,
-    :meth:`eliminate_cm_forms` or :meth:`eliminate_primes`
-    outputs a single list of tuples of newforms that
-    combines all this information.
+    Given multiple lists of newforms given as output by one of the
+    functions :func:`eliminate_by_traces`, :func:`eliminate_by_trace`,
+    :func:`kraus_method`, :func:`eliminate_cm_forms` or
+    :func:`eliminate_primes` outputs a single list of tuples of
+    newforms that combines all this information.
 
     INPUT:
     
-    Any number of arguments, wherein each argument is a list
-    of tuples of the form (f_1, ..., f_m, N), where each f_i
-    is a newform and N is an integer. Here m should be the
-    same for each tuple in the list.
+    Any number of arguments, wherein each argument is a list of tuples
+    of the form $(f_1, ..., f_m, N)$, where each $f_i$ is a newform
+    and $N$ is an integer. The integer $m$ should be the same among
+    all tuples in a list.
 
     OUTPUT:
     
-    A list of tuples, such that for each combination of
-    tuples (f_(1, 1), ..., f_(1, m_1), N_1), ...,
-    (f_(n, 1), ..., f_(n, m_n), N_n) from the respective
-    lists given, the tuple
-    (f_(1, 1), ..., f(1, m_1), f_(2, 1), ..., f_(n, m_n), gcd(N_1, ..., N_n))
-    is in this list. Note that tuples wherein the last
-    entry is 1 or -1 are omitted.
+    A list of tuples, such that for each combination of tuples $(f_(1,
+    1), ..., f_(1, m_1), N_1), ..., (f_(n, 1), ..., f_(n, m_n), N_n)$
+    from the respective lists given, the tuple $(f_(1, 1), ..., f(1,
+    m_1), f_(2, 1), ..., f_(n, m_n), gcd(N_1, ..., N_n))$ is in this
+    list. Note that tuples wherein the last entry is 1 or -1 are
+    omitted.
+
     """
     newforms = conditional_product(*newforms)
-    return apply_to_conditional_value(lambda nfs: _combine_newforms(*nfs), newforms)
+    return apply_to_conditional_value(lambda nfs: _combine_newforms(*nfs),
+                                      newforms)
 
 def _combine_newforms(*newforms):
-    r"""Implementation of :meth:`combine_newforms`"""
+    r"""Implementation of :func:`combine_newforms`"""
     return [nfs for nfs in (sum((item[:-1] for item in items), ()) + 
                             (gcd([item[-1] for item in items]),)
                             for items in itertools.product(*newforms))
