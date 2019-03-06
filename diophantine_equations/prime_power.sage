@@ -1,104 +1,138 @@
+r"""Classes to work with diophantine equations containing a prime
+power.
+
+Given a diophantine equation of the form .. MATH::
+
+    f(x_1, \ldots, x_n) = y^l
+
+with $f$ some polynomial, one can show some results about integer
+solutions $x_1, \ldots, x_n, y, l$ with $l$ prime. This file adds a
+class that automates some of the reasoning done for this.
+
+EXAMPLES:
+
+TODO
+
+AUTHORS:
+
+- Joey van Langen (2019-03-06): initial version
+
+"""
+
+# ****************************************************************************
+#       Copyright (C) 2019 Joey van Langen <j.m.van.langen@vu.nl>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#                  https://www.gnu.org/licenses/
+# ****************************************************************************
 from sage.combinat.combination import Combinations
 
 class power_analyzer(SageObject):
-    r"""
-    A class that is useful in the analyzation of
-    equations of the form
+    r"""A class used to analyze diophantine equations containing a prime
+    power.
 
-    MATH::
+    A class providing useful methods to analyze the solutions of a
+    diophantine equation of the form .. MATH::
 
-     f(x_1, \ldots x_n) = y^l
+       f(x_1, \ldots x_n) = y^l
 
-    where $f$ is a polynomial, $l$ is a strictly
-    positive integer and $x_1, \ldots, x_n, y$ are
-    variables which take on integer values.
+    where $f$ is a polynomial. Here we are interestend in solutions
+    $x_1, \ldots, x_n, y, l$ with $l$ prime.
     
-    Throughout the documentation of this class we
-    will call $f$ the polynomial.
+    Throughout the documentation of this class we will use the
+    notation above to describe what methods do.
+
     """
 
     def __init__(self, f):
-        r"""
+        r"""Initialize this power analyzer
+        
         INPUT:
 
-        - ``f`` -- The polynomial, which should
-          be defined over the rationals or a
-          number field.
+        - ``f`` -- The polynomial $f$.
+
         """
         self._f = f
 
     def factor(self, K):
-        r"""
-        Gives a factor of the polynomial over a
-        field extension K.
+        r"""Give a factor of the polynomial $f$ over the field `K`
 
         INPUT:
 
-        - ``K`` -- An extension of the field over
-          which the polynomial is defined.
+        - ``K`` -- An extension of the field over which $f$ is
+          defined.
 
         OUTPUT:
 
-        A factor of the polynomial  over the
-        given field K.
+        A factor of the polynomial $f$ over the given field K.
+
         """
         return self._f.change_ring(K).factor()[0][0]
 
     def coprimality(self, K, g=None):
-        r"""
-        Determines which factors of the polynomial are
-        coprime.
+        r"""Determine which factors of $f$ are coprime.
 
         INPUT:
 
-        - ``K`` -- An extension of the field over which
-          this equation is defined that is galois.
-        - ``g`` -- A factor of the polynomial defined
-          over the field K. By default will be the
-          outcome of :meth:`factor`
+        - ``K`` -- A galois extension of the field over which $f$ is
+          defined.
+
+        - ``g`` -- A factor of the polynomial $f$ defined over the
+          field `K`. By default will be the outcome of :meth:`factor`
 
         OUTPUT:
         
-        A dictionary indexed by elements of the galois
-        group of K, such that the s-th entry of the
-        dictionary contains a number divisible by all
-        primes that divide both g and the conjugate
-        of g by s.
+        A dictionary indexed by elements of the galois group of `K`,
+        such that the entry with key $\sigma$ has a value that is
+        divisible by all primes that divide both `g` and the $\sigma$
+        conjugate of `g`.
+        
+        .. NOTE::
+
+        The values that come from this method might be polynomials
+        themselves as the specific primes might depend on the values
+        of the polynomial. This is a specific number if $f$ has only
+        one variable or if $f$ is homogenous in two variables, in
+        which case the variables are assumed to be coprime.
+
         """
         if g is None:
             g = self.factor(K)
         if g.is_homogeneous():
-            return {s : g.macaulay_resultant(g.change_ring(s.as_hom())) for s in K.galois_group()}
+            return {s : g.macaulay_resultant(g.change_ring(s.as_hom()))
+                    for s in K.galois_group()}
         else:
-            return {s : g.resultant(g.change_ring(s.as_hom())) for s in K.galois_group()}
+            return {s : g.resultant(g.change_ring(s.as_hom()))
+                    for s in K.galois_group()}
 
     def relations(self, K, g=None):
-        r"""
-        Gives possible relations between the polynomial
-        and a factor.
+        r"""Give possible relations between $f$ and a factor.
         
-        Since g is a factor of the polynomial over some
-        galois field extension, multiplying certain
-        galois conjugates of g will result in a constant
-        times the polynomial. A relation is a combination
-        of the required galois homomorphism and the
-        corresponding coefficient.
+        If $g$ is a factor of $f$ over some galois field extension,
+        multiplying certain galois conjugates of $g$ will result in a
+        constant times the polynomial. A relation is a combination of
+        the required galois homomorphisms and the corresponding
+        coefficient.
 
         INPUT:
 
-        - ``K`` -- An extension of the field over which
-          this equation is defined that is galois.
-        - ``g`` -- A factor of the polynomial defined
-          over the field K. By default will be the
-          outcome of :meth:`factor`
+        - ``K`` -- A galois extension of the field over which $f$ is
+          defined.
+
+        - ``g`` -- A factor of the polynomial $f$ defined over the
+          field `K`. By default will be the outcome of :meth:`factor`
 
         OUTPUT:
 
-        A list of tuples of the form (s1, ..., sn, c)
-        with s1, ..., sn elements of the galois group
-        of K and c an element of K, such that the
-        product of g conjugated by each si is equal
-        to c times the polynomial.
+        A list of tuples of the form $(\sigma_1, ..., \sigma_n, c)$
+        with $\sigma_1, ..., \sigma_n$ elements of the galois group of
+        `K` and $c$ an element of `K`, such that the product of `g`
+        conjugated by each $\sigma_i$ is equal to $c$ times the
+        polynomial $f$.
+
         """
         if g is None:
             g = self.factor(K)
@@ -111,30 +145,28 @@ class power_analyzer(SageObject):
             test = (candidate / self._f)
             if test.denominator() == 1:
                 # We found a relation
-                result.append(([G(1)] + list(s_ls), K(test.numerator().constant_coefficient())))
+                result.append(([G(1)] + list(s_ls),
+                               K(test.numerator().constant_coefficient())))
         return result
 
     @cached_method
     def bad_primes(self, K, g=None):
-        r"""
-        Gives the primes at which the factor g might not
-        be an l-th power.
+        r"""Give the primes a factor $g$ of $f$ might not be an l-th power.
 
         INPUT:
 
-        - ``K`` -- An extension of the field over which
-          this equation is defined that is galois.
-        - ``g`` -- A factor of the polynomial defined
-          over the field K. By default will be the
-          outcome of :meth:`factor`
+        - ``K`` -- A galois extension of the field over which $f$ is
+          defined.
+
+        - ``g`` -- A factor of the polynomial $f$ defined over the
+          field `K`. By default will be the outcome of :meth:`factor`
 
         OUTPUT:
 
-        A list of all prime ideals such that the
-        valuation of g at those primes is not
-        necessarily a multiple of l. Here we assume
-        that g is evaluated at values such that the
-        polynomial at those values is an l-th power.
+        A list of all primes $P$ of `K` such that the order of $P$ in
+        `g` is not necessarily a multiple of l when evaluated at a
+        solution to the diophantine equation.
+
         """
         if g is None:
             g = self.factor(K)
@@ -152,33 +184,33 @@ class power_analyzer(SageObject):
 
     @cached_method
     def constant_coeff(self, K, g, bad_primes_val, l):
-        r"""
-        Gives the constant such that g is an l-th power
-        times that constant.
+        r"""Give a constant $c$ such that a factor $g$ of $f$ is an $l$-th
+        power times $c$.
 
         INPUT:
 
-        - ``K`` -- An extension of the field over which
-          this equation is defined that is galois.
-        - ``g`` -- A factor of the polynomial defined
-          over the field K.
-        - ``bad_primes_val`` -- A tuple of integers,
-          where each integer is the valuation of g
-          at the corresponding prime in the list
-          returned by :meth:`bad_primes`.
+        - ``K`` -- A galois extension of the field over which $f$ is
+          defined.
+
+        - ``g`` -- A factor of the polynomial $f$ defined over the
+          field `K`. By default will be the outcome of :meth:`factor`
+
+        - ``bad_primes_val`` -- A tuple of integers, where each
+          integer is the valuation of $g$ at the corresponding prime
+          in the list returned by :meth:`bad_primes`.
+
         - ``l`` -- A strictly positive integer.
 
         OUTPUT:
 
-        An element c of K such that we have
-        ..MATH::
+        An element $c$ of `K` such that we have ..MATH::
 
-          g = c * u * x^l
+          g = c u x^l
 
-        for some x in K and some unit u in the ring of
-        integers of K. For this we assume that g is
-        evaluated at values for which the polynomial
-        is an l-th power.
+        for some $x$ in `K` and some unit $u$ in the ring of integers
+        of `K`. Here `g` is evaluated at a solution to the diophantine
+        equation.
+
         """
         bad_primes = self.bad_primes(K, g)
         I = product(bad_primes[i]^bad_primes_val[i] for i in range(len(bad_primes)))
@@ -193,9 +225,13 @@ class power_analyzer(SageObject):
         return (I * (J^l)).gens_reduced()[0]
     
     def unit_relation(self, K, g, cg, relation, l):
-        r"""
-        Determines the relation on units defined by
-        a relation on a factor of the polynomial.
+        r"""Determine the relation on units defined by a relation on a factor
+        of $f$.
+
+        Given a factor $g$ of the polynomial $f$ over some galois
+        extension $K$ of the field over which $f$ is defined, we can
+        find relations between $g$ and $f$ as given :meth:`relations`.
+        Such a relation defines a relation on the unit 
 
         INPUT:
 
@@ -228,6 +264,7 @@ class power_analyzer(SageObject):
         relation on g. Here u1, ..., un are 
         the generators of the unit group of K
         as returned by :meth:`gens`.
+
         """
         s_ls, C = relation
         constant = C / product(s(cg) for s in s_ls)
