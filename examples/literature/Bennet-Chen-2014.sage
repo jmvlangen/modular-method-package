@@ -25,6 +25,6 @@ print ""; print E.conductor_restriction_of_scalars()
 #  where 
 # n0 = 0 if ('a', 'b') is 1 of 24 possibilities mod 9
 #      4 if ('a', 'b') is 1 of 48 possibilities mod 9
-print ""; print E._newform_levels()
+print ""; print E.newform_levels()
 # [(48,)]  if ('a', 'b') is 1 of 24 possibilities mod 9
 # [(432,)] if ('a', 'b') is 1 of 48 possibilities mod 9

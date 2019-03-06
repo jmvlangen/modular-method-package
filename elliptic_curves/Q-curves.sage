@@ -2345,150 +2345,160 @@ class Qcurve(EllipticCurve_number_field):
         else:
             return self.conductor().absolute_norm() * K.discriminant()^2
 
-    def _newform_levels(self, prime=None, alpha=None, beta=None, gamma=None,
-                        d=None, N=None):
-        r"""Give the possible levels of newforms associated to this Q-curve.
+    def newform_levels(self, N=None):
+        r"""Compute the levels of newforms that could be associated to this
+        Q-curve.
+
+        Each non-CM Q-curve is the quotient of a $\Q$-simple variety
+        of GL_2-type, which in turn is isogenous to an abelian
+        varietyr associated to a newform. The $\lambda$-adic galois
+        representation of this newform is isomorphic to the $l$-adic
+        galois representation of the Q-curve when restricted to a
+        common subgroup of the absolute galois group of $\QQ$. Here
+        $\lambda$ is a prime dividing $l$ in the coefficient field of
+        the newform.
+
+        The conductor of an abelian variety associated to a newform is
+        $N^n$, where $N$ is the level of the newform and $n$ is the
+        dimension of the variety. If the Q-curve decomposes, the
+        factors of its restriction of scalars form abelian varieties
+        of associated newforms. These newforms are directly related to
+        the splitting maps of the Q-curves, in the sense that they are
+        twists of one another by the inverse of the twist characters
+        and their characters are the inverse of the splitting
+        characters. Using results about the change in level when
+        twisting a newform and the conductor of the restriction of
+        scalars, a guess for the levels of the newforms can be made.
+        This function computes all the possible levels for the
+        newforms under these constraints.
 
         INPUT:
-        
-        - ``prime`` -- A prime number or None (default: None).  If set
-          to a prime number, will only compute the order of that prime
-          number in the level of the newforms. Otherwise it will
-          compute the level for each of them.
 
-        - ``alpha`` -- A tuple of non-negative integers (default:
-          None) containing the conductors of the characters associated
-          to the newforms. Will be computed from the splitting
-          characters up to conjugacy if set to None.
+        - ``N`` -- A positive integer or None (default: None) which is
+          the conductor of the restriction of scalars of this Q-curve
+          over the decomposition field. This may also be a factor $M$
+          of the conductor $N$ that is coprime to $N / M$, in which
+          case this code only computes the part of the levels that is
+          coprime to $N / M$. If set to None will be initialized as
+          the result of :meth:`conductor_restriction_of_scalars`.
 
-        - ``beta`` -- A tuple of tuples of non-negative integers
-          (default: None) containing at index i, j the conductor of
-          the twist that turns the i-th newform into the j-th
-          newform. Will be computed from the twist characters up to
-          conjugacy if set to None.
-
-        - ``gamma`` -- A tuple of tuples of non-negative integers
-          (default: None) containing at index i, j the conductor of
-          the product of the twist that turns the i-th newform into
-          the j-th newform and the character of the i-th newform. Will
-          be computed from the twist characters and splitting
-          characters up to conjugacy if set to None
-
-        - ``d`` -- A tuple of non-negative integers (default: None)
-          containing the respective degrees of the fields in which the
-          newforms have their coefficients.
-
-        - ``N`` -- A non-negative integer (default: None) giving the
-          conductor of the restriction of scalars of this Q-curve over
-          the decomposition field.  Will be computed using the
-          corresponding method if set to None.
-        
         OUTPUT:
 
         A list of tuples, each tuple representing one of the options
-        for the levels of the newforms associated to this Q-curve. If
-        a prime was given, these tuples will contain the respective
-        exponent of the given prime for each newform. If no prime was
-        given, they will contain the respective level of each newform.
+        for the levels of the newforms associated to this Q-curve. The
+        $i$-th entry of such a tuple is the level of a newform
+        corresponding to the $i$-th conjugacy class of splitting maps,
+        as returned by :meth:`splitting_map`.
+
+        If the given `N` was only part of the conductor of the
+        restriction of scalars, then the given levels will only be the
+        part of the levels that only contain primes dividing `N`.
 
         """
-        # Calculate missing stuff:
-        eps = []
-        chi = []
-        if alpha is None or gamma is None:
-            eps = [c^(-1) for c in self.splitting_character(index='conjugacy')]
-        if beta is None or gamma is None:
-            chi = [c^(-1) for c in self.twist_character(index='conjugacy')]
-        if alpha is None or beta is None or gamma is None:
-            M = lcm(character.modulus() for character in (eps + chi))
-            L = QQ
-            for character in eps + chi:
-                L = composite_field(L, character.base_ring())
-            D = DirichletGroup(M, base_ring=L)
-        if alpha is None or gamma is None:
-            eps = [D(character) for character in eps]
-        if beta is None or gamma is None:
-            chi = [D(character) for character in chi]
-        if alpha is None:
-            alpha = tuple(eps[i].conductor() for i in range(len(eps)))
-        if beta is None:
-            beta = tuple(tuple((chi[j] * chi[i]^(-1)).conductor()
-                               for j in range(len(eps)))
-                         for i in range(len(eps)))
-        if gamma is None:
-            gamma = tuple(tuple((chi[j] * chi[i]^(-1) * eps[i]).conductor()
-                                for j in range(len(eps)))
-                          for i in range(len(eps)))
-        if d is None:
-            d = [Kf.degree()
-                 for Kf in self.splitting_image_field(index='conjugacy')]
         if N is None:
             N = self.conductor_restriction_of_scalars()
-
-        if prime is None: # Level case
-            level_dict = {}
-            primes = ZZ(N).prime_factors()
-            for p in primes:
-                level_dict[p] = self._newform_levels(prime=p, alpha=alpha,
-                                                     beta=beta, gamma=gamma,
-                                                     d=d, N=N)
-            return [tuple(product(primes[i]^level_dict[primes[i]][x[i]][j]
-                                  for i in range(len(primes))) # All primes
-                          for j in range(len(d))) # All entries
-                    for x in mrange([len(level_dict[p]) for p in primes])]
+        eps = [c^(-1) for c in self.splitting_character(index='conjugacy')]
+        chi = [c^(-1) for c in self.twist_character(index='conjugacy')]
+        M = lcm(character.modulus() for character in (eps + chi))
+        L = QQ
+        for character in eps + chi:
+            L = composite_field(L, character.base_ring())
+        D = DirichletGroup(M, base_ring=L)
+        eps = [D(character) for character in eps]
+        chi = [D(character) for character in chi]
+        alpha = tuple(eps[i].conductor() for i in range(len(eps)))
+        beta = tuple(tuple((chi[j] * chi[i]^(-1)).conductor()
+                           for j in range(len(eps))) for i in range(len(eps)))
+        gamma = tuple(tuple((chi[j] * chi[i]^(-1) * eps[i]).conductor()
+                            for j in range(len(eps))) for i in range(len(eps)))
+        d = [Kf.degree()
+             for Kf in self.splitting_image_field(index='conjugacy')]
+        primes = ZZ(N).prime_factors()
+        level_dict = {p : self._newform_levels(prime=p, alpha=alpha, beta=beta,
+                                               gamma=gamma, d=d, N=N)
+                      for p in primes}
+        return [tuple(product(primes[i]^level_dict[primes[i]][x[i]][j]
+                              for i in range(len(primes))) # over all primes
+                      for j in range(len(d))) # over all newforms
+                # over all possible tuples of exponents
+                for x in mrange([len(level_dict[p]) for p in primes])]
         
-        else: # prime case
-            alpha = tuple(alpha[i].ord(prime) for i in range(len(alpha)))
-            beta = tuple(tuple(beta[i][j].ord(prime)
-                               for j in range(len(beta[i])))
-                         for i in range(len(beta)))
-            gamma = tuple(tuple(gamma[i][j].ord(prime)
-                                for j in range(len(gamma[i])))
-                          for i in range(len(gamma)))
-            N = N.ord(prime)
-            # Small cases
-            x_max = max(max(max(beta[i][j] + 1, beta[i][j] + gamma[i][j])
-                            for j in range(len(beta[i])))
-                        for i in range(len(beta)))
-            x_ls = []
-            if sum(d) * x_max >= N: # Only small possibilities
-                for x in mrange([x_max + 1]*len(alpha)): 
-                    candidate = (sum(d[i] * x[i] for i in range(len(d))) == N)
-                    for i in range(len(beta)):
-                        if not candidate:
-                            break
-                        candidate = (alpha[i] <= x[i])
-                        for j in range(len(beta[i])):
-                            if not candidate:
-                                break
-                            if beta[i][j] == 0:
-                                candidate = (x[j] == x[i])
-                            elif (x[i] > max(beta[i][j] + 1,
-                                             beta[i][j] + gamma[i][j]) or
-                                  (x[i] < max(beta[i][j] + 1,
-                                              beta[i][j] + gamma[i][j]) and
-                                   gamma[i][j] >= 2) or
-                                  (x[i] == 1 and alpha[i] == 1 and
-                                   beta[i][j] == 1 and gamma[i][j] == 1)):
-                                candidate = (x[j] == max(x[i], beta[i][j] + 1,
-                                                         beta[i][j] +
-                                                         gamma[i][j]))
-                            else:
-                                candidate = (x[j] <= max(x[i], beta[i][j] + 1,
-                                                         beta[i][j] +
-                                                         gamma[i][j]))
-                    if candidate:
-                        x_ls.append(tuple(x))
-            elif sum(d).divides(N): # Big possibility
-                x = ZZ(N / sum(d))
-                candidate = True
-                for i in range(len(d)):
+    def _newform_levels(self, N, prime, alpha, beta, gamma, d):
+        r"""Implementation of :meth:`newform_levels`.
+
+        Compute the possible orders of a specific prime in the levels
+        of the newforms.
+
+        INPUT:
+
+        - ``N`` -- The argument `N`
+        
+        - ``prime`` -- A prime number
+
+        - ``alpha`` -- A tuple of the conductors of the characters
+          associated to the newforms.
+
+        - ``beta`` -- A tuple of tuples of non-negative integers
+          containing at index i, j the conductor of the twist that
+          turns the i-th newform into the j-th newform.
+
+        - ``gamma`` -- A tuple of tuples of non-negative integers
+          containing at index i, j the conductor of the product of the
+          twist that turns the i-th newform into the j-th newform and
+          the character of the i-th newform.
+
+        - ``d`` -- A tuple of the respective degrees of the fields in
+          which the newforms have their coefficients.
+
+        """
+        alpha = tuple(alpha[i].ord(prime) for i in range(len(alpha)))
+        beta = tuple(tuple(beta[i][j].ord(prime) for j in range(len(beta[i])))
+                     for i in range(len(beta)))
+        gamma = tuple(tuple(gamma[i][j].ord(prime)
+                            for j in range(len(gamma[i])))
+                      for i in range(len(gamma)))
+        N = N.ord(prime)
+        # Small cases
+        x_max = max(max(max(beta[i][j] + 1, beta[i][j] + gamma[i][j])
+                        for j in range(len(beta[i])))
+                    for i in range(len(beta)))
+        x_ls = []
+        if sum(d) * x_max >= N: # Only small possibilities
+            for x in mrange([x_max + 1]*len(alpha)): 
+                candidate = (sum(d[i] * x[i] for i in range(len(d))) == N)
+                for i in range(len(beta)):
                     if not candidate:
                         break
-                    candidate = (alpha[i] <= x)
+                    candidate = (alpha[i] <= x[i])
+                    for j in range(len(beta[i])):
+                        if not candidate:
+                            break
+                        if beta[i][j] == 0:
+                            candidate = (x[j] == x[i])
+                        elif (x[i] > max(beta[i][j] + 1,
+                                         beta[i][j] + gamma[i][j]) or
+                              (x[i] < max(beta[i][j] + 1,
+                                          beta[i][j] + gamma[i][j]) and
+                               gamma[i][j] >= 2) or
+                              (x[i] == 1 and alpha[i] == 1 and
+                               beta[i][j] == 1 and gamma[i][j] == 1)):
+                            candidate = (x[j] == max(x[i], beta[i][j] + 1,
+                                                     beta[i][j] + gamma[i][j]))
+                        else:
+                            candidate = (x[j] <= max(x[i], beta[i][j] + 1,
+                                                     beta[i][j] + gamma[i][j]))
                 if candidate:
-                    x_ls.append(tuple(x for i in range(len(d))))
-            return x_ls
+                    x_ls.append(tuple(x))
+        elif sum(d).divides(N): # Big possibility
+            x = ZZ(N / sum(d))
+            candidate = True
+            for i in range(len(d)):
+                if not candidate:
+                    break
+                candidate = (alpha[i] <= x)
+            if candidate:
+                x_ls.append(tuple(x for i in range(len(d))))
+        return x_ls
 
     @cached_method
     def newform(self, algorithm='magma', verify=0):
@@ -2591,7 +2601,7 @@ class Qcurve(EllipticCurve_number_field):
         iota = Kl.embeddings(K)[0]
         E = self.change_ring(iota * to_Kl)
         
-        levels = self._newform_levels()
+        levels = self.newform_levels()
         twists_base = self.twist_character('conjugacy')
         # Find a common base for all twists
         M = lcm(chi.modulus() for chi in twists_base)

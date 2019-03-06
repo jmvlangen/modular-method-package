@@ -24,7 +24,7 @@ print ""; print E.conductor_restriction_of_scalars()
 #  where 
 # n0 = 12 if ('a', 'b') == (1, 1) mod 2
 #      10 if ('a', 'b') == (1, 0) mod 2
-print ""; print E._newform_levels()
+print ""; print E.newform_levels()
 # [(512,)] if ('a', 'b') == (1, 1) mod 2
 # [(256,)] if ('a', 'b') == (1, 0) mod 2
 
@@ -47,7 +47,7 @@ print ""; print E.conductor()
 # (16)*Rad_P( ((-233610467125568/15*rsqrtm2rzeta0^7 + 583050224176000*rsqrtm2rzeta0^6 - 32212260985250176/15*rsqrtm2rzeta0^5 + 10494904035168000*rsqrtm2rzeta0^4 + 114728482001153792/15*rsqrtm2rzeta0^3 - 34983013450560000*rsqrtm2rzeta0^2 - 583609468822355456/15*rsqrtm2rzeta0 + 222330073930210304)) * (a^2 + (1/4800*rsqrtm2rzeta0^7 + 7/800*rsqrtm2rzeta0^5 + 63/400*rsqrtm2rzeta0^3 + 169/600*rsqrtm2rzeta0)*b) * (a^2 + (-1/4800*rsqrtm2rzeta0^7 - 7/800*rsqrtm2rzeta0^5 - 63/400*rsqrtm2rzeta0^3 - 169/600*rsqrtm2rzeta0)*b)^2 )
 print ""; print E.conductor_restriction_of_scalars()
 # 121029087867608368152576*Norm(Rad_P( ((-233610467125568/15*rsqrtm2rzeta0^7 + 583050224176000*rsqrtm2rzeta0^6 - 32212260985250176/15*rsqrtm2rzeta0^5 + 10494904035168000*rsqrtm2rzeta0^4 + 114728482001153792/15*rsqrtm2rzeta0^3 - 34983013450560000*rsqrtm2rzeta0^2 - 583609468822355456/15*rsqrtm2rzeta0 + 222330073930210304)) * (a^2 + (1/4800*rsqrtm2rzeta0^7 + 7/800*rsqrtm2rzeta0^5 + 63/400*rsqrtm2rzeta0^3 + 169/600*rsqrtm2rzeta0)*b) * (a^2 + (-1/4800*rsqrtm2rzeta0^7 - 7/800*rsqrtm2rzeta0^5 - 63/400*rsqrtm2rzeta0^3 - 169/600*rsqrtm2rzeta0)*b)^2 ))
-print ""; print E._newform_levels()
+print ""; print E.newform_levels()
 # [(768, 768)]
 
 # The levels of the article become visible over the cyclotomic field of order 48:
@@ -68,7 +68,7 @@ print ""; print Ebig.conductor_restriction_of_scalars()
 # n0 = 12 if ('a', 'b') == (0, 1) mod 2
 #      8  if ('a', 'b') == (1, 2), (3, 2) mod 4
 #      0  if ('a', 'b') == (1, 0), (3, 0) mod 4
-print ""; print Ebig._newform_levels()
+print ""; print Ebig.newform_levels()
 # [(384, 768, 768, 384), (768, 384, 384, 768)]                                       if ('a', 'b') == (0, 1) mod 2
 # [(192, 768, 768, 192), (768, 192, 192, 768)]                                       if ('a', 'b') == (1, 2), (3, 2) mod 4
 # [(12, 768, 768, 192), (192, 768, 768, 12), (768, 24, 96, 768), (768, 96, 24, 768)] if ('a', 'b') == (1, 0), (3, 0) mod 4

@@ -1703,77 +1703,113 @@ class FreyQcurve(FreyCurve, Qcurve):
                                      left,
                                      "Norm(" + N.right() +")")
 
-    def _newform_levels(self, N=None, additive_primes=None, condition=None,
-                        verbose=False, precision_cap=20, **kwds):
-        r"""
-        Gives the possible levels of newforms associated to this Frey Q-curve.
+    def newform_levels(self, bad_primes=None, condition=None, verbose=False,
+                       precision_cap=20):
+        r"""Compute the levels of newforms that could be associated to this
+        Frey Q-curve.
 
-        NOTE:
+        Each non-CM Q-curve is the quotient of a $\Q$-simple variety
+        of GL_2-type, which in turn is isogenous to an abelian
+        varietyr associated to a newform. The $\lambda$-adic galois
+        representation of this newform is isomorphic to the $l$-adic
+        galois representation of the Q-curve when restricted to a
+        common subgroup of the absolute galois group of $\QQ$. Here
+        $\lambda$ is a prime dividing $l$ in the coefficient field of
+        the newform.
 
-        These newforms are computed using only finitely many information which can
-        be supplied by the user through the parameter N. Otherwise the information
-        will be limited to the left side of the expression returned by
-        conductor_restriction_of scalars.
+        The conductor of an abelian variety associated to a newform is
+        $N^n$, where $N$ is the level of the newform and $n$ is the
+        dimension of the variety. If the Q-curve decomposes, the
+        factors of its restriction of scalars form abelian varieties
+        of associated newforms. These newforms are directly related to
+        the splitting maps of the Q-curves, in the sense that they are
+        twists of one another by the inverse of the twist characters
+        and their characters are the inverse of the splitting
+        characters. Using results about the change in level when
+        twisting a newform and the conductor of the restriction of
+        scalars, a guess for the levels of the newforms can be made.
 
-        For Frey curves this is sufficient information, since level lowering results
-        often imply that a newform of the level mentioned above should exist. Note
-        that this is however not checked nor proved by this code, hence the user
-        should verify this themself and supply a different N if necessary.
+        Let $E$ be an elliptic and $P$ be a prime of its decomposition
+        field for which the order of $P$ in the discriminant of $E$ is
+        divisible by a prime number $l$ and for which $E$ does not
+        have additive reduction. In that case is the mod $l$ galois
+        representation of $E$ unramified at $P$. In case $E$ is a
+        $\Q$-curve and $P$ is not ramified in the decomposition field,
+        this implies that the corresponding mod $\lambda$
+        representation of an associated newform is unramified at the
+        prime number $p$ below $P$. In this case we would be able to
+        find a newform of a lower level that has an isomorphic mod
+        $\lambda$ representation. To be precise the lower level is the
+        part of the level that is coprime to $p$.
+
+        In the case we have a Frey Q-curve $E$ and only a finite set
+        $S$ of bad primes of its decompisition field, i.e. primes $P$
+        for which the curve $E$ has additive reduction, that ramify in
+        the decomposition field or for which their order in the
+        discriminat of $E$ is not divisible by $l$, we know by level
+        lowering that the mod $l$ representation of $E$ is isomorphic
+        to the mod $\lambda$ galois representation of newforms with a
+        level only divisible by prime numbers below primes in the set
+        $S$. This function computes the possible levels for a given
+        set $S$ of bad primes.
 
         INPUT:
         
-        - ``prime`` -- A prime number or None (default: None) indicating the exponent
-          of which prime the level should be computed or None for the level itself.
-        - ``alpha`` -- A tuple of non-negative integers (default: None) containing the
-          conductors of the characters associated to the newforms. Will be computed
-          from the splitting characters up to conjugacy if set to None.
-        - ``beta`` -- A tuple of tuples of non-negative integers (default: None)
-          containing at index i, j the conductor of the twist that turns the i-th
-          newform into the j-th newform. Will be computed from the twist characters
-          up to conjugacy if set to None.
-        - ``gamma`` -- A tuple of tuples of non-negative integers (default: None)
-          containing at index i, j the conductor of the product of the twist that
-          turns the i-th newform into the j-th newform and the character of the
-          i-th newform. Will be computed from the twist characters and splitting
-          characters up to conjugacy if set to None
-        - ``d`` -- A tuple of non-negative integers (default: None) containing the
-          respective degrees of the fields in which the newforms have their
-          coefficients.
-        - ``N`` -- A non-negative integer (default: None) or ConditionalValue with
-          such values giving the conductor of the restriction of scalars of this
-          Q-curve over the decomposition field. Will be computed using the
-          corresponding method if set to None, in which case only the non-radical
-          part of the resulting ConditionalExpression will be used.
-        - ``condition`` -- A Condition giving the restrictions on the
-          parameters on this Frey curve that should be considered. By default
-          this will be set to the condition associated to this FreyCurve.
-        
+        - ``bad_primes`` -- A list of primes of the decomposition
+          field of this curve or None (default: None). These primes
+          should be given as prime numbers if the decomposition field
+          is $\QQ$ or as prime ideal otherwise. This should be the
+          list of all the bad primes, i.e. primes for which this curve
+          has additive reduction, primes that ramify in the
+          decomposition field and primes of which the order in the
+          disriminant of this curve is not divisible by $l$. If set to
+          None will be initialized as the result of
+          :meth:`primes_of_possible_additive_reduction` together with
+          all primes that ramify in the decomposition field, which
+          might omit some primes for which the discriminant of this
+          curve is not an $l$-th power.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
+
         OUTPUT:
 
-        A list of tuples, each tuple representing one of the options for the levels
-        of the newforms associated to this Q-curve. The n-th entry of such a tuple
-        will correspond to the factor of the decomposition of scalars associated
-        to the n-th splitting map obtained from splitting_map('conjugacy').
-        If a prime was given, these tuples will contain the respective exponent
-        of the given prime for each newform. If no prime was given, they will
-        contain the respective level of each newform.
+        A list of tuples, each tuple representing one of the options
+        for the levels of the newforms associated to this Q-curve. The
+        $i$-th entry of such a tuple is the level of a newform
+        corresponding to the $i$-th conjugacy class of splitting maps,
+        as returned by :meth:`splitting_map`.
 
-        If the argument N was a ConditionalValue will return a list of tuples
-        each of which contain a list as described above as their first entry
-        and a condition for which this list is relevant as their second entry.
+        If the outcome depends on the values of the parameters, will
+        return a conditional value containing such values with the
+        appropiate conditions on the parameters.
+
         """
         if condition is None:
             condition = self._condition
-        if N is None:
-            N = self.conductor_restriction_of_scalars(additive_primes=additive_primes,
-                                                      condition=condition,
-                                                      verbose=verbose,
-                                                      precision_cap=precision_cap).left()
+        N = self.conductor_restriction_of_scalars(additive_primes=bad_primes,
+                                                  condition=condition,
+                                                  verbose=verbose,
+                                                  precision_cap=precision_cap)
+        N = N.left()
         if isinstance(N, ConditionalExpression):
             N = N.value()
-        if isinstance(N, ConditionalValue):
-            return ConditionalValue([(self._newform_levels(N=Ni, **kwds), con) for Ni, con in N])
-        return Qcurve._newform_levels(self, N=N, **kwds)
+        return apply_to_conditional_value(lambda Ni:
+                                          Qcurve.newform_levels(self, N=Ni), N)
 
     @cached_method(key=lambda self, add, c, alg, prec, v, path:
                    ((self._condition if c is None else c),

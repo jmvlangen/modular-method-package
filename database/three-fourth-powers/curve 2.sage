@@ -33,7 +33,7 @@ print N
 
 # The levels of the newforms
 print ""
-levels = E._newform_levels()
+levels = E.newform_levels()
 print levels
 # [(23040, 23040, 115200, 115200), (115200, 115200, 23040, 23040)] if ('a', 'b') == (1, 0) mod 2 and ('a', 'b') == (1, 0) mod 2
 # []                                                               if ('a', 'b') == (1, 0) mod 2 and ('a', 'b') == (1, 1) mod 2

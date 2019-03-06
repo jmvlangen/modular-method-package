@@ -28,7 +28,7 @@ print ""; print E2.conductor()
 # (64)*Rad_P( ((-960*sqrt3 + 1664)) * (s^2 + (2*sqrt3 - 2)*s*t + t^2) * (s^2 + (-2*sqrt3 - 2)*s*t + t^2)^2 )
 print ""; print E2.conductor_restriction_of_scalars()
 # 589824*Norm(Rad_P( ((-960*zeta0 + 1664)) * (s^2 + (2*zeta0 - 2)*s*t + t^2) * (s^2 + (-2*zeta0 - 2)*s*t + t^2)^2 ))
-print ""; print E2._newform_levels()
+print ""; print E2.newform_levels()
 # [(768,)]
 
 ### Case c even:
@@ -80,9 +80,9 @@ print ""; print E21.conductor_restriction_of_scalars()
 # 589824*Norm(Rad_P( ((39936*zeta0 - 69120)) * (s^2 + (2/3*zeta0 + 1)*t^2) * (s^2 + (-2/3*zeta0 + 1)*t^2)^2 ))
 print ""; print E22.conductor_restriction_of_scalars()
 # 589824*Norm(Rad_P( ((39936*zeta0 - 69120)) * (s^2 + (2/3*zeta0 - 1)*t^2) * (s^2 + (-2/3*zeta0 - 1)*t^2)^2 ))
-print ""; print E21._newform_levels()
+print ""; print E21.newform_levels()
 # [(768,)]
-print ""; print E22._newform_levels()
+print ""; print E22.newform_levels()
 # [(768,)]
 
 E31 = FreyQcurve([0, 12*(sqrt3 - 1)*s, 0, 3*sqrt3*(sqrt3 - 1)^2*(t^2 + (2*sqrt3 + 3)*s^2), 0],
@@ -99,7 +99,7 @@ print ""; print E31.conductor_restriction_of_scalars()
 # 5308416*Norm(Rad_P( ((-1492992*zeta0 + 2612736)) * (s^2 + (-2/3*zeta0 - 1)*t^2) * (s^2 + (2/3*zeta0 - 1)*t^2)^2 ))
 print ""; print E32.conductor_restriction_of_scalars()
 # 5308416*Norm(Rad_P( ((-20901888*zeta0 + 36205056)) * (s^2 + (-2/3*zeta0 + 1)*t^2) * (s^2 + (2/3*zeta0 + 1)*t^2)^2 ))
-print ""; print E31._newform_levels()
+print ""; print E31.newform_levels()
 # [(2304,)]
-print ""; print E32._newform_levels()
+print ""; print E32.newform_levels()
 # [(2304,)]

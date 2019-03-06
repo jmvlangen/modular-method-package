@@ -28,10 +28,10 @@ Code for elliptic curves
 *** frey_curves.sage (*+)
 Frey curve classes
 - Add verbosity to primes_of_possible_additive_reduction
-*** Q-curves.sage (*#!)
+- Scrap the methods newforms!!
+*** Q-curves.sage (*+!)
 Implementation of Q-curves
 - Replace guessed degrees by sage isogeny code
-- Split up the method _newform_levels
 - Use new newform wrappers in method newform and split up code
 *** tates_algorithm.sage (*+!)
 An implementation of Tate's algorithm that works for Frey curves

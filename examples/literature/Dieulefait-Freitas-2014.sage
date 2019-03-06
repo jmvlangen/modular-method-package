@@ -43,7 +43,7 @@ print ""; print E.conductor_restriction_of_scalars()
 #       4 if ('a', 'b') is 1 of 4 possibilities mod 8  # a - b = 0 (mod 8)
 # n1 =  2 if ('a', 'b') is 1 of 20 possibilities mod 5 # a + b != 0 (mod 5)
 #       0 if ('a', 'b') is 1 of 4 possibilities mod 5  # a + b = 0 (mod 5)
-print ""; print E._newform_levels()
+print ""; print E.newform_levels()
 # [(1600, 1600)]             if ('a', 'b') is 1 of 6 possibilities mod 4 and ('a', 'b') is 1 of 20 possibilities mod 5
 # [(320, 1600), (1600, 320)] if ('a', 'b') is 1 of 6 possibilities mod 4 and ('a', 'b') is 1 of 4 possibilities mod 5
 # [(800, 800)]               if ('a', 'b') is 1 of 4 possibilities mod 4 and ('a', 'b') is 1 of 20 possibilities mod 5

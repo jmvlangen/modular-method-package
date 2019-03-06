@@ -32,7 +32,7 @@ print N
 #
 
 # The levels of the newforms
-levels = E._newform_levels()
+levels = E.newform_levels()
 print ""
 print levels
 # [(15360, 15360, 76800, 76800), (76800, 76800, 15360, 15360)]

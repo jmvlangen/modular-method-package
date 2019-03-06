@@ -22,7 +22,7 @@ try:
     print ""
     print "Newform levels:"
     print ""
-    for tmp in E._newform_levels():
+    for tmp in E.newform_levels():
         print tmp
     print ""
     f, twists = E.newform()
