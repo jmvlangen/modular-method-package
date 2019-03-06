@@ -25,7 +25,7 @@ Methods for analyzing diophantine equations of the form polynomial equals prime 
 - Integrate with conditions??
 ** elliptic_curves/
 Code for elliptic curves
-*** frey_curves.sage (*+)
+*** frey_curves.sage (*+!)
 Frey curve classes
 - Add verbosity to primes_of_possible_additive_reduction
 - Scrap the methods newforms!!

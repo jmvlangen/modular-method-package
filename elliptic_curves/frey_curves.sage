@@ -22,7 +22,7 @@ TODO
 
 AUTHORS:
 
-- Joey van Langen (2019-03-05): initial version
+- Joey van Langen (2019-03-06): initial version
 
 """
 
@@ -104,9 +104,9 @@ class FreyCurve(EllipticCurve_generic):
         EllipticCurve_generic.__init__(self, S, curve.a_invariants())
         self._R = parameter_ring
         if self._R == ZZ:
-            self._R_to_base = QQ.embedding(base)
+            self._R_to_base = QQ.embeddings(base)[0]
         else:
-            self._R_to_base = self._R.number_field().embedding(base)
+            self._R_to_base = self._R.number_field().embeddings(base)[0]
         self._condition = condition
 
     def definition_field(self):
@@ -940,16 +940,11 @@ class FreyCurve(EllipticCurve_generic):
                   for a in self.a_invariants()]
         return EllipticCurve(a_invs)
 
-    def conductor(self, condition=None, additive_primes=None, verbose=False,
+    def conductor(self, additive_primes=None, condition=None, verbose=False,
                   precision_cap=20):
-        r"""Compute the possible conductors of this Frey curve.
+        r"""Compute the conductor of this Frey curve.
 
         INPUT:
-
-        - ``condition`` -- A Condition or None (default: None) giving
-          the condition that the parameters of this Frey curve should
-          satisfy. If set to None will use the condition stored in
-          this FreyCurve instead.
 
         - ``additive_primes`` -- A list containing primes of the
           definition field of this curve or None (default: None). The
@@ -959,6 +954,11 @@ class FreyCurve(EllipticCurve_generic):
           this curve could have additive reduction. If set to None
           will compute this by using the method
           :meth:`primes_of_possible_additive_reduction`.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
 
         - ``verbose`` -- A boolean value or an integer (default:
           False). When set to True or any value larger then zero will
@@ -1059,8 +1059,8 @@ class FreyCurve(EllipticCurve_generic):
         If the elliptic curve has good reduction at the given prime,
         for every prime number $l$ not divisible by that prime the
         $l$-adic galois representation of this curve is unramified at
-        that prime and the trace of Frobenius at that prime is given
-        by his function.
+        that prime and the trace of the Frobenius element at that
+        prime is given by this function.
 
         If the elliptic curve has multiplicative reduction at the
         given prime, for every prime number $l$ not divisible by the
@@ -1107,7 +1107,7 @@ class FreyCurve(EllipticCurve_generic):
         OUTPUT:
 
         The the Frobenius element at the given prime to the given
-        power under the $l$-adic or mod-$l$ reprentation assuming that
+        power under the $l$-adic or mod $l$ reprentation assuming that
         they are unramified. If this would depend on the parameters
         will return a conditional value of possible values instead.
 
@@ -1152,63 +1152,157 @@ class FreyCurve(EllipticCurve_generic):
 
     @cached_method
     def _power_trace_formula(self, n):
+        r"""Give the formula to compute the trace of a matrix power.
+
+        Given a 2-by-2 matrix $A$, the trace of $A^n$ for some $n \ge
+        1$ can be expressed in terms of the trace and determinant of
+        $A$ with a formula. This function gives this formula.
+
+        """
         R.<x,y> = QQ[]
         f = x^n + y^n
         return polynomial_to_symmetric(f)
 
-    def newforms(self, condition=None, additive_primes=None, algorithm='sage',
-                 primes=50, verbose=False, precision_cap_conductor=20,
-                 precision_cap_reduction=1, path=None):
-        r"""
-        Computes the newforms that could be associated to this Frey curve.
+    @cached_method(key=lambda self, add, c, alg, v, prec, path:
+                   ((self._condition if c is None else c),
+                    (tuple(self.primes_of_possible_additive_reduction())
+                     if add is None else tuple(add)), prec))
+    def newform_candidates(self, bad_primes=None, condition=None,
+                           algorithm='sage', verbose=False, precision_cap=20,
+                           path=None):
+        r"""Compute newforms that could be associated to this Frey curve.
 
-        This only works if the Frey curve is defined over \Q.
+        Given a Frey curve defined over the rationals, modularity
+        tells us that its $l$-adic galois representations are
+        isomorphic those arising from some modular form of level equal
+        to the conductor of this curve.
+
+        If for all prime numbers $p$ except for those in a finite set
+        $S$ the order of $p$ in the discriminant is divisible by $l$
+        and the conductor exponent at $p$ is at most $1$, level
+        lowering results tell us that the same is true for the mod $l$
+        representation, but that the associated newform in this case
+        has level equal to the part of the conductor containing the
+        primes in $S$. This function will assume we are in this case
+        and return all the newforms of this level.
 
         INPUT:
+        
+        - ``bad_primes`` -- A list of prime numbers or None (default:
+          None). This should be the list of prime numbers $p$ for
+          which the order of $p$ in the discriminant is not divisible
+          by $l$ or for which the curve has additive reduction. If set
+          to None will be initialized as the result of
+          :meth:`primes_of_possible_additive_reduction`, which might
+          only contain the prime numbers at which the curve has
+          additive reduction.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``algorithm`` -- The algorithm that should be used to
+          compute the newforms. For possible options look at the
+          function :func:`get_newforms`.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
+
+        - ``path`` -- An argument that might be required if the
+          argument algorithm is set to a particular value. See the
+          function :func:`get_newforms` for more explanation.
+
+        OUTPUT:
+
+        A list of newforms $f$ for which the mod $l$ galois
+        representation of $f$ and this Frey curve might be
+        isomorphic. If this list depends on the values of the
+        parameters, returns a conditional value containing the
+        possible lists with the associated conditions on the
+        parameters.
+
+        """
+        if self.definition_field() != QQ:
+            raise ValueError("Can only find newforms associated to " +
+                             "Frey curves over the rationals.")
+        if bad_primes is None and verbose >= 0:
+            print ("Warning: The bad primes chosen by default only take into "+
+                   "account primes of additive reduction.")
+        N = self.conductor(additive_primes=bad_primes, condition=condition,
+                           verbose=verbose, precision_cap=precision_cap).left()
+        if isinstance(N, ConditionalExpression):
+            N = N.value()
+        if condition is None:
+            condition = self._condition
+        return apply_to_conditional_value(lambda level:
+                                          get_newforms(level,
+                                                       algorithm=algorithm,
+                                                       path=path), N)
+
+    def newforms(self, condition=None, bad_primes=None, algorithm='sage',
+                 primes=50, verbose=False, precision_cap_conductor=20,
+                 precision_cap_reduction=1, path=None):
+        r"""Use :meth:`newform_candidates` and :func:`eliminate_by_trace`
+        instead.
+
+        INPUT:
+
         - ``condition`` -- A Condition giving the restrictions on the
-          parameters on this Frey curve that should be considered. By default
-          this will be set to the condition associated to this FreyCurve.
-        - ``additive_primes`` -- An iterable containing prime ideals
-          or prime numbers, if the field of definition is QQ, that
+          parameters on this Frey curve that should be considered. By
+          default this will be set to the condition associated to this
+          FreyCurve.
+
+        - ``bad_primes`` -- An iterable containing prime ideals or
+          prime numbers, if the field of definition is QQ, that
           contains all the primes at which this curve can have
-          additive reduction. If set to None will compute this
-          by using the method primes_of_possible_additive_reduction
-        - ``algorithm`` -- One of the following values
-          'sage' -- to use sage to compute newforms (default)
-          'magma' -- to use magma to compute newforms
-        - ``primes`` -- A list of prime numbers or a
-          strictly positive integer (default: 50). This
-          list gives all the primes at which the traces
-          of frobenius of the different galois
-          representations should be compared. If set to
-          strictly positive integer, will be initialized
-          as the list of all prime numbers less than
-          the given number.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
+          additive reduction. If set to None will compute this by
+          using the method primes_of_possible_additive_reduction
+
+        - ``algorithm`` -- One of the following values 'sage' -- to
+          use sage to compute newforms (default) 'magma' -- to use
+          magma to compute newforms
+
+        - ``primes`` -- A list of prime numbers or a strictly positive
+          integer (default: 50). This list gives all the primes at
+          which the traces of frobenius of the different galois
+          representations should be compared. If set to strictly
+          positive integer, will be initialized as the list of all
+          prime numbers less than the given number.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such
+          comments.  If set to any negative value will also prevent
+          the printing of any warnings.  If this method calls any
+          method that accepts an argument verbose will pass this
+          argument to it.  If such a method fulfills a minor task
+          within this method and the argument verbose was larger than
+          0, will instead pass 1 less than the given argument. This
+          makes it so a higher value will print more details about the
+          computation than a lower one.
+
         - ``precision_cap_conductor`` -- A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic when computing the conductor.
-        - ``precision_cap_reduction`` -- A strictly positive
-          integer (default: 1) giving the maximal precision level
-          to be used in the p-Adic arithmetic when computing the
-          reduction type at a given prime. Since this will do a
-          computation for every prime lower than prime_cap, this
-          might get very computational intensive if set to a value
-          larger than 1.
+          (default: 20) giving the maximal precision level to be used
+          in p-Adic arithmetic when computing the conductor.
+
+        - ``precision_cap_reduction`` -- A strictly positive integer
+          (default: 1) giving the maximal precision level to be used
+          in the p-Adic arithmetic when computing the reduction type
+          at a given prime. Since this will do a computation for every
+          prime lower than prime_cap, this might get very
+          computational intensive if set to a value larger than 1.
+
         - ``path`` -- A string or None (default: None). A parameter
           only used if the algorithm is set to file, in which case
           this should be a path to the file from which to load
@@ -1216,34 +1310,32 @@ class FreyCurve(EllipticCurve_generic):
 
         OUTPUT:
 
-        A list consisting of pairs with as first entry a newform
-        that has a mod-l representation that has traces of frobenius
-        that could match the traces of frobenius of this curve for
-        all given primes, different from l. The second entry is an
-        integer divisible by all prime numbers l for which this
-        can be true.
+        A list consisting of pairs with as first entry a newform that
+        has a mod-l representation that has traces of frobenius that
+        could match the traces of frobenius of this curve for all
+        given primes, different from l. The second entry is an integer
+        divisible by all prime numbers l for which this can be true.
         
-        If the level of the newform might depend on a choice of parameters
-        will instead give a conditional value wherein each value is of
-        the form above and each condition corresponds to a single possible
-        level.
+        If the level of the newform might depend on a choice of
+        parameters will instead give a conditional value wherein each
+        value is of the form above and each condition corresponds to a
+        single possible level.
+
         """
         if condition is None:
             condition = self._condition
-        if additive_primes is None:
-            additive_primes = self.primes_of_possible_additive_reduction()
-        newforms = self.newform_candidates(additive_primes=additive_primes,
+        if bad_primes is None:
+            bad_primes = self.primes_of_possible_additive_reduction()
+        newforms = self.newform_candidates(bad_primes=bad_primes,
                                            condition=condition,
                                            algorithm=algorithm,
-                                           precision_cap=precision_cap_conductor,
-                                           verbose=verbose,
-                                           path=path)
-        newforms = apply_to_conditional_value(lambda x: list(x),
-                                              newforms)
+                                           precision_cap=
+                                           precision_cap_conductor,
+                                           verbose=verbose, path=path)
         if primes in ZZ and primes > 0:
             primes = prime_range(primes)
         primes = list(primes)
-        for P in additive_primes:
+        for P in bad_primes:
             if P in ZZ and P in primes:
                 primes.remove(P)
             elif P.smallest_integer() in primes:
@@ -1251,136 +1343,16 @@ class FreyCurve(EllipticCurve_generic):
         return eliminate_by_traces(self, newforms, condition=condition,
                                    primes=primes,
                                    precision_cap=precision_cap_reduction,
-                                   verbose=(verbose - 1 if verbose > 0 else verbose))
-
-    @cached_method(key=lambda self, add, c, alg, prec, v, path:
-                   ((self._condition if c is None else c),
-                    (tuple(self.primes_of_possible_additive_reduction())
-                     if add is None else tuple(add)),
-                    prec))
-    def newform_candidates(self, additive_primes=None, condition=None,
-                           algorithm='sage', precision_cap=20, verbose=False,
-                           path=None):
-        r"""
-        Computes the newforms that could be associated to
-        this Frey curve.
-
-        NOTE:
-        
-        This method only computes the newfoms of certain
-        levels and does no further verification that these
-        newforms can indeed be associated to this curve.
-        In order to do some a priori elimination of
-        possibilities, use the method :meth:`newforms`
-
-        INPUT:
-        
-        - ``additive_primes`` -- An iterable object
-          containing prime ideals or prime numbers, if the
-          field of definition is QQ, that contains all the
-          primes at which this curve can have additive
-          reduction. If set to None will compute this by
-          using :meth:`primes_of_possible_additive_reduction`
-        - ``condition`` -- A Condition giving the restriction
-          on the parameters on this Frey curve that should be
-          considered. By default this will be set to the
-          condition associated to this FreyCruve.
-        - ``algorithm`` -- The algorithm that should be used
-          to compute the newforms. For possible options look
-          at the method :meth:`get_newforms`
-        - ``precision_cap`` -- A strictly positive integer
-          (default: 20) that gives the maximal precision to
-          be used in p-adic computations.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``path`` -- An argument that miht be required
-          if the argument algorithm is set to a particular
-          value. See the method :meth:`get_newforms` for
-          more explanation.
-
-        OUTPUT:
-
-        A list of newforms that are associated to this
-        Frey curve. If this might depend on the value
-        of the parameters, will return a ConditionalValue
-        containing such lists instead.
-        """
-        if self.definition_field() != QQ:
-            raise ValueError("Can only find newforms associated to Frey curves over the rationals.")
-        N = self.conductor(additive_primes=additive_primes,
-                           condition=condition,
-                           verbose=verbose,
-                           precision_cap=precision_cap).left()
-        if isinstance(N, ConditionalExpression):
-            N = N.value()
-        if condition is None:
-            condition = self._condition
-        return apply_to_conditional_value(lambda level: tuple(get_newforms(level,
-                                                                           algorithm=algorithm,
-                                                                           path=path)),
-                                          N)
-        
-class FreyCurveLocalData(EllipticCurveLocalData):    
-    def __init__(self, elliptic_curve, prime,
-                 conductor_valuation,
-                 discriminant_valuation,
-                 kodaira_symbol,
-                 tamagawa_number,
-                 reduction_type):
-        self._set_elliptic_curve(elliptic_curve)
-        self._fp = conductor_valuation
-        self._val_disc = discriminant_valuation
-        if isinstance(kodaira_symbol, KodairaSymbol_class):
-            self._KS = kodaira_symbol
-        else:
-            self._KS = KodairaSymbol(kodaira_symbol)
-        self._cp = tamagawa_number
-        self._reduction_type = reduction_type
-        
-    def _set_elliptic_curve(self, elliptic_curve):
-        self._Emin = elliptic_curve
-        self._Emin_reduced = elliptic_curve
-        
-    def same_local_model(self, other):
-        return isinstance(other, EllipticCurveLocalData) and \
-        self.prime() == other.prime() and \
-        self.kodaira_symbol() == other.kodaira_symbol() and \
-        self.conductor_valuation() == other.conductor_valuation() and \
-        self.tamagawa_number() == other.tamagawa_number()
-        
-    def same_elliptic_data(self, other):
-        return self.same_local_model(other) and \
-        self.minimal_model == other.minimal_model()
-    
-    def __eq__(self, other):
-        return isinstance(other, ParametrizedLocalData) and \
-        self.same_elliptic_data(other)
-        
-    def __ne__(self, other):
-        return not isinstance(other, ParametrizedLocalData) or \
-        not self.same_elliptic_data(other)
-
+                                   verbose=(verbose - 1 if verbose > 0
+                                            else verbose))
     def _repr_(self):
-        """
-        String representation of a Frey curve.
+        """Give a string representation of a Frey curve.
 
-        REMARK:
+        .. NOTE:
 
         This is a direct copy from the code included
-        in EllipticCurve_number_field
+        in :class:`EllipticCurve_number_field`
+
         """
         b = self.ainvs()
         a = [z._coeff_repr() for z in b]
@@ -1421,103 +1393,202 @@ class FreyCurveLocalData(EllipticCurveLocalData):
         s += "over %s "%(self.definition_field(),)
         s += "with parameters %s"%(self.parameters(),)
         return s
+        
+class FreyCurveLocalData(EllipticCurveLocalData):
+    r"""The class for the local reduction data of a Frey curve.
 
-class FreyQcurve(FreyCurve, Qcurve):
-    r"""
-    A Frey curve that is a Q-curve over some number field
     """
-    def __init__(self, curve, parameter_ring=ZZ, conversion=None, condition=None, isogenies={}):
-        r"""
-        Initializes a Frey-Q-curve.
-
-        This initialization calls the initialization of both
-        the Qcurve and the FreyCurve class. Note however
-        that for the Qcurve class the parameter guessed degrees
-        is always set to zero as there is no good way to guess
-        isogenies of a Frey curve of a given degree.
-
-        The method _init_curve inside the class Qcurve is
-        overwritten by this class's method, hence when the
-        initialization of Qcurve is called, this method is
-        called instead. This tricks the Qcurve class into
-        thinking that this class is in fact defined over
-        a number field even though it is not.
+    def __init__(self, E, P, conductor_valuation, discriminant_valuation,
+                 kodaira_symbol, tamagawa_number, reduction_type):
+        r"""Initialize the reduction data for the Frey curve `E` at the
+        prime `P`.
 
         INPUT:
 
-        - ``curve`` -- An elliptic curve defined over some
-          polynomial ring over a number field or any argument that
-          would produce such a curve when passed to the
-          constructor EllipticCurve. This curve will be taken
-          over a polynomial ring over the minimal galois
-          extension of its base field and will become the
-          Frey Q-curve.
-        - ``parameter_ring`` -- A ring (default: ZZ) that
-          has a natural map into the base ring of the
-          polynomial ring over which this elliptic curve
-          is defined. This is the ring in which the variables
-          of the polynomial ring over which this curve is
+        - ``E`` -- a Frey curve.
+
+        - ``P`` -- a prime of the definition field of `E`, given as a
+          prime number if the definition field is $\QQ$ or as a prime
+          ideal otherwise.
+
+        - ``conductor_valuation`` -- The valuation of the conductor of
+          `E` at the prime `P`.
+
+        - ``discriminant_valuation`` -- The valuation of the
+          discriminant of `E` at the prime `P`.
+
+        - ``kodaira_symbol`` -- The Kodaira symbol associated to the
+          reduction of `E` at the prime `P`
+
+        - ``tamagawa_number`` -- The Tamagawa number associated to the
+          reduction of `E` at the prime `P`.
+
+        - ``reduction_type`` -- The reduction type of `E` at the prime
+          `P`, which can be the values: None, for good reduction, 1
+          for split multiplicative reduction, -1 for non-split
+          multiplicative reduction, and 0 for additive reduction.
+
+        """
+        self._set_elliptic_curve(elliptic_curve)
+        self._fp = conductor_valuation
+        self._val_disc = discriminant_valuation
+        if isinstance(kodaira_symbol, KodairaSymbol_class):
+            self._KS = kodaira_symbol
+        else:
+            self._KS = KodairaSymbol(kodaira_symbol)
+        self._cp = tamagawa_number
+        self._reduction_type = reduction_type
+        
+    def _set_elliptic_curve(self, elliptic_curve):
+        self._Emin = elliptic_curve
+        self._Emin_reduced = elliptic_curve
+        
+    def same_local_model(self, other):
+        r"""Tell if the reduction data of this object and another are the same.
+
+        INPUT:
+
+        - ``other`` -- Some object
+
+        OUTPUT:
+
+        True, if `other` is an instance of
+        :class:`EllipticCurveLocalData` and contains the same
+        reduction data as this object. False, otherwise
+
+        """
+        return (isinstance(other, EllipticCurveLocalData) and
+                self.prime() == other.prime() and
+                self.kodaira_symbol() == other.kodaira_symbol() and
+                self.conductor_valuation() == other.conductor_valuation() and
+                self.tamagawa_number() == other.tamagawa_number())
+        
+    def same_elliptic_data(self, other):
+        r"""Tell if the data of this object and another are the
+        same.
+
+        INPUT:
+
+        - ``other`` -- Some object
+
+        OUTPUT:
+
+        True, if `other` is an instance of
+        :class:`EllipticCurveLocalData` and contains the same data as
+        this object. False, otherwise
+
+        """
+        return (self.same_local_model(other) and
+                self.minimal_model == other.minimal_model())
+    
+    def __eq__(self, other):
+        return (isinstance(other, ParametrizedLocalData) and
+                self.same_elliptic_data(other))
+        
+    def __ne__(self, other):
+        return (not isinstance(other, ParametrizedLocalData) or
+                not self.same_elliptic_data(other))
+
+class FreyQcurve(FreyCurve, Qcurve):
+    r"""A Frey-Hellegouarch curve that is also a Q-curve.
+
+    .. SEE_ALSO::
+
+        :class:`FreyCurve`
+        :class:`Qcurve`
+
+    """
+    def __init__(self, curve, parameter_ring=ZZ, condition=None, isogenies={}):
+        r"""Initializes a Frey Q-curve.
+
+        This initialization calls the initialization of both
+        :class:`Qcurve` and :class:`FreyCurve`. Note however that for
+        the initialization of the first the parameter
+        `guessed_degrees` is always set to the empty list as there is
+        no good way to guess isogenies of a Frey curve of a given
+        degree.
+
+        INPUT:
+
+        - ``curve`` -- An elliptic curve or any argument that would
+          produce such a curve when passed to the constructor
+          :func:`EllipticCurve`. The elliptic curve should be defined
+          over some (multivariate) polynomial ring $R$ which in turn
+          is defined over some number field $L$. The Frey curve will
+          be this curve with $L$ replaced with the minimal extension
+          that is galois over $\QQ$.
+
+        - ``parameter_ring`` -- The ring of integers of a subfield $K$
+          of $L$ (default: ZZ). This is the ring in which the
+          variables of the polynomial ring over which this curve is
           defined can take values.
-        - ``conversion`` -- A map (default: None) from the
-          solution ring to the base ring of the polynomial
-          ring over which the coefficients of this curve
-          are defined. If set to None, will attempt to find
-          such a map by trying in this order maps given by:
-           - coerce_map_from
-           - convert_map_from
-           - Hom( , ).an_element()
-        - ``condition`` -- A Condition object or None
-          (default: None) giving a condition which must hold
-          on the variables in this Frey-curve. If set to
-          None will assume that all values for these variables
-          are possible instead.
-         - ``isogenies`` -- A dictionary (default: {}) with as keys elements
-           of the galois group of the base field of the Q-curve and as values
-           data of the corresponding isogeny from the galois conjugate of this
-           Q-curve to itself. This data can be either an isogeny as a Sage
-           object or a tuple of an algebraic integer (defined as an element of
-           some number field) and a strictly positive integer, which are
-           respectively the $\lambda$ such that the isogeny is
-           $z \mapsto \lambda z$ on the complex numbers and the degree of the
-           isogeny.
+
+        - ``condition`` -- An instance of :class:`Condition` or None
+          (default: None) giving a condition which must hold for the
+          values of the variables of $R$. If set to None will assume
+          that all values for these variables are allowed.
+
+        - ``isogenies`` -- A dictionary (default: {}) with as keys
+           elements of the galois group of the definition field of
+           this curve and as values data of the corresponding isogeny
+           from the galois conjugate of this Q-curve to itself. This
+           data can be either an isogeny as a Sage object or a tuple
+           of an algebraic integer (defined as an element of some
+           number field) and a strictly positive integer, which are
+           respectively the $\lambda$ such that the isogeny is $z
+           \mapsto \lambda z$ on the complex numbers and the degree of
+           the isogeny.
+
         """
         FreyCurve.__init__(self, curve, parameter_ring=parameter_ring,
-                           conversion=conversion, condition=condition)
+                           condition=condition)
         Qcurve.__init__(self, curve, isogenies=isogenies)
 
     def _init_curve(self, curve):
-        r"""
-        Initializes the curve of this Frey Q-curve.
+        r"""Initialize the underlying elliptic curve.
 
-        This overwrites the method _init_curve inside the
-        class Qcurve. Note that most things have already
-        been initialized by the class FreyCurve at this point,
-        but we initialize again to make sure the following
-        conditions are satisfied:
-        - The curve is defined over a polynomial ring over some
-          number field.
-        - The number field is a galois field. If not it will be
-          replaced by its galois closure.
+        This overwrites the method found in :class:`Qcurve`, such that
+        the methods of that class can work with this curve as if it
+        was defined over its definition field, rather than the
+        polynomial ring that is its base ring.
+
+        When this method is called most things have already been
+        initialized by the initialization from :class:`FreyCurve`, but
+        we initialize again to make sure the definition field will be
+        galois over $\QQ$.
+
         """
         K = self.definition_field()
         if not is_NumberField(K):
             raise ValueError("The ring %s is not a number field."%(K,))
         if not K.is_galois():
             Kgal = K.galois_closure(names=K.variable_name() + 'g')
-            iota = K.hom([a.minpoly().change_ring(Kgal).roots()[0][0] for a in K.gens()], Kgal)
+            iota = K.embeddings(Kgal)[0]
             ainvs = [a.change_ring(iota) for a in curve.a_invariants]
             S = self.base().change_ring(Kgal)
             EllipticCurve_generic.__init__(self, S, ainvs)
+            self._R_to_base = iota * self._R_to_base
 
     def definition_field(self):
-        r"""
-        Gives the field over which this Frey Q-curve is defined.
+        r"""Give the field over which this Frey curve is defined.
+
+        Even though the Frey curve is defined over some (multivariate)
+        polynomial ring $R$ over some number field $L$, since the
+        variables of $R$ are assumed to have values in some subfield
+        $K$ of $L$ the curve can be assumed to be defined over $L$.
 
         OUTPUT:
+        
+        The base ring of the polynomial ring over which this Frey
+        curve is defined.
 
-        The number field over which this Frey Q-curve is defined.
+        .. SEE_ALSO::
+
+            :meth:`base_ring`,
+            :meth:`parameters`
+
         """
-        return self.definition_field()
+        return self.base_ring().base()
 
     def base_extend(self, R):
         result = FreyCurve.base_extend(self, R)
@@ -1527,16 +1598,22 @@ class FreyQcurve(FreyCurve, Qcurve):
             L = result.definition_field()
             r = K.gen().minpoly().change_ring(L).roots()
             if len(r) > 0:
-                return FreyQcurve(result,
-                                  isogenies=self._isogeny_data(L),
+                return FreyQcurve(result, isogenies=self._isogeny_data(L),
                                   parameter_ring=result._R,
-                                  conversion=result._R_to_base,
                                   condition=result._condition)
         return result
 
     def twist(self, gamma):
-        r"""
-        Gives the twist of this Frey Q-curve by a given element gamma.
+        r"""Give the twist of this Frey Q-curve by a given element gamma.
+
+        If this curve was given by .. MATH::
+
+            E : y^2 = x^3 + a_2 x^2 + a_4 x + a_6
+
+        the twisted curve is given by .. MATH::
+        
+            E : y^2 = x^3 + \gamma a_2 x^2 + \gamma^2 a_4 x
+                      + \gamma^3 a_6
 
         INPUT:
 
@@ -1544,21 +1621,11 @@ class FreyQcurve(FreyCurve, Qcurve):
 
         OUTPUT:
         
-        A Frey Q-curve defined over the composite field of the field over
-        which this Frey Q-curve is completely defined and the parent of
-        gamma, that is the twist of this Q-curve by gamma, i.e. if this
-        Frey Q-curve was given by
-        
-        .. MATH::
+        A Frey Q-curve which is the twist of this Q-curve by
+        gamma. The definition field of this new curve will be the
+        smallest possible field over which it is completely defined as
+        a Q-curve.
 
-        E : y^2 = x^3 + a_2 x^2 + a_4 x + a_6
-
-        the twisted Q-curve is given by
-
-        .. MATH::
-        
-        E : y^2 = x^3 + \gamma a_2 x^2 + \gamma^2 a_4 x + \gamma^3 a_6
-        
         """
         K_E = self.complete_definition_field()
         K_gamma = gamma.parent()
@@ -1572,10 +1639,13 @@ class FreyQcurve(FreyCurve, Qcurve):
         G = K.galois_group()
         isogenies = dict()
         for s in G:
-            L, K_to_L, alpha = field_with_root(K, s(gamma)/gamma, give_embedding=True)
+            L, K_to_L, alpha = field_with_root(K, s(gamma)/gamma,
+                                               give_embedding=True)
             isogenies[s] = (K_to_L(iota(l(s))) * alpha, d(s))
-        H = [t for t in G if (all(t(isogenies[s][0]) == isogenies[s][0] for s in G) and
-                              all(t(c) == c for a in ainvs for c in a.coefficients()))]
+        H = [t for t in G if (all(t(isogenies[s][0]) == isogenies[s][0]
+                                  for s in G) and
+                              all(t(c) == c for a in ainvs
+                                  for c in a.coefficients()))]
         Kmin = fixed_field(H)
         if Kmin != K:
             isogenies_min = {}
@@ -1601,63 +1671,57 @@ class FreyQcurve(FreyCurve, Qcurve):
                           condition=self._condition)
     
     def conductor_restriction_of_scalars(self, additive_primes=None,
-                                         condition=None,
-                                         verbose=False, precision_cap=20):
-        r"""
-        Gives the conductor of the restriction of scalars of this Frey Q-curve.
-
-        Note that since this is a Frey curve, the solution might depend on the
-        parameter so the outcome will be a conditional expression that contains
-        a factor expressed as a string since it can not be explicitly computed.
+                                         condition=None, verbose=False,
+                                         precision_cap=20):
+        r"""Give the conductor of the restriction of scalars of this Frey
+        Q-curve.
 
         INPUT:
 
-        - ``additive_primes`` -- An iterable containing prime ideals
-          or prime numbers, if the decomposition field is QQ, that
-          contains all the primes at which this curve, over the
-          decomposition field, can have additive reduction and all
-          the primes at which the decomposition field ramifies. If
-          set to None will compute this by using the method
-          primes_of_possible_additive_reduction and by computing
-          the ramified primes of the decomposition field.
-        - ``condition`` -- A Condition or None (default:
-          None) giving the condition that the parameters of
-          this Frey curve should satisfy. If set to None will
-          use the condition stored in this FreyCurve instead.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``precision_cap`` A strictly positive integer
-          (default: 20) giving the maximal precision level to be
-          used in p-Adic arithmetic.
+        - ``additive_primes`` -- A list containing primes of the
+          definition field of this curve or None (default: None). The
+          primes in this list should be given as prime number if the
+          definition field is $\QQ$ or as maximal ideals
+          otherwise. This list should include all the primes at which
+          this curve could have additive reduction. If set to None
+          will compute this by using the method
+          :meth:`primes_of_possible_additive_reduction`.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey Q-curve
+          should satisfy. If set to None will use the condition stored
+          in this Frey Q-curve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such
+          comments.  If set to any negative value will also prevent
+          the printing of any warnings.  A higher value will cause
+          more messages to be printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
 
         OUTPUT:
 
-        The conductor of the restriction of scalars of this curve over the
-        decomposition field. This will be a conditional expression containing
-        on the left side a (conditional) expression of the part of the
-        conductor coming from primes in additive_primes, whilst the right hand
-        side is a string describing how to compute the part of the conductor
-        coming from primes coprime to the primes in additivie_primes. The
-        latter contains the operator Rad_P which refers to taking the radical
-        of an expression ignoring those primes in additive_primes.
+        The conductor of the restriction of scalars of this curve over
+        the decomposition field. This will be a conditional expression
+        containing on the left side a (conditional) expression of the
+        part of the conductor coming from primes in `additive_primes`,
+        whilst the right hand side is a string describing how to
+        compute the part of the conductor coming from primes coprime
+        to the primes in `additive_primes`. The latter contains the
+        operator Rad_P which refers to taking the radical of an
+        expression ignoring those primes in additive_primes.
+
         """
         K0 = self.definition_field()
         K = self.decomposition_field()
         if K0 != K:
-            iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
+            iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0]
+                           for a in K0.gens()], K)
             E = self.change_ring(iota)
         else:
             E = self
@@ -1694,7 +1758,8 @@ class FreyQcurve(FreyCurve, Qcurve):
                 elif e != 0:
                     left_factors[p] = e
             if hasattr(disc_factors, 'unit') and disc_factors.unit() != 1:
-                left = Dsqr.factor().unit() * product(p^e for p,e in left_factors.iteritems())
+                left = (Dsqr.factor().unit() *
+                        product(p^e for p, e in left_factors.iteritems()))
             else:
                 left = product(p^e for p,e in left_factors.iteritems())
         else:
@@ -1816,83 +1881,141 @@ class FreyQcurve(FreyCurve, Qcurve):
                     (tuple(self.primes_of_possible_additive_reduction())
                      if add is None else tuple(add)),
                     prec))
-    def newform_candidates(self, additive_primes=None, condition=None,
-                           algorithm='sage', precision_cap=20, verbose=False,
+    def newform_candidates(self, bad_primes=None, condition=None,
+                           algorithm='sage', verbose=False, precision_cap=20,
                            path=None):
-        r"""
-        Computes the newforms that could be associated to
-        this Frey Q-curve.
+        r"""Compute newforms that could be associated to this Frey Q-curve.
 
-        NOTE:
-        
-        This method only computes the newfoms of certain
-        levels and character, and does no further verification
-        that these newforms can indeed be associated to this
-        curve. In order to do some a priori elimination of
-        possibilities, use the method :meth:`newforms`
+        Each non-CM Q-curve is the quotient of a $\Q$-simple variety
+        of GL_2-type, which in turn is isogenous to an abelian
+        varietyr associated to a newform. The $\lambda$-adic galois
+        representation of this newform is isomorphic to the $l$-adic
+        galois representation of the Q-curve when restricted to a
+        common subgroup of the absolute galois group of $\QQ$. Here
+        $\lambda$ is a prime dividing $l$ in the coefficient field of
+        the newform.
+
+        The conductor of an abelian variety associated to a newform is
+        $N^n$, where $N$ is the level of the newform and $n$ is the
+        dimension of the variety. If the Q-curve decomposes, the
+        factors of its restriction of scalars form abelian varieties
+        of associated newforms. These newforms are directly related to
+        the splitting maps of the Q-curves, in the sense that they are
+        twists of one another by the inverse of the twist characters
+        and their characters are the inverse of the splitting
+        characters. Using results about the change in level when
+        twisting a newform and the conductor of the restriction of
+        scalars, a guess for the levels of the newforms can be made.
+
+        Let $E$ be an elliptic and $P$ be a prime of its decomposition
+        field for which the order of $P$ in the discriminant of $E$ is
+        divisible by a prime number $l$ and for which $E$ does not
+        have additive reduction. In that case is the mod $l$ galois
+        representation of $E$ unramified at $P$. In case $E$ is a
+        $\Q$-curve and $P$ is not ramified in the decomposition field,
+        this implies that the corresponding mod $\lambda$
+        representation of an associated newform is unramified at the
+        prime number $p$ below $P$. In this case we would be able to
+        find a newform of a lower level that has an isomorphic mod
+        $\lambda$ representation. To be precise the lower level is the
+        part of the level that is coprime to $p$.
+
+        In the case we have a Frey Q-curve $E$ and only a finite set
+        $S$ of bad primes of its decompisition field, i.e. primes $P$
+        for which the curve $E$ has additive reduction, that ramify in
+        the decomposition field or for which their order in the
+        discriminat of $E$ is not divisible by $l$, we know by level
+        lowering that the mod $l$ representation of $E$ is isomorphic
+        to the mod $\lambda$ galois representation of newforms with a
+        level only divisible by prime numbers below primes in the set
+        $S$. This function computes the possible levels and all
+        newforms at those levels for this curve given such a set $S$.
 
         INPUT:
         
-        - ``additive_primes`` -- An iterable object
-          containing prime ideals or prime numbers, if the
-          field of definition is QQ, that contains all the
-          primes at which this curve can have additive
-          reduction. If set to None will compute this by
-          using :meth:`primes_of_possible_additive_reduction`
-        - ``condition`` -- A Condition giving the restriction
-          on the parameters on this Frey curve that should be
-          considered. By default this will be set to the
-          condition associated to this FreyCruve.
-        - ``algorithm`` -- The algorithm that should be used
-          to compute the newforms. For possible options look
-          at the method :meth:`get_newforms`
-        - ``precision_cap`` -- A strictly positive integer
-          (default: 20) that gives the maximal precision to
-          be used in p-adic computations.
-        - ``verbose`` -- A boolean value or an integer
-          (default: False). When set to True or any value
-          larger then zero will print comments to stdout
-          about the computations being done whilst busy. If
-          set to False or 0 will not print such comments.
-          If set to any negative value will also prevent
-          the printing of any warnings.
-          If this method calls any method that accepts an
-          argument verbose will pass this argument to it.
-          If such a method fulfills a minor task within
-          this method and the argument verbose was larger
-          than 0, will instead pass 1 less than the given
-          argument. This makes it so a higher value will
-          print more details about the computation than a
-          lower one.
-        - ``path`` -- An argument that miht be required
-          if the argument algorithm is set to a particular
-          value. See the method :meth:`get_newforms` for
-          more explanation.
+        - ``bad_primes`` -- A list of primes of the decomposition
+          field of this curve or None (default: None). These primes
+          should be given as prime numbers if the decomposition field
+          is $\QQ$ or as prime ideal otherwise. This should be the
+          list of all the bad primes, i.e. primes for which this curve
+          has additive reduction, primes that ramify in the
+          decomposition field and primes of which the order in the
+          disriminant of this curve is not divisible by $l$. If set to
+          None will be initialized as the result of
+          :meth:`primes_of_possible_additive_reduction` together with
+          all primes that ramify in the decomposition field, which
+          might omit some primes for which the discriminant of this
+          curve is not an $l$-th power.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``algorithm`` -- The algorithm that should be used to
+          compute the newforms. For possible options look at the
+          function :func:`get_newforms`.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
+
+        - ``path`` -- An argument that might be required if the
+          argument algorithm is set to a particular value. See the
+          function :func:`get_newforms` for more explanation.
 
         OUTPUT:
 
-        A list of newforms that are associated to this
-        Frey curve. If this might depend on the value
-        of the parameters, will return a ConditionalValue
-        containing such lists instead.
+        A list of newforms $f$ for which the mod $l$ galosi
+        representations of $f$ and this Frey curve might be
+        isomorphic. If this list depends on the values of the
+        parameters, returns a conditional value containing the
+        possible lists with the associated conditions on the
+        parameters.
+
         """
         if condition is None:
             condition = self._condition
-        levels = self._newform_levels(additive_primes=additive_primes,
+        levels = self.newform_levels(bad_primes=bad_primes,
                                       condition=condition,
-                                      verbose=(verbose - 1 if verbose > 0 else verbose),
+                                      verbose=(verbose - 1 if verbose > 0
+                                               else verbose),
                                       precision_cap=precision_cap)
         return apply_to_conditional_value(lambda levelsi, con:
                                           self._newform_candidates(levelsi,
-                                                                   con & condition,
+                                                                   con &
+                                                                   condition,
                                                                    algorithm,
                                                                    path,
                                                                    verbose),
-                                          levels,
-                                          use_condition=True,
+                                          levels, use_condition=True,
                                           default_condition=condition)
 
     def _newform_candidates(self, levels, condition, algorithm, path, verbose):
+        r"""Implementation of :meth:`newform_candidates`
+
+        INPUT:
+
+        - ``levels`` -- List of possible levels for the newforms
+
+        - ``condition`` -- The condition on the parameters to get
+          these levels
+
+        - ``algorithm`` -- The argument `algorithm`
+
+        - ``path`` -- The argument ``path``
+
+        - ``verbose`` -- Verbosity argument
+
+        """
         result = []
         done_levels = []
         characters = [(eps^(-1)).primitive_character()
@@ -1912,13 +2035,13 @@ class FreyQcurve(FreyCurve, Qcurve):
         return tuple(result)
             
     def _repr_(self):
-        """
-        String representation of a Frey Q-curve.
+        """Give a string representation of a Frey Q-curve.
 
-        REMARK:
+        .. NOTE::
 
         This is a direct copy from the code included
-        in EllipticCurve_number_field
+        in :class:`EllipticCurve_number_field`
+
         """
         b = self.ainvs()
         a = [z._coeff_repr() for z in b]
