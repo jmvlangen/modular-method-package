@@ -20,9 +20,11 @@ Conditions on diophantine variables
 *** Frey_curve_construction.sage
 Some functions to make Frey curves
 
-*** prime_power.sage (*+)
+*** prime_power.sage (*+!)
 Methods for analyzing diophantine equations of the form polynomial equals prime power
 - Integrate with conditions??
+- Keep track of previously computed prime data
+- Combine conditions into one??
 ** elliptic_curves/
 Code for elliptic curves
 *** frey_curves.sage (*+!)

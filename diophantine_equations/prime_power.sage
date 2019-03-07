@@ -15,7 +15,7 @@ TODO
 
 AUTHORS:
 
-- Joey van Langen (2019-03-06): initial version
+- Joey van Langen (2019-03-07): initial version
 
 """
 
@@ -39,8 +39,9 @@ class power_analyzer(SageObject):
 
        f(x_1, \ldots x_n) = y^l
 
-    where $f$ is a polynomial. Here we are interestend in solutions
-    $x_1, \ldots, x_n, y, l$ with $l$ prime.
+    where $f$ is a polynomial over the rationals. Here we are
+    interestend in solutions $x_1, \ldots, x_n, y, l \in \Z$ with $l$
+    prime.
     
     Throughout the documentation of this class we will use the
     notation above to describe what methods do.
@@ -52,7 +53,7 @@ class power_analyzer(SageObject):
         
         INPUT:
 
-        - ``f`` -- The polynomial $f$.
+        - ``f`` -- The polynomial $f$ defined over the rationals.
 
         """
         self._f = f
@@ -224,108 +225,124 @@ class power_analyzer(SageObject):
         J = (CJ^(-1)).ideal()
         return (I * (J^l)).gens_reduced()[0]
     
-    def unit_relation(self, K, g, cg, relation, l):
-        r"""Determine the relation on units defined by a relation on a factor
+    def unit_relation(self, K, g, c, relation, l):
+        r"""Determine the relations on units defined by a relation on a factor
         of $f$.
 
         Given a factor $g$ of the polynomial $f$ over some galois
         extension $K$ of the field over which $f$ is defined, we can
         find relations between $g$ and $f$ as given :meth:`relations`.
-        Such a relation defines a relation on the unit 
+        If we know that .. MATH::
+
+          g = c u x^l
+
+        for some $c, x \in K$ and unit $u$ in the ring of integers of
+        $K$ and we express $u$ as $u = u_0^{y_0} \cdots u_n^{y_n}$ for
+        some generators $u_0, \ldots, u_n$ of the unit group of `K`,
+        then such a relation defines relations on the exponents $y_0,
+        \ldots, y_n$. This method computes those relations.
 
         INPUT:
 
-        - ``K`` -- A field extension of the field
-          over which the polynomial is defined that
-          is galois.
-        - ``g`` -- A factor of the polynomial over
-          the field K.
-        - ``cg`` -- An element of K, such that
-          g = cg * u * x^l for some x in K and some
-          unit u of the ring of integers of K
-        - ``relation`` -- A tuple of the form
-          (s0, ..., sn, c) with s0, ..., sn elements
-          of the galois group of K and c an element
-          of K, such that the product of the
-          conjugates of g by each si is equal to
-          the polynomial times c.
-        - ``l`` -- A prime number, the
-          exponent to be considered whenever
-          l-th powers are mentioned.
+        - ``K`` -- A galois field extension of the field over which
+          $f$ is defined.
+
+        - ``g`` -- A factor of the polynomial $f$ over the field `K`.
+
+        - ``c`` -- An element of `K`, such that $g = c u x^l$
+          for some $x$ in `K` and some unit $u$ of the ring of
+          integers of `K`
+
+        - ``relation`` -- A tuple of the form $(\sigma_1, \ldots,
+          \sigma_n, c)$ with $\sigma_1, \ldots, \sigma_n$ elements of
+          the galois group of `K` and $c$ an element of `K`, such that
+          the product over of the $\sigma_i$ of $g$ conjugated by that
+          $\sigma_i$ is equal to $c$ times the polynomial $f$.
+
+        - ``l`` -- A prime number, the exponent to be considered in
+          the diophantine equation.
 
         OUTPUT:
 
-        A matrix M and a vector v with integer
-        coefficients, such that the vectors x
-        satisfying M y = v are precisely the
-        exponents y = (y1, ..., yn) such that
-        the unit u = u1^y1 * ... * un^yn in
-        g = cg * u * x^l satisfies the given
-        relation on g. Here u1, ..., un are 
-        the generators of the unit group of K
-        as returned by :meth:`gens`.
+        A tuple consisting of a matrix $M$ and a vector $v$ with
+        integer coefficients. These are such that the vectors $y$
+        satisfying $M y = v$ are precisely the exponents $y = (y_0,
+        \ldots, y_n)$ such that the unit $u = u_0^{y_0} \cdots
+        u_n^{y_n}$ in $g = c u x^l$ satisfies the given relation on
+        `g`. Here $u_0, \ldots, u_n$ are the generators of the unit
+        group of `K` as returned by :meth:`gens`.
 
         """
         s_ls, C = relation
-        constant = C / product(s(cg) for s in s_ls)
-        l_part = product(P^(ZZ(e/l)) for P, e in K.ideal(constant).factor()).gens_reduced()[0]
+        constant = C / product(s(c) for s in s_ls)
+        l_part = product(P^(ZZ(e/l)) for P, e in K.ideal(constant).factor())
+        l_part = l_part.gens_reduced()[0]
         U = K.unit_group()
         v = vector(U(constant / (l_part^l)).list()).column()
         galois_action = galois_on_units(K)
         M = sum(galois_action[s] for s in s_ls)
-        relevant_units = [i for i in range(len(U.gens())) if (U.gens()[i].order() == Infinity or
-                                                              l.divides(U.gens()[i].order()))]
+        relevant_units = [i for i in range(len(U.gens()))
+                          if (U.gens()[i].order() == Infinity or
+                              l.divides(U.gens()[i].order()))]
         M = copy(M[relevant_units])
         v = copy(v[relevant_units])
         return M, v
 
     @cached_method
-    def unit_coeffs(self, K, g, l, cg=None, bad_primes_val=None):
-        r"""
-        Gives the possible exponents of units u such
-        that g = cg * u * x^l for a fixed constant
-        cg in K and some x in K.
+    def unit_coeffs(self, K, g, l, c=None, bad_primes_val=None):
+        r"""Determine the exponents of units for a factor of $f$.
+
+        Given a factor $g$ of $f$ over some galois field extension $K$
+        such that .. MATH::
+
+            g = c u x^l
+
+        for some $c, x \in K$ and unit $u$ in the ring of integers of
+        $K$, we can write $u$ as $u = u_0^{y_0} \cdots u_n^{y_n}$ for
+        some generators $u_0, \ldots, u_n$ of the unit group of
+        $K$. This method computes the possible exponents $y_0, \ldots,
+        y_n$.
 
         INPUT:
-        
-        - ``K`` -- A field extension of the field
-          over which the polynomial is defined that
-          is galois.
-        - ``g`` -- A factor of the polynomial over
-          the field K.
-        - ``l`` -- A prime number, the
-          exponent to be considered whenever
-          l-th powers are mentioned.
-        - ``cg`` -- An element of K, such that
-          g = cg * u * x^l for some x in K and some
-          unit u of the ring of integers of K. By
-          default will be set to the value returned
-          by :meth:`constant_coeff`.
-        - ``bad_primes_val`` -- A tuple of integers,
-          where each integer is the valuation of g
-          at the corresponding prime in the list
-          returned by :meth:`bad_primes`. This
-          argument only has to be provided if cg
-          is not given.
+
+        - ``K`` -- A galois field extension of the field over which
+          $f$ is defined.
+
+        - ``g`` -- A factor of the polynomial $f$ over the field `K`.
+
+        - ``l`` -- A prime number, the exponent to be considered in
+          the diophantine equation.
+
+        - ``c`` -- An element of `K` or None (default: None). This
+          element must be such that $g = c u x^l$ for some $x$ in `K`
+          and some unit $u$ of the ring of integers of `K`. If set to
+          None will be initialized with the method
+          :meth:`constant_coeff`.
+
+        - ``bad_primes_val`` -- A tuple of integers, where each
+          integer is the valuation of $g$ at the corresponding prime
+          in the list returned by :meth:`bad_primes`. This argument
+          only has to be provided if `c` is not given.
 
         OUTPUT:
         
-        A list of tuples of integers modulo l,
-        consisting of all those tuples (x0, ..., xn)
-        such that the unit u = u0^x0 * ... * un^xn 
-        can satisfy g = cg * u * x^l for some x in K
-        whilst agreeing with all relations on g given
-        by :meth:`relations`. Here u0, ..., un are
-        the generators of the unit group of K as
-        returned by :meth:`gens`
+        A list of tuples of integers modulo `l`, consisting of all
+        those tuples $(y_0, \ldots, y_n)$ such that the unit $u =
+        u_0^{y_0} \cdots u_n^{y_n}$ can satisfy $g = c * u * x^l$ for
+        some $x$ in `K` whilst agreeing with all relations on `g`
+        given by :meth:`relations`. Here $u_0, \ldots, u_n$ are the
+        generators of the unit group of `K` as returned by
+        :meth:`gens`.
+
         """
-        if cg is None:
+        if c is None:
             if bad_primes_val is None:
-                raise ValueError("Must provide the argument 'bad_primes_val' if the argument 'cg' is not provided.")
-            cg = self.constant_coeff(K, g, bad_primes_val, l)
+                raise ValueError("Must provide the argument 'bad_primes_val' "+
+                                 "if the argument 'c' is not provided.")
+            c = self.constant_coeff(K, g, bad_primes_val, l)
         relations = self.relations(K, g)
         n = len(relations)
-        lin_rel = [self.unit_relation(K, g, cg, rel, l) for rel in relations]
+        lin_rel = [self.unit_relation(K, g, c, rel, l) for rel in relations]
         M, v = [block_matrix(n, 1, Mi) for Mi in zip(*lin_rel)]
         sol0 = M.change_ring(Integers(l)).solve_right(v)
         ker = M.change_ring(Integers(l)).right_kernel()
@@ -336,103 +353,134 @@ class power_analyzer(SageObject):
             vi.set_immutable()
         return result
 
-    def units(self, K, g, l, cg=None, bad_primes_val=None):
-        r"""
-        Gives the possible units u such that
-        g = cg * u * x^l for a fixed constant
-        cg in K and some x in K.
+    def units(self, K, g, l, c=None, bad_primes_val=None):
+        r"""Determine the units for a factor of $f$.
+
+        Given a factor $g$ of $f$ over some galois field extension $K$
+        such that .. MATH::
+
+            g = c u x^l
+
+        for some $c, x \in K$ and unit $u$ in the ring of integers of
+        $K$, finds all possible values of $u$ modulo $l$-th powers.
 
         INPUT:
-        
-        - ``K`` -- A field extension of the field
-          over which the polynomial is defined that
-          is galois.
-        - ``g`` -- A factor of the polynomial over
-          the field K.
-        - ``l`` -- A prime number, the
-          exponent to be considered whenever
-          l-th powers are mentioned.
-        - ``cg`` -- An element of K, such that
-          g = cg * u * x^l for some x in K and some
-          unit u of the ring of integers of K. By
-          default will be set to the value returned
-          by :meth:`constant_coeff`.
-        - ``bad_primes_val`` -- A tuple of integers,
-          where each integer is the valuation of g
-          at the corresponding prime in the list
-          returned by :meth:`bad_primes`. This
-          argument only has to be provided if cg
-          is not given.
+
+        - ``K`` -- A galois field extension of the field over which
+          $f$ is defined.
+
+        - ``g`` -- A factor of the polynomial $f$ over the field `K`.
+
+        - ``l`` -- A prime number, the exponent to be considered in
+          the diophantine equation.
+
+        - ``c`` -- An element of `K` or None (default: None). This
+          element must be such that $g = c u x^l$ for some $x$ in `K`
+          and some unit $u$ of the ring of integers of `K`. If set to
+          None will be initialized with the method
+          :meth:`constant_coeff`.
+
+        - ``bad_primes_val`` -- A tuple of integers, where each
+          integer is the valuation of $g$ at the corresponding prime
+          in the list returned by :meth:`bad_primes`. This argument
+          only has to be provided if `c` is not given.
 
         OUTPUT:
         
-        A list of units u of the ring of integers
-        of K that can satisfy g = cg * u * x^l for
-        some x in K whilst agreeing with all
-        relations on g given by :meth:`relations`.
-        This list contains representatives for each
-        such units modulo multiplication by l-th powers.
+        A list of units of the ring of integers of `K` consisting of
+        representatives of all units $u$ modulo $l$-th powers such
+        that .. MATH::
+
+           g = c u x^l
+
+        for some $x$ in `K`.
+
         """
-        coeffs = self.unit_coeffs(K, g, l, cg=cg, bad_primes_val=bad_primes_val)
+        coeffs = self.unit_coeffs(K, g, l, c=c, bad_primes_val=bad_primes_val)
         U = K.unit_group()
-        return [product(U.gens()[i]^ZZ(cf[i]) for i in range(len(U.gens()))) for cf in coeffs]
+        return [product(U.gens()[i]^ZZ(cf[i])
+                        for i in range(len(U.gens()))) for cf in coeffs]
 
-    def prime_data(self, K, g, l, primes, cg=None, bad_primes_val=None):
-        r"""
-        Gives the possible values of the variables of
-        g modulo a prime p that can satisfy the
-        relation g = cg * u * x^l for some x in K
-        and some unit u.        
+    def prime_data(self, K, g, l, primes, c=None, bad_primes_val=None):
+        r"""Compute the possible values of solutions modulo some primes.
+
+        Given a factor $g$ of the polynomial $f$ over some galois
+        field extension $K$ such that we have .. MATH::
+
+           g = c u x^l
+
+        for some $c, x \in K$ and unit $u$ in the ring of integers of
+        $K$, one can consider this equation modulo all finite primes
+        $P$ of $K$. Doing this for all primes above a prime number $p$
+        gives us a limited set of values for solutions of the
+        diophantine equation modulo $p$. This method computes these
+        values for multiple prime numbers $p$.
+
+        The units chosen in the equation for $g$ are obtained with the
+        method :meth:`unit_coeffs` and the computation mentioned above
+        is done for each possible unit seperately. If for some prime
+        number there is no possible values for a solution for a given
+        unit, then this unit is omitted for all primes. This makes it
+        run this method for multiple primes even if one is only
+        interested in the result for a single prime.
+
+        .. NOTE:
+
+        For each prime $P$ of $K$ for which the residue field does not
+        have a primitive $l$-th root of unity, the computation of
+        possible values does not yield any restrictions. The
+        computation is therefore limited to those prime numbers $p$
+        for which there is a prime $P$ of $K$ above them for which the
+        residue field does have a primitive $l$-th root of unity.
 
         INPUT:
-        
-        - ``K`` -- A field extension of the field
-          over which the polynomial is defined that
-          is galois.
-        - ``g`` -- A factor of the polynomial over
-          the field K.
-        - ``l`` -- A prime number, the
-          exponent to be considered whenever
-          l-th powers are mentioned.
-        - ``primes`` -- A list of prime numbers for
-          which the possible values modulo that
-          prime should be determined. It can also
-          be set to a non-negative integer in which
-          case this list will be initialized as all
-          the prime numbers smaller than that number.
-        - ``cg`` -- An element of K, such that
-          g = cg * u * x^l for some x in K and some
-          unit u of the ring of integers of K. By
-          default will be set to the value returned
-          by :meth:`constant_coeff`.
-        - ``bad_primes_val`` -- A tuple of integers,
-          where each integer is the valuation of g
-          at the corresponding prime in the list
-          returned by :meth:`bad_primes`. This
-          argument only has to be provided if cg
-          is not given.
+
+        - ``K`` -- A galois field extension of the field over which
+          $f$ is defined.
+
+        - ``g`` -- A factor of the polynomial $f$ over the field `K`.
+
+        - ``l`` -- A prime number, the exponent to be considered in
+          the diophantine equation.
+
+        - ``primes`` -- A list of prime numbers for which the possible
+          values modulo that prime should be determined. It can also
+          be set to a non-negative integer in which case this list
+          will be initialized as all the prime numbers smaller than
+          that number.
+
+        - ``c`` -- An element of `K` or None (default: None). This
+          element must be such that $g = c u x^l$ for some $x$ in `K`
+          and some unit $u$ of the ring of integers of `K`. If set to
+          None will be initialized with the method
+          :meth:`constant_coeff`.
+
+        - ``bad_primes_val`` -- A tuple of integers, where each
+          integer is the valuation of $g$ at the corresponding prime
+          in the list returned by :meth:`bad_primes`. This argument
+          only has to be provided if `c` is not given.
 
         OUTPUT:
         
-        A dictionary indexed by the primes in the
-        given list of primes, such that the number of
-        elements of a residue field of a prime above p
-        in K is 1 modulo l. For each prime p the
-        corresponding value is a dictionary indexed
-        by possible units u such that g = cg * u * x^l
-        for some x in K. For each such u the
-        corresponding value is a list of tuples
-        containing the possible values of the variables
-        of g for which the above relation is satisfied
-        modulo all primes above p in K.
+        A dictionary indexed by those prime numbers $p$ in the given
+        list of primes for which the number of elements of a residue
+        field of a prime above $p$ in `K` is 1 modulo `l`. For each
+        prime number $p$ the corresponding value is a dictionary
+        indexed by possible units $u$ modulo $l$-th powers such that
+        $g = c u x^l$ for some $x$ in `K`. For each such $u$ the
+        corresponding value is a list of tuples containing the
+        possible values of the variables of $f$ for which the above
+        relation is satisfied modulo all primes above $p$ in `K`.
+
         """
         if primes in ZZ:
             primes = prime_range(primes)
-        if cg is None:
+        if c is None:
             if bad_primes_val is None:
-                raise ValueError("Must provide the argument 'bad_primes_val' if the argument 'cg' is not provided.")
-            cg = self.constant_coeff(K, g, bad_primes_val, l)
-        u_dict = {cf : {} for cf in self.unit_coeffs(K, g, l, cg=cg)}
+                raise ValueError("Must provide the argument 'bad_primes_val' "+
+                                 "if the argument 'c' is not provided.")
+            c = self.constant_coeff(K, g, bad_primes_val, l)
+        u_dict = {cf : {} for cf in self.unit_coeffs(K, g, l, c=c)}
         U = K.unit_group()
         G = K.galois_group()
         n = len(g.variables())
@@ -458,11 +506,15 @@ class power_analyzer(SageObject):
                         u_dict[cf][p] = u_dict[done_cases[case]][p]
                 else:
                     u = product(U.gens()[i]^ZZ(cf[i]) for i in range(len(cf)))
-                    xgl_poly = [(g*(cg*u)^(-1)).change_ring(s.as_hom()).change_ring(Fp) for s in G]
+                    xgl = g*(c*u)^(-1)
+                    xgl_poly = [xgl.change_ring(s.as_hom()).change_ring(Fp)
+                                for s in G]
                     arg_ls = tuple(tuple(arg) for arg in mrange([p]*n)
                                    if gcd(arg) != 0 and
-                                   all(xgl_arg == 0 or l.divides(xgl_arg.log(xp))
-                                       for xgl_arg in (xgl(arg) for xgl in xgl_poly)))
+                                   all(xgl_arg == 0 or
+                                       l.divides(xgl_arg.log(xp))
+                                       for xgl_arg
+                                       in (xgl(arg) for xgl in xgl_poly)))
                     if len(arg_ls) == 0:
                         removed.append(cf)
                     else:
@@ -477,60 +529,84 @@ class power_analyzer(SageObject):
                      u_dict[cf][p] for cf in u_dict}
                 for p in primes}
 
-    def prime_conditions(self, K, g, l, primes, cg=None, bad_primes_val=None):
-        r"""
-        Gives the possible values of the variables of
-        g modulo a prime p that can satisfy the
-        relation g = cg * u * x^l for some x in K
-        and some unit u as a condition.        
+    def prime_conditions(self, K, g, l, primes, c=None, bad_primes_val=None):
+        r"""Compute the conditions on solutions modulo some primes.
+
+        Given a factor $g$ of the polynomial $f$ over some galois
+        field extension $K$ such that we have .. MATH::
+
+           g = c u x^l
+
+        for some $c, x \in K$ and unit $u$ in the ring of integers of
+        $K$, one can consider this equation modulo all finite primes
+        $P$ of $K$. Doing this for all primes above a prime number $p$
+        gives us a limited set of values for solutions of the
+        diophantine equation modulo $p$. This method computes these
+        values for multiple prime numbers $p$ and gives them as
+        conditions on the variables of $f$.
+
+        The units chosen in the equation for $g$ are obtained with the
+        method :meth:`unit_coeffs` and the computation mentioned above
+        is done for each possible unit seperately. If for some prime
+        number there is no possible values for a solution for a given
+        unit, then this unit is omitted for all primes. This makes it
+        run this method for multiple primes even if one is only
+        interested in the result for a single prime.
+
+        .. NOTE:
+
+        For each prime $P$ of $K$ for which the residue field does not
+        have a primitive $l$-th root of unity, the computation of
+        possible values does not yield any restrictions. The
+        computation is therefore limited to those prime numbers $p$
+        for which there is a prime $P$ of $K$ above them for which the
+        residue field does have a primitive $l$-th root of unity.
 
         INPUT:
-        
-        - ``K`` -- A field extension of the field
-          over which the polynomial is defined that
-          is galois.
-        - ``g`` -- A factor of the polynomial over
-          the field K.
-        - ``l`` -- A prime number, the
-          exponent to be considered whenever
-          l-th powers are mentioned.
-        - ``primes`` -- A list of prime numbers for
-          which the possible values modulo that
-          prime should be determined. It can also
-          be set to a non-negative integer in which
-          case this list will be initialized as all
-          the prime numbers smaller than that number.
-        - ``cg`` -- An element of K, such that
-          g = cg * u * x^l for some x in K and some
-          unit u of the ring of integers of K. By
-          default will be set to the value returned
-          by :meth:`constant_coeff`.
-        - ``bad_primes_val`` -- A tuple of integers,
-          where each integer is the valuation of g
-          at the corresponding prime in the list
-          returned by :meth:`bad_primes`. This
-          argument only has to be provided if cg
-          is not given.
+
+        - ``K`` -- A galois field extension of the field over which
+          $f$ is defined.
+
+        - ``g`` -- A factor of the polynomial $f$ over the field `K`.
+
+        - ``l`` -- A prime number, the exponent to be considered in
+          the diophantine equation.
+
+        - ``primes`` -- A list of prime numbers for which the possible
+          values modulo that prime should be determined. It can also
+          be set to a non-negative integer in which case this list
+          will be initialized as all the prime numbers smaller than
+          that number.
+
+        - ``c`` -- An element of `K` or None (default: None). This
+          element must be such that $g = c u x^l$ for some $x$ in `K`
+          and some unit $u$ of the ring of integers of `K`. If set to
+          None will be initialized with the method
+          :meth:`constant_coeff`.
+
+        - ``bad_primes_val`` -- A tuple of integers, where each
+          integer is the valuation of $g$ at the corresponding prime
+          in the list returned by :meth:`bad_primes`. This argument
+          only has to be provided if `c` is not given.
 
         OUTPUT:
         
-        A dictionary indexed by the primes in the
-        given list of primes, such that the number of
-        elements of a residue field of a prime above p
-        in K is 1 modulo l. For each prime p the
-        corresponding value is a Condition such that
-        the values of the variables satisfy this
-        condition if and only if in that case
-        g = cg * u * x^l modulo all primes above p in
-        K for some unit u and some x in K. Note that
-        the possible units u can be limited by
-        their options modulo other primes.
+        A dictionary indexed by those prime numbers $p$ in the given
+        list of primes for which the number of elements of a residue
+        field of a prime above $p$ in `K` is 1 modulo `l`. For each
+        prime number $p$ the corresponding value is a condition on the
+        variables of $f$ satisfied only by those values of the
+        variables for which $g = c u x^l$ can be true for some $x$ in
+        `K`, unit $u$ in the ring of integers of `K$ modulo all primes
+        above $p$.
+
         """
-        data = self.prime_data(K, g, l, primes, cg=cg,
+        data = self.prime_data(K, g, l, primes, c=c,
                                bad_primes_val=bad_primes_val)
         result = {}
         for p in data:
-            T = pAdicTree(variables=self._f.variables(), prime=p, ring=QQ, full=False)
+            T = pAdicTree(variables=self._f.variables(), prime=p, ring=QQ,
+                          full=False)
             Tr = T._root
             for val in {val for u in data[p] for val in data[p][u]}:
                 Tr.children.add(pAdicNode(pAdics=Tr.pAdics(),
@@ -540,28 +616,33 @@ class power_analyzer(SageObject):
         return result
 
 def polynomial_split_on_basis(f, B):
-    r"""
-    Determines the part of the polynomial associated
-    to each basis element.
+    r"""Decompose a polynomial over a number field into polynomials over
+    the rationals.
 
-    Given a (multivariate) polynomial over a
-    number field K, one can see this as the sum of
-    (multivariate) polynomials over the rationals
-    times an associated basis element of a basis of
-    K over the rationals. This method constructs
-    these polynomials for a given basis.
+    Given a (multivariate) polynomial $f$ over a number field $K$ and
+    a $\QQ$-basis $b_1, \ldots, b_n$ of $K$, there are unique
+    polynomials $g_1, \ldots, g_n$ over the rationals in the same
+    variables as $f$ such that .. MATH::
+
+       f = b_1 g_1 + \ldots + b_n g_n.
+
+    This method finds the polynomial $g_1, \ldots, g_n$.
 
     INPUT:
 
-    - ``f`` -- A (multivariate) polynomial over some
-      number field.
-    - ``B`` -- A basis over QQ for the number field
-      over which the polynomial is defined.
+    - ``f`` -- A (multivariate) polynomial over some number field $K$.
+
+    - ``B`` -- A basis of $K$ over the rationals.
 
     OUTPUT:
 
-    A list ls of polynomials over the rationals such
-    that sum(ls[i] * B[i] for i in range(len(B))) == f.
+    A list polynomials $g_1, \ldots g_n$ over the rationals such that
+    .. MATH::
+
+        f = b_1 g_1 + \ldots + b_n g_n,
+
+    where $b_1, \ldots, b_n$ are the elements of `B`.
+
     """
     K = f.parent().base_ring()
     M = matrix([K(B[i]).list() for i in range(len(B))]).transpose()
@@ -573,6 +654,6 @@ def polynomial_split_on_basis(f, B):
     # is the vector that expresses the corresponding coefficient
     # of f in terms of the basis B
     monomials = [[cf * R(m)
-               for cf in (M^(-1) * vector(f.monomial_coefficient(m).list()))]
-              for m in f.monomials()]
+                  for cf in (M^(-1)*vector(f.monomial_coefficient(m).list()))]
+                 for m in f.monomials()]
     return [sum(ls) for ls in zip(*monomials)]
