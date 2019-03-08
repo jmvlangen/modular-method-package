@@ -213,7 +213,7 @@ class FreyCurve(EllipticCurve_generic):
                         gcd([ZZ(c) for c in (N * D).coefficients()]))
                 result = QQ(M/N).numerator().prime_factors()
                 print ("Warning: Assuming that %s and %s "%(c4,D) +
-                       "are coprime outside %s."%(tuple(result),))
+                       " are coprime outside %s."%(tuple(result),))
                 return result
         if n == 1:
             return K.ideal(c4.resultant(D)).prime_factors()
@@ -226,7 +226,7 @@ class FreyCurve(EllipticCurve_generic):
             J = sum(K.ideal(c) for c in D.coefficients())
             result = (I + J).prime_factors()
             print ("Warning: Assuming that %s and %s"%(c4,D) +
-                   "are coprime outside %s."%(tuple(P._repr_short()
+                   " are coprime outside %s."%(tuple(P._repr_short()
                                                     for P in result),))
             return result
 
@@ -1655,19 +1655,11 @@ class FreyQcurve(FreyCurve, Qcurve):
                 isogenies_min[s] = (Kmin(l), d)
             ainvs = [a.change_ring(Kmin) for a in ainvs]
             im_gens = K_E.gens()[0].minpoly().change_ring(Kmin).roots()
-            if len(im_gens) > 0:
-                conversion = (K_E.hom([im_gens[0][0]], Kmin) *
-                              self_to_Kl * self._R_to_base)
-            else:
-                conversion = None
             return FreyQcurve(ainvs, isogenies=isogenies_min,
                               parameter_ring=self._R,
-                              conversion=conversion,
                               condition=self._condition)
-        conversion = E_map * self._R_to_base
         return FreyQcurve(ainvs, isogenies=isogenies,
                           parameter_ring=self._R,
-                          conversion=conversion,
                           condition=self._condition)
     
     def conductor_restriction_of_scalars(self, additive_primes=None,
@@ -2032,7 +2024,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             result.extend(get_newforms(level, character=eps,
                                        algorithm=algorithm, path=path))
             done_levels.append((level, eps, Lbeta))
-        return tuple(result)
+        return result
             
     def _repr_(self):
         """Give a string representation of a Frey Q-curve.

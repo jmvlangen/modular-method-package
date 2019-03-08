@@ -418,7 +418,7 @@ class power_analyzer(SageObject):
 
         The units chosen in the equation for $g$ are obtained with the
         method :meth:`unit_coeffs` and the computation mentioned above
-        is done for each possible unit seperately. If for some prime
+        is done for each possible unit separately. If for some prime
         number there is no possible values for a solution for a given
         unit, then this unit is omitted for all primes. This makes it
         run this method for multiple primes even if one is only
@@ -547,7 +547,7 @@ class power_analyzer(SageObject):
 
         The units chosen in the equation for $g$ are obtained with the
         method :meth:`unit_coeffs` and the computation mentioned above
-        is done for each possible unit seperately. If for some prime
+        is done for each possible unit separately. If for some prime
         number there is no possible values for a solution for a given
         unit, then this unit is omitted for all primes. This makes it
         run this method for multiple primes even if one is only

@@ -319,8 +319,8 @@ class PolynomialCondition(Condition_base):
 
         """
         if not (is_Polynomial(polynomial) or is_MPolynomial(polynomial)):
-            raise ValueError("The given argument %s is not a " +
-                             "polynomial."%(polynomial,))
+            raise ValueError("The given argument " + str(polynomial) +
+                             " is not a polynomial.")
         self._f = polynomial
         Condition_base.__init__(self, self._f.variables())
 
@@ -446,11 +446,10 @@ class PolynomialCondition(Condition_base):
         """
         if "precision_cap" in kwds and precision > kwds["precision_cap"]:
             if verbose >= 0:
-                print ("Warning: A p-Adic tree for %s is computed with a " +
-                       "lower precision than the given precision %s, due to " +
-                       "a given precision_cap %s!"%(self,
-                                                    precision,
-                                                    kwds["precision_cap"]))
+                print ("Warning: A p-Adic tree for " + str(self) +
+                       " is computed with a lower precision than the given " +
+                       "precision " + str(precision) + ", due to a given " +
+                       "precision_cap " + str(kwds["precision_cap"]) + "!")
             precision = kwds["precision_cap"]
         if pAdic_tree is None:
             pAdic_tree = pAdicTree(variables=self.variables(),
@@ -468,7 +467,7 @@ class PolynomialCondition(Condition_base):
         else:
             iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
         S = PolynomialRing(K, big_vars)
-        Tyes, Tno = find_pAdicRoots(S(self.polynomial().change_ring(iota)),
+        Tyes, Tno = find_pAdic_roots(S(self.polynomial().change_ring(iota)),
                                     pAdics=pAdics,
                                     variables=[S(v) for v in pAdic_tree.variables()],
                                     value_tree=pAdic_tree.root(),
@@ -900,14 +899,12 @@ class PowerCondition(PolynomialCondition):
         return n
         
     def _repr_(self):
-        return ("The condition that %s == %s^%s with " +
-                "%s >= %s"%(self.polynomial(), self._x_str(), self._n_str(),
-                self._n_str(), self.least_exponent()))
+        return ("The condition that " + str(self.polynomial()) + " == " +
+                str(self._x_str()) + "^" + str(self._n_str()) + " with " +
+                str(self._n_str()) + " >= " + str(self.least_exponent()))
 
     def _repr_short(self):
-        return "%s == %s^%s"%(self.polynomial(),
-                              self._x_str(),
-                              self._n_str())
+        return "%s == %s^%s"%(self.polynomial(), self._x_str(), self._n_str())
         
     def _latex_(self):
         return (latex(self.polynomial()) + " = " +
@@ -1112,13 +1109,13 @@ class CoprimeCondition(Condition_base):
         if self._n == 0:
             return "The condition that always holds"
         if self._n == 1:
-            return ("The condition that the variables %s are " +
-                    "units."%(self.variables(),))
+            return ("The condition that the variables " +
+                    str(self.variables()) + " are units.")
         if self._n == 2:
-            return ("The condition that the variables %s are pairwise " +
-                    "coprime."%(self.variables(),))
-        return ("The condition that the variables %s are %s-wise " +
-                "coprime."%(self.variables(), self._n))
+            return ("The condition that the variables " +
+                    str(self.variables()) + " are pairwise coprime.")
+        return ("The condition that the variables " + str(self.variables()) +
+                " are " + str(self._n()) + "-wise coprime.")
 
     def _repr_short(self):
         if self._n == 0:
@@ -1127,8 +1124,7 @@ class CoprimeCondition(Condition_base):
             return "%s are units"%(self.variables(),)
         if self._n == 2:
             return "%s are pairwise coprime"%(self.variables(),)
-        return "%s are %s-wise coprime"%(self.variables(),
-                                          self._n)
+        return "%s are %s-wise coprime"%(self.variables(), self._n)
         
     def _latex_(self):
         if self._n == 0:
@@ -2134,7 +2130,7 @@ class ConditionalExpression(SageObject):
         r"""Give the left side of this expression.
 
         A ConditionalExpression consists of a left and a right side
-        seperated by some operator.
+        separated by some operator.
 
         OUTPUT:
 
@@ -2164,7 +2160,7 @@ class ConditionalExpression(SageObject):
         r"""Give the operator of this expression.
 
         A ConditionalExpression consists of a left and a right side
-        seperated by some operator.
+        separated by some operator.
 
         OUTPUT:
 
@@ -2196,7 +2192,7 @@ class ConditionalExpression(SageObject):
         r"""Give the right side of this expression.
 
         A ConditionalExpression consists of a left and a right side
-        seperated by some operator.
+        separated by some operator.
 
         OUTPUT:
 

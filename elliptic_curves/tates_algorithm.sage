@@ -170,7 +170,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                                                elliptic_curve)
     pAdics = _init_pAdics(pAdics, base_ring, prime, coefficient_ring)
     S = _init_polynomial_ring(coefficient_ring, pAdics)
-    variables = _init_variables(S)
+    variables = _init_variables_tate(S)
     T = _init_initial_values(initial_values, pAdics, variables)
     newCases, doneCases = _init_cases(T, elliptic_curve)
     only_calculate = _init_str_list(only_calculate)
@@ -2495,7 +2495,7 @@ def _init_pAdics(pAdics, ring, prime, coefficient_ring):
 def _init_polynomial_ring(coefficient_ring, pAdics):
     return coefficient_ring.change_ring(pAdics.number_field())
     
-def _init_variables(polynomial_ring):
+def _init_variables_tate(polynomial_ring):
     return list(polynomial_ring.gens())
     
 def _init_initial_values(initial_values, pAdics, variables):
