@@ -19,6 +19,7 @@ that :math:`l` is at least 3.
 
 ::
 
+   sage: load('load.sage')
    sage: R.<a,b> = QQ[]
    sage: cl = a^2 + b^6
    sage: C = (CoprimeCondition([a,b]) &
