@@ -967,10 +967,11 @@ def _eliminate_primes(newforms, ls):
                                           _eliminate_primes(nfs, ls), newforms)
     result = []
     for nfs in newforms:
-        nfs = list(nfs)
-        for l in ls:
-            nfs[-1] = ZZ(nfs[-1] / (l^nfs[-1].ord(l)))
-        nfs = tuple(nfs)
+        if nfs[-1] != 0:
+            nfs = list(nfs)
+            for l in ls:
+                nfs[-1] = ZZ(nfs[-1] / (l^nfs[-1].ord(l)))
+            nfs = tuple(nfs)
         if abs(nfs[-1]) != 1 :
             result.append(nfs)
     return result
