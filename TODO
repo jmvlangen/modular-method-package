@@ -1,9 +1,0 @@
-Improve the speed of the linear algebra
-  - sage vs own code test
-  - systematic pre elimination of relations
-
-Implement newform computation for frey curves
-
-Compile code to python
-
-Implement p-adic trees in C/C++
