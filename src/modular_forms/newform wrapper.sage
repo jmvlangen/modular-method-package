@@ -1590,8 +1590,14 @@ class WrappedNewform(SageObject):
         R.<x> = K[]
         return x^2 - T_map(T)*x + D_map(D)
 
-    def has_cm(self):
+    def has_cm(self, proof=True):
         """Determine if this newform has complex multiplication.
+
+        INPUT:
+
+        - ``proof`` -- A boolean (default: True). If set to True the
+          answer will have been proven correct. If set to False may
+          use bounds that have not been proved.
 
         OUTPUT:
 
@@ -1772,8 +1778,14 @@ class WrappedNewform_sage(WrappedNewform):
         """
         return self._f.q_expansion(prec=prec)
 
-    def has_cm(self):
+    def has_cm(self, proof=True):
         """Determine if this newform has complex multiplication.
+
+        INPUT:
+
+        - ``proof`` -- A boolean (default: True). If set to True the
+          answer will have been proven correct. If set to False may
+          use bounds that have not been proved.
 
         OUTPUT:
 
@@ -1930,8 +1942,14 @@ class WrappedNewform_magma(WrappedNewform):
         """
         return self._f.BaseField().sage()
 
-    def has_cm(self):
+    def has_cm(self, proof=True):
         """Determine if this newform has complex multiplication.
+
+        INPUT:
+
+        - ``proof`` -- A boolean (default: True). If set to True the
+          answer will have been proven correct. If set to False may
+          use bounds that have not been proved.
 
         OUTPUT:
 
@@ -1945,7 +1963,8 @@ class WrappedNewform_magma(WrappedNewform):
             False
 
         """
-        return self._f.ModularSymbols().HasCM()
+        mds = self._f.ModularSymbols().NewformDecomposition()[1]
+        return mds.HasCM(Proof=True)
 
     def _repr_(self):
         """Give a string representation of this newform"""
@@ -2106,8 +2125,14 @@ class WrappedNewform_stored(WrappedNewform):
         """
         return self._K
 
-    def has_cm(self):
+    def has_cm(self, proof=True):
         """Determine if this newform has complex multiplication.
+
+        INPUT:
+
+        - ``proof`` -- A boolean (default: True). If set to True the
+          answer will have been proven correct. If set to False may
+          use bounds that have not been proved.
 
         OUTPUT:
 
