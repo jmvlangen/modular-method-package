@@ -1964,7 +1964,7 @@ class WrappedNewform_magma(WrappedNewform):
 
         """
         mds = self._f.ModularSymbols().NewformDecomposition()[1]
-        return mds.HasCM(Proof=True)
+        return mds.HasCM(Proof=proof)
 
     def _repr_(self):
         """Give a string representation of this newform"""
