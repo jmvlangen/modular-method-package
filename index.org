@@ -10,35 +10,6 @@ Should scrap (%)
 
 ** database/
 
-** diophantine_equations/
-Code to analyze diophantine equations
-
-*** conditions.sage (*#!)
-Conditions on diophantine variables
-- Add decorator for conditional functions
-
-*** Frey_curve_construction.sage
-Some functions to make Frey curves
-
-*** prime_power.sage (*+!)
-Methods for analyzing diophantine equations of the form polynomial equals prime power
-- Integrate with conditions??
-- Keep track of previously computed prime data
-- Combine conditions into one??
-** elliptic_curves/
-Code for elliptic curves
-*** frey_curves.sage (*+!)
-Frey curve classes
-- Add verbosity to primes_of_possible_additive_reduction
-- Scrap the methods newforms!!
-*** Q-curves.sage (*+!)
-Implementation of Q-curves
-- Replace guessed degrees by sage isogeny code
-- Use new newform wrappers in method newform and split up code
-*** tates_algorithm.sage (*+!)
-An implementation of Tate's algorithm that works for Frey curves
-*** twist.sage (*#!)
-Methods for computing (with) twists of elliptic curves
 ** examples/
 Examples of various things
 *** counter example alpha in OK.sage
@@ -110,62 +81,92 @@ Old conductor computations (no results)
 Equations x^l + y^l = z^2 and x^l + y^l = z^3
 - Are these in database?
 ! Uses the remove DiophantineAnalyzer
-** group cohomology/
-Results about group cohomology
-*** calculations.sage (*#!)
-Some useful computations in group cohomology
-- Add generic group cohomology methods
-- Make code look nicer
-- Rename file?
-** L-functions/
-*** Euler factors.sage (*+)
-Computation of the Euler factor of L-functions of newforms and
-elliptic curves.
-- Move into newform wrapper and Q-curve class respectively
-** linear algebra/
-Linear algebra tools
-*** solver.sage (*#!)
-Method to solve a linear equation over Z with torsion
-- Make the code use left multiplication?
-** modular_forms/
-Code to analyze modular forms
-*** elimination.sage (*+!)
-Methods for eliminating newforms
-- Add better tracking system for primes
-- Improve the elimination of l
+** src/
+*** diophantine_equations/
+ Code to analyze diophantine equations
 
-*** newform wrapper.sage (*#!)
-Wrapper classes around newforms and a new method to get newforms
-- Can the argument minimal_coeffs of get_newforms be removed?
-** number_fields/
-Code to analyze number fields
-*** dirichlet characters.sage (*#!)
-Methods related to dirichlet characters
-*** field constructors.sage (*#!)
-Methods to make number fields
-*** galois group.sage (*#!)
-Methods to change galois homomorphisms
-- Change name?
-** p-adics/
-Code related to p-adic numbers
-*** pAdic_base.sage (*#!)
-A class giving easy acces to things needed for p-adic computations
-*** pAdic_solver.sage (*#!)
-Methods for finding all pAdic roots of a polynomial up to a given
-precision
-- give_list is funky and only seems to work when K = L
-- quit_on_empty is not used?!
-- Improved algorithm???
-*** pAdic_tree.sage (*#!)
-Classes for storing pAdic data in a tree like format
-- Method pAdicNode.sub_tree() is nowhere used and weird, remove?
-- Optimize _merge_with_list
-- Add sequence/set like behavior to pAdicNodeCollection
-- Add set like behavior to pAdicTree
-** polynomial/
-Code for working with polynomials
-*** symmetric_polynomials.sage (*#!)
-Method for computing with a symmetric polynomial
+**** conditions.sage (*#!)
+ Conditions on diophantine variables
+ - Add decorator for conditional functions
+
+**** Frey_curve_construction.sage
+ Some functions to make Frey curves
+
+**** prime_power.sage (*+!)
+ Methods for analyzing diophantine equations of the form polynomial equals prime power
+ - Integrate with conditions??
+ - Keep track of previously computed prime data
+ - Combine conditions into one??
+*** elliptic_curves/
+ Code for elliptic curves
+**** frey_curves.sage (*+!)
+ Frey curve classes
+ - Add verbosity to primes_of_possible_additive_reduction
+ - Scrap the methods newforms!!
+**** Q-curves.sage (*+!)
+ Implementation of Q-curves
+ - Replace guessed degrees by sage isogeny code
+ - Use new newform wrappers in method newform and split up code
+**** tates_algorithm.sage (*+!)
+ An implementation of Tate's algorithm that works for Frey curves
+**** twist.sage (*#!)
+ Methods for computing (with) twists of elliptic curves
+*** group cohomology/
+ Results about group cohomology
+**** calculations.sage (*#!)
+ Some useful computations in group cohomology
+ - Add generic group cohomology methods
+ - Make code look nicer
+ - Rename file?
+*** L-functions/
+**** Euler factors.sage (*+)
+ Computation of the Euler factor of L-functions of newforms and
+ elliptic curves.
+ - Move into newform wrapper and Q-curve class respectively
+*** linear algebra/
+ Linear algebra tools
+**** solver.sage (*#!)
+ Method to solve a linear equation over Z with torsion
+ - Make the code use left multiplication?
+*** modular_forms/
+ Code to analyze modular forms
+**** elimination.sage (*+!)
+ Methods for eliminating newforms
+ - Add better tracking system for primes
+ - Improve the elimination of l
+
+**** newform wrapper.sage (*#!)
+ Wrapper classes around newforms and a new method to get newforms
+ - Can the argument minimal_coeffs of get_newforms be removed?
+*** number_fields/
+ Code to analyze number fields
+**** dirichlet characters.sage (*#!)
+ Methods related to dirichlet characters
+**** field constructors.sage (*#!)
+ Methods to make number fields
+**** galois group.sage (*#!)
+ Methods to change galois homomorphisms
+ - Change name?
+*** p-adics/
+ Code related to p-adic numbers
+**** pAdic_base.sage (*#!)
+ A class giving easy acces to things needed for p-adic computations
+**** pAdic_solver.sage (*#!)
+ Methods for finding all pAdic roots of a polynomial up to a given
+ precision
+ - give_list is funky and only seems to work when K = L
+ - quit_on_empty is not used?!
+ - Improved algorithm???
+**** pAdic_tree.sage (*#!)
+ Classes for storing pAdic data in a tree like format
+ - Method pAdicNode.sub_tree() is nowhere used and weird, remove?
+ - Optimize _merge_with_list
+ - Add sequence/set like behavior to pAdicNodeCollection
+ - Add set like behavior to pAdicTree
+*** polynomial/
+ Code for working with polynomials
+**** symmetric_polynomials.sage (*#!)
+ Method for computing with a symmetric polynomial
 ** tests/
 Code for (automated) testing
 *** cleanup.sh (+)
