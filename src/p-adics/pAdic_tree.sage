@@ -1457,10 +1457,12 @@ class pAdicNode(SageObject):
         for child in self.children:
             if other.children.contains(child.coefficients):
                 child._limit_to(other.children.get(child.coefficients))
+                if child.is_empty():
+                    removal_list.append(child)
             else:
                 removal_list.append(child)
         for child in removal_list:
-            child.remove()
+            self.children.remove(child)
     
     def limit_to(self, other, from_root=False):    
         r"""Limit this node to another node.

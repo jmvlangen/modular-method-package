@@ -1,5 +1,3 @@
-* TODO Fix bug in pAdic_node._limit_to (children removing itself during iteration)
-
 * Legend
 Part of load.sage (*)
 Partial documentation (-)
