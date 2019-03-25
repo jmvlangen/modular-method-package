@@ -27,6 +27,7 @@ denote ``Cp`` for the quantity :math:`C^p`.
 
 ::
 
+   sage: load('load.sage')
    sage: R.<A, B> = QQ[]
    sage: Cp = A^4 + 2*B^2
    sage: con = CoprimeCondition([A, B]) & ~CongruenceCondition(A, 2)
@@ -80,6 +81,7 @@ in the article.
 
 ::
 
+   sage: P2 = K.prime_above(2)
    sage: E.conductor_exponent(P2)
    12 if ('A', 'B') == (1, 1) mod 2
    10 if ('A', 'B') == (1, 0) mod 2
@@ -125,8 +127,8 @@ the norm of the third coefficient of each newform minus each possible
 
 ::
 
-   sage: lcm(ZZ((nf[0].coefficient(3) - a3).absolute_norm()) for nf in nfs[0][0] + nfs[1][0] for a3 in ran
-   ....: ge(-3, 4)).prime_factors()
+   sage: lcm(ZZ((nf[0].coefficient(3) - a3).absolute_norm()) for nf in nfs[0][0] + nfs[1][0]
+   ....: for a3 in range(-3, 4)).prime_factors()
    [2, 3, 5, 7]
 
 :math:`C` divisible by 3
@@ -147,8 +149,8 @@ coefficient of a newform minus :math:`\pm 4`.
 
 ::
 
-   sage: lcm(ZZ((nf.coefficient(3) - a3).absolute_norm()) for nf in nfs[0][0] + nfs[1][0] for a3 in [-4,4]
-   ....: ).prime_factors()
+   sage: lcm(ZZ((nf.coefficient(3) - a3).absolute_norm()) for nf in nfs[0][0] + nfs[1][0]
+   ....: for a3 in [-4,4]).prime_factors()
    [2, 3, 5, 7, 17]
 
 Case :math:`d = 3`
@@ -188,6 +190,7 @@ suggested in the article, the quadratic character of
 
 ::
 
+   sage: gamma = 2 + QuadraticField(6).gen()
    sage: Ec = E.twist(gamma)
    sage: Ec._eps = {0 : [character_for_root(6)]}
    sage: Ec.does_decompose()
@@ -233,8 +236,8 @@ the different differences.
 
 ::
 
-   sage: lcm(ZZ((nf[0].coefficient(3) - z*sqrt(nf[0].coefficient_field()(-1))).absolute_norm()) for nf in 
-   ....: nfs[0][0] + nfs[1][0] for z in range(-5, 6)).prime_factors()
+   sage: lcm(ZZ((nf[0].coefficient(3) - z*sqrt(nf[0].coefficient_field()(-1))).absolute_norm())
+   ....: for nf in nfs[0][0] + nfs[1][0] for z in range(-5, 6)).prime_factors()
    [2, 3, 11, 19]
 
 This shows the last result of the article.

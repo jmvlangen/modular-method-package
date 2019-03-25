@@ -242,8 +242,8 @@ article.
 
    sage: level = apply_to_conditional_value(lambda ls: ls[0][1], Ec.newform_levels(bad_primes=Pbad))
    sage: char = Ec.splitting_character('conjugacy')[1]^(-1)
-   sage: nfs = apply_to_conditional_value(lambda lvl: get_newforms(lvl, character=char, algorithm='sage'
-   ....: ), level)
+   sage: nfs = apply_to_conditional_value(lambda lvl: get_newforms(lvl, character=char,
+   ....: algorithm='sage'), level)
 
 As in the article we divide these spaces into three different
 categories ``S1``, ``S2`` and ``S3``, respectively the newforms with
@@ -254,10 +254,10 @@ field :math:`\QQ(i)`.
 ::
 
   sage: S1 = apply_to_conditional_value(lambda ls: [nf for nf in ls if nf.has_cm()], nfs)
-  sage: S2 = apply_to_conditional_value(lambda ls: [nf for nf in ls if not nf.has_cm() and nf.coefficient
-  ....: _field().absolute_degree() > 2], nfs)
-  sage: S3 = apply_to_conditional_value(lambda ls: [nf for nf in ls if not nf.has_cm() and nf.coefficient
-  ....: _field().is_isomorphic(QQ[sqrt(-1)])], nfs)
+  sage: S2 = apply_to_conditional_value(lambda ls: [nf for nf in ls if not nf.has_cm() and
+  ....: nf.coefficient_field().absolute_degree() > 2], nfs)
+  sage: S3 = apply_to_conditional_value(lambda ls: [nf for nf in ls if not nf.has_cm() and
+  ....: nf.coefficient_field().is_isomorphic(QQ[sqrt(-1)])], nfs)
 
 Case 2 divides d
 ----------------
@@ -294,8 +294,8 @@ mentioned in the article.
 
 ::
 
-   sage: lcm(ZZ((nf.coefficient(3) - t*(1 - sqrt(nf.coefficient_field()(-1)))).absolute_norm()) for nf in 
-   ....: S2[0][0] + S2[2][0] + S2[3][0] for t in range(-2, 3)).prime_factors()
+   sage: lcm(ZZ((nf.coefficient(3) - t*(1 - sqrt(nf.coefficient_field()(-1)))).absolute_norm())
+   ....: for nf in S2[0][0] + S2[2][0] + S2[3][0] for t in range(-2, 3)).prime_factors()
    [2, 3, 5, 7, 29]
 
 As claimed in the article we check there is 10 newforms in ``S3``.
@@ -312,8 +312,8 @@ check.
 ::
 
    sage: chi = character_for_root(2)
-   sage: all(any(all(nf.coefficient(i) * chi(i) == ng.coefficient(i) for i in range(sturm_bound(800)+1)) f
-   ....: or ng in S3[1][0]) for nf in S3[0][0])
+   sage: all(any(all(nf.coefficient(i) * chi(i) == ng.coefficient(i) for i in range(sturm_bound(800)+1))
+   ....: for ng in S3[1][0]) for nf in S3[0][0])
    True
 
 Next the article has an argument to prove that this is impossible for
@@ -349,8 +349,8 @@ polynomial to verify this.
 ::
 
    sage: i = nf.coefficient_field().base_field().gen()
-   sage: lcm(ZZ(nf.coefficient(3).minpoly()(t - t*i).norm()) for nf in S2[1][0] for t in range(-2, 3)).pri
-   ....: me_factors()
+   sage: lcm(ZZ(nf.coefficient(3).minpoly()(t - t*i).norm()) for nf in S2[1][0]
+   ....: for t in range(-2, 3)).prime_factors()
    [5, 29]
 
 The newforms of level 800 in ``S3`` are eliminated by comparing traces
@@ -443,8 +443,8 @@ omit the newform_candidates method.
    sage: levels2 = apply_to_conditional_value(lambda ls: ls[0][1], Fc.newform_levels())
    Warning: Assuming that a and b are coprime.
    sage: char2 = Fc.splitting_character('conjugacy')[1]^(-1)
-   sage: nfs2 = apply_to_conditional_value(lambda lvl: get_newforms(lvl, character=char, algorithm='sage')
-   ....: , levels2)
+   sage: nfs2 = apply_to_conditional_value(lambda lvl: get_newforms(lvl, character=char,
+   ....: algorithm='sage'), levels2)
 
 The article remarks that all the pairs :math:`(f, g)` of newforms, one
 for ``Ec`` and one for ``Fc`` respectively, for which :math:`f` does
@@ -455,13 +455,13 @@ comparison of traces at 3, 7, 13 and 17.
 
 ::
 
-   sage: nfs22 = apply_to_conditional_value(lambda ls: [nf for nf in ls if nf.coefficient_field().absolute
-   ....: _degree() == 2], nfs2)
-   sage: S12 = apply_to_conditional_value(lambda ls: [nf for nf in ls if nf.coefficient_field().absolute_d
-   ....: egree() == 2], S1)
+   sage: nfs22 = apply_to_conditional_value(lambda ls: [nf for nf in ls
+   ....: if nf.coefficient_field().absolute_degree() == 2], nfs2)
+   sage: S12 = apply_to_conditional_value(lambda ls: [nf for nf in ls
+   ....: if nf.coefficient_field().absolute_degree() == 2], S1)
    sage: nfs_big = conditional_product(S1, nfs22)
-   sage: nfs_big = ConditionalValue([(val, con) for val, con in nfs_big if not con.pAdic_tree(pAdics=pAdic
-   ....: Base(QQ, 2)).is_empty()])
+   sage: nfs_big = ConditionalValue([(val, con) for val, con in nfs_big
+   ....: if not con.pAdic_tree(pAdics=pAdicBase(QQ, 2)).is_empty()])
    sage: nfs_big = eliminate_by_traces((Ec, Fc), nfs_big, primes=[3, 7, 13, 17])
 
 According to the article we should only have 8 newforms remaining if
@@ -482,8 +482,8 @@ discriminants.
    sage: nfs_big = eliminate_primes((Ec, Fc), nfs_big, 17)
    sage: sum(len(nfs_big[i][0]) for i in range(len(nfs_big)))
    12
-   sage: [fg[0]._f.cm_discriminant() != fg[1]._f.cm_discriminant() for fg in nfs_big[0][0] + nfs_big[1][0]
-   ....:  + nfs_big[2][0] + nfs_big[3][0]]
+   sage: [fg[0]._f.cm_discriminant() != fg[1]._f.cm_discriminant()
+   ....:  for fg in nfs_big[0][0] + nfs_big[1][0] + nfs_big[2][0] + nfs_big[3][0]]
    [True, True, True, True, True, True, True, True, True, True, True, True]
 
 There are however more newforms as expressed in the article.

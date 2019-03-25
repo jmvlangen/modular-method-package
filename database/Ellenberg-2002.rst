@@ -18,6 +18,7 @@ to denote :math:`C^p`.
 
 ::
 
+   sage: load('load.sage')
    sage: R.<A, B> = QQ[]
    sage: Cp = A^4 + B^2
 
