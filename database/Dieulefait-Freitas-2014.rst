@@ -213,8 +213,8 @@ proposion 4.1 and proposition 4.2.
     where 
    n0 =  8 if ('a', 'b') is 1 of 6 possibilities mod 4
          6 if ('a', 'b') is 1 of 4 possibilities mod 4
-	 4 if ('a', 'b') is 1 of 4 possibilities mod 8
-	 0 if ('a', 'b') is 1 of 4 possibilities mod 8
+         4 if ('a', 'b') is 1 of 4 possibilities mod 8
+         0 if ('a', 'b') is 1 of 4 possibilities mod 8
    n1 =  2 if ('a', 'b') is 1 of 20 possibilities mod 5
          0 if ('a', 'b') is 1 of 4 possibilities mod 5
 
