@@ -118,7 +118,7 @@ Papadopoulus to exist in case 3 divides :math:`b` or the property
    n0 = 5 if ('ap', 'cp') == (3, 1), (3, 3) mod 4
         1 if ('ap', 'cp') is 1 of 32 possibilities mod 128
    sage: E21.conductor(additive_primes=[2])
-   1*Rad_P( (1/4096) * ap^2 * (c^2 - ap) )
+   2*Rad_P( (1/4096) * ap^2 * (c^2 - ap) )
    sage: E22.conductor(additive_primes=[2])
    32*Rad_P( (64) * ap^2 * (c^2 - ap) )
    sage: E31.conductor(additive_primes=[3])
