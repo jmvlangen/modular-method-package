@@ -351,7 +351,7 @@ polynomial to verify this.
    sage: i = nf.coefficient_field().base_field().gen()
    sage: lcm(ZZ(nf.coefficient(3).minpoly()(t - t*i).norm()) for nf in S2[1][0]
    ....: for t in range(-2, 3)).prime_factors()
-   [5, 29]
+   []
 
 The newforms of level 800 in ``S3`` are eliminated by comparing traces
 of frobenius which we verify. We verify that only for primes above 2,
@@ -398,8 +398,7 @@ Q-curve.
 ::
 
    sage: a_invariants2 = [0, 2*(a - b), 0, (-3/10*sqrt(K(5)) + 1/2)*phi1, 0]
-   sage: isogenies2 = {sigma^0: (QQ(1), 1), sigma^1: (sqrtm2, 2)}
-   sage: F = FreyQcurve(a_invariants2, isogenies=isogenies2, condition=C)
+   sage: F = FreyQcurve(a_invariants2, isogenies=isogenies, condition=C)
 
 The article claims that :math:`F` has the same splitting behaviour as
 :math:`E` and that twisting by the same :math:`\gamma` gives a
@@ -471,6 +470,7 @@ we remove all cases in which only a prime :math:`p \le 13` would work.
 
    sage: nfs_big = eliminate_primes((Ec, Fc), nfs_big, product(prime_range(14)))
    sage: sum(len(nfs_big[i][0]) for i in range(len(nfs_big)))
+   19
 
 We however find there is more newforms remaining than only CM forms,
 but removing the case :math:`p = 17` we are indeed in the case as
@@ -481,9 +481,9 @@ discriminants.
 
    sage: nfs_big = eliminate_primes((Ec, Fc), nfs_big, 17)
    sage: sum(len(nfs_big[i][0]) for i in range(len(nfs_big)))
-   12
-   sage: [fg[0]._f.cm_discriminant() != fg[1]._f.cm_discriminant()
-   ....:  for fg in nfs_big[0][0] + nfs_big[1][0] + nfs_big[2][0] + nfs_big[3][0]]
-   [True, True, True, True, True, True, True, True, True, True, True, True]
+   15
+   sage: all(fg[0]._f.cm_discriminant() != fg[1]._f.cm_discriminant()
+   ....:     for fg in nfs_big[0][0] + nfs_big[1][0] + nfs_big[2][0] + nfs_big[3][0])
+   True
 
 There are however more newforms as expressed in the article.
