@@ -288,6 +288,14 @@ class Condition_base(SageObject):
         raise NotImplementedError("The method 'pAdic_tree' is not " +
                                   "implemented for the base condition class")
 
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__) and
+                isinstance(self, other.__class__) and
+                self.variables() == other.variables())
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 class PolynomialCondition(Condition_base):
     r"""The condition that a certain polynomial is zero.
 
@@ -493,6 +501,10 @@ class PolynomialCondition(Condition_base):
 
     def _cache_key(self):
         return 'TreeCondition', self.polynomial()
+
+    def __eq__(self, other):
+        return (Condition_base.__eq__(self, other) and
+                self.polynomial() == other.polynomial())
 
 class CongruenceCondition(PolynomialCondition):
     r"""The condition that a polynomial is congruent to zero.
@@ -715,6 +727,10 @@ class CongruenceCondition(PolynomialCondition):
     def _cache_key(self):
         return 'CongruenceCondition', self.polynomial(), self.modulus()
 
+    def __eq__(self, other):
+        return (PolynomialCondition.__eq__(self, other) and
+                self.modulus() == other.modulus())
+
 class PowerCondition(PolynomialCondition):
     r"""The condition that a polynomial is an n-th power.
 
@@ -913,6 +929,10 @@ class PowerCondition(PolynomialCondition):
 
     def _cache_key(self):
         return 'PowerCondition', self.polynomial(), self.least_exponent()
+
+    def __eq__(self, other):
+        return (PolynomialCondition.__eq__(self, other) and
+                self.least_exponent() == other.least_exponent())
 
 class CoprimeCondition(Condition_base):
     r"""The condition that variables are n-wise coprime.
@@ -1139,6 +1159,10 @@ class CoprimeCondition(Condition_base):
     def _cache_key(self):
         return 'CoprimeCondition', self.variables(), self._n
 
+    def __eq__(self, other):
+        return (Condition_base.__eq__(self, other) and
+                self.number_of_coprimes() == other.number_of_coprimes())
+
 class NotCondition(Condition_base):
     r""" The condition that another condition does not hold.
 
@@ -1338,6 +1362,10 @@ class NotCondition(Condition_base):
     def _cache_key(self):
         return 'NotCondition', self._other
 
+    def __eq__(self, other):
+        return (Condition_base.__eq__(self, other) and
+                self.negated_condition() == other.negated_condition())
+
 class AndCondition(Condition_base):
     r"""The condition that two conditions both hold.
 
@@ -1510,6 +1538,10 @@ class AndCondition(Condition_base):
 
     def _cache_key(self):
         return 'AndCondition', self._left, self._right
+
+    def __eq__(self, other):
+        return (Condition_base.__eq__(self, other) and
+                self.other_conditions() == other.other_conditions())
 
 class OrCondition(Condition_base):
     r"""The condition that either one of two conditions holds.
@@ -1688,6 +1720,10 @@ class OrCondition(Condition_base):
 
     def _cache_key(self):
         return 'OrCondition', self._left, self._right
+
+    def __eq__(self, other):
+        return (Condition_base.__eq__(self, other) and
+                self.other_conditions() == other.other_conditions())
 
 class TreeCondition(Condition_base):
     r"""A condition that the values should be part of some pAdicTree.
@@ -1916,6 +1952,10 @@ class TreeCondition(Condition_base):
     def _cache_key(self):
         return 'TreeCondition', self._T
 
+    def __eq__(self, other):
+        return (Condition_base.__eq__(self, other) and
+                self.pAdic_tree() == other.pAdic_tree())
+
 class ConditionalValue(SageObject):
     r"""Some value that depends on some condition.
 
@@ -2058,6 +2098,14 @@ class ConditionalValue(SageObject):
 
     def _cache_key(self):
         return tuple((val, 'if', con) for val, con in self)
+
+    def __eq__(self, other):
+        return (isinstance(other, ConditionalValue) and
+                len(self) == len(other) and
+                all(self[i] == other[i] for i in range(len(self))))
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 class ConditionalExpression(SageObject):
     SUM_OPERATOR = ('+', '+', 0)
@@ -2492,7 +2540,7 @@ class ConditionalExpression(SageObject):
         return result
 
     def __add__(self, other):
-        return ConditionalExpression(ConditionalExpression.SUM_OPERATOR, self, other)
+        return ConditionalExpression(ConditionalExpression.SUM_OPERATOR,self, other)
 
     def __radd__(self, other):
         return ConditionalExpression(ConditionalExpression.SUM_OPERATOR, other, self)
@@ -2520,6 +2568,13 @@ class ConditionalExpression(SageObject):
 
     def __rpow__(self, other):
         return ConditionalExpression(ConditionalExpression.EXPONENT_OPERATOR, other, self)
+
+    def __eq__(self, other):
+        return (isinstance(other, ConditionalExpression) and
+                self.left() == other.left() and self.right() == other.right())
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 def apply_to_conditional_value(function, value, singleton=False,
                                use_condition=False, default_condition=None):
