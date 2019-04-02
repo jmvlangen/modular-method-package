@@ -3937,3 +3937,8 @@ class pAdicTree(SageObject):
 
     def _cache_key(self):
         return self.variables(), self._root
+
+    def __eq__(self, other):
+        return (isinstance(other, pAdicTree) and
+                self.variables() == other.variables() and
+                self._root == other._root)
