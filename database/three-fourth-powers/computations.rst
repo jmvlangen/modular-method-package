@@ -790,8 +790,8 @@ traces of Frobenius. We also remove those for the cases :math:`l = 2,
 
 ::
 
-   sage: nfs1 = eliminate_by_traces(E1, nfs1, condition=coprime, primes=prime_range(7, 40))
-   sage: nfs1 = eliminate_primes(E1, nfs1, 2*5)
+   sage: nfs1 = eliminate_by_traces(E1c, nfs1, condition=coprime, primes=prime_range(7, 40))
+   sage: nfs1 = eliminate_primes(E1c, nfs1, 2*5)
 
 Next we do the same for the newforms corresponding to ``E2c``, which
 are loaded from the file "tmp/E2.nfs".
@@ -799,8 +799,8 @@ are loaded from the file "tmp/E2.nfs".
 ::
 
    sage: nfs2 = E2c.newform_candidates(algorithm='file', path='tmp/E2.nfs')
-   sage: nfs2 = eliminate_by_traces(E2, nfs2, condition=coprime, primes=prime_range(7, 40))
-   sage: nfs2 = eliminate_primes(E2, nfs2, 2*5)
+   sage: nfs2 = eliminate_by_traces(E2c, nfs2, condition=coprime, primes=prime_range(7, 40))
+   sage: nfs2 = eliminate_primes(E2c, nfs2, 2*5)
 
 We next combine the two sets of newforms and compare traces of
 frobenius for two curves simultaneously to eliminate more newforms. We
@@ -810,7 +810,7 @@ also check that the only newforms remaining are for the case :math:`l
 ::
 
    sage: nfs = combine_newforms(nfs1, nfs2)
-   sage: nfs = eliminate_by_traces((E1, E2), nfs, condition=coprime, primes=prime_range(7, 50))
+   sage: nfs = eliminate_by_traces((E1c, E2c), nfs, condition=coprime, primes=prime_range(7, 50))
    sage: apply_to_conditional_value(lambda nfsi: lcm(nf[2] for nf in nfsi).prime_factors(), nfs)
    [3]
 
@@ -823,6 +823,6 @@ using this condition, after which no newforms remain.
    sage: analyzer = power_analyzer(cl)
    sage: bad_primes_val = tuple((-1 if P.divides(3) else 0) for P in analyzer.bad_primes(L, h))
    sage: C3 = analyzer.prime_conditions(L, h, 3, primes=[29], bad_primes_val=bad_primes_val)[29]
-   sage: nfs = eliminate_by_trace((E1, E2), nfs, 29, B=3, condition=C3)
+   sage: nfs = eliminate_by_trace((E1c, E2c), nfs, 29, B=3, condition=C3)
    sage: nfs
    []
