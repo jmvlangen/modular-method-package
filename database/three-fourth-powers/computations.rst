@@ -12,11 +12,12 @@ number. We will also use the variable ``cl`` to denote :math:`c^l`.
 
 ::
 
+   sage: load('load.sage')
    sage: R.<a, b> = ZZ[]
    sage: cl = (a-b)^4 + a^4 + (a+b)^4; cl
    3*a^4 + 12*a^2*b^2 + 2*b^4
    sage: coprime = CoprimeCondition([a, b])
-   sage: C = coprime & PowerCondition(cl, 3)
+   sage: con = coprime & PowerCondition(cl, 3)
 
 Preliminaries
 =============
@@ -314,7 +315,7 @@ We compute the factors of the product :math:`F(t_1, t_2) G(t_1, t_2)`.
 
 ::
 
-   sage: [poly.factor for poly in FG]
+   sage: [poly.factor() for poly in FG]
    [(5) * t2 * (9*t1^4 + 60*t1^2*t2^2 + 20*t2^4) * (9*t1^5 - 90*t1^4*t2 + 300*t1^3*t2^2 - 600*t1^2*t2^3 + 500*t1*t2^4 - 200*t2^5),
     (-5) * (23*t1 + 42*t2) * (201580749*t1^4 + 1472068080*t1^3*t2 + 4031233980*t1^2*t2^2 + 4906429920*t1*t2^3 + 2239362820*t2^4) * (133031294352*t1^5 + 1214404012845*t1^4*t2 + 4434376478400*t1^3*t2^2 + 8096026752300*t1^2*t2^3 + 7390627464000*t1*t2^4 + 2698675584100*t2^5)]
 
@@ -358,7 +359,7 @@ not contain a point of order 4.
 
 ::
 
-   sage: [7 not in C.BadPrimes().sage() for C in C_magma]
+   sage: all(7 not in C.BadPrimes().sage() for C in C_magma)
    True
    sage: J7 = [C.ChangeRing(GF(7)).Jacobian() for C in C_magma]
    sage: all(not 4.divides(g.Order()) for J in J7 for g in J.AbelianGroup().Generators())
@@ -386,9 +387,9 @@ We first of all define the elliptic curves presented in the article.
    sage: Qm2.<sqrtm2> = QuadraticField(-2)
    sage: isogenies = {sigma^0: (QQ(1), 1), sigma^1: (sqrtm2, 2)}
    sage: a_invariants1 = [0, -40*b, 0, -20*(w*a^2 - 10*b^2 + 2*w*b^2), 0]
-   sage: E1 = FreyQcurve(a_invariants1, isogenies=isogenies, condition=C)
+   sage: E1 = FreyQcurve(a_invariants1, isogenies=isogenies, condition=con)
    sage: a_invariants2 = [0, -60*a, 0, -30*(-15*a^2 + 3*w*a^2 + w*b^2), 0]
-   sage: E2 = FreyQcurve(a_invariants2, isogenies=isogenies, condition=C)
+   sage: E2 = FreyQcurve(a_invariants2, isogenies=isogenies, condition=con)
 
 We check that the invariants listed of these curves are indeed
 correct.
@@ -432,8 +433,8 @@ elliptic curve.
 
 ::
 
-   sage: magma.eval("X14 := SmallModularCurve(14);");
-   sage: magma.eval("w2 := AtkinLehnerInvolution(X14, 14, 2);");
+   sage: _ = magma.eval("X14 := SmallModularCurve(14);")
+   sage: _ = magma.eval("w2 := AtkinLehnerInvolution(X14, 14, 2);")
    sage: print(magma.eval("Genus(X14);"))
    1
 
@@ -447,9 +448,9 @@ show this is an elliptic curve with 6 :math:`\QQ` points.
 
 ::
 
-   sage: magma.eval("P := w2(X14 ! [0, 1, 0]);");
-   sage: magma.eval("phi := TwoIsogeny(P);");
-   sage: magma.eval("X14modW2 := Codomain(phi);");
+   sage: _ = magma.eval("P := w2(X14 ! [0, 1, 0]);")
+   sage: _ = magma.eval("phi := TwoIsogeny(P);")
+   sage: _ = magma.eval("X14modW2 := Codomain(phi);")
    sage: print(magma.eval("Genus(X14modW2)"))
    1
    sage: print(magma.eval("AbelianGroup(X14modW2)"))
@@ -471,12 +472,12 @@ quotient come from :math:`\QQ(\sqrt{-7})` points and not from
 
 ::
 
-   sage: magma.eval("L := QuadraticField(-7);");
-   sage: magma.eval("X14L := BaseChange(X14, L);");
-   sage: magma.eval("phiL := TwoIsogeny(X14L ! P);");
-   sage: magma.eval("P1 := Generators(X14L)[1];");
-   sage: magma.eval("P2 := Generators(X14L)[2];");
-   sage: magma.eval("Q := Generators(X14modW2)[1];");
+   sage: _ = magma.eval("L := QuadraticField(-7);")
+   sage: _ = magma.eval("X14L := BaseChange(X14, L);")
+   sage: _ = magma.eval("phiL := TwoIsogeny(X14L ! P);")
+   sage: _ = magma.eval("P1 := Generators(X14L)[1];")
+   sage: _ = magma.eval("P2 := Generators(X14L)[2];")
+   sage: _ = magma.eval("Q := Generators(X14modW2)[1];")
    sage: print(magma.eval("X14modW2 ! phiL(P1 + P2) eq Q;"))
    true
    sage: print(magma.eval("X14modW2 ! phiL(P1 + 4*P2) eq Q;"))
@@ -489,8 +490,8 @@ this case the curve :math:`X_0(26)` we start with has genus 2.
 
 ::
 
-   sage: magma.eval("X26 := SmallModularCurve(26);");
-   sage: magma.eval("w2 := AtkinLehnerInvolution(X26, 26, 2);");
+   sage: _ = magma.eval("X26 := SmallModularCurve(26);")
+   sage: _ = magma.eval("w2 := AtkinLehnerInvolution(X26, 26, 2);")
    sage: print(magma.eval("Genus(X26);"))
    2
 
@@ -500,8 +501,8 @@ quotient is an elliptic curve.
 
 ::
 
-   sage: magma.eval("G2 := AutomorphismGroup(X26, [w2]);");
-   sage: magma.eval("X26modW2, phi := CurveQuotient(G2);");
+   sage: _ = magma.eval("G2 := AutomorphismGroup(X26, [w2]);")
+   sage: _ = magma.eval("X26modW2, phi := CurveQuotient(G2);")
    sage: print(magma.eval("Genus(X26modW2);"))
    1
 
@@ -522,7 +523,7 @@ two are :math:`\QQ(\sqrt{13})`, hence none can be :math:`K` points.
    Relations:
    3*$.1 = 0 to Set of points of X26modW2 with coordinates in Rational Field given by a rule [no inverse]
    true true
-   sage: magma.eval("Q := Generators(X26modW2)[1];");
+   sage: _ = magma.eval("Q := Generators(X26modW2)[1];")
    sage: print(magma.eval("phi(X26 ! [0, 0, 1]) eq Q;"))
    true
    sage: print(magma.eval("phi(X26 ! [1, 0, 0]) eq Q;"))
@@ -531,9 +532,9 @@ two are :math:`\QQ(\sqrt{13})`, hence none can be :math:`K` points.
    true
    sage: print(magma.eval("phi(X26 ! [1, 1, 0]) eq 2*Q;"))
    true
-   sage: magma.eval("L<s> := QuadraticField(13);");
-   sage: magma.eval("X26L := BaseChange(X26, L);");
-   sage: magma.eval("phiL := phi(L);");
+   sage: _ = magma.eval("L<s> := QuadraticField(13);")
+   sage: _ = magma.eval("X26L := BaseChange(X26, L);")
+   sage: _ = magma.eval("phiL := phi(L);")
    sage: print(magma.eval("X26modW2 ! phiL(X26L ! [1, s, -1]) eq 3*Q;"))
    true
    sage: print(magma.eval("X26modW2 ! phiL(X26L ! [-1, s, 1]) eq 3*Q;"))
@@ -544,8 +545,8 @@ curve :math:`X_0(6)` is a rational curve.
 
 ::
 
-   sage: magma.eval("X6 := SmallModularCurve(6);");
-   sage: magma.eval("w2 := AtkinLehnerInvolution(X6, 6, 2);");
+   sage: _ = magma.eval("X6 := SmallModularCurve(6);")
+   sage: _ = magma.eval("w2 := AtkinLehnerInvolution(X6, 6, 2);")
    sage: print(magma.eval("Genus(X6);"))
    0
 
@@ -556,9 +557,9 @@ has degree 2 by definition.
 
 ::
 
-   sage: magma.eval("R<x,y> := PolynomialRing(Rationals(), 2);");
-   sage: magma.eval("P1 := ProjectiveSpace(R);");
-   sage: magma.eval("phi := map< X6 -> P1 | [x*(x + 9*y), y*(x + 8*y)]>;");
+   sage: _ = magma.eval("R<x,y> := PolynomialRing(Rationals(), 2);")
+   sage: _ = magma.eval("P1 := ProjectiveSpace(R);")
+   sage: _ = magma.eval("phi := map< X6 -> P1 | [x*(x + 9*y), y*(x + 8*y)]>;")
    sage: print(magma.eval("w2 * phi eq phi"))
    true
 
@@ -567,8 +568,8 @@ Last we look at the case :math:`l = 5`. We again check that
 
 ::
 
-   sage: magma.eval("X10 := SmallModularCurve(10);");
-   sage: magma.eval("w2 := AtkinLehnerInvolution(X10, 10, 2);");
+   sage: _ = magma.eval("X10 := SmallModularCurve(10);")
+   sage: _ = magma.eval("w2 := AtkinLehnerInvolution(X10, 10, 2);")
    sage: print(magma.eval("Genus(X10);"))
    0
 
@@ -579,9 +580,9 @@ clearly has degree 2.
 
 ::
 
-   sage: magma.eval("R<x,y> := PolynomialRing(Rationals(), 2);");
-   sage: magma.eval("P1 := ProjectiveSpace(R);");
-   sage: magma.eval("phi := map< X10 -> P1 | [x*(x + 5*y), y*(x + 4*y)]>;");
+   sage: _ = magma.eval("R<x,y> := PolynomialRing(Rationals(), 2);")
+   sage: _ = magma.eval("P1 := ProjectiveSpace(R);")
+   sage: _ = magma.eval("phi := map< X10 -> P1 | [x*(x + 5*y), y*(x + 4*y)]>;")
    sage: print(magma.eval("w2 * phi eq phi"))
    true
 
@@ -639,15 +640,15 @@ twisted versions.
 
    sage: N1c = E1c.conductor(); N1c
    Warning: Assuming that a and b are coprime.
-   (128)*Rad_P( ((2263122465000000*zeta1200^15 + 1923257904000000*zeta1200^14 + 2212566120000000*zeta1200^13 - 2661718800000000*zeta1200^12 - 7487229096000000*zeta1200^11 - 3290069280000000*zeta1200^10 - 6915484368000000*zeta1200^9 + 4066736640000000*zeta1200^8 - 17700528960000000*zeta1200^7 - 17611849344000000*zeta1200^6 - 57280067520000000*zeta1200^5 - 8903144448000000*zeta1200^4 + 104317424640000000*zeta1200^3 + 137816110080000000*zeta1200^2 + 239591331072000000*zeta1200 - 87077376000000000)) * (a^2 + (1/128*zeta1200^15 + 1/48*zeta1200^13 - 1/48*zeta1200^11 - 1/24*zeta1200^9 - 1/6*zeta1200^7 - 1/6*zeta1200^5 + 2/3*zeta1200 + 2)*b^2) * (a^2 + (-1/128*zeta1200^15 - 1/48*zeta1200^13 + 1/48*zeta1200^11 + 1/24*zeta1200^9 + 1/6*zeta1200^7 + 1/6*zeta1200^5 - 2/3*zeta1200 + 2)*b^2)^2 )
+    (128)*Rad_P( ((292403859000000*zeta1200^15 - 3762459384000000*zeta1200^14 - 2212566120000000*zeta1200^13 - 1645034640000000*zeta1200^12 + 3457742184000000*zeta1200^11 + 5323437600000000*zeta1200^10 - 6124193712000000*zeta1200^9 + 17227013760000000*zeta1200^8 + 17700528960000000*zeta1200^7 + 38905599744000000*zeta1200^6 - 21879009600000000*zeta1200^5 + 35223698688000000*zeta1200^4 + 64471790592000000*zeta1200^3 - 32533893120000000*zeta1200^2 - 110647749888000000*zeta1200 - 503604390912000000)) * (a^2 + (-1/128*zeta1200^15 - 1/48*zeta1200^13 + 1/48*zeta1200^11 + 1/24*zeta1200^9 + 1/6*zeta1200^7 + 1/6*zeta1200^5 - 2/3*zeta1200 + 2)*b^2) * (a^2 + (1/128*zeta1200^15 + 1/48*zeta1200^13 - 1/48*zeta1200^11 - 1/24*zeta1200^9 - 1/6*zeta1200^7 - 1/6*zeta1200^5 + 2/3*zeta1200 + 2)*b^2)^2 )
    sage: N2c = E2c.conductor(); N2c
    Warning: Assuming that a and b are coprime.
-   (2, -1/128*zeta1200^15 + 1/128*zeta1200^14 + 1/32*zeta1200^11 - 1/32*zeta1200^10 - 1/8*zeta1200^7 + 1/8*zeta1200^6 - 1/4*zeta1200^5 + 1/4*zeta1200^4 - zeta1200^3 + zeta1200^2 - 2*zeta1200 + 1)^n0*(2, -1/128*zeta1200^15 + 1/128*zeta1200^14 + 1/32*zeta1200^11 - 1/32*zeta1200^10 - 1/8*zeta1200^7 + 1/8*zeta1200^6 - 1/4*zeta1200^5 + 1/4*zeta1200^4 - zeta1200^3 + zeta1200^2 - zeta1200 + 2)^n1*(3, 1/16*zeta1200^8 + 1/8*zeta1200^7 + 1/4*zeta1200^5 - 1/4*zeta1200^4 - 1/2*zeta1200^3 - zeta1200 + 1)*(3, 1/16*zeta1200^8 - 1/8*zeta1200^7 - 1/4*zeta1200^5 - 1/4*zeta1200^4 + 1/2*zeta1200^3 + zeta1200 + 1)*(1)*(1)*Rad_P( ((65747601802687500*zeta1200^15 + 55873929255750000*zeta1200^14 + 64278765445500000*zeta1200^13 - 77327474337000000*zeta1200^12 - 217516972603500000*zeta1200^11 - 95582019978000000*zeta1200^10 - 200906790345000000*zeta1200^9 + 118145857392000000*zeta1200^8 - 514230123564000000*zeta1200^7 - 511654788180000000*zeta1200^6 - 1664083573164000000*zeta1200^5 - 258653416536000000*zeta1200^4 + 3030605390160000000*zeta1200^3 + 4003791498432000000*zeta1200^2 + 6960543123312000000*zeta1200 - 2529759872808000000)) * (a^2 + (-1/128*zeta1200^15 - 1/48*zeta1200^13 + 1/48*zeta1200^11 + 1/24*zeta1200^9 + 1/6*zeta1200^7 + 1/6*zeta1200^5 - 2/3*zeta1200 + 2)*b^2) * (a^2 + (1/128*zeta1200^15 + 1/48*zeta1200^13 - 1/48*zeta1200^11 - 1/24*zeta1200^9 - 1/6*zeta1200^7 - 1/6*zeta1200^5 + 2/3*zeta1200 + 2)*b^2)^2 )
-    where 
-   n0 =  12 if ('a', 'b') == (1, 0) mod 2
-         10 if ('a', 'b') == (1, 1) mod 2
-   n1 =  12 if ('a', 'b') == (1, 0) mod 2
-         10 if ('a', 'b') == (1, 1) mod 2
+    (2, -1/128*zeta1200^15 + 1/128*zeta1200^14 + 1/32*zeta1200^11 - 1/32*zeta1200^10 - 1/8*zeta1200^7 + 1/8*zeta1200^6 - 1/4*zeta1200^5 + 1/4*zeta1200^4 - zeta1200^3 + zeta1200^2 - 2*zeta1200 + 1)^n0*(2, -1/128*zeta1200^15 + 1/128*zeta1200^14 + 1/32*zeta1200^11 - 1/32*zeta1200^10 - 1/8*zeta1200^7 + 1/8*zeta1200^6 - 1/4*zeta1200^5 + 1/4*zeta1200^4 - zeta1200^3 + zeta1200^2 - zeta1200 + 2)^n1*(3, 1/16*zeta1200^8 + 1/8*zeta1200^7 + 1/4*zeta1200^5 - 1/4*zeta1200^4 - 1/2*zeta1200^3 - zeta1200 + 1)*(3, 1/16*zeta1200^8 - 1/8*zeta1200^7 - 1/4*zeta1200^5 - 1/4*zeta1200^4 + 1/2*zeta1200^3 + zeta1200 + 1)*(1)*(1)*Rad_P( ((8494870286812500*zeta1200^15 - 109305898598250000*zeta1200^14 - 64278765445500000*zeta1200^13 - 47791009989000000*zeta1200^12 + 100453395172500000*zeta1200^11 + 154654948674000000*zeta1200^10 - 177918883425000000*zeta1200^9 + 500473937304000000*zeta1200^8 + 514230123564000000*zeta1200^7 + 1130274582876000000*zeta1200^6 - 635623326036000000*zeta1200^5 + 1023309576360000000*zeta1200^4 + 1873017238896000000*zeta1200^3 - 945166859136000000*zeta1200^2 - 3214508645520000000*zeta1200 - 14630581175112000000)) * (a^2 + (1/128*zeta1200^15 + 1/48*zeta1200^13 - 1/48*zeta1200^11 - 1/24*zeta1200^9 - 1/6*zeta1200^7 - 1/6*zeta1200^5 + 2/3*zeta1200 + 2)*b^2) * (a^2 + (-1/128*zeta1200^15 - 1/48*zeta1200^13 + 1/48*zeta1200^11 + 1/24*zeta1200^9 + 1/6*zeta1200^7 + 1/6*zeta1200^5 - 2/3*zeta1200 + 2)*b^2)^2 )
+     where 
+    n0 =  12 if ('a', 'b') == (1, 0) mod 2
+          10 if ('a', 'b') == (1, 1) mod 2
+    n1 =  12 if ('a', 'b') == (1, 0) mod 2
+          10 if ('a', 'b') == (1, 1) mod 2
 
 The expression here can be quite unreadable, therefore we check that
 it matches the much more readable expression in the paper.
