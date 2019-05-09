@@ -21,7 +21,10 @@ number. We will also use the variable ``cl`` to denote :math:`c^l`.
 Preliminaries
 =============
 
-We first check that proposition 1.1 is indeed correct.
+We first check that proposition 1.1 is indeed correct. Note that we
+can check that ``cl`` is not equal to zero modulo 4 and 9 since if
+``cl`` is divisible by either 2 or 3 it should be divisible by 4 or 9
+as :math:`l > 1`.
 
 ::
 
@@ -358,7 +361,7 @@ not contain a point of order 4.
 
 ::
 
-   sage: [7 not in C.BadPrimes().sage() for C in C_magma]
+   sage: all(7 not in C.BadPrimes().sage() for C in C_magma)
    True
    sage: J7 = [C.ChangeRing(GF(7)).Jacobian() for C in C_magma]
    sage: all(not 4.divides(g.Order()) for J in J7 for g in J.AbelianGroup().Generators())
@@ -385,9 +388,9 @@ We first of all define the elliptic curves presented in the article.
    sage: G.<sigma> = K.galois_group()
    sage: Qm2.<sqrtm2> = QuadraticField(-2)
    sage: isogenies = {sigma^0: (QQ(1), 1), sigma^1: (sqrtm2, 2)}
-   sage: a_invariants1 = [0, -40*b, 0, -20*(w*a^2 - 10*b^2 + 2*w*b^2), 0]
+   sage: a_invariants1 = [0, 60*a, 0, 30*((15 + 3*w)*a^2 + w*b^2), 0]
    sage: E1 = FreyQcurve(a_invariants1, isogenies=isogenies, condition=C)
-   sage: a_invariants2 = [0, -60*a, 0, -30*(-15*a^2 + 3*w*a^2 + w*b^2), 0]
+   sage: a_invariants2 = [0, 40*b, 0, 20*(w*a^2 + (10 + 2*w)*b^2), 0]
    sage: E2 = FreyQcurve(a_invariants2, isogenies=isogenies, condition=C)
 
 We check that the invariants listed of these curves are indeed
@@ -395,13 +398,19 @@ correct.
 
 ::
 
-   sage: E1.discriminant() == 2^13 * 3 * 5^4 * w * g1 * g2^2
+   sage: E1.discriminant() == - 2^9 * 3^6 * 5^4 * (5 + w) * g1 * g2^2
    True
-   sage: E2.discriminant() == 2^9 * 3^6 * 5^4 * (w - 5) * g1^2 * g2
+   sage: E2.discriminant() == - 2^13 * 3 * 5^4 * w * g1^2 * g2
    True
-   sage: E1.j_invariant() == 2^6 * 3^(-3) * (9*a^2 + (18 + 5*w)*b^2)^3 / (g1 * g2^2)
+   sage: E1.c4() == - 2^5 * 3^2 * 5 * (5 + w) * ((43 - 8*w)*a^2 + (6 - w)*b^2)
    True
-   sage: E2.j_invariant() == -1 * (11 + 2*w)^2 * 2^6 * ((7 - 2*w)*a^2 + (w - 6)*b^2)^3 / (g1^2 * g2)
+   sage: E2.c4() == - 2^6 * 5 * (5 + w) * ((18 - 3*w)*a^2 + (86 - 16*w)*b^2)
+   True
+   sage: E2.c4() == - 2^6 * 3^(-1) * 5 * w * (9*a^2 + (18 - 5*w)*b^2)
+   True
+   sage: E1.j_invariant() == (11 + 2*w) * 2^6 * ((43 - 8*w)*a^2 + (6 - w)*b^2)^3 / (g1 * g2^2)
+   True
+   sage: E2.j_invariant() == 2^6 * 3^(-3) * (9*a^2 + (18 - 5*w)*b^2)^3 / (g1^2 * g2)
    True
 
 We show that the resultants of :math:`g_1` and :math:`g_2` with the
