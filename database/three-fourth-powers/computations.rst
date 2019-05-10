@@ -390,9 +390,9 @@ We first of all define the elliptic curves presented in the article.
    sage: Qm2.<sqrtm2> = QuadraticField(-2)
    sage: isogenies = {sigma^0: (QQ(1), 1), sigma^1: (sqrtm2, 2)}
    sage: a_invariants1 = [0, 60*a, 0, 30*((15 + 3*w)*a^2 + w*b^2), 0]
-   sage: E1 = FreyQcurve(a_invariants1, isogenies=isogenies, condition=C)
+   sage: E1 = FreyQcurve(a_invariants1, isogenies=isogenies, condition=con)
    sage: a_invariants2 = [0, 40*b, 0, 20*(w*a^2 + (10 + 2*w)*b^2), 0]
-   sage: E2 = FreyQcurve(a_invariants2, isogenies=isogenies, condition=C)
+   sage: E2 = FreyQcurve(a_invariants2, isogenies=isogenies, condition=con)
 
 We check that the invariants listed of these curves are indeed
 correct.
