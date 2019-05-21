@@ -22,7 +22,7 @@ number. We will also use the variable ``cl`` to denote :math:`c^l`.
 Preliminaries
 =============
 
-We first check that proposition 1.1 is indeed correct. Note that we
+We first check that proposition 2.1 is indeed correct. Note that we
 can check that ``cl`` is not equal to zero modulo 4 and 9 since if
 ``cl`` is divisible by either 2 or 3 it should be divisible by 4 or 9
 as :math:`l > 1`.
@@ -37,7 +37,7 @@ as :math:`l > 1`.
    True
 
 Next, we check there is indeed no primitive solution for :math:`l = 2`
-as claimed in proposition 1.2.
+as claimed in proposition 2.2.
 
 ::
 
@@ -56,7 +56,7 @@ the splitting field of :math:`3 x^4 + 12 x^2 + 2`. We also let
    sage: v = cl(x, 1).change_ring(L).roots()[0][0]
    sage: h = a + v*b
 
-We verify that ``cl`` factors as in equation 3 and that the factors
+We verify that ``cl`` factors as in equation (5) and that the factors
 are indeed galois conjugates of :math:`h`.
 
 ::
@@ -74,7 +74,7 @@ are indeed galois conjugates of :math:`h`.
    sage: h3 == h.change_ring(G[1].as_hom())
    True
 
-We now perform the computations necessary for lemma 1.3, i.e. we check
+We now perform the computations necessary for lemma 2.3, i.e. we check
 there is a unique prime ``P3`` above 3 in :math:`L`, that :math:`v` is
 only not integral at ``P3`` and has valuation -1 there, and that the
 difference between galois conjugates of :math:`v` only contain primes
@@ -382,20 +382,65 @@ odd degree model of the curve.
 Modular method
 ==============
 
-We first of all define the elliptic curves presented in the article.
+First we check the mentioned fact. We take :math:`B_1` and :math:`A`
+as variables and will set :math:`B_2 = A^2 - B_1`. We define the
+elliptic curve as in section 4.1.
 
 ::
 
-   sage: G.<sigma> = K.galois_group()
-   sage: Qm2.<sqrtm2> = QuadraticField(-2)
-   sage: isogenies = {sigma^0: (QQ(1), 1), sigma^1: (sqrtm2, 2)}
-   sage: a_invariants1 = [0, 60*a, 0, 30*((15 + 3*w)*a^2 + w*b^2), 0]
-   sage: E1 = FreyQcurve(a_invariants1, isogenies=isogenies, condition=con)
-   sage: a_invariants2 = [0, 40*b, 0, 20*(w*a^2 + (10 + 2*w)*b^2), 0]
-   sage: E2 = FreyQcurve(a_invariants2, isogenies=isogenies, condition=con)
+   sage: Rt.<A, B1> = QQ[]
+   sage: B2 = A^2 - B1
+   sage: E = EllipticCurve([0, 2*A, 0, B1, 0])
 
-We check that the invariants listed of these curves are indeed
-correct.
+Next we check that the invariants are as mentioned
+
+::
+
+   sage: E.discriminant() == 64 * B1^2 * B2
+   True
+   sage: E.c4() == 16*(B1 + 4*B2)
+   True
+
+Next we check that we indeed have that the given linear combinations
+of :math:`g_1(a, b)` and :math:`g_2(a, b)` are squares
+
+::
+
+   sage: (1/2 - w/10)*g1 + (1/2 + w/10)*g2 == a^2
+   True
+   sage: (w/20)*g1 - (w/20)*g2 == b^2
+   True
+
+Next we construct the four possible Frey curves that are constructed
+from this as mentioned in the article, and also check that in each
+pair the two curves are galois conjugates of one another.
+
+::
+
+   sage: E1 = FreyCurve([0, 2*a, 0, (1/2 - w/10)*g1, 0], condition=con)
+   sage: E1_ = FreyCurve([0, 2*a, 0, (1/2 + w/10)*g2, 0], condition=con)
+   sage: E2 = FreyCurve([0, 2*b, 0, (w/20)*g1, 0], condition=con)
+   sage: E2_ = FreyCurve([0, 2*b, 0, -(w/20)*g2, 0], condition=con)
+   sage: G.<sigma> = K.galois_group()
+   sage: E1_.a_invariants() == E1.change_ring(sigma.as_hom()).a_invariants()
+   True
+   sage: E2_.a_invariants() == E2.change_ring(sigma.as_hom()).a_invariants()
+   True
+
+We choose the two elliptic curves :math:`E_1'` and :math:`E_2` as
+mentioned and twist them by 30 and 20 respectively. We check that we
+get the same curves as mentioned in the article.
+
+::
+
+   sage: E1 = FreyCurve(twist_elliptic_curve(E1_, 30), condition=con)
+   sage: E2 = FreyCurve(twist_elliptic_curve(E2, 20), condition=con)
+   sage: E1.a_invariants() == (0, 60*a, 0, 30*((15 + 3*w)*a^2 + w*b^2), 0)
+   True
+   sage: E2.a_invariants() == (0, 40*b, 0, 20*(w*a^2 + (10 + 2*w)*b^2), 0)
+   True
+
+Next we check that all the mentioned invariants were computed correctly
 
 ::
 
@@ -404,8 +449,6 @@ correct.
    sage: E2.discriminant() == - 2^13 * 3 * 5^4 * w * g1^2 * g2
    True
    sage: E1.c4() == - 2^5 * 3^2 * 5 * (5 + w) * ((43 - 8*w)*a^2 + (6 - w)*b^2)
-   True
-   sage: E2.c4() == - 2^6 * 5 * (5 + w) * ((18 - 3*w)*a^2 + (86 - 16*w)*b^2)
    True
    sage: E2.c4() == - 2^6 * 3^(-1) * 5 * w * (9*a^2 + (18 - 5*w)*b^2)
    True
@@ -417,22 +460,357 @@ correct.
 We show that the resultants of :math:`g_1` and :math:`g_2` with the
 factors in the numerators of :math:`j_1` and :math:`j_2` are indeed
 only divisible by primes dividing 2, 3 or 5, affirming the statement
-made in Lemma 3.1. For this we simply compute the prime factors in the
+made in Lemma 4.1. For this we simply compute the prime factors in the
 norm, which is sufficient as the numerators are integral and the only
 prime at which :math:`g_1` and :math:`g_2` are not integral divides 3.
 
 ::
 
-   sage: g1.macaulay_resultant(9*a^2 + (18 + 5*w)*b^2).norm().factor()
-   2^6 * 3^2 * 5^2
-   sage: g1.macaulay_resultant((7 - 2*w)*a^2 + (w - 6)*b^2).norm().factor()
-   2^14 * 3^-2 * 5^2
-   sage: g2.macaulay_resultant(9*a^2 + (18 + 5*w)*b^2).norm().factor()
-   2^14 * 3^2 * 5^2
-   sage: g2.macaulay_resultant((7 - 2*w)*a^2 + (w - 6)*b^2).norm().factor()
+   sage: g1.macaulay_resultant((43 - 8*w)*a^2 + (6 - w)*b^2).norm().factor()
    2^6 * 3^-2 * 5^2
+   sage: g1.macaulay_resultant(9*a^2 + (18 - 5*w)*b^2).norm().factor()
+   2^14 * 3^2 * 5^2
+   sage: g2.macaulay_resultant((43 - 8*w)*a^2 + (6 - w)*b^2).norm().factor()
+   2^14 * 3^-2 * 5^2
+   sage: g2.macaulay_resultant(9*a^2 + (18 - 5*w)*b^2).norm().factor()
+   2^6 * 3^2 * 5^2
 
-We now perform the computational part of theorem 3.3. We check for
+We now verify proposition 4.3 by computing the conductors of both
+curves and showing they are equal to the mentioned expression.
+
+::
+
+   sage: P2 = K.prime_above(2)
+   sage: P3 = K.prime_above(3)
+   sage: P5 = K.prime_above(5)
+   sage: N1 = E1.conductor(); N1
+   Warning: Assuming that a and b are coprime.
+   (2, w)^n0*(3)*(5)*Rad_P( ((-233280000*w - 1166400000)) * (a^2 + (1/3*w + 2)*b^2) * (a^2 + (-1/3*w + 2)*b^2)^2 )
+    where 
+   n0 = 12 if ('a', 'b') == (1, 0) mod 2
+        10 if ('a', 'b') == (1, 1) mod 2
+   sage: N1.left().value()
+   Fractional ideal (960) if ('a', 'b') == (1, 0) mod 2
+   Fractional ideal (480) if ('a', 'b') == (1, 1) mod 2
+   sage: N1.left().value()[0][0] == P2^12 * P3^2 * P5^2
+   True
+   sage: N1.left().value()[1][0] == P2^10 * P3^2 * P5^2
+   True
+   sage: N1.right() == "Rad_P( " + str(E1.discriminant().factor()) + " )"
+   True
+   sage: N2 = E2.conductor(); N2
+   Warning: Assuming that a and b are coprime.
+   (640)*Rad_P( ((-15360000*w)) * (a^2 + (-1/3*w + 2)*b^2) * (a^2 + (1/3*w + 2)*b^2)^2 )
+   sage: N2.left() == P2^14 * P5^2
+   True
+   sage: N2.right() == "Rad_P( " + str(E2.discriminant().factor()) + " )"
+   True
+
+We now compute the dimensions of the spaces of Hilbert modular forms
+mentioned in the article for the levels given.
+
+::
+
+   sage: magma.HilbertCuspForms(K, N1.left().value()[0][0]).NewSubspace().Dimension()
+   826880
+   sage: magma.HilbertCuspForms(K, N1.left().value()[1][0]).NewSubspace().Dimension()
+   206720
+   sage: magma.HilbertCuspForms(K, N2.left()).NewSubspace().Dimension()
+   661504
+
+Here we will compute the possible twists of our elliptic curves that
+might reduce the conductor, and compute the specific one that does.
+
+Now we turn our two curves into :math:`\QQ` curves.
+   
+::
+
+   sage: Qm2.<sqrtm2> = QuadraticField(-2)
+   sage: isogenies = {sigma^0: (QQ(1), 1), sigma^1: (sqrtm2, 2)}
+   sage: E1 = FreyQcurve(E1, isogenies=isogenies, condition=con)
+   sage: E2 = FreyQcurve(E2, isogenies=isogenies, condition=con)
+
+We here explicitly compute the degree map, the definition field and the
+complete definition field. We also verify these are the same as those
+mentioned in the article.
+
+::
+
+   sage: [E1.degree_map(s) for s in G]
+   [1, 2]
+   sage: [E2.degree_map(s) for s in G]
+   [1, 2]
+   sage: E1.definition_field().is_isomorphic(QQ[sqrt(30)])
+   True
+   sage: E2.definition_field().is_isomorphic(QQ[sqrt(30)])
+   True
+   sage: E1.complete_definition_field().is_isomorphic(QQ[sqrt(30),sqrt(-2)])
+   True
+   sage: E2.complete_definition_field().is_isomorphic(QQ[sqrt(30),sqrt(-2)])
+   True
+
+Now we check that this complete definition field is indeed minimal by
+checking that no isogenous curve can be completely defined over
+:math:`\QQ(\sqrt{-2})`. This is guaranteed by corollary 3.3 in the
+article by Quer. First we compute a dual basis as mentioned in that
+article.
+
+::
+
+   sage: E1.dual_basis()
+   ([30], [2])
+   sage: E2.dual_basis()
+   ([30], [2])
+
+Therefore we will have to check that :math:`(2, 30) \neq (-1, 2)`,
+where the symbol :math:`(a, b)` denotes the quaternion algebra with
+basis :math:`{1, i, j, k}` and relations :math:`i^2 = a`, :math:`j^2 =
+b` and :math:`ij = -ji = k`. We compute these two quaternionalgebras
+and check they are not the same, by comparing their discriminants.
+
+::
+
+   sage: QuaternionAlgebra(30, 2).discriminant() == QuaternionAlgebra(-1, 2).discriminant()
+   False
+
+Next we compute the 2-cocycle, a splitting character, its
+corresponding fixed field and splitting field.. We also verify that
+these fields are the same as those mentioned in the article.
+
+::
+
+   sage: matrix([[E1.c(s, t) for t in G] for s in G])
+   [ 1  1]
+   [ 1 -2]
+   sage: matrix([[E2.c(s, t) for t in G] for s in G])
+   [ 1  1]
+   [ 1 -2]
+   sage: E1.splitting_character()
+   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
+   sage: E2.splitting_character()
+   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
+   sage: L15.<zeta15> = CyclotomicField(15)
+   sage: Keps = L15.subfield(zeta15 + zeta15^(-1))[0]
+   sage: E1.splitting_character_field().is_isomorphic(Keps)
+   True
+   sage: E2.splitting_character_field().is_isomorphic(Keps)
+   True
+   sage: Kbeta = composite_field(QQ[sqrt(30)], Keps)
+   sage: E1.splitting_field().is_isomorphic(Kbeta)
+   True
+   sage: E2.splitting_field().is_isomorphic(Kbeta)
+   True
+
+We computation the decomposition field as in the article and check it
+is galois and abelian. We will define the decomposition field as the
+fixed field of a certain homomorphism on :math:`\QQ(\zeta_{120})`,
+since this eases computation later on.
+
+::
+
+   sage: L120.<zeta120> = CyclotomicField(120)
+   sage: G120 = L120.galois_group()
+   sage: sigma = G120[12]
+   sage: sigma(zeta120) == zeta120^91
+   True
+   sage: Kdec = fixed_field([sigma])
+   sage: Kdec.is_isomorphic(composite_field(QQ[sqrt(-2), sqrt(30)], Keps))
+   sage: E1.decomposition_field().is_isomorphic(Kdec)
+   True
+   sage: E2.decomposition_field().is_isomorphic(Kdec)
+   True
+   sage: Kdec.is_galois()
+   True
+   sage: Kdec.is_abelian()
+   True
+
+Now for computing the wanted twist, we need to compute the set
+:math:`S` which in this case consists simply of a generator of the
+class group, which we will see is indeed the unique prime above 3.
+
+::
+
+   sage: P3 = K.prime_above(3)
+   sage: K.class_group().gens() == (P3,)
+   True
+
+Using the code we can directly compute twist for which the restriction
+of scalars decompose. We compute that the twist factor of these curves
+is the same and differs by a square from the :math:`\gamma` given in
+the article.
+
+::
+
+    sage: f_gamma = x^8 - 40*x^7 - 550*x^6 - 1840*x^5 - 285*x^4 + 3600*x^3 - 1950*x^2 + 200*x + 25
+    sage: gamma = f_gamma.change_ring(Kdec).roots()[0][0]
+    sage: iota = K.embeddings(E1.decomposition_field())[0]
+    sage: E1t = E1.decomposable_twist()
+    sage: ((E1t.a2() / E1.a2().change_ring(iota)).numerator().constant_coefficient()
+    ....:   / Kdec.embeddings(E1.decomposition_field())[0](gamma)).is_square()
+    True
+    sage: E2t = E2.decomposable_twist()
+    sage: ((E2t.a2() / E2.a2().change_ring(iota)).numerator().constant_coefficient()
+    ....:   / Kdec.embeddings(E2.decomposition_field())[0](gamma)).is_square()
+    True
+
+Since we shall work with the twists by :math:`\gamma` we define those
+twists and check that the restriction of scalars indeed decomposes.
+
+::
+
+   sage: E1c = E1.twist(gamma)
+   sage: E1c.does_decompose()
+   True
+   sage: E2c = E2.twist(gamma)
+   sage: E2c.does_decompose()
+   True
+
+As remarked in the article we check that the different fields
+associated to the twisted curve are indeed as mentioned.
+
+::
+
+   sage: E1c.definition_field().is_isomorphic(Kdec.subfield(gamma)[0])
+   True
+   sage: E2c.definition_field().is_isomorphic(Kdec.subfield(gamma)[0])
+   True
+   sage: E1c.complete_definition_field().is_isomorphic(Kdec.subfield(gamma)[0])
+   True
+   sage: E2c.complete_definition_field().is_isomorphic(Kdec.subfield(gamma)[0])
+   True
+   sage: E1c.splitting_character_field().is_isomorphic(Keps)
+   True
+   sage: E2c.splitting_character_field().is_isomorphic(Keps)
+   True
+   sage: E1c.splitting_field().is_isomorphic(Kbeta)
+   True
+   sage: E2c.splitting_field().is_isomorphic(Kbeta)
+   True
+   sage: E1c.decomposition_field().is_isomorphic(Kdec.subfield(gamma)[0])
+   True
+   sage: E2c.decomposition_field().is_isomorphic(Kdec.subfield(gamma)[0])
+   True
+   sage: Kbeta.is_isomorphic(Kdec.subfield(gamma)[0])
+   True
+
+We now compute the last data needed to prove theorem 4.5 of the
+article. That is we compute the image fields of one splitting map in
+each galois conjugacy class of splitting maps.
+
+::
+
+   sage: E1c.splitting_image_field('conjugacy')
+   (Cyclotomic Field of order 8 and degree 4,
+    Cyclotomic Field of order 8 and degree 4)
+   sage: E2c.splitting_image_field('conjugacy')
+   (Cyclotomic Field of order 8 and degree 4,
+    Cyclotomic Field of order 8 and degree 4)
+
+Next we compute the conductors in proposition 4.6.
+
+::
+
+   sage: N1 = E1c.conductor_restriction_of_scalars(); N1
+   Warning: Assuming that a and b are coprime.
+   2^(4*n0+24)*43046721*244140625*Norm(Rad_P( ((-78921742074341241600000/1956670721*zeta120000zeta0^7 - 380029400505411796800000/1956670721*zeta120000zeta0^6 + 7432885760622721833600000/1956670721*zeta120000zeta0^5 + 35188148723764108334400000/1956670721*zeta120000zeta0^4 - 198970506927928253030400000/1956670721*zeta120000zeta0^3 - 927156667725518809723200000/1956670721*zeta120000zeta0^2 + 1469601599191613464852800000/1956670721*zeta120000zeta0 + 6827938375229083484136000000/1956670721)) * (a^2 + (140452/29350060815*zeta120000zeta0^7 - 747037/88050182445*zeta120000zeta0^6 - 3725222/5870012163*zeta120000zeta0^5 + 1626965/1956670721*zeta120000zeta0^4 + 540233308/17610036489*zeta120000zeta0^3 - 225553021/9783353605*zeta120000zeta0^2 - 23765958209/29350060815*zeta120000zeta0 + 38244518276/17610036489)*b^2) * (a^2 + (-140452/29350060815*zeta120000zeta0^7 + 747037/88050182445*zeta120000zeta0^6 + 3725222/5870012163*zeta120000zeta0^5 - 1626965/1956670721*zeta120000zeta0^4 - 540233308/17610036489*zeta120000zeta0^3 + 225553021/9783353605*zeta120000zeta0^2 + 23765958209/29350060815*zeta120000zeta0 + 32195627680/17610036489)*b^2)^2 ))
+    where 
+   n0 = 12 if ('a', 'b') == (1, 0) mod 2
+        10 if ('a', 'b') == (1, 1) mod 2
+   sage: N2 = E2c.conductor_restriction_of_scalars(); N2
+   Warning: Assuming that a and b are coprime.
+   1936465405881733890441216000000000000*Norm(Rad_P( ((-59640106344066867200000/1956670721*zeta120000zeta0^7 - 287195551876214656000000/1956670721*zeta120000zeta0^6 + 5616912914163420825600000/1956670721*zeta120000zeta0^5 + 26592468666228410444800000/1956670721*zeta120000zeta0^4 - 150358027649834971340800000/1956670721*zeta120000zeta0^3 - 700676629075745760230400000/1956670721*zeta120000zeta0^2 + 1110538088637536957619200000/1956670721*zeta120000zeta0 + 5160091693872647493990400000/1956670721)) * (a^2 + (-140452/29350060815*zeta120000zeta0^7 + 747037/88050182445*zeta120000zeta0^6 + 3725222/5870012163*zeta120000zeta0^5 - 1626965/1956670721*zeta120000zeta0^4 - 540233308/17610036489*zeta120000zeta0^3 + 225553021/9783353605*zeta120000zeta0^2 + 23765958209/29350060815*zeta120000zeta0 + 32195627680/17610036489)*b^2) * (a^2 + (140452/29350060815*zeta120000zeta0^7 - 747037/88050182445*zeta120000zeta0^6 - 3725222/5870012163*zeta120000zeta0^5 + 1626965/1956670721*zeta120000zeta0^4 + 540233308/17610036489*zeta120000zeta0^3 - 225553021/9783353605*zeta120000zeta0^2 - 23765958209/29350060815*zeta120000zeta0 + 38244518276/17610036489)*b^2)^2 ))
+
+We check that this is indeed the same as mentioned in proposition
+4.6. First for the left side this is an easy check.
+
+::
+
+   sage: N1.left().value()
+   49629490343711156465565696000000000000 if ('a', 'b') == (1, 0) mod 2
+   193865196655121704943616000000000000   if ('a', 'b') == (1, 1) mod 2
+   sage: N1.left().value()[0][0] == 2^72 * 3^16 * 5^12
+   True
+   sage: N1.left().value()[1][0] == 2^64 * 3^16 * 5^12
+   True
+   sage: N2.left() == 2^80 * 3^8 * 5^12
+   True
+
+For the right side we first note that this is the norm of the radical
+of the discriminant outside primes dividing 30.
+
+::
+
+   sage: iota = E1c.definition_field().embeddings(E1c.decomposition_field())[0]
+   sage: N1.right() == "Norm(Rad_P( " + str(E1c.change_ring(iota).discriminant().factor()) + " ))"
+   True
+   sage: N2.right() == "Norm(Rad_P( " + str(E2c.change_ring(iota).discriminant().factor()) + " ))"
+   True
+   sage: (Set(E1c.primes_of_possible_additive_reduction()) ==
+   ....:  Set(E1c.definition_field().primes_above(30)))
+   True
+   sage: (Set(E2c.primes_of_possible_additive_reduction()) ==
+   ....:  Set(E2c.definition_field().primes_above(30)))
+   True
+
+Next we note that these discriminants are just a product of
+:math:`g_1(a, b)`, :math:`g_2(a, b)` and an integral number only
+divisible by primes dividing 30.
+
+::
+
+   sage: iota = K.embeddings(E1c.decomposition_field())[0]
+   sage: cf = E1c.discriminant() / (g1.change_ring(iota) * g2.change_ring(iota)^2); cf
+   (-57932539416000000*zeta12000^7 - 34067671740000000*zeta12000^6 + 791022251286000000*zeta12000^5 + 465167808288000000*zeta12000^4 - 2970680823252000000*zeta12000^3 - 1746943512336000000*zeta12000^2 + 2680378691112000000*zeta12000 + 1576230637176000000)
+   sage: cf = cf.numerator().constant_coefficient()
+   sage: cf.is_integral()
+   True
+   sage: cf.norm().factor()
+   2^72 * 3^48 * 5^48
+   sage: cf = E2c.discriminant() / (g1.change_ring(iota)^2 * g2.change_ring(iota)); cf
+   (-43779885120000000*zeta12000^7 - 25745322624000000*zeta12000^6 + 597778540320000000*zeta12000^5 + 351531372288000000*zeta12000^4 - 2244951178176000000*zeta12000^3 - 1320172729344000000*zeta12000^2 + 2025568139136000000*zeta12000 + 1191161773056000000)
+   sage: cf = cf.numerator().constant_coefficient()
+   sage: cf.is_integral()
+   True
+   sage: cf.norm().factor()
+   2^108 * 3^12 * 5^48
+
+This implies that the right side is just the norm of the radical of
+:math:`c` outside primes dividing 30. Since the field :math:`K_\beta`
+only ramifies at primes dividing 30, this norm is simply the product
+of all prime numbers :math:`p > 5` that divide :math:`c` to the
+power 8.
+
+::
+
+   sage: Kbeta.discriminant().factor()
+   2^12 * 3^4 * 5^6
+
+We verify theorem 4.7 by computing the part of the levels of the
+newform divisible by 2, 3 and 5 and also computing the corresponding
+splitting character. Note that the inverse of these characters is the
+character of the newform, but that both the character and its inverse
+could be chosen as they are each others galois conjugate.
+
+::
+
+   sage: E1c.newform_levels()
+   Warning: Assuming that a and b are coprime.
+   [(23040, 115200), (115200, 23040)] if ('a', 'b') == (1, 0) mod 2
+   [(11520, 57600), (57600, 11520)]   if ('a', 'b') == (1, 1) mod 2
+   sage: E1c.splitting_character('conjugacy')
+   (Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
+    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4)
+   sage: E2c.newform_levels()
+   Warning: Assuming that a and b are coprime.
+   [(15360, 76800), (76800, 15360)]
+   sage: E2c.splitting_character('conjugacy')
+   (Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
+    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4)
+   sage: [eps for eps in DirichletGroup(15) if eps.order() == 4 and eps.conductor() == 15]
+   [Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
+    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4]
+    
+We now perform the computational part of theorem 4.8. We check for
 :math:`l = 3, 5, 7, 13` that the curve :math:`X_0(2l)` has no
 :math:`K` point corresponding to a :math:`\QQ` point on :math:`X_0(2l)
 / w_2`.
@@ -595,172 +973,8 @@ clearly has degree 2.
    sage: print(magma.eval("w2 * phi eq phi"))
    true
 
-We now turn back to our elliptic curves and check that the
-decomposition field of both curves is indeed the given field
-:math:`K_{\text{dec}}` as in the article.
-
-::
-
-   sage: Q120.<zeta120> = CyclotomicField(120)
-   sage: Hdec = [s for s in Q120.galois_group() if s(zeta120) == zeta120^91]
-   sage: Kdec = fixed_field(Hdec)
-   sage: E1.decomposition_field().is_isomorphic(Kdec)
-   True
-   sage: E2.decomposition_field().is_isomorphic(Kdec)
-   True
-
-We check that the restriction of scalars of these elliptic curves over
-:math:`K_{\text{dec}}` does not decompose, but the twists of both
-curves by the element :math:`\gamma` as in the article does.
-
-::
-
-   sage: E1.does_decompose()
-   False
-   sage: E2.does_decompose()
-   False
-   sage: f = x^8 - 40*x^7 - 550*x^6 - 1840*x^5 - 285*x^4 + 3600*x^3 - 1950*x^2 + 200*x + 25
-   sage: gamma = f.change_ring(Kdec).roots()[0][0]
-   sage: E1c = E1.twist(gamma)
-   sage: E2c = E2.twist(gamma)
-   sage: iota = E1c.definition_field().hom([Kdec(g) for g in E1c.definition_field().gens()], Kdec)
-   sage: E1c = E1c.change_ring(iota)
-   sage: E2c = E2c.change_ring(iota)
-   sage: E1c.does_decompose()
-   True
-   sage: E2c.does_decompose()
-   True
-
-We now compute the quantities presented in proposition 3.6. First the
-discriminants.
-
-::
-
-   sage: iota = E1.definition_field().embeddings(Kdec)[1]
-   sage: E1c.discriminant() == gamma^6 * (2^13 * 3 * 5^4 * w * g1 * g2^2).change_ring(iota)
-   True
-   sage: E2c.discriminant() == gamma^6 * (2^9 * 3^6 * 5^4 * (w - 5) * g1^2 * g2).change_ring(iota)
-   True
-   
-We also compute the conductors over the decomposition field of both
-twisted versions.
-
-::
-
-   sage: N1c = E1c.conductor(); N1c
-   Warning: Assuming that a and b are coprime.
-    (128)*Rad_P( ((292403859000000*zeta1200^15 - 3762459384000000*zeta1200^14 - 2212566120000000*zeta1200^13 - 1645034640000000*zeta1200^12 + 3457742184000000*zeta1200^11 + 5323437600000000*zeta1200^10 - 6124193712000000*zeta1200^9 + 17227013760000000*zeta1200^8 + 17700528960000000*zeta1200^7 + 38905599744000000*zeta1200^6 - 21879009600000000*zeta1200^5 + 35223698688000000*zeta1200^4 + 64471790592000000*zeta1200^3 - 32533893120000000*zeta1200^2 - 110647749888000000*zeta1200 - 503604390912000000)) * (a^2 + (-1/128*zeta1200^15 - 1/48*zeta1200^13 + 1/48*zeta1200^11 + 1/24*zeta1200^9 + 1/6*zeta1200^7 + 1/6*zeta1200^5 - 2/3*zeta1200 + 2)*b^2) * (a^2 + (1/128*zeta1200^15 + 1/48*zeta1200^13 - 1/48*zeta1200^11 - 1/24*zeta1200^9 - 1/6*zeta1200^7 - 1/6*zeta1200^5 + 2/3*zeta1200 + 2)*b^2)^2 )
-   sage: N2c = E2c.conductor(); N2c
-   Warning: Assuming that a and b are coprime.
-    (2, -1/128*zeta1200^15 + 1/128*zeta1200^14 + 1/32*zeta1200^11 - 1/32*zeta1200^10 - 1/8*zeta1200^7 + 1/8*zeta1200^6 - 1/4*zeta1200^5 + 1/4*zeta1200^4 - zeta1200^3 + zeta1200^2 - 2*zeta1200 + 1)^n0*(2, -1/128*zeta1200^15 + 1/128*zeta1200^14 + 1/32*zeta1200^11 - 1/32*zeta1200^10 - 1/8*zeta1200^7 + 1/8*zeta1200^6 - 1/4*zeta1200^5 + 1/4*zeta1200^4 - zeta1200^3 + zeta1200^2 - zeta1200 + 2)^n1*(3, 1/16*zeta1200^8 + 1/8*zeta1200^7 + 1/4*zeta1200^5 - 1/4*zeta1200^4 - 1/2*zeta1200^3 - zeta1200 + 1)*(3, 1/16*zeta1200^8 - 1/8*zeta1200^7 - 1/4*zeta1200^5 - 1/4*zeta1200^4 + 1/2*zeta1200^3 + zeta1200 + 1)*(1)*(1)*Rad_P( ((8494870286812500*zeta1200^15 - 109305898598250000*zeta1200^14 - 64278765445500000*zeta1200^13 - 47791009989000000*zeta1200^12 + 100453395172500000*zeta1200^11 + 154654948674000000*zeta1200^10 - 177918883425000000*zeta1200^9 + 500473937304000000*zeta1200^8 + 514230123564000000*zeta1200^7 + 1130274582876000000*zeta1200^6 - 635623326036000000*zeta1200^5 + 1023309576360000000*zeta1200^4 + 1873017238896000000*zeta1200^3 - 945166859136000000*zeta1200^2 - 3214508645520000000*zeta1200 - 14630581175112000000)) * (a^2 + (1/128*zeta1200^15 + 1/48*zeta1200^13 - 1/48*zeta1200^11 - 1/24*zeta1200^9 - 1/6*zeta1200^7 - 1/6*zeta1200^5 + 2/3*zeta1200 + 2)*b^2) * (a^2 + (-1/128*zeta1200^15 - 1/48*zeta1200^13 + 1/48*zeta1200^11 + 1/24*zeta1200^9 + 1/6*zeta1200^7 + 1/6*zeta1200^5 - 2/3*zeta1200 + 2)*b^2)^2 )
-     where 
-    n0 =  12 if ('a', 'b') == (1, 0) mod 2
-          10 if ('a', 'b') == (1, 1) mod 2
-    n1 =  12 if ('a', 'b') == (1, 0) mod 2
-          10 if ('a', 'b') == (1, 1) mod 2
-
-The expression here can be quite unreadable, therefore we check that
-it matches the much more readable expression in the paper.
-
-::
-
-   sage: P2, Q2 = Kdec.primes_above(2)
-   sage: P3, Q3 = Kdec.primes_above(3)
-   sage: P5, Q5 = Kdec.primes_above(5)
-   sage: N1c.left() == P2^14 * Q2^14 * P3^0 * Q3^0 * P5^0 * Q5^0
-   True
-   sage: N1c.right() == "Rad_P( " + str(E1c.discriminant().factor()) + " )"
-   True
-   sage: e = N2c.left().left().left().left().left().left().right(); e
-   12 if ('a', 'b') == (1, 0) mod 2
-   10 if ('a', 'b') == (1, 1) mod 2
-   sage: N2c.left() == P2^e * Q2^e * P3^2 * Q3^2 * P5^0 * Q5^0
-   True
-   sage: N2c.right() == "Rad_P( " + str(E2c.discriminant().factor()) + " )"
-   True
-
-The radical is taken outside the primes of possible additive
-reduction. We check that for both curves this is indeed the set given
-in the article.
-
-::
-
-   sage: Pbad = Kdec.primes_above(2*3*5)
-   sage: Set(E1c.primes_of_possible_additive_reduction()) == Set(Pbad)
-   True
-   sage: Set(E2c.primes_of_possible_additive_reduction()) == Set(Pbad)
-   True
-
-For corollary 3.7 we check that the only primes that ramify in
-:math:`K_{\text{dec}}` are those above 2, 3 and 5, by checking that
-these are the only prime factors of the discriminant.
-
-::
-
-   sage: Kdec.discriminant().prime_factors()
-   [2, 3, 5]
-
-Next we check that for each prime in :math:`K_{\text{dec}}` not above
-2, 3 or 5 the valuation of the discriminant at that prime is divisible
-by :math:`l`. This is the case if the prime divides only the factors
-:math:`g_1` and :math:`g_2` in the discriminant, so we check that the
-remaining factors are only divisible by primes above 2, 3 and 5. This
-we do by checking they are integral and then computing the prime
-numbers in their norm.
-
-::
-
-   sage: D1l = (E1c.discriminant() / (g1 * g2^2).change_ring(iota)).numerator().constant_coefficient()
-   sage: D1l.is_integral()
-   True
-   sage: ZZ(D1l.norm()).prime_factors()
-   [2, 3, 5]
-   sage: D2l = (E2c.discriminant() / (g1^2 * g2).change_ring(iota)).numerator().constant_coefficient()
-   sage: D2l.is_integral()
-   True
-   sage: ZZ(D2l.norm()).prime_factors()
-   [2, 3, 5]
-
-We now compute the possible levels of the newforms which agrees with
-those given in theorem 3.8. Note that the code gives a list of
-possibilities consisting of tuples of levels, one level for each
-abelian variety that is a factor of the restriction of scalars. For
-our newform elimination we only want the lowest level of each tuple.
-
-::
-
-   sage: E1c.newform_levels(bad_primes=Pbad)
-   [(15360, 15360, 76800, 76800), (76800, 76800, 15360, 15360)]
-   sage: E2c.newform_levels(bad_primes=Pbad)
-   [(23040, 23040, 115200, 115200), (115200, 115200, 23040, 23040)] if ('a', 'b') == (1, 0) mod 2 and ('a', 'b') == (1, 0) mod 2
-   []                                                               if ('a', 'b') == (1, 0) mod 2 and ('a', 'b') == (1, 1) mod 2 or ('a', 'b') == (1, 1) mod 2 and ('a', 'b') == (1, 0) mod 2
-   [(11520, 11520, 57600, 57600), (57600, 57600, 11520, 11520)]     if ('a', 'b') == (1, 1) mod 2 and ('a', 'b') == (1, 1) mod 2
-
-We also check that the corresponding character is one of the two
-mentioned in theorem 3.8. As mentioned in the article, the character
-is the inverse of the corresponding splitting character. We compute
-all splitting characters corresponding to the factors of the
-restriction of scalars and find that they are one of the two mentioned
-in the article.
-
-::
-
-   sage: [eps for eps in DirichletGroup(15) if eps.conductor() == 15 and eps.order() == 4]
-   [Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
-    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4]
-   sage: E1c.splitting_character('conjugacy')
-   (Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
-    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
-    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4,
-    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4)
-   sage: E2c.splitting_character('conjugacy')
-   (Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
-    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
-    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4,
-    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4)
-
 Now we perform the elimination as mentioned in the last part of
-section 3 of the article.
+section 4 of the article.
 
 First we load the newforms corresponding to ``E1c``, which are loaded
 from the file "tmp/E1.nfs".
@@ -776,7 +990,7 @@ corresponding character. We know however that the latter embeds in the
 first in every case, hence we can preload the cache of the method
 ``composite_field`` to get around this problem. This we do using some
 precomputed roots of -1 in the coefficient field of each newform,
-which are loaded from the fiel "tmp/nfs1_roots.sobj".
+which are loaded from the file "tmp/nfs1_roots.sobj".
 
 ::
 
@@ -835,3 +1049,5 @@ using this condition, after which no newforms remain.
    sage: nfs = eliminate_by_trace((E1c, E2c), nfs, 29, B=3, condition=C3)
    sage: nfs
    []
+
+
