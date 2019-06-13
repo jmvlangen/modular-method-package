@@ -530,9 +530,8 @@ Now we turn our two curves into :math:`\QQ` curves.
    sage: E1 = FreyQcurve(E1, isogenies=isogenies, condition=con)
    sage: E2 = FreyQcurve(E2, isogenies=isogenies, condition=con)
 
-We here explicitly compute the degree map, the definition field and the
-complete definition field. We also verify these are the same as those
-mentioned in the article.
+We compute all the data mentioned in Proposition 4.5. First of all the
+degree map.
 
 ::
 
@@ -540,6 +539,11 @@ mentioned in the article.
    [1, 2]
    sage: [E2.degree_map(s) for s in G]
    [1, 2]
+
+Next the definition field and the complete definition field.
+
+::
+   
    sage: E1.definition_field().is_isomorphic(QQ[sqrt(30)])
    True
    sage: E2.definition_field().is_isomorphic(QQ[sqrt(30)])
@@ -549,11 +553,28 @@ mentioned in the article.
    sage: E2.complete_definition_field().is_isomorphic(QQ[sqrt(30),sqrt(-2)])
    True
 
-Now we check that this complete definition field is indeed minimal by
-checking that no isogenous curve can be completely defined over
-:math:`\QQ(\sqrt{-2})`. This is guaranteed by corollary 3.3 in the
-article by Quer. First we compute a dual basis as mentioned in that
-article.
+Third the 2-cocyle :math:`c`.
+   
+::
+   
+   sage: Kcomp = E1.complete_definition_field()
+   sage: ls = list(Kcomp.galois_group())
+   sage: [s(sqrt(Kcomp(-2))) / sqrt(Kcomp(-2)) for s in ls]
+   [1, 1, -1, -1]
+   sage: [s(sqrt(Kcomp(30))) / sqrt(Kcomp(30)) for s in ls]
+   [1, -1, 1, -1]
+   sage: matrix([[E1.c(s, t) for t in ls] for s in ls])
+   [ 1  1  1  1]
+   [ 1 -2  1 -2]
+   [ 1 -1  1 -1]
+   [ 1  2  1  2]
+   sage: matrix([[E2.c(s, t) for t in ls] for s in ls])
+   [ 1  1  1  1]
+   [ 1 -2  1 -2]
+   [ 1 -1  1 -1]
+   [ 1  2  1  2]
+
+Next the dual basis.
 
 ::
 
@@ -562,29 +583,10 @@ article.
    sage: E2.dual_basis()
    ([30], [2])
 
-Therefore we will have to check that :math:`(2, 30) \neq (-1, 2)`,
-where the symbol :math:`(a, b)` denotes the quaternion algebra with
-basis :math:`{1, i, j, k}` and relations :math:`i^2 = a`, :math:`j^2 =
-b` and :math:`ij = -ji = k`. We compute these two quaternionalgebras
-and check they are not the same, by comparing their discriminants.
+Lastly a splitting character and the corresponding fields.
 
 ::
 
-   sage: QuaternionAlgebra(30, 2).discriminant() == QuaternionAlgebra(-1, 2).discriminant()
-   False
-
-Next we compute the 2-cocycle, a splitting character, its
-corresponding fixed field and splitting field.. We also verify that
-these fields are the same as those mentioned in the article.
-
-::
-
-   sage: matrix([[E1.c(s, t) for t in G] for s in G])
-   [ 1  1]
-   [ 1 -2]
-   sage: matrix([[E2.c(s, t) for t in G] for s in G])
-   [ 1  1]
-   [ 1 -2]
    sage: E1.splitting_character()
    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
    sage: E2.splitting_character()
@@ -595,38 +597,30 @@ these fields are the same as those mentioned in the article.
    True
    sage: E2.splitting_character_field().is_isomorphic(Keps)
    True
-   sage: Kbeta = composite_field(QQ[sqrt(30)], Keps)
+   sage: Kbeta = composite_field(K, Keps)
    sage: E1.splitting_field().is_isomorphic(Kbeta)
    True
    sage: E2.splitting_field().is_isomorphic(Kbeta)
    True
-
-We computation the decomposition field as in the article and check it
-is galois and abelian. We will define the decomposition field as the
-fixed field of a certain homomorphism on :math:`\QQ(\zeta_{120})`,
-since this eases computation later on.
-
-::
-
-   sage: L120.<zeta120> = CyclotomicField(120)
-   sage: G120 = L120.galois_group()
-   sage: sigma = G120[12]
-   sage: sigma(zeta120) == zeta120^91
-   True
-   sage: Kdec = fixed_field([sigma])
-   sage: Kdec.is_isomorphic(composite_field(QQ[sqrt(-2), sqrt(30)], Keps))
+   sage: Kdec = composite_field(QQ[sqrt(-2), sqrt(-3)], Keps)
    sage: E1.decomposition_field().is_isomorphic(Kdec)
    True
    sage: E2.decomposition_field().is_isomorphic(Kdec)
    True
-   sage: Kdec.is_galois()
+
+We verify the inequalities in the remark after Proposition 4.5 to show
+that the given field of complete definition is indeed minimal.
+
+::
+
+   sage: hilbert_symbol(30, 2, 5) != 1
    True
-   sage: Kdec.is_abelian()
+   sage: hilbert_symbol(30, 2, 5) != hilbert_symbol(-1, 30, 5)
    True
 
-Now for computing the wanted twist, we need to compute the set
-:math:`S` which in this case consists simply of a generator of the
-class group, which we will see is indeed the unique prime above 3.
+Now for Proposition 4.6 we first compute the set :math:`S` which in
+this case consists simply of a generator of the class group. We show
+that this is the unique prime above 3.
 
 ::
 
@@ -634,10 +628,10 @@ class group, which we will see is indeed the unique prime above 3.
    sage: K.class_group().gens() == (P3,)
    True
 
-Using the code we can directly compute twist for which the restriction
-of scalars decompose. We compute that the twist factor of these curves
-is the same and differs by a square from the :math:`\gamma` given in
-the article.
+Using the code we can directly compute a twist for which the
+restriction of scalars decompose. We compute that the twist factor of
+these curves both differs differ by a square from the :math:`\gamma`
+given in the article.
 
 ::
 
@@ -653,8 +647,9 @@ the article.
     ....:   / Kdec.embeddings(E2.decomposition_field())[0](gamma)).is_square()
     True
 
-Since we shall work with the twists by :math:`\gamma` we define those
-twists and check that the restriction of scalars indeed decomposes.
+Since we work with the twists by :math:`\gamma` we define those twists
+and check that the restriction of scalars indeed decomposes, as
+claimed in Propostion 4.6.
 
 ::
 
@@ -665,8 +660,8 @@ twists and check that the restriction of scalars indeed decomposes.
    sage: E2c.does_decompose()
    True
 
-As remarked in the article we check that the different fields
-associated to the twisted curve are indeed as mentioned.
+As remarked in the article we verify that some of the fields associated
+to the twisted curve are indeed different.
 
 ::
 
@@ -693,9 +688,10 @@ associated to the twisted curve are indeed as mentioned.
    sage: Kbeta.is_isomorphic(Kdec.subfield(gamma)[0])
    True
 
-We now compute the last data needed to prove theorem 4.5 of the
-article. That is we compute the image fields of one splitting map in
-each galois conjugacy class of splitting maps.
+We now compute the last data needed to prove Theorem 4.7. That is we
+compute the image fields of one splitting map in each galois conjugacy
+class of splitting maps. This tells us that the decomposition is as
+mentioned in the article.
 
 ::
 
@@ -706,22 +702,35 @@ each galois conjugacy class of splitting maps.
    (Cyclotomic Field of order 8 and degree 4,
     Cyclotomic Field of order 8 and degree 4)
 
-Next we compute the conductors in proposition 4.6.
+For Theorem 4.9 we first compute a splitting character for each
+conjugacy class, giving us the characters for the newforms
+
+::
+
+   sage: E1c.splitting_character('conjugacy')
+   (Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
+    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4)
+   sage: E2c.splitting_character('conjugacy')
+   (Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
+    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4)
+
+Next we compute the conductors of the restriction of scalar as
+mentioned in the proof.
 
 ::
 
    sage: N1 = E1c.conductor_restriction_of_scalars(); N1
    Warning: Assuming that a and b are coprime.
-   2^(4*n0+24)*43046721*244140625*Norm(Rad_P( ((-78921742074341241600000/1956670721*zeta120000zeta0^7 - 380029400505411796800000/1956670721*zeta120000zeta0^6 + 7432885760622721833600000/1956670721*zeta120000zeta0^5 + 35188148723764108334400000/1956670721*zeta120000zeta0^4 - 198970506927928253030400000/1956670721*zeta120000zeta0^3 - 927156667725518809723200000/1956670721*zeta120000zeta0^2 + 1469601599191613464852800000/1956670721*zeta120000zeta0 + 6827938375229083484136000000/1956670721)) * (a^2 + (140452/29350060815*zeta120000zeta0^7 - 747037/88050182445*zeta120000zeta0^6 - 3725222/5870012163*zeta120000zeta0^5 + 1626965/1956670721*zeta120000zeta0^4 + 540233308/17610036489*zeta120000zeta0^3 - 225553021/9783353605*zeta120000zeta0^2 - 23765958209/29350060815*zeta120000zeta0 + 38244518276/17610036489)*b^2) * (a^2 + (-140452/29350060815*zeta120000zeta0^7 + 747037/88050182445*zeta120000zeta0^6 + 3725222/5870012163*zeta120000zeta0^5 - 1626965/1956670721*zeta120000zeta0^4 - 540233308/17610036489*zeta120000zeta0^3 + 225553021/9783353605*zeta120000zeta0^2 + 23765958209/29350060815*zeta120000zeta0 + 32195627680/17610036489)*b^2)^2 ))
+   2^(4*n0+24)*43046721*244140625*Norm(Rad_P( ((23782266551879220937500/59141881469*azeta1500^7 + 1126822572008348510812500/59141881469*azeta1500^6 + 13988031177932864349750000/59141881469*azeta1500^5 - 59265495307535319274500000/59141881469*azeta1500^4 - 1775371096351391663808000000/59141881469*azeta1500^3 - 1236605090022138111120000000/59141881469*azeta1500^2 + 58326576546407013852786000000/59141881469*azeta1500 + 6699553759806124820472000000/59141881469)) * (a^2 + (1/1001088*azeta1500^7 + 1/111232*azeta1500^6 - 21/27808*azeta1500^5 - 1163/125136*azeta1500^4 + 249/3476*azeta1500^3 + 578/869*azeta1500^2 - 111719/31284*azeta1500 + 8884/2607)*b^2) * (a^2 + (-1/1001088*azeta1500^7 - 1/111232*azeta1500^6 + 21/27808*azeta1500^5 + 1163/125136*azeta1500^4 - 249/3476*azeta1500^3 - 578/869*azeta1500^2 + 111719/31284*azeta1500 + 1544/2607)*b^2)^2 ))
     where 
    n0 = 12 if ('a', 'b') == (1, 0) mod 2
         10 if ('a', 'b') == (1, 1) mod 2
    sage: N2 = E2c.conductor_restriction_of_scalars(); N2
    Warning: Assuming that a and b are coprime.
-   1936465405881733890441216000000000000*Norm(Rad_P( ((-59640106344066867200000/1956670721*zeta120000zeta0^7 - 287195551876214656000000/1956670721*zeta120000zeta0^6 + 5616912914163420825600000/1956670721*zeta120000zeta0^5 + 26592468666228410444800000/1956670721*zeta120000zeta0^4 - 150358027649834971340800000/1956670721*zeta120000zeta0^3 - 700676629075745760230400000/1956670721*zeta120000zeta0^2 + 1110538088637536957619200000/1956670721*zeta120000zeta0 + 5160091693872647493990400000/1956670721)) * (a^2 + (-140452/29350060815*zeta120000zeta0^7 + 747037/88050182445*zeta120000zeta0^6 + 3725222/5870012163*zeta120000zeta0^5 - 1626965/1956670721*zeta120000zeta0^4 - 540233308/17610036489*zeta120000zeta0^3 + 225553021/9783353605*zeta120000zeta0^2 + 23765958209/29350060815*zeta120000zeta0 + 32195627680/17610036489)*b^2) * (a^2 + (140452/29350060815*zeta120000zeta0^7 - 747037/88050182445*zeta120000zeta0^6 - 3725222/5870012163*zeta120000zeta0^5 + 1626965/1956670721*zeta120000zeta0^4 + 540233308/17610036489*zeta120000zeta0^3 - 225553021/9783353605*zeta120000zeta0^2 - 23765958209/29350060815*zeta120000zeta0 + 38244518276/17610036489)*b^2)^2 ))
+   1936465405881733890441216000000000000*Norm(Rad_P( ((17973045129994189000000/59141881469*azeta1500^7 + 851560867877408703000000/59141881469*azeta1500^6 + 10570632468562506924000000/59141881469*azeta1500^5 - 44792083812043020808000000/59141881469*azeta1500^4 - 1341640897948993214880000000/59141881469*azeta1500^3 - 934184557863352113984000000/59141881469*azeta1500^2 + 44076529752976112634848000000/59141881469*azeta1500 + 5062815140007181381632000000/59141881469)) * (a^2 + (-1/1001088*azeta1500^7 - 1/111232*azeta1500^6 + 21/27808*azeta1500^5 + 1163/125136*azeta1500^4 - 249/3476*azeta1500^3 - 578/869*azeta1500^2 + 111719/31284*azeta1500 + 1544/2607)*b^2) * (a^2 + (1/1001088*azeta1500^7 + 1/111232*azeta1500^6 - 21/27808*azeta1500^5 - 1163/125136*azeta1500^4 + 249/3476*azeta1500^3 + 578/869*azeta1500^2 - 111719/31284*azeta1500 + 8884/2607)*b^2)^2 ))
 
-We check that this is indeed the same as mentioned in proposition
-4.6. First for the left side this is an easy check.
+We check that this is indeed the same as the expression given in the
+proof of Proposition 4.9. For the left side this is an easy check.
 
 ::
 
@@ -740,10 +749,9 @@ of the discriminant outside primes dividing 30.
 
 ::
 
-   sage: iota = E1c.definition_field().embeddings(E1c.decomposition_field())[0]
-   sage: N1.right() == "Norm(Rad_P( " + str(E1c.change_ring(iota).discriminant().factor()) + " ))"
+   sage: N1.right() == "Norm(Rad_P( " + str(E1c.discriminant().factor()) + " ))"
    True
-   sage: N2.right() == "Norm(Rad_P( " + str(E2c.change_ring(iota).discriminant().factor()) + " ))"
+   sage: N2.right() == "Norm(Rad_P( " + str(E2c.discriminant().factor()) + " ))"
    True
    sage: (Set(E1c.primes_of_possible_additive_reduction()) ==
    ....:  Set(E1c.definition_field().primes_above(30)))
@@ -760,14 +768,14 @@ divisible by primes dividing 30.
 
    sage: iota = K.embeddings(E1c.decomposition_field())[0]
    sage: cf = E1c.discriminant() / (g1.change_ring(iota) * g2.change_ring(iota)^2); cf
-   (-57932539416000000*zeta12000^7 - 34067671740000000*zeta12000^6 + 791022251286000000*zeta12000^5 + 465167808288000000*zeta12000^4 - 2970680823252000000*zeta12000^3 - 1746943512336000000*zeta12000^2 + 2680378691112000000*zeta12000 + 1576230637176000000)
+   (23782266551879220937500/59141881469*azeta1500^7 + 1126822572008348510812500/59141881469*azeta1500^6 + 13988031177932864349750000/59141881469*azeta1500^5 - 59265495307535319274500000/59141881469*azeta1500^4 - 1775371096351391663808000000/59141881469*azeta1500^3 - 1236605090022138111120000000/59141881469*azeta1500^2 + 58326576546407013852786000000/59141881469*azeta1500 + 6699553759806124820472000000/59141881469)
    sage: cf = cf.numerator().constant_coefficient()
    sage: cf.is_integral()
    True
    sage: cf.norm().factor()
    2^72 * 3^48 * 5^48
    sage: cf = E2c.discriminant() / (g1.change_ring(iota)^2 * g2.change_ring(iota)); cf
-   (-43779885120000000*zeta12000^7 - 25745322624000000*zeta12000^6 + 597778540320000000*zeta12000^5 + 351531372288000000*zeta12000^4 - 2244951178176000000*zeta12000^3 - 1320172729344000000*zeta12000^2 + 2025568139136000000*zeta12000 + 1191161773056000000)
+   (17973045129994189000000/59141881469*azeta1500^7 + 851560867877408703000000/59141881469*azeta1500^6 + 10570632468562506924000000/59141881469*azeta1500^5 - 44792083812043020808000000/59141881469*azeta1500^4 - 1341640897948993214880000000/59141881469*azeta1500^3 - 934184557863352113984000000/59141881469*azeta1500^2 + 44076529752976112634848000000/59141881469*azeta1500 + 5062815140007181381632000000/59141881469)
    sage: cf = cf.numerator().constant_coefficient()
    sage: cf.is_integral()
    True
@@ -776,41 +784,45 @@ divisible by primes dividing 30.
 
 This implies that the right side is just the norm of the radical of
 :math:`c` outside primes dividing 30. Since the field :math:`K_\beta`
-only ramifies at primes dividing 30, this norm is simply the product
-of all prime numbers :math:`p > 5` that divide :math:`c` to the
-power 8.
+only ramifies at primes dividing 30 and has degree 8, we easily find
+that this is simply the radical of :math:`c` over the integers outside
+30, to the power 8. We verify that only the primes dividing 30 ramify
+and that the degree of :math:`K_\beta` is 8 here.
 
 ::
 
    sage: Kbeta.discriminant().factor()
    2^12 * 3^4 * 5^6
+   sage: Kbeta.degree()
+   8
 
-We verify theorem 4.7 by computing the part of the levels of the
-newform divisible by 2, 3 and 5 and also computing the corresponding
-splitting character. Note that the inverse of these characters is the
-character of the newform, but that both the character and its inverse
-could be chosen as they are each others galois conjugate.
+To verify the rest of the proof we compute the twists between the
+newforms. These are the same as the inverses of the twists between the
+corresponding splitting maps which we can compute with respect to the
+splitting map computed first.
 
 ::
 
-   sage: E1c.newform_levels()
-   Warning: Assuming that a and b are coprime.
-   [(23040, 115200), (115200, 23040)] if ('a', 'b') == (1, 0) mod 2
-   [(11520, 57600), (57600, 11520)]   if ('a', 'b') == (1, 1) mod 2
-   sage: E1c.splitting_character('conjugacy')
-   (Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
-    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4)
-   sage: E2c.newform_levels()
-   Warning: Assuming that a and b are coprime.
-   [(15360, 76800), (76800, 15360)]
-   sage: E2c.splitting_character('conjugacy')
-   (Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
-    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4)
-   sage: [eps for eps in DirichletGroup(15) if eps.order() == 4 and eps.conductor() == 15]
-   [Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4,
-    Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> -zeta4]
+   sage: E1c.twist_character('conjugacy')
+   (Dirichlet character modulo 120 of conductor 1 mapping 31 |--> 1, 61 |--> 1, 41 |--> 1, 97 |--> 1,
+    Dirichlet character modulo 120 of conductor 40 mapping 31 |--> -1, 61 |--> -1, 41 |--> 1, 97 |--> zeta4)
+   sage: E2c.twist_character('conjugacy')
+   (Dirichlet character modulo 120 of conductor 1 mapping 31 |--> 1, 61 |--> 1, 41 |--> 1, 97 |--> 1,
+    Dirichlet character modulo 120 of conductor 40 mapping 31 |--> -1, 61 |--> -1, 41 |--> 1, 97 |--> zeta4)
+
+We verify that the inverse of the second character in each case is
+indeed :math:`\varepsilon_8 \varepsilon_5`, implying the remainder of
+the proof to be valid.
+
+::
+
+   sage: chi = E1c.twist_character('conjugacy')[1]^(-1)
+   sage: eps8 = [eps for eps in DirichletGroup(8) if eps.conductor() == 8 and eps(-1) == -1][0]
+   sage: eps5 = [eps for eps in DirichletGroup(5) if eps.order() == 4]
+   sage: chi == eps8.extend(120) * eps5.extend(120)
+   True
     
-We now perform the computational part of theorem 4.8. We check for
+We now perform the computational part of Theorem 4.10. We check for
 :math:`l = 3, 5, 7, 13` that the curve :math:`X_0(2l)` has no
 :math:`K` point corresponding to a :math:`\QQ` point on :math:`X_0(2l)
 / w_2`.
