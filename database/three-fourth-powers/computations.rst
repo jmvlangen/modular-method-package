@@ -939,52 +939,6 @@ two are :math:`\QQ(\sqrt{13})`, hence none can be :math:`K` points.
    sage: print(magma.eval("X26modW2 ! phiL(X26L ! [-1, s, 1]) eq 3*Q;"))
    true
 
-We now look at the case :math:`l = 3` and check that the corresponding
-curve :math:`X_0(6)` is a rational curve.
-
-::
-
-   sage: _ = magma.eval("X6 := SmallModularCurve(6);")
-   sage: _ = magma.eval("w2 := AtkinLehnerInvolution(X6, 6, 2);")
-   sage: print(magma.eval("Genus(X6);"))
-   0
-
-We will now check that the morphism :math:`\phi` given in the article
-indeed quotients out the action of :math:`w_2`. For this we only have
-to check that :math:`\phi \circ w_2 = \phi` as :math:`\phi` clearly
-has degree 2 by definition.
-
-::
-
-   sage: _ = magma.eval("R<x,y> := PolynomialRing(Rationals(), 2);")
-   sage: _ = magma.eval("P1 := ProjectiveSpace(R);")
-   sage: _ = magma.eval("phi := map< X6 -> P1 | [x*(x + 9*y), y*(x + 8*y)]>;")
-   sage: print(magma.eval("w2 * phi eq phi"))
-   true
-
-Last we look at the case :math:`l = 5`. We again check that
-:math:`X_0(10)` is a rational curve.
-
-::
-
-   sage: _ = magma.eval("X10 := SmallModularCurve(10);")
-   sage: _ = magma.eval("w2 := AtkinLehnerInvolution(X10, 10, 2);")
-   sage: print(magma.eval("Genus(X10);"))
-   0
-
-Next we check that the morphism :math:`\phi` as given in the article
-indeed quotients out the action of :math:`w_2`, by checking that
-:math:`\phi \circ w_2 = \phi`. This is sufficient since :math:`\phi`
-clearly has degree 2.
-
-::
-
-   sage: _ = magma.eval("R<x,y> := PolynomialRing(Rationals(), 2);")
-   sage: _ = magma.eval("P1 := ProjectiveSpace(R);")
-   sage: _ = magma.eval("phi := map< X10 -> P1 | [x*(x + 5*y), y*(x + 4*y)]>;")
-   sage: print(magma.eval("w2 * phi eq phi"))
-   true
-
 Now we perform the elimination as mentioned in the last part of
 section 4 of the article.
 
