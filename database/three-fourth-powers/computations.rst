@@ -641,17 +641,17 @@ the article.
 
 ::
 
-    sage: f_gamma = x^8 - 40*x^7 - 550*x^6 - 1840*x^5 - 285*x^4 + 3600*x^3 - 1950*x^2 + 200*x + 25
-    sage: gamma = f_gamma.change_ring(Kdec).roots()[0][0]
-    sage: iota = K.embeddings(E1.decomposition_field())[0]
-    sage: E1t = E1.decomposable_twist()
-    sage: ((E1t.a2() / E1.a2().change_ring(iota)).numerator().constant_coefficient()
-    ....:   / Kdec.embeddings(E1.decomposition_field())[0](gamma)).is_square()
-    True
-    sage: E2t = E2.decomposable_twist()
-    sage: ((E2t.a2() / E2.a2().change_ring(iota)).numerator().constant_coefficient()
-    ....:   / Kdec.embeddings(E2.decomposition_field())[0](gamma)).is_square()
-    True
+   sage: f_gamma = x^8 - 40*x^7 - 550*x^6 - 1840*x^5 - 285*x^4 + 3600*x^3 - 1950*x^2 + 200*x + 25
+   sage: gamma = f_gamma.change_ring(Kdec).roots()[0][0]
+   sage: iota = K.embeddings(E1.decomposition_field())[0]
+   sage: E1t = E1.decomposable_twist()
+   sage: ((E1t.a2() / E1.a2().change_ring(iota)).numerator().constant_coefficient()
+   ....:   / Kdec.embeddings(E1.decomposition_field())[0](gamma)).is_square()
+   True
+   sage: E2t = E2.decomposable_twist()
+   sage: ((E2t.a2() / E2.a2().change_ring(iota)).numerator().constant_coefficient()
+   ....:   / Kdec.embeddings(E2.decomposition_field())[0](gamma)).is_square()
+   True
 
 Since we shall work with the twists by :math:`\gamma` we define those
 twists and check that the restriction of scalars indeed decomposes.
@@ -977,11 +977,23 @@ Now we perform the elimination as mentioned in the last part of
 section 4 of the article.
 
 First we load the newforms corresponding to ``E1c``, which are loaded
-from the file "tmp/E1.nfs".
+from the file "tmp/E1.nfs". On these newforms we then perform the
+elimination described in section 4 by comparing traces of
+Frobenius. We also remove all those newforms for the cases :math:`l =
+2, 5`.
 
 ::
 
    sage: nfs1 = E1c.newform_candidates(algorithm='file', path='tmp/E1.nfs')
+   sage: nfs1 = eliminate_by_traces(E1c, nfs1, condition=coprime, primes=prime_range(7, 40))
+   sage: nfs1 = eliminate_primes(E1c, nfs1, 2*5)
+
+Next we load the newforms corresponding to ``E2c``, which are loaded
+from the file "tmp/E2.nfs".
+
+::
+
+   sage: nfs2 = E2c.newform_candidates(algorithm='file', path='tmp/E2.nfs')
 
 Since the newforms in this collection have coefficient fields of large
 degrees, the code takes very long to compute the composite field of
@@ -996,32 +1008,24 @@ which are loaded from the file "tmp/nfs1_roots.sobj".
 
    sage: z = load("tmp/nfs1_roots.sobj")
    sage: for i in z:
-   ....:     f = nfs1[i]
+   ....:     f = nfs2[i]
    ....:     Kf = f.coefficient_field()
    ....:     Lf = f.character().base_ring()
    ....:     mapK = Kf.hom(Kf)
-   ....:     mapL = Lf.hom([z[i]], Kf)
+   ....:     iotaf = z[i].parent().hom([Kf.gen()], Kf)
+   ....:     mapL = Lf.hom([iotaf(z[i])], Kf)
    ....:     composite_field.cache[((Kf, Lf, True),())] = (Kf, mapK, mapL)
    ....:     composite_field.cache[((Lf, Kf, True),())] = (Kf, mapL, mapK)
    ....:     composite_field.cache[((Kf, Lf, False),())] = Kf
    ....:     composite_field.cache[((Lf, Kf, False),())] = Kf
    ....:
 
-Next we eliminate the newforms corresponding to ``E1c`` by comparing
-traces of Frobenius. We also remove those for the cases :math:`l = 2,
-5`.
+As for the other case we eliminate the newforms corresponding to
+``E2c`` by comparing traces of Frobenius. Again we also remove those
+newforms for the cases :math:`l = 2, 5`.
 
 ::
 
-   sage: nfs1 = eliminate_by_traces(E1c, nfs1, condition=coprime, primes=prime_range(7, 40))
-   sage: nfs1 = eliminate_primes(E1c, nfs1, 2*5)
-
-Next we do the same for the newforms corresponding to ``E2c``, which
-are loaded from the file "tmp/E2.nfs".
-
-::
-
-   sage: nfs2 = E2c.newform_candidates(algorithm='file', path='tmp/E2.nfs')
    sage: nfs2 = eliminate_by_traces(E2c, nfs2, condition=coprime, primes=prime_range(7, 40))
    sage: nfs2 = eliminate_primes(E2c, nfs2, 2*5)
 
