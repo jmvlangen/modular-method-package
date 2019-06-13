@@ -1444,7 +1444,7 @@ class Qcurve(EllipticCurve_number_field):
             Number Field in tu0tzeta0 with defining polynomial x^8 + 32*x^6 + 456*x^4 - 1408*x^2 + 10000
 
         """
-        return composite_field(self.complete_definition_field(), self.splitting_field())
+        return composite_field(self.splitting_field(), self.complete_definition_field())
 
     @cached_method
     def does_decompose(self):
