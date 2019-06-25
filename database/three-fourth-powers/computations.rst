@@ -126,8 +126,8 @@ that it factors as the square of ``P3`` in :math:`L`.
    sage: L.ideal(Q3) == P3^2
    True
 
-Case :math:`l = 5`
-==================
+Solving for small :math:`l`
+===========================
 
 We first check that 5 indeed does not divide the order of the class
 group of :math:`L`.
@@ -221,9 +221,9 @@ tuple :math:`(a, b)` in a special way using the equations.
    (0, 2*s2^5 + s4^5)
 
 This shows that in three of the five cases both :math:`a` and
-:math:`b` must be divisible by 5, but as the solution is primitive
-this is impossible. We are thus left with case 0 and case 4 as stated
-in the article.
+:math:`b` must be divisible by 5, but as :math:`a` and :math:`b` are
+coprime this is impossible. We are thus left with case 0 and case 4 as
+stated in the article.
 
 We take the automorphism :math:`\sigma` of :math:`\QQ(v)` that sends
 :math:`v` to :math:`-v` and check that ``g1`` is indeed the product of
@@ -326,8 +326,8 @@ We thus see that both curves have a rational point corresponding to a
 linear factor of :math:`F(t_1, t_2) G(t_1, t_2)` as these points
 correspond to cases in which either :math:`F(t_1, t_2)` or
 :math:`G(t_1, t_2)` is zero, i.e. in which either :math:`a` or
-:math:`b` is zero. The article already notes that trivial solutions
-can not be primitive.
+:math:`b` is zero. This would imply that :math:`c` is divisible by 2
+or 3 which is not possible according to Proposition 2.1.
 
 Since we have a rational point on both curves and for both curves the
 polynomial in :math:`x` splits into two other factors, we have found
@@ -379,6 +379,149 @@ odd degree model of the curve.
    sage: C_magma[1].HasOddDegreeModel(nvals=2)[1].Jacobian().TwoTorsionSubgroup().Order()
    2
 
+For the case :math:`l = 3` we first verify that :math:`K =
+\Q(\sqrt{30})` has class number 2.
+
+::
+
+   sage: K.class_number()
+   2
+   
+We verify that the units of ``Qv`` also generate the unit group of
+:math:`K`.
+
+::
+
+   sage: [K(u0), K(u1)^(-1)] == K.unit_group().gens_values()
+   True
+
+Next we check that the ideal in K above 3 has an integral basis given
+by 3 times the coefficients of :math:`g_1`.
+
+::
+
+   sage: BQ3 = [3*cf for cf in g1.coefficients()]; BQ3
+   [3, w + 6]
+   sage: Q3.integral_basis()
+   [3, w]
+
+Now we compute the formulas given in equation (11) for each possible
+choice of :math:`j`.
+
+::
+
+   sage: gamma = sum(cf * Rgen for cf, Rgen in zip(g1.coefficients(), R.gens()))
+   sage: vals = [3 * K(u1)^(-j) * gamma^3 for j in range(3)]
+   sage: B = g1.coefficients()
+   sage: valsB = [polynomial_split_on_basis(poly, B) for poly in vals]
+
+As discussed in the article we construct the corresponding
+hyperelliptic curves.
+
+::
+
+   sage: FG = [product(val) for val in valsB]
+   sage: C_magma = [magma.HyperellipticCurve(poly(x, 1)) for poly in FG]
+
+As in the case :math:`l = 5` we verify that the curve for :math:`j =
+0` has only a single rational point since the jacobian has only two
+points.
+
+::
+
+   sage: C = C_magma[0]
+   sage: J = C.Jacobian()
+   sage: J.RankBound()
+   0
+   sage: J.TorsionBound(10)
+   4
+   sage: C.BadPrimes()
+   [ 2, 3, 5 ]
+   sage: C.ChangeRing(GF(7)).Jacobian()
+   Jacobian of Hyperelliptic Curve defined by y^2 = 6*x^5 + 3*x^4 + 6*x^2 + 3*x + 3 over GF(7)
+   sage: C.ChangeRing(GF(7)).Jacobian().AbelianGroup()
+   Abelian Group isomorphic to Z/6 + Z/6
+   Defined on 2 generators
+   Relations:
+   6*$.1 = 0
+   6*$.2 = 0
+   sage: J.TwoTorsionSubgroup()
+   Abelian Group isomorphic to Z/2
+   Defined on 1 generator
+   Relations:
+   2*P[1] = 0
+
+Note that the points on the Jacobian come from the factors of
+``FG[0]`` and that the only linear factor therein is
+:math:`t` as noted in the article.
+
+::
+
+   sage: FG[0].factor()
+   t * (9*s^2 + 36*s*t + 46*t^2) * (3*s^3 - 6*s*t^2 - 8*t^3)
+
+Now we verify that the curve for :math:`j = 2` has no local point on
+:math:`\Q_3`.
+
+::
+
+   sage: C_magma[2].IsLocallySolvable(3)
+   false
+
+We now make the equations for the case :math:`j = 1` explicit to
+verify the ones given in the article.
+
+::
+
+   sage: [poly.factor() for poly in valsB[1]]
+   [(-3) * s * (23*s^2 + 12*s*t + 2*t^2), 18*s^3 + 9*s^2*t - 2*t^3]
+
+We verify that :math:`23 s^2 + 12 s t + 2 t^2` splits over
+:math:`\Q(\sqrt{-10})` as mentioned in the article.
+
+::
+
+   sage: Qm10.<sqrtm10> = QuadraticField(-10)
+   sage: beta = 3 + sqrtm10 / 2
+   sage: beta_bar = Qm10.galois_group().gen()(beta)
+   sage: 2 * (beta*s + t) * (beta_bar*s + t)
+   23*s^2 + 12*s*t + 2*t^2
+
+Next we check the last few details for the case :math:`l=3`.  The
+unique prime above 3 in :math:`\Q(\sqrt{-10})` has norm 9.
+
+::
+
+   sage: len(Qm10.primes_above(3))
+   1
+   sage: Qm10.prime_above(3).norm()
+   9
+
+:math:`\beta` minus its conjugate is :math:`\sqrt{-10}`.
+
+::
+
+   sage: beta - beta_bar
+   sqrtm10
+
+The unique prime above 2 in :math:`\Q(\sqrt{-10})` is not principal.
+
+::
+
+   sage: len(Qm10.primes_above(2))
+   1
+   sage: Qm10.prime_above(2).is_principal()
+   False
+
+The field :math:`\Q(\sqrt{-10})` has class number 2
+
+::
+
+   sage: Qm10.class_number()
+   2
+
+This completes all computations for this section.
+   
 Modular method
 ==============
 
@@ -942,33 +1085,77 @@ two are :math:`\QQ(\sqrt{13})`, hence none can be :math:`K` points.
 Now we perform the elimination as mentioned in the last part of
 section 4 of the article.
 
-First we load the newforms corresponding to ``E1c``, which are loaded
-from the file "tmp/E1.nfs". On these newforms we then perform the
-elimination described in section 4 by comparing traces of
-Frobenius. We also remove all those newforms for the cases :math:`l =
-2, 5`.
+First we load all the newforms corresponding to ``E1c`` and ``E2c``
+from the files "tmp/E1.nfs" and "tmp/E2.nfs" respectively. 
 
 ::
 
    sage: nfs1 = E1c.newform_candidates(algorithm='file', path='tmp/E1.nfs')
-   sage: nfs1 = eliminate_by_traces(E1c, nfs1, condition=coprime, primes=prime_range(7, 40))
-   sage: nfs1 = eliminate_primes(E1c, nfs1, 2*5)
+   sage: nfs2 = E2c.newform_candidates(algorithm='file', path='tmp/E2.nfs')
 
-Next we load the newforms corresponding to ``E2c``, which are loaded
-from the file "tmp/E2.nfs".
+Now we verify the table of data about these newforms. For each
+computed set of newforms we compute in this order: The level of the
+newforms, the corresponding character, the dimension of this space of
+newforms, the number of galois conjugacy classes of newforms, the
+possible sizes of the galois conjugacy classes of newforms, and the
+total number of newforms among all conjugacy classes.
 
 ::
 
-   sage: nfs2 = E2c.newform_candidates(algorithm='file', path='tmp/E2.nfs')
+   sage: eps_m = magma.FullDirichletGroup(15).Elements()[4]
+   sage: nfs1[1][0][0].level()
+   11520
+   sage: eps = nfs1[1][0][0].character(); eps
+   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
+   sage: eps(11) == eps_m(11) and eps(7) == eps_m(7)
+   True
+   sage: magma.DimensionNewCuspForms(magma.DirichletGroup(nfs1[1][0][0].level(),
+   ....: eps_m.CoefficientRing())(eps_m), 2)
+   192
+   sage: len(nfs1[1][0])
+   30
+   sage: set(nf.coefficient_field().degree() for nf in nfs1[1][0])
+   {4, 8, 16, 24, 32, 48}
+   sage: sum(nf.coefficient_field().degree() for nf in nfs1[1][0])
+   384
+   sage: nfs1[0][0][0].level()
+   23040
+   sage: eps = nfs1[0][0][0].character(); eps
+   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
+   sage: eps(11) == eps_m(11) and eps(7) == eps_m(7)
+   True
+   sage: magma.DimensionNewCuspForms(magma.DirichletGroup(nfs1[0][0][0].level(),
+   ....: eps_m.CoefficientRing())(eps_m), 2)
+   384
+   sage: len(nfs1[0][0])
+   20
+   sage: set(nf.coefficient_field().degree() for nf in nfs1[0][0])
+   {8, 40, 48}
+   sage: sum(nf.coefficient_field().degree() for nf in nfs1[0][0])
+   768
+   sage: nfs2[0].level()
+   15360
+   sage: eps = nfs2[0].character(); eps
+   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
+   sage: eps(11) == eps_m(11) and eps(7) == eps_m(7)
+   True
+   sage: magma.DimensionNewCuspForms(magma.DirichletGroup(nfs2[0].level(),
+   ....: eps_m.CoefficientRing())(eps_m), 2)
+   752
+   sage: len(nfs2)
+   14
+   sage: set(nf.coefficient_field().degree() for nf in nfs2)
+   {16, 64, 80, 96, 128, 176, 192}
+   sage: sum(nf.coefficient_field().degree() for nf in nfs2)
+   1504
 
-Since the newforms in this collection have coefficient fields of large
-degrees, the code takes very long to compute the composite field of
-the coefficient field of each newform and the image field of the
-corresponding character. We know however that the latter embeds in the
-first in every case, hence we can preload the cache of the method
-``composite_field`` to get around this problem. This we do using some
-precomputed roots of -1 in the coefficient field of each newform,
-which are loaded from the file "tmp/nfs1_roots.sobj".
+As we can see the newforms for ``E2c`` have quite large coefficient
+fields. The code requires to compute the composite field of these
+fields and the image field of the corresponding character which would
+take very long using the methods in SAGE. Therefore we help the code
+by preloading the fact that the coefficient field already contains the
+field of the character. The appropiate embedding data was precomputed
+and is loaded from "tmp/nfs1_roots.sobj"
 
 ::
 
@@ -984,40 +1171,47 @@ which are loaded from the file "tmp/nfs1_roots.sobj".
    ....:     composite_field.cache[((Lf, Kf, True),())] = (Kf, mapL, mapK)
    ....:     composite_field.cache[((Kf, Lf, False),())] = Kf
    ....:     composite_field.cache[((Lf, Kf, False),())] = Kf
-   ....:
+   ....: 
 
-As for the other case we eliminate the newforms corresponding to
-``E2c`` by comparing traces of Frobenius. Again we also remove those
-newforms for the cases :math:`l = 2, 5`.
+Now we perform the elimination process described in the article for
+both curves separately.
+
+::
+   
+   sage: nfs1 = eliminate_by_traces(E1c, nfs1, condition=coprime, primes=prime_range(7, 40))
+   sage: nfs2 = eliminate_by_traces(E2c, nfs2, condition=coprime, primes=prime_range(7, 40))
+
+Next we eliminate newforms that can still have an isomorphic mod l
+representation for :math:`l = 2, 3, 5` as we assumed :math:`l > 5`.
 
 ::
 
-   sage: nfs2 = eliminate_by_traces(E2c, nfs2, condition=coprime, primes=prime_range(7, 40))
-   sage: nfs2 = eliminate_primes(E2c, nfs2, 2*5)
+   sage: nfs1 = eliminate_primes(E1c, nfs1, 2*3*5)
+   sage: nfs2 = eliminate_primes(E2c, nfs2, 2*3*5)
 
-We next combine the two sets of newforms and compare traces of
-frobenius for two curves simultaneously to eliminate more newforms. We
-also check that the only newforms remaining are for the case :math:`l
-= 3`.
+We check the number of newforms now remaining.
+
+::
+
+   sage: nfs1[1][0][0][0].level()
+   11520
+   sage: len(nfs1[1][0])
+   14
+   sage: nfs1[0][0][0][0].level()
+   23040
+   sage: len(nfs1[0][0])
+   12
+   sage: nfs2[0][0].level()
+   15360
+   sage: len(nfs2)
+   7
+
+Lastly we combine all newforms and perform a multi-Frey elimination
+resulting in no newforms remaining.
 
 ::
 
    sage: nfs = combine_newforms(nfs1, nfs2)
    sage: nfs = eliminate_by_traces((E1c, E2c), nfs, condition=coprime, primes=prime_range(7, 50))
-   sage: apply_to_conditional_value(lambda nfsi: lcm(nf[2] for nf in nfsi).prime_factors(), nfs)
-   [3]
-
-Now we find the conditions on the variables modulo 29 for the case
-:math:`l = 3` and again perform an elimination by comparing traces
-using this condition, after which no newforms remain.
-
-::
-
-   sage: analyzer = power_analyzer(cl)
-   sage: bad_primes_val = tuple((-1 if P.divides(3) else 0) for P in analyzer.bad_primes(L, h))
-   sage: C3 = analyzer.prime_conditions(L, h, 3, primes=[29], bad_primes_val=bad_primes_val)[29]
-   sage: nfs = eliminate_by_trace((E1c, E2c), nfs, 29, B=3, condition=C3)
    sage: nfs
    []
-
-
