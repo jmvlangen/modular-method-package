@@ -1040,16 +1040,16 @@ class Qcurve(EllipticCurve_number_field):
     def _first_splitting_character(self):
         r"""Compute the first splitting character"""
         N = 1
-        L = CyclotomicField(lcm(euler_phi(p) for p in self._xi_pm_primes()))
+        primes = [p for p in self._xi_pm_primes() if self.xi_pm_local(p) == -1]
+        L = CyclotomicField(lcm(euler_phi(p) for p in primes))
         eps_ls = [DirichletGroup(1, base_ring=L)[0]]
-        for p in self._xi_pm_primes():
-            if self.xi_pm_local(p) == -1:
-                if p == 2:
-                    N *= 4
-                    eps_ls.append(DirichletGroup(4, base_ring=L).gen())
-                else:
-                    N *= p
-                    eps_ls.append(DirichletGroup(p, base_ring=L).gen())
+        for p in primes:
+            if p == 2:
+                N *= 4
+                eps_ls.append(DirichletGroup(4, base_ring=L).gen())
+            else:
+                N *= p
+                eps_ls.append(DirichletGroup(p, base_ring=L).gen())
         return product([eps_p.extend(N)
                         for eps_p in eps_ls]).primitive_character()
 
