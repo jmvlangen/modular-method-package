@@ -22,10 +22,7 @@ number. We will also use the variable ``cl`` to denote :math:`c^l`.
 Preliminaries
 =============
 
-We first check that proposition 2.1 is indeed correct. Note that we
-can check that ``cl`` is not equal to zero modulo 4 and 9 since if
-``cl`` is divisible by either 2 or 3 it should be divisible by 4 or 9
-as :math:`l > 1`.
+We first check that Proposition 2.1 is indeed correct.
 
 ::
 
@@ -34,14 +31,6 @@ as :math:`l > 1`.
    sage: all(cl(aa, bb) != 0 for aa, bb in Integers(9)^2 if not 3.divides(aa) or not 3.divides(bb))
    True
    sage: all(cl(aa, bb) != 0 for aa, bb in GF(5)^2 if (aa, bb) != (0, 0))
-   True
-
-Next, we check there is indeed no primitive solution for :math:`l = 2`
-as claimed in proposition 2.2.
-
-::
-
-   sage: all(not cl(aa, bb).is_square() for aa, bb in GF(3)^2 if (aa, bb) != (0, 0) and cl(aa, bb) != 0)
    True
 
 Next we factor the polynomial ``cl`` as mentioned in the article over
@@ -74,12 +63,12 @@ are indeed galois conjugates of :math:`h`.
    sage: h3 == h.change_ring(G[1].as_hom())
    True
 
-We now perform the computations necessary for lemma 2.3, i.e. we check
+We now perform the computations necessary for Lemma 2.2, i.e. we check
 there is a unique prime ``P3`` above 3 in :math:`L`, that :math:`v` is
 only not integral at ``P3`` and has valuation -1 there, and that the
 difference between galois conjugates of :math:`v` only contain primes
 above 2, 3 and 5. Note that we also use the fact that ``P3`` to the
-power four is 3, which we also verify here.
+power 4 is 3, which we also verify here.
 
 ::
 
@@ -99,7 +88,7 @@ power four is 3, which we also verify here.
    True
 
 We check that over the subfield :math:`K = \QQ(\sqrt{30})` of
-:math:`L` the polynomial ``cl`` factors as in the article, and that
+:math:`L` the polynomial ``cl`` factors as in equation (8), and that
 both factors are indeed the product of two galois conjugates of
 :math:`h`.
 
@@ -128,6 +117,184 @@ that it factors as the square of ``P3`` in :math:`L`.
 
 Solving for small :math:`l`
 ===========================
+
+Case :math:`l = 2`
+------------------
+
+We check there is indeed no primitive solution for :math:`l = 2`,
+by checking all possibilities modulo 9.
+
+::
+
+   sage: all(cl(aa, bb) != cc^2 for aa, bb, cc in Integers(9)^3
+   ....:     if not 3.divides(aa) or not 3.divides(bb))
+   True
+
+Case :math:`l = 3`
+------------------
+
+We first verify that :math:`K = \Q(\sqrt{30})` has class number 2 and
+that ``Q3^(-4)`` is :math:`1/9`.
+
+::
+
+   sage: K.class_number()
+   2
+   sage: Q3^(-4)
+   Fractional ideal (1/9)
+   
+We verify that the unit group of :math:`K` indeed has the structure
+described in the article and name the generators accordingly.
+
+::
+
+   sage: K.unit_group()
+   Unit group with structure C2 x Z of Number Field in w with defining polynomial x^2 - 30
+   sage: u0, u1 = K.unit_group().gens_values()
+
+Next we check that the ideal in K above 3 has an integral basis given
+by 3 times the coefficients of :math:`g_1`.
+
+::
+
+   sage: BQ3 = [3*cf for cf in g1.coefficients()]; BQ3
+   [3, w + 6]
+   sage: Q3.integral_basis()
+   [3, w]
+
+Now we compute the formulas given in equation (9) for each possible
+choice of :math:`j` and check they match the given description.
+
+::
+
+   sage: R.<s, t> = K[]
+   sage: gamma = sum(3 * cf * Rgen for cf, Rgen in zip(g1.coefficients(), R.gens()))
+   sage: vals = [1/9 * u1^(-j) * gamma^3 for j in range(3)]
+   sage: B = g1.coefficients()
+   sage: valsB = [polynomial_split_on_basis(poly, B) for poly in vals]
+   sage: F, G = zip(*valsB)
+   sage: [(Fj.degree(), Fj.is_homogeneous()) for Fj in F]
+   [(3, True), (3, True), (3, True)]
+   sage: [(Gj.degree(), Gj.is_homogeneous()) for Gj in G]
+   [(3, True), (3, True), (3, True)]
+   sage: K.galois_group().gen()(u1) == u1^(-1)
+   True
+   sage: [1/3*gamma*gamma.change_ring(K.galois_group().gen().as_hom()) for val in vals]
+   [3*s^2 + 12*s*t + 2*t^2, 3*s^2 + 12*s*t + 2*t^2, 3*s^2 + 12*s*t + 2*t^2]
+   
+As discussed in the article we construct the corresponding
+hyperelliptic curves.
+
+::
+
+   sage: FG = [F[j] * G[j] for j in range(3)]
+   sage: C_magma = [magma.HyperellipticCurve(poly(x, 1)) for poly in FG]
+   sage: C_magma
+   [Hyperelliptic Curve defined by y^2 = 27*x^5 + 108*x^4 + 84*x^3 - 288*x^2 - 564*x - 368 over Rational Field,
+    Hyperelliptic Curve defined by y^2 = -54*x^6 - 1269*x^5 - 12312*x^4 - 63276*x^3 - 182088*x^2 - 278772*x - 177760 over Rational Field,
+    Hyperelliptic Curve defined by y^2 = -27324*x^6 - 627237*x^5 - 5999292*x^4 - 30602796*x^3 - 87809328*x^2 - 134374452*x - 85680336 over Rational Field]
+
+We verify that the curve for :math:`j = 2` has no local point on
+:math:`\Q_3`.
+
+::
+
+   sage: C_magma[2].IsLocallySolvable(3)
+   false
+   
+We show that the Jacobian for the curve :math:`C_0` has only
+two-torsion points and only 2 of them.
+
+::
+
+   sage: C = C_magma[0]
+   sage: J = C.Jacobian()
+   sage: J.RankBound()
+   0
+   sage: J.TorsionBound(10)
+   4
+   sage: C.BadPrimes()
+   [ 2, 3, 5 ]
+   sage: C.ChangeRing(GF(7)).Jacobian()
+   Jacobian of Hyperelliptic Curve defined by y^2 = 6*x^5 + 3*x^4 + 6*x^2 + 3*x + 3 over GF(7)
+   sage: C.ChangeRing(GF(7)).Jacobian().AbelianGroup()
+   Abelian Group isomorphic to Z/6 + Z/6
+   Defined on 2 generators
+   Relations:
+   6*$.1 = 0
+   6*$.2 = 0
+   sage: J.TwoTorsionSubgroup()
+   Abelian Group isomorphic to Z/2
+   Defined on 1 generator
+   Relations:
+   2*P[1] = 0
+
+Next we factor ``FG[0]`` to show the claim that :math:`t` is the only
+linear factor.
+
+::
+
+   sage: FG[0].factor()
+   t * (9*s^2 + 36*s*t + 46*t^2) * (3*s^3 - 6*s*t^2 - 8*t^3)
+
+We now make the equations for the case :math:`j = 1` explicit to
+verify the ones given in the article.
+
+::
+
+   sage: F[1].factor()
+   (-3) * s * (23*s^2 + 12*s*t + 2*t^2)
+   sage: G[1].factor()
+   18*s^3 + 9*s^2*t - 2*t^3
+   sage: 1/3 * gamma1 * gamma1.change_ring(K.galois_group().gen().as_hom())
+   3*s^2 + 12*s*t + 2*t^3
+
+We verify that :math:`23 s^2 + 12 s t + 2 t^2` splits over
+:math:`\Q(\sqrt{-10})` as mentioned in the article.
+
+::
+
+   sage: Qm10.<sqrtm10> = QuadraticField(-10)
+   sage: beta = 3 + sqrtm10 / 2
+   sage: beta_bar = Qm10.galois_group().gen()(beta)
+   sage: 2 * (beta*s + t) * (beta_bar*s + t)
+   23*s^2 + 12*s*t + 2*t^2
+
+Next we check the last few details for the case :math:`l=3`.  The
+unique prime above 3 in :math:`\Q(\sqrt{-10})` has norm 9.
+
+::
+
+   sage: len(Qm10.primes_above(3))
+   1
+   sage: Qm10.prime_above(3).norm()
+   9
+
+:math:`\beta` minus its conjugate is :math:`\sqrt{-10}`.
+
+::
+
+   sage: beta - beta_bar
+   sqrtm10
+
+The unique prime above 2 in :math:`\Q(\sqrt{-10})` is not principal.
+
+::
+
+   sage: len(Qm10.primes_above(2))
+   1
+   sage: Qm10.prime_above(2).is_principal()
+   False
+
+The field :math:`\Q(\sqrt{-10})` has class number 2
+
+::
+
+   sage: Qm10.class_number()
+   2
+
+Case :math:`l = 5`
+------------------
 
 We first check that 5 indeed does not divide the order of the class
 group of :math:`L`.
@@ -378,149 +545,6 @@ odd degree model of the curve.
    2
    sage: C_magma[1].HasOddDegreeModel(nvals=2)[1].Jacobian().TwoTorsionSubgroup().Order()
    2
-
-For the case :math:`l = 3` we first verify that :math:`K =
-\Q(\sqrt{30})` has class number 2.
-
-::
-
-   sage: K.class_number()
-   2
-   
-We verify that the units of ``Qv`` also generate the unit group of
-:math:`K`.
-
-::
-
-   sage: [K(u0), K(u1)^(-1)] == K.unit_group().gens_values()
-   True
-
-Next we check that the ideal in K above 3 has an integral basis given
-by 3 times the coefficients of :math:`g_1`.
-
-::
-
-   sage: BQ3 = [3*cf for cf in g1.coefficients()]; BQ3
-   [3, w + 6]
-   sage: Q3.integral_basis()
-   [3, w]
-
-Now we compute the formulas given in equation (11) for each possible
-choice of :math:`j`.
-
-::
-
-   sage: gamma = sum(cf * Rgen for cf, Rgen in zip(g1.coefficients(), R.gens()))
-   sage: vals = [3 * K(u1)^(-j) * gamma^3 for j in range(3)]
-   sage: B = g1.coefficients()
-   sage: valsB = [polynomial_split_on_basis(poly, B) for poly in vals]
-
-As discussed in the article we construct the corresponding
-hyperelliptic curves.
-
-::
-
-   sage: FG = [product(val) for val in valsB]
-   sage: C_magma = [magma.HyperellipticCurve(poly(x, 1)) for poly in FG]
-
-As in the case :math:`l = 5` we verify that the curve for :math:`j =
-0` has only a single rational point since the jacobian has only two
-points.
-
-::
-
-   sage: C = C_magma[0]
-   sage: J = C.Jacobian()
-   sage: J.RankBound()
-   0
-   sage: J.TorsionBound(10)
-   4
-   sage: C.BadPrimes()
-   [ 2, 3, 5 ]
-   sage: C.ChangeRing(GF(7)).Jacobian()
-   Jacobian of Hyperelliptic Curve defined by y^2 = 6*x^5 + 3*x^4 + 6*x^2 + 3*x + 3 over GF(7)
-   sage: C.ChangeRing(GF(7)).Jacobian().AbelianGroup()
-   Abelian Group isomorphic to Z/6 + Z/6
-   Defined on 2 generators
-   Relations:
-   6*$.1 = 0
-   6*$.2 = 0
-   sage: J.TwoTorsionSubgroup()
-   Abelian Group isomorphic to Z/2
-   Defined on 1 generator
-   Relations:
-   2*P[1] = 0
-
-Note that the points on the Jacobian come from the factors of
-``FG[0]`` and that the only linear factor therein is
-:math:`t` as noted in the article.
-
-::
-
-   sage: FG[0].factor()
-   t * (9*s^2 + 36*s*t + 46*t^2) * (3*s^3 - 6*s*t^2 - 8*t^3)
-
-Now we verify that the curve for :math:`j = 2` has no local point on
-:math:`\Q_3`.
-
-::
-
-   sage: C_magma[2].IsLocallySolvable(3)
-   false
-
-We now make the equations for the case :math:`j = 1` explicit to
-verify the ones given in the article.
-
-::
-
-   sage: [poly.factor() for poly in valsB[1]]
-   [(-3) * s * (23*s^2 + 12*s*t + 2*t^2), 18*s^3 + 9*s^2*t - 2*t^3]
-
-We verify that :math:`23 s^2 + 12 s t + 2 t^2` splits over
-:math:`\Q(\sqrt{-10})` as mentioned in the article.
-
-::
-
-   sage: Qm10.<sqrtm10> = QuadraticField(-10)
-   sage: beta = 3 + sqrtm10 / 2
-   sage: beta_bar = Qm10.galois_group().gen()(beta)
-   sage: 2 * (beta*s + t) * (beta_bar*s + t)
-   23*s^2 + 12*s*t + 2*t^2
-
-Next we check the last few details for the case :math:`l=3`.  The
-unique prime above 3 in :math:`\Q(\sqrt{-10})` has norm 9.
-
-::
-
-   sage: len(Qm10.primes_above(3))
-   1
-   sage: Qm10.prime_above(3).norm()
-   9
-
-:math:`\beta` minus its conjugate is :math:`\sqrt{-10}`.
-
-::
-
-   sage: beta - beta_bar
-   sqrtm10
-
-The unique prime above 2 in :math:`\Q(\sqrt{-10})` is not principal.
-
-::
-
-   sage: len(Qm10.primes_above(2))
-   1
-   sage: Qm10.prime_above(2).is_principal()
-   False
-
-The field :math:`\Q(\sqrt{-10})` has class number 2
-
-::
-
-   sage: Qm10.class_number()
-   2
-
-This completes all computations for this section.
    
 Modular method
 ==============
