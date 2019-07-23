@@ -167,8 +167,8 @@ choice of :math:`j` and check they match the given description.
 
 ::
 
-   sage: R.<s, t> = K[]
-   sage: gamma = sum(3 * cf * Rgen for cf, Rgen in zip(g1.coefficients(), R.gens()))
+   sage: R2.<s, t> = K[]
+   sage: gamma = sum(3 * cf * Rgen for cf, Rgen in zip(g1.coefficients(), R2.gens()))
    sage: vals = [1/9 * u1^(-j) * gamma^3 for j in range(3)]
    sage: B = g1.coefficients()
    sage: valsB = [polynomial_split_on_basis(poly, B) for poly in vals]
@@ -179,8 +179,8 @@ choice of :math:`j` and check they match the given description.
    [(3, True), (3, True), (3, True)]
    sage: K.galois_group().gen()(u1) == u1^(-1)
    True
-   sage: [1/3*gamma*gamma.change_ring(K.galois_group().gen().as_hom()) for val in vals]
-   [3*s^2 + 12*s*t + 2*t^2, 3*s^2 + 12*s*t + 2*t^2, 3*s^2 + 12*s*t + 2*t^2]
+   sage: 1/3*gamma*gamma.change_ring(K.galois_group().gen().as_hom())
+   3*s^2 + 12*s*t + 2*t^2
    
 As discussed in the article we construct the corresponding
 hyperelliptic curves.
@@ -296,15 +296,17 @@ The field :math:`\Q(\sqrt{-10})` has class number 2
 Case :math:`l = 5`
 ------------------
 
-We first check that 5 indeed does not divide the order of the class
-group of :math:`L`.
+We first check that ``P3^4`` is the principal ideal :math:`(3)` and
+that 5 does not divide the order of the class group of :math:`L`.
 
 ::
 
+   sage: P3^4
+   Fractional ideal (3)
    sage: 5.divides(L.class_number())
    False
 
-Next we check that the argument given holds true if we replace
+Next we check that the arguments given hold true if we replace
 :math:`L` with the subfield :math:`\QQ(v)`. Since :math:`h` can be
 defined over this subfield all we have to check is that the prime
 above 3 in :math:`\QQ(v)` factors as ``P3`` in :math:`L` and that 5
@@ -410,8 +412,8 @@ the remaining cases. First we parametrize what is called
 
    sage: K.degree()
    2
-   sage: R2.<t1, t2> = QQ[]
-   sage: gamma = 1/3 * sum(product(term) for term in zip(R2.gens(), K.integral_basis()))
+   sage: R2.<s, t> = QQ[]
+   sage: gamma = sum(product(term) for term in zip(R2.gens(), [1, w/3]))
 
 Next we find the possible values for :math:`g_1(a, b)`. Note that we
 here only have to consider those units not eliminated by the argument
@@ -422,136 +424,79 @@ before.
    sage: vals = [9 * K(u1^i * sigma(u1^i)) * gamma^5 for i in [0, 4]]
 
 Next we write each value in terms of the basis given by the
-coefficients of ``g1``, which makes it so we get for each value two
-equations over the rationals of the form :math:`a^2 = F(t_1, t_2)` and
-:math:`b^2 = G(t_1, t_2)`.
+coefficients of ``g1``.
 
 ::
 
    sage: B = g1.coefficients()
    sage: valsB = [polynomial_split_on_basis(val, B) for val in vals]
 
-Since :math:`a^2` and :math:`b^2` are integers, we find that for each
-value of :math:`g_1(a, b)` also :math:`F(t_1, t_2)` and :math:`F(t_1,
-t_2)` should be integers. Note however that all these have a common
-denominator that is not 1.
-
+We verify the validity of equation (10). Note that to compute the
+formula for :math:`c` we need that the conjugate of :math:`u'` is its
+inverse in each case.
+   
 ::
 
-   sage: [lcm(cf.denominator() for cf in poly.coefficients())
-   ....:  for valB in valsB for poly in valB]
-   [27, 9, 27, 9]
-
-In particular this implies that for each value of :math:`g_1(a, b)` we
-have that :math:`27 F(t_1, t_2)` and :math:`9 G(t_1, t_2)` are
-integers divisible by 3. We consider these quantities modulo 3 and
-conclude that therefore :math:`t_1` should be divisible by 3.
-
-::
-
-   sage: [(27*valB[0]).change_ring(GF(3)) for valB in valsB]
-   [t1^5, t1^5]
-   sage: [(9*valB[1]).change_ring(GF(3)) for valB in valsB]
-   [-t1^4*t2, -t1^5 - t1^4*t2]
-
-We thus replace :math:`t_1` with :math:`3*t_1`, which gives us
-integral equations.
-
-::
-
-   sage: valsB = [[poly(3*t1, t2) for poly in valB] for valB in valsB]
-   sage: all(cf in ZZ for valB in valsB for poly in valB for cf in poly.coefficients())
+   sage: F, G = zip(*valsB)
+   sage: [Fj.degree() for Fj in F]
+   [5, 5]
+   sage: [Gj.degree() for Gj in G]
+   [5, 5]
+   sage: K.galois_group().gen()(K(u1 * sigma(u1))) == K(u1 * sigma(u1))^(-1)
    True
+   sage: 3 * gamma * gamma.change_ring(K.galois_group().gen().as_hom())
+   3*s^2 - 10*t^2
 
-Now we note that if :math:`t_2 = 0` we get :math:`a^2` and :math:`b^2`
-that are not coprime, which we can easily verify by seeing that they
-both should be zero modulo 3. Therefore we have :math:`t_2 \ne 0`
+We construct the hyperelliptic curves described in the article.
+::
+
+   sage: FG = [F[j] * G[j] for j in range(len(F))]
+   sage: C_magma = [magma.HyperellipticCurve(poly(x, 1)) for poly in FG]
+   sage: C_magma
+   [Hyperelliptic Curve defined by y^2 = 405*x^9 - 4050*x^8 + 16200*x^7 - 54000*x^6 + 113400*x^5 - 198000*x^4 + 180000*x^3 - 120000*x^2 + 50000*x - 20000 over Rational Field,
+    Hyperelliptic Curve defined by y^2 = -3083903014930297409520*x^10 - 56304108214517165808555*x^9 - 462585452239544611432050*x^8 - 2252164328580686632342200*x^7 - 7195773701504027288934000*x^6 - 15765150300064806426395400*x^5 - 23985912338346757629798000*x^4 - 25024048095340962581580000*x^3 - 17132794527390541164120000*x^2 - 6951124470928045161550000*x - 1269095890917817864020000 over Rational Field]
+
+We analyze the Jacobians of these curves to see that the only rational
+points on them are two-torsion points and there are only two such
+points.
 
 ::
 
-   sage: [tuple(poly(t1, 0).change_ring(GF(3)) for poly in valB) for valB in valsB]
-   [(0, 0), (0, 0)]
-
-By multiplying both equations for a possible value of :math:`g_1(a,
-b)` and dividing by :math:`t_2^{10}` we get a hyperelliptic curve in
-terms of :math:`x = t_1 / t_2` and :math:`y = a * b / t_2^5`.
-
-::
-
-   sage: FG = [product(valB) for valB in valsB]
-   sage: C_sage = [HyperellipticCurve(poly(x, 1)) for poly in FG]
-
-We compute the factors of the product :math:`F(t_1, t_2) G(t_1, t_2)`.
-
-::
-
-   sage: [poly.factor() for poly in FG]
-   [(5) * t2 * (9*t1^4 + 60*t1^2*t2^2 + 20*t2^4) * (9*t1^5 - 90*t1^4*t2 + 300*t1^3*t2^2 - 600*t1^2*t2^3 + 500*t1*t2^4 - 200*t2^5),
-    (-5) * (23*t1 + 42*t2) * (201580749*t1^4 + 1472068080*t1^3*t2 + 4031233980*t1^2*t2^2 + 4906429920*t1*t2^3 + 2239362820*t2^4) * (133031294352*t1^5 + 1214404012845*t1^4*t2 + 4434376478400*t1^3*t2^2 + 8096026752300*t1^2*t2^3 + 7390627464000*t1*t2^4 + 2698675584100*t2^5)]
-
-We thus see that both curves have a rational point corresponding to a
-linear factor of :math:`F(t_1, t_2) G(t_1, t_2)` as these points
-correspond to cases in which either :math:`F(t_1, t_2)` or
-:math:`G(t_1, t_2)` is zero, i.e. in which either :math:`a` or
-:math:`b` is zero. This would imply that :math:`c` is divisible by 2
-or 3 which is not possible according to Proposition 2.1.
-
-Since we have a rational point on both curves and for both curves the
-polynomial in :math:`x` splits into two other factors, we have found
-two points on the jacobian of these curves. We shall show that these
-are the only two points on the jacobian, thereby proving the
-non-existence of solutions in the case :math:`l = 5`.
-   
-For the computation we turn our Sage objects into a magma
-objects.
-
-::
-   
-   sage: C_magma = [magma(C) for C in C_sage]
    sage: J_magma = [C.Jacobian() for C in C_magma]
-
-Now we bound the number of points on the Jacobians by first computing
-a bound on their rank and then a bound on the number of torsion points.
-
-::
-
    sage: [J.RankBound() for J in J_magma]
    [0, 0]
    sage: [J.TorsionBound(50) for J in J_magma]
    [4, 4]
-
-Both jacobian have thus at most 4 points. We can tell the order of
-these torsion points by the fact that torsion points map injectively
-to the jacobian of the reduction of the curve at any prime of good
-reduction. We show that 7 is a prime of good reduction for both curves
-and show that in the jacobian of the reduction of each curve at 7 does
-not contain a point of order 4.
-
-::
-
    sage: all(7 not in C.BadPrimes().sage() for C in C_magma)
    True
    sage: J7 = [C.ChangeRing(GF(7)).Jacobian() for C in C_magma]
    sage: all(not 4.divides(g.Order()) for J in J7 for g in J.AbelianGroup().Generators())
    True
 
-Now it remains to compute the size of the two torsion groups of both
-jacobians. Note that for the second case we first have to obtain an
-odd degree model of the curve.
+We compute the factors of the product :math:`F G`.
 
 ::
 
-   sage: J_magma[0].TwoTorsionSubgroup().Order()
-   2
-   sage: C_magma[1].HasOddDegreeModel(nvals=2)[1].Jacobian().TwoTorsionSubgroup().Order()
-   2
+   sage: [poly.factor() for poly in FG]
+   [(5) * t * (9*s^4 + 60*s^2*t^2 + 20*t^4) * (9*s^5 - 90*s^4*t + 300*s^3*t^2 - 600*s^2*t^3 + 500*s*t^4 - 200*t^5),
+    (-5) * (23*s + 42*t) * (201580749*s^4 + 1472068080*s^3*t + 4031233980*s^2*t^2 + 4906429920*s*t^3 + 2239362820*t^4) * (133031294352*s^5 + 1214404012845*s^4*t + 4434376478400*s^3*t^2 + 8096026752300*s^2*t^3 + 7390627464000*s*t^4 + 2698675584100*t^5)]
+
+Lastly we check that the linear factors above indeed give :math:`c`
+divisible by 2 or 3.
+
+::
+
+   sage: (3 * gamma * gamma.change_ring(K.galois_group().gen().as_hom()))(s, 0)
+   3*s^2
+   sage: (3 * gamma * gamma.change_ring(K.galois_group().gen().as_hom()))(42*s, -23*s)
+   2*s^2
    
-Modular method
-==============
+The Frey Curves
+===============
 
 First we check the mentioned fact. We take :math:`B_1` and :math:`A`
 as variables and will set :math:`B_2 = A^2 - B_1`. We define the
-elliptic curve as in section 4.1.
+elliptic curve as in section 4.
 
 ::
 
@@ -584,14 +529,14 @@ pair the two curves are galois conjugates of one another.
 
 ::
 
-   sage: E1 = FreyCurve([0, 2*a, 0, (1/2 - w/10)*g1, 0], condition=con)
-   sage: E1_ = FreyCurve([0, 2*a, 0, (1/2 + w/10)*g2, 0], condition=con)
-   sage: E2 = FreyCurve([0, 2*b, 0, (w/20)*g1, 0], condition=con)
-   sage: E2_ = FreyCurve([0, 2*b, 0, -(w/20)*g2, 0], condition=con)
+   sage: E1_ = FreyCurve([0, 2*a, 0, (1/2 - w/10)*g1, 0], condition=con)
+   sage: E1__ = FreyCurve([0, 2*a, 0, (1/2 + w/10)*g2, 0], condition=con)
+   sage: E2_ = FreyCurve([0, 2*b, 0, (w/20)*g1, 0], condition=con)
+   sage: E2__ = FreyCurve([0, 2*b, 0, -(w/20)*g2, 0], condition=con)
    sage: G.<sigma> = K.galois_group()
-   sage: E1_.a_invariants() == E1.change_ring(sigma.as_hom()).a_invariants()
+   sage: E1__.a_invariants() == E1_.change_ring(sigma.as_hom()).a_invariants()
    True
-   sage: E2_.a_invariants() == E2.change_ring(sigma.as_hom()).a_invariants()
+   sage: E2__.a_invariants() == E2_.change_ring(sigma.as_hom()).a_invariants()
    True
 
 We choose the two elliptic curves :math:`E_1'` and :math:`E_2` as
@@ -600,8 +545,8 @@ get the same curves as mentioned in the article.
 
 ::
 
-   sage: E1 = FreyCurve(twist_elliptic_curve(E1_, 30), condition=con)
-   sage: E2 = FreyCurve(twist_elliptic_curve(E2, 20), condition=con)
+   sage: E1 = FreyCurve(twist_elliptic_curve(E1__, 30), condition=con)
+   sage: E2 = FreyCurve(twist_elliptic_curve(E2_, 20), condition=con)
    sage: E1.a_invariants() == (0, 60*a, 0, 30*((15 + 3*w)*a^2 + w*b^2), 0)
    True
    sage: E2.a_invariants() == (0, 40*b, 0, 20*(w*a^2 + (10 + 2*w)*b^2), 0)
@@ -642,8 +587,11 @@ prime at which :math:`g_1` and :math:`g_2` are not integral divides 3.
    sage: g2.macaulay_resultant(9*a^2 + (18 - 5*w)*b^2).norm().factor()
    2^6 * 3^2 * 5^2
 
-We now verify proposition 4.3 by computing the conductors of both
-curves and showing they are equal to the mentioned expression.
+A Hilbert modular approach
+==========================
+
+We verify Proposition 5.1 by computing the conductors of both curves
+and showing they are equal to the mentioned expression.
 
 ::
 
@@ -673,7 +621,111 @@ curves and showing they are equal to the mentioned expression.
    sage: N2.right() == "Rad_P( " + str(E2.discriminant().factor()) + " )"
    True
 
-We now compute the dimensions of the spaces of Hilbert modular forms
+We perform the computations necessary to find a twist with smaller
+conductor. First we test all possible twists that might lower the
+level for the prime ``P2`` above 2. The group :math:`K^*/H` is in this
+case generated by ``w``, -1, and ``1 + w``.
+
+::
+
+   sage: FreyCurve(twist_elliptic_curve(E1, 1), condition=con).conductor_exponent(P2)
+   12 if ('a', 'b') == (1, 0) mod 2
+   10 if ('a', 'b') == (1, 1) mod 2
+   sage: FreyCurve(twist_elliptic_curve(E1, -1), condition=con).conductor_exponent(P2)
+   12 if ('a', 'b') == (1, 0) mod 2
+   10 if ('a', 'b') == (1, 1) mod 2
+   sage: FreyCurve(twist_elliptic_curve(E1, w), condition=con).conductor_exponent(P2)
+   12 if ('a', 'b') == (1, 0) mod 2
+   8  if ('a', 'b') == (1, 1) mod 2
+   sage: FreyCurve(twist_elliptic_curve(E1, -w), condition=con).conductor_exponent(P2)
+   12 if ('a', 'b') == (1, 0) mod 2
+   8  if ('a', 'b') == (1, 1) mod 2
+   sage: FreyCurve(twist_elliptic_curve(E1, 1+w), condition=con).conductor_exponent(P2)
+   12 if ('a', 'b') == (1, 0) mod 2
+   10 if ('a', 'b') == (1, 1) mod 2
+   sage: FreyCurve(twist_elliptic_curve(E1, -1-w), condition=con).conductor_exponent(P2)
+   12 if ('a', 'b') == (1, 0) mod 2
+   10 if ('a', 'b') == (1, 1) mod 2
+   sage: FreyCurve(twist_elliptic_curve(E1, 30+w), condition=con).conductor_exponent(P2)
+   12 if ('a', 'b') == (1, 0) mod 2
+   0  if ('a', 'b') == (3, 1), (3, 3) mod 4
+   4  if ('a', 'b') == (1, 1), (1, 3) mod 4
+   sage: FreyCurve(twist_elliptic_curve(E1, -30-w), condition=con).conductor_exponent(P2)
+   12 if ('a', 'b') == (1, 0) mod 2
+   0  if ('a', 'b') == (1, 1), (1, 3) mod 4
+   4  if ('a', 'b') == (3, 1), (3, 3) mod 4
+   sage: FreyCurve(twist_elliptic_curve(E2, 1), condition=con).conductor_exponent(P2)
+   14
+   sage: FreyCurve(twist_elliptic_curve(E2, -1), condition=con).conductor_exponent(P2)
+   14
+   sage: FreyCurve(twist_elliptic_curve(E2, w), condition=con).conductor_exponent(P2)
+   14
+   sage: FreyCurve(twist_elliptic_curve(E2, -w), condition=con).conductor_exponent(P2)
+   14
+   sage: FreyCurve(twist_elliptic_curve(E2, 1+w), condition=con).conductor_exponent(P2)
+   14
+   sage: FreyCurve(twist_elliptic_curve(E2, -1-w), condition=con).conductor_exponent(P2)
+   14
+   sage: FreyCurve(twist_elliptic_curve(E2, 30+w), condition=con).conductor_exponent(P2)
+   14
+   sage: FreyCurve(twist_elliptic_curve(E2, -30-w), condition=con).conductor_exponent(P2)
+   14
+
+We see the best we can do at ``P2`` is as described in the remark.
+
+Now for the prime ``P3`` above 3, the group :math:`K^*/H` is generated
+by ``w``.
+
+::
+   
+   sage: FreyCurve(twist_elliptic_curve(E1, 1), condition=con).conductor_exponent(P3)
+   2
+   sage: FreyCurve(twist_elliptic_curve(E1, w), condition=con).conductor_exponent(P3)
+   2
+   sage: FreyCurve(twist_elliptic_curve(E2, 1), condition=con).conductor_exponent(P3)
+   0
+   sage: FreyCurve(twist_elliptic_curve(E2, w), condition=con).conductor_exponent(P3)
+   2
+
+Again we see the best we can do at ``P3`` is as in the remark.
+
+For the prime ``P5`` above 5 the group :math:`K^*/H` is generated by
+``w``.
+
+::
+
+   sage: FreyCurve(twist_elliptic_curve(E1, 1), condition=con).conductor_exponent(P5)
+   2
+   sage: FreyCurve(twist_elliptic_curve(E1, w), condition=con).conductor_exponent(P5)
+   2
+   sage: FreyCurve(twist_elliptic_curve(E2, 1), condition=con).conductor_exponent(P5)
+   2
+   sage: FreyCurve(twist_elliptic_curve(E2, w), condition=con).conductor_exponent(P5)
+   2
+
+So again the level in the remark is the best we can do at ``P5``.
+
+Lastly we check that the twists mentioned in the remark give the
+desired levels.
+
+::
+
+   sage: FreyCurve(twist_elliptic_curve(E1, 6+w), condition=con).conductor()
+   Warning: Assuming that a and b are coprime.
+   (2, w)^n0*(3)*(5)*Rad_P( ((-509981806080000*w - 2793285388800000)) * (a^2 + (1/3*w + 2)*b^2) * (a^2 + (-1/3*w + 2)*b^2)^2 )
+    where 
+   n0 = 12 if ('a', 'b') == (1, 0) mod 2
+        0  if ('a', 'b') == (3, 1), (3, 3) mod 4
+        4  if ('a', 'b') == (1, 1), (1, 3) mod 4
+   sage: FreyCurve(twist_elliptic_curve(E1, -6-w), condition=con).conductor()
+   Warning: Assuming that a and b are coprime.
+   (2, w)^n0*(3)*(5)*Rad_P( ((-509981806080000*w - 2793285388800000)) * (a^2 + (1/3*w + 2)*b^2) * (a^2 + (-1/3*w + 2)*b^2)^2 )
+    where 
+   n0 = 12 if ('a', 'b') == (1, 0) mod 2
+        0  if ('a', 'b') == (1, 1), (1, 3) mod 4
+        4  if ('a', 'b') == (3, 1), (3, 3) mod 4
+
+We compute the dimensions of the spaces of Hilbert modular forms
 mentioned in the article for the levels given.
 
 ::
@@ -683,21 +735,27 @@ mentioned in the article for the levels given.
    sage: magma.HilbertCuspForms(K, N1.left().value()[1][0]).NewSubspace().Dimension()
    206720
    sage: magma.HilbertCuspForms(K, N2.left()).NewSubspace().Dimension()
-   661504
+   66150
+   sage: magma.HilbertCuspForms(K, P3^2*P5^2).NewSubspace().Dimension()
+   542
 
-Here we will compute the possible twists of our elliptic curves that
-might reduce the conductor, and compute the specific one that does.
-
-Now we turn our two curves into :math:`\QQ` curves.
+Q-curves
+========
+   
+We turn our two curves into :math:`\QQ` curves.
    
 ::
 
    sage: Qm2.<sqrtm2> = QuadraticField(-2)
+   sage: G.<sigma> = K.galois_group()
    sage: isogenies = {sigma^0: (QQ(1), 1), sigma^1: (sqrtm2, 2)}
    sage: E1 = FreyQcurve(E1, isogenies=isogenies, condition=con)
    sage: E2 = FreyQcurve(E2, isogenies=isogenies, condition=con)
 
-We compute all the data mentioned in Proposition 4.5. First of all the
+Basic invariants
+----------------
+
+We compute all the data mentioned in Proposition 6.2. First of all the
 degree map.
 
 ::
@@ -707,20 +765,7 @@ degree map.
    sage: [E2.degree_map(s) for s in G]
    [1, 2]
 
-Next the definition field and the complete definition field.
-
-::
-   
-   sage: E1.definition_field().is_isomorphic(QQ[sqrt(30)])
-   True
-   sage: E2.definition_field().is_isomorphic(QQ[sqrt(30)])
-   True
-   sage: E1.complete_definition_field().is_isomorphic(QQ[sqrt(30),sqrt(-2)])
-   True
-   sage: E2.complete_definition_field().is_isomorphic(QQ[sqrt(30),sqrt(-2)])
-   True
-
-Third the 2-cocyle :math:`c`.
+Second the 2-cocyle :math:`c`.
    
 ::
    
@@ -740,6 +785,19 @@ Third the 2-cocyle :math:`c`.
    [ 1 -2  1 -2]
    [ 1 -1  1 -1]
    [ 1  2  1  2]
+   
+Next the definition field and the complete definition field.
+
+::
+   
+   sage: E1.definition_field().is_isomorphic(QQ[sqrt(30)])
+   True
+   sage: E2.definition_field().is_isomorphic(QQ[sqrt(30)])
+   True
+   sage: E1.complete_definition_field().is_isomorphic(QQ[sqrt(30),sqrt(-2)])
+   True
+   sage: E2.complete_definition_field().is_isomorphic(QQ[sqrt(30),sqrt(-2)])
+   True
 
 Next the dual basis.
 
@@ -764,19 +822,25 @@ Lastly a splitting character and the corresponding fields.
    True
    sage: E2.splitting_character_field().is_isomorphic(Keps)
    True
+   sage: Keps.degree()
+   4
    sage: Kbeta = composite_field(K, Keps)
    sage: E1.splitting_field().is_isomorphic(Kbeta)
    True
    sage: E2.splitting_field().is_isomorphic(Kbeta)
    True
+   sage: Kbeta.degree()
+   8
    sage: Kdec = composite_field(QQ[sqrt(-2), sqrt(-3)], Keps)
    sage: E1.decomposition_field().is_isomorphic(Kdec)
    True
    sage: E2.decomposition_field().is_isomorphic(Kdec)
    True
+   sage: Kdec.degree()
+   16
 
-We verify the inequalities in the remark after Proposition 4.5 to show
-that the given field of complete definition is indeed minimal.
+Finally we verify the inequalities in the remark at the end of this
+subsection.
 
 ::
 
@@ -785,18 +849,18 @@ that the given field of complete definition is indeed minimal.
    sage: hilbert_symbol(30, 2, 5) != hilbert_symbol(-1, 30, 5)
    True
 
-Now for Proposition 4.6 we first compute the set :math:`S` which in
-this case consists simply of a generator of the class group. We show
-that this is the unique prime above 3.
+A decomposable twist
+--------------------
+
+First we compute that the class number of ``Kdec`` is indeed 1.
 
 ::
 
-   sage: P3 = K.prime_above(3)
-   sage: K.class_group().gens() == (P3,)
-   True
+   sage: Kdec.class_number()
+   1
 
 Using the code we can directly compute a twist for which the
-restriction of scalars decompose. We compute that the twist factor of
+restriction of scalars decomposes. We compute that the twist factor of
 these curves both differs differ by a square from the :math:`\gamma`
 given in the article.
 
@@ -816,7 +880,7 @@ given in the article.
 
 Since we work with the twists by :math:`\gamma` we define those twists
 and check that the restriction of scalars indeed decomposes, as
-claimed in Propostion 4.6.
+claimed in Proposition 6.3.
 
 ::
 
@@ -855,7 +919,7 @@ to the twisted curve are indeed different.
    sage: Kbeta.is_isomorphic(Kdec.subfield(gamma)[0])
    True
 
-We now compute the last data needed to prove Theorem 4.7. That is we
+We compute the last data needed to prove Theorem 6.4. That is we
 compute the image fields of one splitting map in each galois conjugacy
 class of splitting maps. This tells us that the decomposition is as
 mentioned in the article.
@@ -869,7 +933,10 @@ mentioned in the article.
    (Cyclotomic Field of order 8 and degree 4,
     Cyclotomic Field of order 8 and degree 4)
 
-For Theorem 4.9 we first compute a splitting character for each
+Modularity of Q-curves
+----------------------
+
+For Theorem 6.6 we first compute a splitting character for each
 conjugacy class, giving us the characters for the newforms
 
 ::
@@ -988,11 +1055,13 @@ the proof to be valid.
    sage: eps5 = [eps for eps in DirichletGroup(5) if eps.order() == 4]
    sage: chi == eps8.extend(120) * eps5.extend(120)
    True
+
+Level lowering
+--------------
     
-We now perform the computational part of Theorem 4.10. We check for
-:math:`l = 3, 5, 7, 13` that the curve :math:`X_0(2l)` has no
-:math:`K` point corresponding to a :math:`\QQ` point on :math:`X_0(2l)
-/ w_2`.
+We now perform the computational part of Theorem 6.7. We check for
+:math:`l = 7, 13` that the curve :math:`X_0(2l)` has no :math:`K`
+point corresponding to a :math:`\QQ` point on :math:`X_0(2l) / w_2`.
 
 We start with the case :math:`l = 7`, in which the modular curve is an
 elliptic curve.
@@ -1006,7 +1075,7 @@ elliptic curve.
 
 The morphism :math:`w_2` is a combination of an isogeny with a
 translation. Since :math:`w_2` is an isomorphism, the isogeny must be
-an ismorphism as well and :math:`w_2` is essentially defined as a
+an isomorphism as well and :math:`w_2` is essentially defined as a
 translation, which is given by where :math:`w2` maps the point at
 infinity. We use this to compute the quotient :math:`X_0(14) / w_2` as
 the quotient of the curve by the subgroup generated by this point. We
@@ -1031,10 +1100,9 @@ show this is an elliptic curve with 6 :math:`\QQ` points.
    true true
 
 We now show that we can find two :math:`\QQ(-7)` points on
-:math:`X_0(14)` that maps to the generator of the :math:`\QQ` points
-on this quotient. This proves that all :math:`\QQ` points on the
-quotient come from :math:`\QQ(\sqrt{-7})` points and not from
-:math:`K` points.
+:math:`X_0(14)` that map to the generator of the :math:`\QQ` points on
+this quotient. This proves that all :math:`\QQ` points on the quotient
+come from :math:`\QQ(\sqrt{-7})` points and not from :math:`K` points.
 
 ::
 
@@ -1106,8 +1174,11 @@ two are :math:`\QQ(\sqrt{13})`, hence none can be :math:`K` points.
    sage: print(magma.eval("X26modW2 ! phiL(X26L ! [-1, s, 1]) eq 3*Q;"))
    true
 
-Now we perform the elimination as mentioned in the last part of
-section 4 of the article.
+Newform elimination
+-------------------
+
+Now we perform the computation as mentioned in the last part of
+Section 6.5 of the article.
 
 First we load all the newforms corresponding to ``E1c`` and ``E2c``
 from the files "tmp/E1.nfs" and "tmp/E2.nfs" respectively. 
@@ -1205,15 +1276,16 @@ both curves separately.
    sage: nfs1 = eliminate_by_traces(E1c, nfs1, condition=coprime, primes=prime_range(7, 40))
    sage: nfs2 = eliminate_by_traces(E2c, nfs2, condition=coprime, primes=prime_range(7, 40))
 
-Next we eliminate newforms that can still have an isomorphic mod l
-representation for :math:`l = 2, 3, 5` as we assumed :math:`l > 5`.
+Next we eliminate for each newform :math:`g` the prime factors 2, 3,
+and 5 from the number :math:`M_g` described in the article.
 
 ::
 
    sage: nfs1 = eliminate_primes(E1c, nfs1, 2*3*5)
    sage: nfs2 = eliminate_primes(E2c, nfs2, 2*3*5)
 
-We check the number of newforms now remaining.
+We check that the number of newforms now remaining matches the claim
+in the article.
 
 ::
 
@@ -1230,8 +1302,8 @@ We check the number of newforms now remaining.
    sage: len(nfs2)
    7
 
-Lastly we combine all newforms and perform a multi-Frey elimination
-resulting in no newforms remaining.
+Lastly we combine all remaining newforms and perform the multi-Frey
+elimination resulting in no newforms remaining.
 
 ::
 
