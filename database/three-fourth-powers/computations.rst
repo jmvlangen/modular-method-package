@@ -167,9 +167,9 @@ choice of :math:`j` and check they match the given description.
 
 ::
 
-   sage: R2.<s, t> = K[]
+   sage: R2.<s, t> = QQ[]
    sage: gamma = sum(3 * cf * Rgen for cf, Rgen in zip(g1.coefficients(), R2.gens()))
-   sage: vals = [1/9 * u1^(-j) * gamma^3 for j in range(3)]
+   sage: vals = [1/9 * u1^j * gamma^3 for j in range(3)]
    sage: B = g1.coefficients()
    sage: valsB = [polynomial_split_on_basis(poly, B) for poly in vals]
    sage: F, G = zip(*valsB)
@@ -191,8 +191,8 @@ hyperelliptic curves.
    sage: C_magma = [magma.HyperellipticCurve(poly(x, 1)) for poly in FG]
    sage: C_magma
    [Hyperelliptic Curve defined by y^2 = 27*x^5 + 108*x^4 + 84*x^3 - 288*x^2 - 564*x - 368 over Rational Field,
-    Hyperelliptic Curve defined by y^2 = -54*x^6 - 1269*x^5 - 12312*x^4 - 63276*x^3 - 182088*x^2 - 278772*x - 177760 over Rational Field,
-    Hyperelliptic Curve defined by y^2 = -27324*x^6 - 627237*x^5 - 5999292*x^4 - 30602796*x^3 - 87809328*x^2 - 134374452*x - 85680336 over Rational Field]
+     Hyperelliptic Curve defined by y^2 = -1242*x^6 - 1269*x^5 - 432*x^4 + 84*x^3 + 72*x^2 + 12*x over Rational Field,
+     Hyperelliptic Curve defined by y^2 = -599940*x^6 - 627237*x^5 - 273132*x^4 - 63276*x^3 - 8208*x^2 - 564*x - 16 over Rational Field]
 
 We verify that the curve for :math:`j = 2` has no local point on
 :math:`\Q_3`.
@@ -246,8 +246,8 @@ verify the ones given in the article.
    (-3) * s * (23*s^2 + 12*s*t + 2*t^2)
    sage: G[1].factor()
    18*s^3 + 9*s^2*t - 2*t^3
-   sage: 1/3 * gamma1 * gamma1.change_ring(K.galois_group().gen().as_hom())
-   3*s^2 + 12*s*t + 2*t^3
+   sage: 1/3 * gamma * gamma.change_ring(K.galois_group().gen().as_hom())
+   3*s^2 + 12*s*t + 2*t^2
 
 We verify that :math:`23 s^2 + 12 s t + 2 t^2` splits over
 :math:`\Q(\sqrt{-10})` as mentioned in the article.
@@ -735,7 +735,7 @@ mentioned in the article for the levels given.
    sage: magma.HilbertCuspForms(K, N1.left().value()[1][0]).NewSubspace().Dimension()
    206720
    sage: magma.HilbertCuspForms(K, N2.left()).NewSubspace().Dimension()
-   66150
+   661504
    sage: magma.HilbertCuspForms(K, P3^2*P5^2).NewSubspace().Dimension()
    542
 
@@ -1052,7 +1052,7 @@ the proof to be valid.
 
    sage: chi = E1c.twist_character('conjugacy')[1]^(-1)
    sage: eps8 = [eps for eps in DirichletGroup(8) if eps.conductor() == 8 and eps(-1) == -1][0]
-   sage: eps5 = [eps for eps in DirichletGroup(5) if eps.order() == 4]
+   sage: eps5 = [eps for eps in DirichletGroup(5) if eps.order() == 4][1]
    sage: chi == eps8.extend(120) * eps5.extend(120)
    True
 
@@ -1096,7 +1096,13 @@ show this is an elliptic curve with 6 :math:`\QQ` points.
    Mapping from: Abelian Group isomorphic to Z/6
    Defined on 1 generator
    Relations:
-   6*$.1 = 0 to Set of points of X14modW2 with coordinates in Rational Field given by a rule [no inverse]
+   6*$.1 = 0 to CrvEll: X14modW2
+   Composition of Mapping from: Abelian Group isomorphic to Z/6
+   Defined on 1 generator
+   Relations:
+   6*$.1 = 0 to Set of points of Elliptic Curve defined by y^2 = x^3 - 1664*x^2 - 1404928*x over Rational Field with coordinates in Rational Field given by a rule [no inverse] and
+   Elliptic curve isomorphism from: Elliptic Curve defined by y^2 = x^3 - 1664*x^2 - 1404928*x over Rational Field to CrvEll: X14modW2
+   Taking (x : y : 1) to (1/256*x : 1/4096*y : 1)
    true true
 
 We now show that we can find two :math:`\QQ(-7)` points on
