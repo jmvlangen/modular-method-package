@@ -2140,6 +2140,93 @@ class Qcurve(EllipticCurve_number_field):
             ainvs = [Kmin(a) for a in ainvs]
             return Qcurve(ainvs, isogenies=isogenies_min)
         return Qcurve(ainvs, isogenies=isogenies)
+
+    def _decomposable_twist_set(self):
+        r"""Give the set of ideals required to compute the decomposable twist
+        of this curve.
+
+        .. SEE_ALSO::
+
+            :meth:`decomposable_twist`,
+            :meth:`does_decompose`,
+            :meth:`decomposition_field`,
+            :meth:`twist`
+
+        OUTPUT:
+
+        A set of ideals of the decomposition field that is closed
+        under the action of the galois group. Furthermore it contains
+        generators of the two-torsion of the class group of the
+        decomposition field modulo ideals that are the product of all
+        prime ideals above a common prime number.
+
+        """
+        K = self.decomposition_field()
+        CG = K.class_group(proof=False)
+        Pgen = [CG(product(K.primes_above(p)))
+                for p in K.discriminant().prime_factors()]
+        Pord = [P.order() for P in Pgen]
+        H = []
+        for k in mrange(Pord):
+            CI = product(Pgen[i]^k[i] for i in range(len(k)))
+            if CI not in H:
+                H.append(CI)
+        S0 = []
+        skip = copy(H)
+        for CI in CG:
+            if CI not in skip and CI^2 in H:
+                S0.append(CI.ideal())
+                skip.extend([CI * h for h in H])
+        G = K.galois_group()
+        S = []
+        for I in S0:
+            for P in I.prime_factors():
+                for s in G:
+                    sP = s(P)
+                    if sP not in S:
+                        S.append(sP)
+        return S
+    
+    def _decomposable_twist(self):
+        r"""Give a twist of this Q-curve for which the restriction of scalars
+        over the decomposition field decomposes as a product of
+        abelian varieties of GL_2-type.
+
+        .. SEE_ALSO::
+
+            :meth:`decomposable_twist`,
+            :meth:`does_decompose`,
+            :meth:`decomposition_field`,
+            :meth:`twist`
+
+        OUTPUT:
+        
+        An element of the decomposition field such that twisting this
+        Q-curve by that element gives a Q-curve of which the
+        restriction of scalars over the decomposition field is an
+        abelian variety isogenous to a product of $\QQ$-simple,
+        non-$\QQ$-isogenous abelian varieties of GL_2-type.
+
+        EXAMPLE::
+
+            sage: K.<t> = QuadraticField(7)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.does_decompose()
+            False
+            sage: E.decomposable_twist().does_decompose()
+            True
+
+        """
+        K = self.decomposition_field()
+        if self.does_decompose():
+            return K(1)
+        S = self._decomposable_twist_set()
+        G = K.galois_group()
+        US = K.S_unit_group(proof=False, S=S)
+        def c_err(sigma, tau):
+            return US(self.c(sigma, tau) / self.c_splitting_map(sigma, tau))
+        alpha = function_with_coboundary(G, US, c_err)
+        return hilbert90(K, lambda s: alpha(s)^2)
     
     def decomposable_twist(self):
         r"""Give a twist of this Q-curve for which the restriction of scalars
@@ -2172,36 +2259,8 @@ class Qcurve(EllipticCurve_number_field):
         """
         if self.does_decompose():
             return self
-        K = self.decomposition_field()
-        CG = K.class_group(proof=False)
-        Pgen = [CG(product(K.primes_above(p)))
-                for p in K.discriminant().prime_factors()]
-        Pord = [P.order() for P in Pgen]
-        H = []
-        for k in mrange(Pord):
-            CI = product(Pgen[i]^k[i] for i in range(len(k)))
-            if CI not in H:
-                H.append(CI)
-        S0 = []
-        skip = copy(H)
-        for CI in CG:
-            if CI not in skip and CI^2 in H:
-                S0.append(CI.ideal())
-                skip.extend([CI * h for h in H])
-        G = K.galois_group()
-        S = []
-        for I in S0:
-            for P in I.prime_factors():
-                for s in G:
-                    sP = s(P)
-                    if sP not in S:
-                        S.append(sP)
-        US = K.S_unit_group(proof=False, S=S)
-        def c_err(sigma, tau):
-            return US(self.c(sigma, tau) / self.c_splitting_map(sigma, tau))
-        alpha = function_with_coboundary(G, US, c_err)
-        gamma = hilbert90(K, lambda s: alpha(s)^2)
-        return self.twist(gamma) # twist will do the minimization of the field!
+        return self.twist(self._decomposable_twist())
+        # twist will do the minimization of the field!
 
     def complete_definition_twist(self, roots):
         r"""Give a twist of this curve completely defined over a given field.
