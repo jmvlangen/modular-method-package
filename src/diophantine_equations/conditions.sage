@@ -936,6 +936,163 @@ class PowerCondition(PolynomialCondition):
         return (PolynomialCondition.__eq__(self, other) and
                 self.least_exponent() == other.least_exponent())
 
+class SquarefreeCondition(PolynomialCondition):
+    r"""The condition that a polynomial is square free.
+
+    EXAMPLE::
+
+        sage: R.<x, y> = ZZ[]
+        sage: SquarefreeCondition(x*y + y)
+        The condition that x*y + y is square free
+
+    """
+
+    def __init__(self, polynomial, least_exp=1):
+        r"""Initialize a SquarefreeCondition.
+
+        INPUT:
+
+        - ``polynomial`` -- A polynomial that should be an unknown
+          square free number.
+
+        EXAMPLE::
+
+            sage: R.<x, y> = ZZ[]
+            sage: SquarefreeCondition(x*y + y)
+            The condition that x*y + y is square free
+
+        """
+        PolynomialCondition.__init__(self, polynomial)
+
+    def pAdic_tree(self, pAdic_tree=None, pAdics=None, complement=False,
+                   verbose=False, **kwds):
+        r"""Give this condition as a pAdicTree.
+        
+        Given a p-adic tree, returns the subtree of those values for
+        the variables such that the polynomial of this condition could
+        be square free at those values.
+
+        INPUT:
+        
+        - ``pAdic_tree`` -- A pAdicTree object (default:None) on which
+          this condition should be applied. If set to None will be
+          initiated as the full tree with the given pAdics.
+
+        - ``pAdics`` -- A pAdicBase object (default: None) determining
+          the pAdics that should be used. If set to None will use the
+          pAdics of the given pAdicTree instead.
+
+        - ``complement`` -- A boolean (default: False) determining
+          whether the complement of the result should be returned.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such
+          comments.  If set to any negative value will also prevent
+          the printing of any warnings. A larger value will lead to
+          more information being printed.
+
+        OUTPUT:
+
+        A pAdicTree object that contains that part of the given
+        pAdicTree which satisfies the polynomial of this condition
+        being square free.
+
+        If complement is set to True will also give the given tree as
+        a second return value.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which the
+        condition is satisfied and one for which it is not::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only in case
+        it is obvious which tree should be returned::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            pAdic tree over Rational Field
+            for the prime Principal ideal (5) of Integer Ring
+            and the variables ('x', 'y').
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set.
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
+
+        .. SEEALSO::
+
+            :class:`pAdicTree`
+
+        """
+        if pAdic_tree is None:
+            pAdic_tree = pAdicTree(variables=self.variables(),
+                                   pAdics=pAdics, full=True)
+        TN, TY = PolynomialCondition.pAdic_tree(self, pAdic_tree=pAdic_tree,
+                                                pAdics=pAdics, complement=True,
+                                                verbose=verbose, precision=2,
+                                                **kwds)
+        if complement:
+            return TY, pAdic_tree
+        else:
+            return TY
+        
+    def _repr_(self):
+        return ("The condition that " + str(self.polynomial()) +
+                " is square free")
+
+    def _repr_short(self):
+        return "%s square free"%(self.polynomial())
+        
+    def _latex_(self):
+        return (latex(self.polynomial()) +
+                " \text{ is square free}")
+
+    def _cache_key(self):
+        return 'SquarefreeCondition', self.polynomial()
+
+    def __eq__(self, other):
+        return (isinstance(other, SquarefreeCondition) and
+                PolynomialCondition.__eq__(self, other))
+
 class CoprimeCondition(Condition_base):
     r"""The condition that variables are n-wise coprime.
 
