@@ -1049,7 +1049,7 @@ class Qcurve(EllipticCurve_number_field):
                 eps_ls.append(DirichletGroup(4, base_ring=L).gen())
             else:
                 N *= p
-                eps_ls.append(DirichletGroup(p, base_ring=L).gen())
+                eps_ls.append(DirichletGroup(p, base_ring=L).gen()^((p-1).odd_part()))
         return product([eps_p.extend(N)
                         for eps_p in eps_ls]).primitive_character()
 
