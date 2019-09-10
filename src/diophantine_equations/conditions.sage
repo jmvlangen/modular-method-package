@@ -694,6 +694,8 @@ class CongruenceCondition(PolynomialCondition):
             :class:`pAdicTree`
 
         """
+        if pAdics is None:
+            pAdics = pAdic_tree.pAdics()
         precision = pAdics.valuation(self.modulus())
         result = PolynomialCondition.pAdic_tree(self, pAdic_tree=pAdic_tree,
                                                 pAdics=pAdics,
