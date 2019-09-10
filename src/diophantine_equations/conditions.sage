@@ -883,6 +883,9 @@ class PowerCondition(PolynomialCondition):
             :class:`pAdicTree`
 
         """
+        if pAdic_tree is None:
+            pAdic_tree = pAdicTree(variables=self.variables(),
+                                   pAdics=pAdics, full=True)
         T1, T0 = PolynomialCondition.pAdic_tree(self, pAdic_tree=pAdic_tree,
                                                 pAdics=pAdics, complement=True,
                                                 verbose=verbose, precision=1,
