@@ -1050,8 +1050,10 @@ class Qcurve(EllipticCurve_number_field):
             else:
                 N *= p
                 eps_ls.append(DirichletGroup(p, base_ring=L).gen()^((p-1).odd_part()))
-        return product([eps_p.extend(N)
-                        for eps_p in eps_ls]).primitive_character()
+        eps = product([eps_p.extend(N) for eps_p in eps_ls])
+        eps = eps.primitive_character()
+        eps = eps.minimize_base_ring()
+        return eps
 
     def _splitting_character_data(self, i, j):
         r"""Give data related to splitting characters, i.e. for each splitting
@@ -1088,11 +1090,14 @@ class Qcurve(EllipticCurve_number_field):
         if i in ZZ:
             if i not in self._eps:
                 eps0 = self._eps[0][0]
-                chi = self.twist_character(i).primitive_character()
+                chi = self.twist_character(i)
                 N = lcm(eps0.conductor(),chi.conductor())
                 L = composite_field(eps0.base_ring(), chi.base_ring())
                 D = DirichletGroup(N, base_ring=L)
-                self._eps[i] = [(D(eps0) * D(chi)^2).primitive_character()]
+                epsi = D(eps0) * D(chi)^2
+                epsi = epsi.primitive_character()
+                epsi = epsi.minimize_base_ring()
+                self._eps[i] = [epsi]
             if j >= 1 and len(self._eps[i]) < 2:
                 self._eps[i].append(dirichlet_fixed_field(self._eps[i][0]))
             if j >= 2 and len(self._eps[i]) < 3:
@@ -1859,6 +1864,8 @@ class Qcurve(EllipticCurve_number_field):
                 if chi(x) != 1:
                     break
             else:
+                chi = chi.primitive_character()
+                chi = chi.minimize_base_ring()
                 self._chi.append([chi])
 
     def _twist_character_data(self, i, j):
