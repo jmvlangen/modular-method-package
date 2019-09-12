@@ -950,7 +950,7 @@ class SquarefreeCondition(PolynomialCondition):
 
     """
 
-    def __init__(self, polynomial, least_exp=1):
+    def __init__(self, polynomial):
         r"""Initialize a SquarefreeCondition.
 
         INPUT:
@@ -1087,7 +1087,7 @@ class SquarefreeCondition(PolynomialCondition):
         
     def _latex_(self):
         return (latex(self.polynomial()) +
-                " \text{ is square free}")
+                " \\text{ is square free}")
 
     def _cache_key(self):
         return 'SquarefreeCondition', self.polynomial()
