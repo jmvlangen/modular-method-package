@@ -2,7 +2,9 @@
 def Qcurve_with_2_isogeny(t):
     K = field_with_root(QQ, t, names='sqrt_t')
     sqrt_t = sqrt(K(t))
-    E = Qcurve([0,12,0,18*(sqrt_t + 1),0], guessed_degrees=[2])
+    E = EllipticCurve([0,12,0,18*(sqrt_t + 1),0])
+    if K != QQ:
+        E = Qcurve(E, guessed_degrees=[2])
     if E.has_cm():
         raise ValueError("Paramater %s gives a CM elliptic curve."%t)
     return E
@@ -14,7 +16,9 @@ def Qcurve_with_3_isogeny(t):
     sqrt_t = sqrt(t)
     a4 = -3 * sqrt_t * (4 + 5*sqrt_t)
     a6 = 2 * sqrt_t * (2 + 14*sqrt_t + 11*t)
-    E = Qcurve([a4,a6], guessed_degrees=[3])
+    E = EllipticCurve([a4, a6])
+    if K != QQ:
+        E = Qcurve([a4,a6], guessed_degrees=[3])
     if E.has_cm():
         raise ValueError("Paramater %s gives a CM elliptic curve."%t)
     return E
@@ -28,7 +32,9 @@ def Qcurve_with_2_3_isogeny(t):
     sqrt_s = sqrt(K(s))
     a4 = -6*s*t*(5 + 5*sqrt_s + 10*sqrt_t + 5*t + 2*sqrt_s*sqrt_t)
     a6 = 8 * (sqrt_s*sqrt_t)^3 * (1 + sqrt_t) * (7 + 15*sqrt_s + 14*sqrt_t + 7*t + 6*sqrt_s*sqrt_t)
-    E = Qcurve([a4,a6], guessed_degrees=[2,3,6])
+    E = EllipticCurve([a4, a6])
+    if K != QQ:
+        E = Qcurve(E, guessed_degrees=[2,3,6])
     if E.has_cm():
         raise ValueError("Paramater %s gives a CM elliptic curve."%t)
     return E
