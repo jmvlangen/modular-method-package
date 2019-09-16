@@ -199,7 +199,7 @@ def fixed_field(H):
     return fixed_field(G.subgroup(H))
 
 @cached_function
-def composite_field(K1, K2, give_maps=False):
+def composite_field(K1, K2, give_maps=False, names=None):
     r"""Return the composite field of K1 and K2
 
     INPUT:
@@ -210,6 +210,10 @@ def composite_field(K1, K2, give_maps=False):
 
     - ``give_maps`` -- A boolean (default=False) indicating whether
       the embeddings should be returned.
+
+    - ``names`` -- A string, list thereof or None (default:
+      `None`). If not `None` this will be used as the variable names
+      in the composite field.
 
     OUTPUT:
 
@@ -225,7 +229,7 @@ def composite_field(K1, K2, give_maps=False):
         sage: K1 = QuadraticField(2)
         sage: K2 = QuadraticField(3)
         sage: K = composite_field(K1, K2); K
-        Number Field in a0 with defining polynomial x^4 - 10*x^2 + 1
+        Number Field in a with defining polynomial x^4 - 10*x^2 + 1
         sage: K(2).is_square() and K(3).is_square()
         True
 
@@ -243,13 +247,13 @@ def composite_field(K1, K2, give_maps=False):
         sage: K1 = QuadraticField(2)
         sage: K2 = QuadraticField(3)
         sage: composite_field(K1, K2, give_maps=True)
-        (Number Field in a0 with defining polynomial x^4 - 10*x^2 + 1, Ring morphism:
+        (Number Field in a with defining polynomial x^4 - 10*x^2 + 1, Ring morphism:
            From: Number Field in a with defining polynomial x^2 - 2
-           To:   Number Field in a0 with defining polynomial x^4 - 10*x^2 + 1
-           Defn: a |--> -1/2*a0^3 + 9/2*a0, Ring morphism:
+           To:   Number Field in a with defining polynomial x^4 - 10*x^2 + 1
+           Defn: a |--> -1/2*a^3 + 9/2*a, Ring morphism:
            From: Number Field in a with defining polynomial x^2 - 3
-           To:   Number Field in a0 with defining polynomial x^4 - 10*x^2 + 1
-           Defn: a |--> -1/2*a0^3 + 11/2*a0)
+           To:   Number Field in a with defining polynomial x^4 - 10*x^2 + 1
+           Defn: a |--> -1/2*a^3 + 11/2*a)
 
     """
     if not is_field(K1):
@@ -264,10 +268,30 @@ def composite_field(K1, K2, give_maps=False):
             return composite_field(K2, K1)
     R = K1.embeddings(K2)
     if len(R) == 0:
+        # Since we are only interested in one composite field
+        # instead of all of them, we can skip the part of
+        # the composite_fields method that checks isomorphisms
+        # This makes computation much faster
+        # The following is partially copied from number_field.py
+        if names is None:
+            name1 = K1.variable_name(); name2 = K2.variable_name()
+            names = name1 + (name2 if name2 != name1 else "")
+        f = K1.absolute_polynomial()
+        g = K2.absolute_polynomial().change_variable_name(f.variable_name())
+        R = f.parent()
+        f = f.__pari__(); f /= f.content()
+        g = g.__pari__(); g /= g.content()
         if give_maps:
-            return K1.composite_fields(K2, both_maps=give_maps)[0][0:3]
+            h, a, b, _ = f.polcompositum(g, 1)[0]
+            L = NumberField(R(h), names, check=False)
+            aL = L(R(a.lift()))
+            bL = L(R(b.lift()))
+            K1_to_L = K1.hom([aL])
+            K2_to_L = K2.hom([bL])
+            return L, K1_to_L, K2_to_L
         else:
-            return K1.composite_fields(K2)[0]
+            h = f.polcompositum(g)[0]
+            return NumberField(R(h), names, check=False)
     else:
         if give_maps:
             return K2, R[0], K2.hom(K2)
