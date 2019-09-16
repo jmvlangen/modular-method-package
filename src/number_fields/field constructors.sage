@@ -297,3 +297,139 @@ def composite_field(K1, K2, give_maps=False, names=None):
             return K2, R[0], K2.hom(K2)
         else:
             return K2
+
+@cached_function
+def intersection_field(K1, K2, L=None, give_maps=False, names=None):
+    r"""Give the intersection of two fields
+
+    Given two number fields gives the intersection of these fields in
+    a common field that contains both. This intersection is itself a
+    field.
+
+    INPUT:
+
+    - ``K1`` -- A number field, which may be the rationals.
+    
+    - ``K2`` -- A number field, which may be the rationals.
+
+    - ``L`` -- A tuple or list consisting of a number field containing
+      both `K1` and `K2`, an embedding from `K1` to that field, and an
+      embedding from `K2` to that field, in that order. If set to None
+      (default) it will be initialized as a composite field using
+      :func:`composite_field` with the corresponding embeddings.
+
+    - ``give_maps`` -- A boolean (default: `False`) indicating whether
+      the embeddings of the intersection field to `K1` and `K2` should
+      be returned.
+
+    - ``names`` -- A string, list thereof or None (default:
+      `None`). If not `None` this will be used as the variable names
+      in the intersection field.
+
+    OUTPUT:
+
+    A number field `K` isomorphic to the intersection of `K1` and `K2`
+    in the number field `L`. If `give_maps` was set to `True`, will
+    instead return a tuple consisting of: the field `K`; an embedding
+    of `K` into `K1`; and an embedding of `K` into `K2`. These
+    embeddings respect the embeddings given in `L`.
+
+    EXAMPLES:
+
+    A simple example::
+
+        sage: R.<x> = QQ[]
+        sage: K1.<a1> = CyclotomicField(8)
+        sage: K2.<a2> = NumberField(x^4 - 2)
+        sage: K0.<a0> = intersection_field(K1, K2); K0
+        Number Field in a0 with defining polynomial x^2 - 2
+
+    Using the method give_maps, one can obtain the corresponding
+    embeddings::
+
+        sage: R.<x> = QQ[]
+        sage: K1.<a1> = CyclotomicField(9)
+        sage: K2.<a2> = NumberField(x^4 + 3)
+        sage: intersection_field(K1, K2, give_maps=True, names=a0)
+        (Number Field in a0_1 with defining polynomial x^2 - x + 1, Ring morphism:
+           From: Number Field in a0_1 with defining polynomial x^2 - x + 1
+           To:   Cyclotomic Field of order 9 and degree 6
+           Defn: a0_1 |--> -a1^3, Ring morphism:
+           From: Number Field in a0_1 with defining polynomial x^2 - x + 1
+           To:   Number Field in a2 with defining polynomial x^4 + 3
+           Defn: a0_1 |--> -1/2*a2^2 + 1/2)
+
+    Note that the intersection field might depend on the choice of
+    common field::
+
+        sage: R.<x> = QQ[]
+        sage: K.<a> = NumberField(x^4 - x + 1)
+        sage: L.<a> = K.galois_closure()
+        sage: K1.<a1> = L.subfields(degree=12)[0][0]
+        sage: K2.<a2> = [k for k, _, _ in L.subfields(degree=12) if not K1.is_isomorphic(k)][0]
+        sage: intersection_field(K1, K2, L=(L, K1.embeddings(L)[0], K2.embeddings(L)[0]))
+        Number Field in a0a6_1 with defining polynomial x^6 - x^4 - x^3 - x^2 + 1
+        sage: intersection_field(K1, K2, L=(L, K1.embeddings(L)[1], K2.embeddings(L)[0]))
+        Number Field in a0a6_1 with defining polynomial x^3 - 4*x - 1    
+
+    .. SEEALSO::
+
+        :func:`composite_field`
+
+    """
+    if K1.absolute_degree() > K2.absolute_degree():
+        if give_maps:
+            K, K_to_K2, K_to_K1 = intersection_field(K2, K1, L=L,
+                                                     give_maps=True,
+                                                     names=names)
+            return K, K_to_K1, K_to_K2
+        else:
+            return intersection_field(K2, K1, L=L, names=names)
+    if K1 == QQ:
+        if give_maps:
+            return QQ, QQ.hom(K1), QQ.hom(K2)
+        else:
+            return QQ
+    if L is None:
+        L, K1_to_L, K2_to_L = composite_field(K1, K2, give_maps=True,
+                                              names=names)
+    else:
+        L, K1_to_L, K2_to_L = L
+    if names is None:
+        name1 = K1.variable_name(); name2 = K2.variable_name()
+        names = name1 + (name2 if name2 != name1 else "")
+    a1 = K1.absolute_generator()
+    a2 = K2.absolute_generator()
+    n1 = K1.absolute_degree()
+    n2 = K2.absolute_degree()
+    B1 = vector([a1^n for n in range(n1)])
+    B2 = vector([a2^n for n in range(n2)])
+    M1 = matrix([K1_to_L(b).list() for b in B1])
+    M2 = matrix([K2_to_L(b).list() for b in B2])
+    B = block_matrix([[M1], [M2]]).kernel()
+    n = B.dimension()
+    if n == 1:
+        if give_maps:
+            return QQ, QQ.hom(K1), QQ.hom(K2)
+        else:
+            return QQ
+    b1 = vector([B1 * b[0:n1] for b in B.basis()])
+    t = 0
+    while True:
+        t += 1
+        for ls in Partitions(t+n, length=n):
+            for v in Permutations(ls):
+                v = vector(list(v)) - vector(len(v)*[1])
+                alpha1 = b1 * v
+                f = alpha1.absolute_minpoly()
+                if f.degree() == n:
+                    K = NumberField(f, names=names)
+                    Kopt, from_opt, to_opt = K.optimized_representation(name=names)
+                    if give_maps:
+                        b2 = vector([B2 * b[n1:] for b in B.basis()])
+                        alpha2 = b2 * v
+                        K_to_K1 = K.hom([alpha1])
+                        K_to_K2 = K.hom([alpha2])
+                        return Kopt, K_to_K1 * from_opt, K_to_K2 * from_opt
+                    else:
+                        return Kopt
