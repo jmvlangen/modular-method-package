@@ -211,7 +211,7 @@ def composite_field(K1, K2, give_maps=False, names=None):
     - ``give_maps`` -- A boolean (default=False) indicating whether
       the embeddings should be returned.
 
-    - ``names`` -- A string, list thereof or None (default:
+    - ``names`` -- A string, tuple thereof or None (default:
       `None`). If not `None` this will be used as the variable names
       in the composite field.
 
@@ -312,8 +312,8 @@ def intersection_field(K1, K2, L=None, give_maps=False, names=None):
     
     - ``K2`` -- A number field, which may be the rationals.
 
-    - ``L`` -- A tuple or list consisting of a number field containing
-      both `K1` and `K2`, an embedding from `K1` to that field, and an
+    - ``L`` -- A tuple consisting of a number field containing both
+      `K1` and `K2`, an embedding from `K1` to that field, and an
       embedding from `K2` to that field, in that order. If set to None
       (default) it will be initialized as a composite field using
       :func:`composite_field` with the corresponding embeddings.
@@ -406,7 +406,7 @@ def intersection_field(K1, K2, L=None, give_maps=False, names=None):
     B2 = vector([a2^n for n in range(n2)])
     M1 = matrix([K1_to_L(b).list() for b in B1])
     M2 = matrix([K2_to_L(b).list() for b in B2])
-    B = block_matrix([[M1], [M2]]).kernel()
+    B = block_matrix([[M1], [-M2]]).kernel()
     n = B.dimension()
     if n == 1:
         if give_maps:
