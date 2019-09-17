@@ -75,9 +75,9 @@ AUTHORS:
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
-@cached_function(key=lambda s, K, e: (str(s), s.parent().number_field(), K))
+@cached_function(key=lambda s, K, e: (str(s), s.parent().number_field(), K, e))
 def galois_field_extend(sigma, K, embedding=None):
-    r"""Find the extension of a galois homomorphism to a bigger field.
+    r"""Find an extension of a galois homomorphism to a bigger field.
 
     INPUT:
 
@@ -85,13 +85,15 @@ def galois_field_extend(sigma, K, embedding=None):
 
     - ``K`` -- A galois field extension of $K_0$
 
-    - ``embedding`` -- An embedding of $K_0$ into `K`. By default will
-      be the first embedding found by the method :meth:`embeddings`.
+    - ``embedding`` -- An embedding of $K_0$ into `K`. If the Galois group
+      of `K` is abelian will default to the first embedding found by
+      the method :meth:`embeddings`. Otherwise will raise an error if
+      not provided.
 
     OUTPUT:
 
     An element $\tau$ of the galois group of `K`, such that $\tau$
-    restricted to $K_0$ is `sigma`.
+    restricted to $K_0$ along the given embedding is `sigma`.
 
     EXAMPLES::
 
@@ -116,6 +118,27 @@ def galois_field_extend(sigma, K, embedding=None):
         sage: galois_field_extend(sigma, L) == tau
         False
 
+    If the smaller field is not abelian, the extension actually
+    depends on the chosen embedding. Therefore an error is raised if
+    none is given::
+
+        sage: R.<x> = QQ[]
+        sage: K0.<a0> = NumberField(x^3 - 2)
+        sage: K.<a> = K0.galois_closure()
+        sage: L0.<b0> = NumberField(x^6 - 2)
+        sage: L.<b> = L0.galois_closure()
+        sage: sigma = K.galois_group().gens()[0]
+        sage: galois_field_extend(sigma, L)
+        Traceback (most recent call last):
+        ...
+        ValueError: The extension of Galois elements is not well-defined if no embedding is given.
+        sage: tau = [galois_field_extend(sigma, L, embedding=phi) for phi in K.embeddings(L)]
+        sage: all(tau[i] == tau[0] for i in range(len(tau)))
+        False
+        sage: all(galois_field_restrict(tau[i], K, embedding=K.embeddings(L)[0]) == sigma
+        ....:     for i in range(len(tau)))
+        False
+
     """
     Gsmall = sigma.parent()
     Ksmall = Gsmall.number_field()
@@ -124,13 +147,16 @@ def galois_field_extend(sigma, K, embedding=None):
     if Gsmall == Gbig and Ksmall == Kbig:
         return sigma
     if embedding is None:
+        if not Gsmall.is_abelian():
+            raise ValueError("The extension of Galois elements is not " +
+                             "well-defined if no embedding is given.")
         embedding = Ksmall.embeddings(Kbig)[0]
     for tau in Gbig:
         if tau(embedding(Ksmall.gen())) == embedding(sigma(Ksmall.gen())):
             return tau
     raise Exception("No corresponding galois action found for %s."%sigma)
 
-@cached_function(key=lambda s, K, e: (str(s), s.parent().number_field(), K))
+@cached_function(key=lambda s, K, e: (str(s), s.parent().number_field(), K, e))
 def galois_field_restrict(sigma, K, embedding=None):
     r"""Find the restriction of a galois homomorphism to a smaller field.
 
@@ -140,15 +166,17 @@ def galois_field_restrict(sigma, K, embedding=None):
 
     - ``K`` -- A galois subfield of $K_0$
 
-    - ``embedding`` -- An embedding of K into K0. By default will be
-      the first embedding found by the method :meth:`embeddings`.
+    - ``embedding`` -- An embedding of K into K0. If the Galois group
+      of `K` is abelian will default to the first embedding found by
+      the method :meth:`embeddings`. Otherwise will raise an error if
+      not provided.
 
     OUPUT:
     
     An element $\tau$ of the galois group of `K` such that `sigma` and
     $\tau$ act the same on elements of `K`.
 
-    EXAMPLE::
+    EXAMPLES::
 
         sage: K = QuadraticField(3)
         sage: L = CyclotomicField(24)
@@ -158,6 +186,22 @@ def galois_field_restrict(sigma, K, embedding=None):
         sage: sigma.parent()
         Galois group of Number Field in a with defining polynomial x^2 - 3
 
+    If the smaller field is not abelian, the restriction is not unique::
+
+        sage: R.<x> = QQ[]
+        sage: K0.<a0> = NumberField(x^3 - 2)
+        sage: K.<a> = K0.galois_closure()
+        sage: L0.<b0> = NumberField(x^6 - 2)
+        sage: L.<b> = L0.galois_closure()
+        sage: sigma = L.galois_group().gens()[0]
+        sage: galois_field_restrict(sigma, K)
+        Traceback (most recent call last)
+        ...
+        ValueError: The restriction of Galois elements is not unique if no embedding is given.
+        sage: tau = [galois_field_restrict(sigma, K, embedding=phi) for phi in K.embeddings(L)]
+        sage: all(tau[i] == tau[0] for i in range(len(tau)))
+        False
+
     """
     Gsmall = K.galois_group()
     Ksmall = Gsmall.number_field()
@@ -166,14 +210,17 @@ def galois_field_restrict(sigma, K, embedding=None):
     if Gbig == Gsmall and Ksmall == Kbig:
         return sigma
     if embedding is None:
+        if not Gsmall.is_abelian():
+            raise ValueError("The restriction of Galois elements is not " +
+                             "unique if no embedding is given.")
         embedding = Ksmall.embeddings(Kbig)[0]
     for tau in Gsmall:
         if sigma(embedding(Ksmall.gen())) == embedding(tau(Ksmall.gen())):
             return tau
-    raise Exception("No corresponding galois action found for %s."%tau)
+    raise Exception("No corresponding galois action found for %s."%sigma)
 
-@cached_function(key=lambda s, K: (str(s), s.parent().number_field(), K))
-def galois_field_change(sigma, K):
+@cached_function(key=lambda s, K, L: (str(s), s.parent().number_field(), K, L))
+def galois_field_change(sigma, K, L=None):
     r"""Change a Galois homomorphism to one on a specified field
     
     Given a galois homomorphism $\sigma$ and a galois number field
@@ -187,12 +234,24 @@ def galois_field_change(sigma, K):
     the given galois homomorphism on the intersection of their
     respective number fields.
 
+    If the intersection of these two number fields is not abelian, the
+    restriction to this intersection depends on the embeddings. Hence
+    if no specific embeddings are given, this function raises an
+    error.
+
     INPUT:
     
     - ``sigma`` -- An element of the galois group of some number field
       $K_0$.
 
     - ``K`` -- A galois number field.
+
+    - ``L`` -- A tuple consisting of a number field containing both
+      $K_0$ and `K`, an embedding from $K_0$ into that field, and an
+      emedding from `K` into that field, in that order. If set to
+      `None` (default) it will be initialized as a composite field
+      using the function :func:`composite_field` with the
+      corresponding embeddings.
 
     OUTPUT:
 
@@ -227,11 +286,40 @@ def galois_field_change(sigma, K):
         sage: tau.parent()
         Galois group of Number Field in a with defining polynomial x^2 - 3
 
+    Note that if the intersection of the two fields is not abelian,
+    the change in Galois homomorphism depends on chosen embeddings::
+
+        sage: R.<x> = QQ[]
+        sage: K1.<a1> = NumberField(x^6 - 2)
+        sage: K1.<a1> = K1.galois_closure()
+        sage: K2.<a2> = NumberField(x^6 - 3*x^4 - 2*x^3 + 3*x^2 + 6*x + 1)
+        sage: K2.<a2> = K2.galois_closure()
+        sage: galois_field_change(sigma, K2)
+        Traceback (most recent call last):
+        ...
+        ValueError: The intersection field must be abelian to make restrictions of Galois homomorphism unique.
+        sage: L = composite_field(K1, K2)
+        sage: galois_field_change(sigma, K2, L=(L, K1.embeddings(L)[0], K2.embeddings(L)[0]))
+        (1,9)(2,10)(3,11)(4,12)(5,6)(7,8)
+        sage: galois_field_change(sigma, K2, L=(L, K1.embeddings(L)[0], K2.embeddings(L)[1]))
+        (1,6)(2,12)(3,9)(4,8)(5,11)(7,10)
+
+    .. SEEALSO::
+
+        :func:`galois_field_restrict`,
+        :func:`galois_field_extend`,
+        :func:`composite_field`,
+        :func:`intersection_field`,
+
     """
-    L = sigma.parent().number_field()
-    M, L_to_M, K_to_M = composite_field(L, K, give_maps=True)
-    return galois_field_restrict(galois_field_extend(sigma, M, embedding=L_to_M),
-                                 K, embedding=K_to_M)
+    K1 = sigma.parent().number_field()
+    K0, K0_to_K1, K0_to_K = intersection_field(K1, K, give_maps=True, L=L)
+    if not K0.is_abelian() and L is None:
+        raise ValueError("The intersection field must be abelian to make " +
+                         "restrictions of Galois homomorphism unique.")
+    return galois_field_extend(galois_field_restrict(sigma, K0,
+                                                     embedding=K0_to_K1),
+                               K, embedding=K0_to_K)
 
 @cached_function(key=lambda s, N: ((0, s, N) if s in ZZ else
                                    (str(s), s.parent().number_field(), N)))
