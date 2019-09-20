@@ -314,6 +314,8 @@ def galois_field_change(sigma, K, L=None):
     """
     K1 = sigma.parent().number_field()
     K0, K0_to_K1, K0_to_K = intersection_field(K1, K, give_maps=True, L=L)
+    if K0 == QQ:
+        return K.galois_group()[0]
     if not K0.is_abelian() and L is None:
         raise ValueError("The intersection field must be abelian to make " +
                          "restrictions of Galois homomorphism unique.")
