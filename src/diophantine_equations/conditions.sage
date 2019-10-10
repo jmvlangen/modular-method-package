@@ -1136,6 +1136,17 @@ class SquarefreeCondition(PolynomialCondition):
         """
         PolynomialCondition.__init__(self, polynomial)
 
+    def order(self):
+        r"""Give the order of this Condition
+
+        OUTPUT:
+
+        An integer `n` for which the polynomial of this Condition has
+        order at most `n` at each prime.
+
+        """
+        return self._n
+
     def pAdic_tree(self, pAdic_tree=None, pAdics=None, complement=False,
                    verbose=False, **kwds):
         r"""Give this condition as a pAdicTree.
