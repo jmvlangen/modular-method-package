@@ -1429,7 +1429,8 @@ class FreyCurveLocalData(EllipticCurveLocalData):
           multiplicative reduction, and 0 for additive reduction.
 
         """
-        self._set_elliptic_curve(elliptic_curve)
+        self._set_elliptic_curve(E)
+        self._prime=P
         self._fp = conductor_valuation
         self._val_disc = discriminant_valuation
         if isinstance(kodaira_symbol, KodairaSymbol_class):

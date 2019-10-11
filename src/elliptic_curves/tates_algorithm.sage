@@ -10,6 +10,7 @@ EXAMPLES::
 AUTHORS:
 
 - Joey van Langen (2019-02-27): initial version
+- Joey van Langen (2019-10-10): Added termination condition to step 7
 
 """
 
@@ -63,21 +64,19 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
     Even though each step in Tate's algorithm only depends on the
     value of the variables modulo some finite power of $P$ it is not
     guaranteed that the complete algorithm depends only on a finite
-    power of $P$. In fact the termination of Tate's algorithm strongly
-    depends on the fact that the discriminant of an elliptic curve is
-    bounded to guarantee only finitely many steps in the
-    algorithm. This might of course not be the case when the
-    discriminant depends on variables.
+    power of $P$. In fact the termination of Tate's algorithm depends
+    on the fact that the discriminant of an elliptic curve is bounded.
+    This might of course not be the case when the discriminant depends
+    on variables.
 
-    The code written here is not smart enough to detect the
-    requirement for an infinite number of steps. The user is therefore
-    advised to watch computations with this function closely, maybe
-    even inspecting what is being done using the `verbose`
-    argument. Especially the subalgorithm in step 7 for primes of
-    characteristic 2 is very prone to getting stuck in an infinite
-    number of steps, hence seeing step 7 appear very often when
-    printing verbose is a good indication of a never ending
-    computation.
+    In practice the above is only an issue if there is always a case
+    in which a new minimal model of lower discriminant exists, or one
+    tries to compute all local data and enters the subalgorithm of
+    step 7. In all other cases the implementation of this algorithm
+    will terminate, but one might enter a curve for which the number
+    of steps is very large. It is therefore advised to turn 'verbose'
+    on and watch the steps carefully if the computation takes too long
+    or prints warnings.
     
     INPUT:
     
@@ -121,7 +120,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
           additive, returned as None, 1, -1 or 0 respectively.
 
         - 'discriminant' -> Only calculate the valuation of the
-          discriminant
+          minimal discriminant
 
         - 'type' -> Only calculate the Kodaira Symbol
 
@@ -260,7 +259,8 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                         if verbose > 0:
                             print "Performing step 7sub"
                         _tate_step7sub(case['E'], S, pAdics, case['T'],
-                                       case['E0'], n, variables=variables,
+                                       case['E0'], n, only_calculate,
+                                       variables=variables,
                                        result=newCases,
                                        verbose=(verbose-1 if verbose>0
                                                 else verbose),
@@ -1420,7 +1420,7 @@ def _tate_step7sub_t(E, S, pAdics, T, E0, n, verbose=False, result=[], **kwds):
         
     return result
         
-def _tate_step7sub(E, S, pAdics, T, E0, n, **kwds):
+def _tate_step7sub(E, S, pAdics, T, E0, n, restrictions, **kwds):
     r"""Perform a step in the subalgorithm of step 7 of Tate's algorithm.
 
     In step $n$ of this subalgorithm we have different stopping
@@ -1490,6 +1490,11 @@ def _tate_step7sub(E, S, pAdics, T, E0, n, **kwds):
     variables would give such a case.
 
     """
+    if (n > 4*pAdics.valuation(2) and
+        len(restrictions) > 0):
+        case = dict(E=E, KS="In*", E0=E0)
+        return _get_cases_invariant(S(E.c4()), pAdics, T, 'f', case,
+                                    **kwds)
     case_big = dict(E=E, next_step=7+_encode_quotient(n+1,0), E0=E0)
     case_small = dict(E=E, KS="I"+str(n)+"*", m=5+n, E0=E0)
     if is_odd(n):
@@ -2031,7 +2036,7 @@ def _tate_calculate_m(E, S, pAdics, T, case, result=[], **kwds):
         elif KS.startswith('I0'): #I0*
             case['m'] = 5
         else: #In*
-            case['m'] = case['vDelta'] - 1
+            case['m'] = case['vDelta'] - case['f'] + 1
     else:
         if KS.startswith('IV'): #IV
             case['m'] = 3
@@ -2287,7 +2292,7 @@ def _tate_calculate_n(E, S, pAdics, T, case, result=[], **kwds):
     """
     KS = case['KS']
     if KS.endswith('*'): #In*
-        case['KS'] = KS.replace('n', str(case['vDelta']-6))
+        case['KS'] = KS.replace('n', str(case['vDelta'] - 4 - case['f']))
     else: #In
         case['KS'] = KS.replace('n', str(case['vDelta']))
     result.append(case)
@@ -2309,9 +2314,10 @@ def _should_calculate_split(case, restrictions):
     split. False otherwise.
 
     """
-    return (case['f'] == 1 and not case.has_key('split') and
-            (_should_calculate_c(case, restrictions) or
-             'reduction_type' in restrictions))
+    return ((_should_calculate_c(case, restrictions) or
+             'reduction_type' in restrictions) and
+            (case['f'] == 1 and not case.has_key('split')))
+            
 
 def _tate_calculate_split(E, S, pAdics, T, case, result=[], **kwds):
     r"""Compute if split or non-split multiplicative reduction.
