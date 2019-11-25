@@ -204,9 +204,11 @@ def composite_field(K1, K2, give_maps=False, names=None):
 
     INPUT:
 
-    - ``K1`` -- A number field, which may be the rationals.
+    - ``K1`` -- A number field, which may be the rationals, or the
+      embedding of a common field $K_0$ into such a field.
 
-    - ``K2`` -- A number field, which may be the rationals.
+    - ``K2`` -- A number field, which may be the rationals, or the
+      embedding of a common field $K_0$ into such a field.
 
     - ``give_maps`` -- A boolean (default=False) indicating whether
       the embeddings should be returned.
@@ -217,10 +219,14 @@ def composite_field(K1, K2, give_maps=False, names=None):
 
     OUTPUT:
 
-    A number field K that is the composite field of K1 and K2. If
-    give_maps was set to True, will instead return a tuple consisting
-    of: the field K; an embedding of K1 into K; and an embedding of K2
-    into K
+    A number field $K$ that is the composite field of `K1` and
+    `K2`. If `K1` and `K2` were both embeddings of a common field
+    $K_0$, then this composite field will be the composite of the two
+    codomains that respects both inclusions. If `give_maps` was set to
+    True, will instead return a tuple consisting of: the field K; an
+    embedding of K1 into K; and an embedding of K2 into K. Again these
+    embeddings will respect the embeddings from the common field $K_0$
+    if given.
 
     EXAMPLES:
 
@@ -256,16 +262,34 @@ def composite_field(K1, K2, give_maps=False, names=None):
            Defn: a |--> -1/2*a^3 + 11/2*a)
 
     """
+    K0to1 = None
+    K0to2 = None
+    if hasattr(K1, "codomain"):
+        K0 = K1.domain()
+        K0to1 = K1
+        K1 = K1.codomain()
+    if hasattr(K2, "codomain"):
+        if K0 != K2.domain():
+            raise ValueError("K1 and K2 are not embeddings from a common field.")
+        K0to2 = K2
+        K2 = K2.codomain()
     if not is_field(K1):
         K1 = K1.fraction_field()
     if not is_field(K2):
         K2 = K2.fraction_field()
     if K2.absolute_degree() < K1.absolute_degree():
-        if give_maps:
-            K, K2_to_K, K1_to_K = composite_field(K2, K1, give_maps=True)
-            return K, K1_to_K, K2_to_K
+        if K0to1 != None and K0to2 != None:
+            if give_maps:
+                K, K2_to_K, K1_to_K = composite_field(K0to2, K0to1, give_maps=True)
+                return K, K1_to_K, K2_to_K
+            else:
+                return composite_field(K0to2, K0to1)
         else:
-            return composite_field(K2, K1)
+            if give_maps:
+                K, K2_to_K, K1_to_K = composite_field(K2, K1, give_maps=True)
+                return K, K1_to_K, K2_to_K
+            else:
+                return composite_field(K2, K1)
     R = K1.embeddings(K2)
     if len(R) == 0:
         # Since we are only interested in one composite field
