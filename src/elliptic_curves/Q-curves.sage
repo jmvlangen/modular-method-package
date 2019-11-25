@@ -41,11 +41,13 @@ from sage.schemes.elliptic_curves.ell_number_field import EllipticCurve_number_f
 def _scalar_of_isogeny(phi):
     r"""Return the scalar associated to an isogeny.
 
-    For an isogeny between elliptic curves of the form .. MATH:
+    For an isogeny $\phi$ between elliptic curves returns the scalar
+    $\lambda$ such that ..MATH
 
-        (x,y) \mapsto (F(x), yF'(x) / \lambda)
+       \phi^* \omega = \lambda \omega,
 
-    returns $\lambda$.
+    where $\omega$ is the invariant differential in the corresponding
+    elliptic curve.
 
     If both elliptic curves are defined over a subfield of the complex
     numbers, this scalar is the same as the scalar in the map ..MATH
@@ -57,19 +59,16 @@ def _scalar_of_isogeny(phi):
 
     INPUT:
     
-    - ``phi`` -- An isogeny of elliptic curves, such that both curves
-      are given by Weierstrass equations of the form .. MATH:
-    
-        Y^2 = X^3 + a2*X^2 + a4*X + a6
+    - ``phi`` -- An isogeny of elliptic curves
 
     OUTPUT:
 
-    The unique number $\lambda$ such that the isogeny is of the form
-    .. MATH:
+    The unique number $\lambda$ such that..MATH
 
-        (x,y) \mapsto (F(x), yF'(x) / \lambda)
-    
-    for F(x) a rational function in x and F'(x) its derivative.
+       \phi^* \omega = \lambda \omega,
+
+    where $\omega$ is the invariant differential in the corresponding
+    elliptic curve.
 
     EXAMPLES::
 
@@ -94,8 +93,10 @@ def _scalar_of_isogeny(phi):
     """
     Fx, Fy = phi.rational_maps()
     x,y = Fy.parent().gens()
+    f1 = phi.domain().defining_polynomial()(x, y, 1)
+    f2 = phi.codomain().defining_polynomial()(x, y, 1)
     R = Fy.parent().base().base()
-    u = R(((Fx.derivative(x) * y) / Fy).numerator())
+    u = R(((Fx.derivative(x) * f1.derivative(y)) / f2.derivative(y)(Fx, Fy)).numerator())
     f = u.minpoly()
     return NumberField(f, names='l').gen()
 
@@ -242,12 +243,15 @@ class Qcurve(EllipticCurve_number_field):
            elements of the galois group of the base field of the
            Q-curve and as values data of the corresponding isogeny
            from the galois conjugate of this Q-curve to itself. This
-           data can be either an isogeny as a Sage object or a tuple
-           of an algebraic integer (defined as an element of some
-           number field) and a strictly positive integer, which are
-           respectively the $\lambda$ such that the isogeny is $z
-           \mapsto \lambda z$ on the complex numbers and the degree of
-           the isogeny.
+           data can be either an isogeny as a Sage object; a tuple of
+           a rational function in $x$ (defined over some number field)
+           and an algebraic integer (defined over the same number
+           field), that are respectively the $x$-coordinate map of the
+           isogeny and the induced scalar multiplication on the
+           differentials; or a tuple of three rational functions $F$,
+           $G$, $H$ in $x$ (defined over some number field) such that
+           the isogeny is $(x, y) \mapsto (F(x), G(x) y + H(x))$
+           outside points mapping to infinity.
 
         - ``guessed_degrees`` -- A list (default: []) of strictly
            positive integers indicating possible degrees of isogenies
@@ -394,18 +398,17 @@ class Qcurve(EllipticCurve_number_field):
         r"""Initialize the isogeny data.
 
         """
-        # Scalars of isogenies:
-        self._l = dict()
-        # Degrees of isogenies:
-        self._d = dict() 
-        # Common definition field of the $\lambda$'s:
-        self._Kl = self.definition_field()
+        # The x & y coordinate maps of isogenies
+        self._phi_x = dict()
+        self._phi_y = dict()
         # Map from the base field of the elliptic curve:
-        self._to_Kl = self._Kl.hom(self._Kl)
+        self._to_Kphi = self.definition_field().hom(self.definition_field())
         # Initialize the trivial isogeny that is there:
         e = self._Kl.galois_group().identity()
-        self._l[e] = QQ(1) 
-        self._d[e] = 1
+        R.<x, y> = self.definition_field()[]
+        R.<x, y> = R.fraction_field()
+        self._phi_x[e] = x
+        self._phi_y[e] = y
 
     def _add_isogeny(self, sigma, phi):
         r"""Add an isogeny to the stored isogeny data.
@@ -416,15 +419,19 @@ class Qcurve(EllipticCurve_number_field):
           this Q-curve is defined.
 
         - ``phi`` -- An isogeny from the galois conjugate of this
-          curve by sigma to this curve itself or a tuple of the
-          corresponding $\lambda$ and degree of such an isogeny.
+          curve by sigma to this curve itself, a tuple of the
+          corresponding x-coordinate map and a scalar, or a tuple of
+          the rational functions in x defining the isogeny.
 
         """
         if isinstance(phi, tuple):
-            self._l[sigma], self._d[sigma] = phi
-            self._update_isogeny_field()
+            self._phi_x[sigma] = phi[0]
+            if len(phi) == 2:
+                self._phi_y[sigma] = #???
+            elif len(phi) == 3:
+                self._phi_y[sigma] = phi[1](x)*y + phi[2](x)
         else:
-            self._add_isogeny(sigma, (_scalar_of_isogeny(phi), phi.degree()))
+            self._add_isogeny(sigma, (phi.rational_maps()[0], _scalar_of_isogeny(phi)))
 
     def _update_isogeny_field(self):
         r"""Update the field over which all isogenies are defined
