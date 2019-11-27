@@ -198,20 +198,102 @@ def fixed_field(H):
             return result
     return fixed_field(G.subgroup(H))
 
+def write_as_extension(phi, give_map=False, names=None):
+    r"""Give a field embedding as a field extension
+
+    INPUT:
+
+    - ``phi`` -- An embedding of fields
+
+    - ``give_map`` -- A boolean value (default: False). Returns the
+      map from the codomain of `phi` to the returned value as a second
+      argument if set to True.
+
+    - ``names`` -- A string with the name of the variable for the
+      given field.
+
+    OUTPUT:
+
+    A number field $K$ that is an extension of the number field that
+    is the domain of `phi` and isomorphic to the codomain of `phi`. If
+    the argument `give_map` is set to True, will also return an
+    isomorphism from the codomain of `phi` to the field $K$, such that
+    this map combined with `phi` is precisely the coercion of the
+    domain of `phi` into $K$.
+
+    EXAMPLES::
+
+        sage: write_as_extension(QuadraticField(5).embeddings(CyclotomicField(5))[0])
+        Number Field in zeta5 with defining polynomial x^2 + (1/2*a + 1/2)*x + 1 over its base field
+    
+    One can name the variables as usual::
+
+        sage: K.<a> = QuadraticField(2)
+        sage: L.<b> = CyclotomicField(8)
+        sage: M.<c> = write_as_extension(K.embeddings(L)[0])
+        sage: M.absolute_polynomial() == L.absolute_polynomial()
+        True
+        sage: M.base_field() == K
+        True
+
+    One can also request the corresponding isomorphism. Note that its
+    combination with the embeddings is simply the coercion map::
+
+        sage: K.<a> = QuadraticField(3)
+        sage: L.<b> = CyclotomicField(12)
+        sage: M, phi = write_as_extension(K.embeddings(L)[0], give_map=True)
+        sage: phi
+        Ring morphism:
+        From: Cyclotomic Field of order 12 and degree 4
+        To:   Number Field in b with defining polynomial x^2 + a*x + 1 over its base field
+        Defn: b |--> b
+        sage: phi * K.embeddings(L)[0]
+        Ring morphism:
+        From: Number Field in a with defining polynomial x^2 - 3
+        To:   Number Field in b with defining polynomial x^2 + a*x + 1 over its base field
+        Defn: a |--> a
+
+    """
+    K = phi.domain()
+    L = phi.codomain()
+    if not is_field(K) and not is_field(L):
+        raise ValueError("Input must be an embedding of fields.")
+    f = L.absolute_polynomial()
+    for g in f.change_ring(K).factor():
+        if g[0].change_ring(phi)(L.gen()) == 0:
+            if names is None:
+                names = L.variable_name()
+                if K.variable_name() == names:
+                    for n in range(len(names)):
+                        if names[n:].isdigit():
+                            names = names[:n] + str(Integer(names[n:]) + 1)
+                            break
+                    else:
+                        names = names + "1"
+            M = K.extension(g[0], names=names)
+            if give_map:
+                return M, L.hom([M.gen()])
+            else:
+                return M
+
 @cached_function
 def composite_field(K1, K2, give_maps=False, names=None):
     r"""Return the composite field of K1 and K2
 
     INPUT:
 
-    - ``K1`` -- A number field, which may be the rationals, or the
-      embedding of a common field $K_0$ into such a field.
+    - ``K1`` -- A number field, which may be the rationals. It may
+      also be the extension of some number field $K_0$ of which `K2`
+      is also an extension. This extension may also be given as an
+      embedding of $K_0$ into `K1`.
 
-    - ``K2`` -- A number field, which may be the rationals, or the
-      embedding of a common field $K_0$ into such a field.
+    - ``K2`` -- A number field, which may be the rationals. It may
+      also be the extension of some number field $K_0$ of which `K1`
+      is also an extension. This extension may also be given as an
+      embedding of $K_0$ into `K2`.
 
     - ``give_maps`` -- A boolean (default=False) indicating whether
-      the embeddings should be returned.
+      the embeddings into the composite field should be returned.
 
     - ``names`` -- A string, tuple thereof or None (default:
       `None`). If not `None` this will be used as the variable names
@@ -220,13 +302,11 @@ def composite_field(K1, K2, give_maps=False, names=None):
     OUTPUT:
 
     A number field $K$ that is the composite field of `K1` and
-    `K2`. If `K1` and `K2` were both embeddings of a common field
-    $K_0$, then this composite field will be the composite of the two
-    codomains that respects both inclusions. If `give_maps` was set to
-    True, will instead return a tuple consisting of: the field K; an
-    embedding of K1 into K; and an embedding of K2 into K. Again these
-    embeddings will respect the embeddings from the common field $K_0$
-    if given.
+    `K2`. If `K1` and `K2` are given as extensions of a common field
+    $K_0$ the field `K` will also be an extension of $K_0$ respecting
+    the common structure. If `give_maps` was set to True, will instead
+    return a tuple consisting of: the field K; an embedding of K1 into
+    K; and an embedding of K2 into K.
 
     EXAMPLES:
 
@@ -235,7 +315,7 @@ def composite_field(K1, K2, give_maps=False, names=None):
         sage: K1 = QuadraticField(2)
         sage: K2 = QuadraticField(3)
         sage: K = composite_field(K1, K2); K
-        Number Field in a with defining polynomial x^4 - 10*x^2 + 1
+        Number Field in a1 with defining polynomial x^2 - 3 over its base field
         sage: K(2).is_square() and K(3).is_square()
         True
 
@@ -244,7 +324,7 @@ def composite_field(K1, K2, give_maps=False, names=None):
         sage: K1 = QuadraticField(2)
         sage: K2 = CyclotomicField(8)
         sage: K = composite_field(K1, K2); K
-        Cyclotomic Field of order 8 and degree 4
+        Number Field in azeta8 with defining polynomial x^2 - a*x + 1 over its base field
         sage: K2(2).is_square()
         True
 
@@ -253,74 +333,62 @@ def composite_field(K1, K2, give_maps=False, names=None):
         sage: K1 = QuadraticField(2)
         sage: K2 = QuadraticField(3)
         sage: composite_field(K1, K2, give_maps=True)
-        (Number Field in a with defining polynomial x^4 - 10*x^2 + 1, Ring morphism:
+        (Number Field in a1 with defining polynomial x^2 - 3 over its base field,
+         Composite map:
            From: Number Field in a with defining polynomial x^2 - 2
-           To:   Number Field in a with defining polynomial x^4 - 10*x^2 + 1
-           Defn: a |--> -1/2*a^3 + 9/2*a, Ring morphism:
+           To:   Number Field in a1 with defining polynomial x^2 - 3 over its base field
+           Defn:   Identity endomorphism of Number Field in a with defining polynomial x^2 - 2
+                 then
+                   Coercion map:
+                   From: Number Field in a with defining polynomial x^2 - 2
+                   To:   Number Field in a1 with defining polynomial x^2 - 3 over its base field,
+         Ring morphism:
            From: Number Field in a with defining polynomial x^2 - 3
-           To:   Number Field in a with defining polynomial x^4 - 10*x^2 + 1
-           Defn: a |--> -1/2*a^3 + 11/2*a)
+           To:   Number Field in a1 with defining polynomial x^2 - 3 over its base field
+           Defn: a |--> a1)
 
     """
-    K0to1 = None
-    K0to2 = None
+    to_K1 = None; to_K2 = None
     if hasattr(K1, "codomain"):
-        K0 = K1.domain()
-        K0to1 = K1
-        K1 = K1.codomain()
+        K1 = write_as_extension(K1, give_map=give_maps)
+        if give_maps:
+            K1, to_K1 = K1
     if hasattr(K2, "codomain"):
-        if K0 != K2.domain():
-            raise ValueError("K1 and K2 are not embeddings from a common field.")
-        K0to2 = K2
-        K2 = K2.codomain()
-    if not is_field(K1):
-        K1 = K1.fraction_field()
-    if not is_field(K2):
-        K2 = K2.fraction_field()
+        K2 = write_as_extension(K2, give_maps=give_maps)
+        if give_maps:
+            K2, to_K2 = K2
+    if give_maps and to_K1 is None:
+        to_K1 = K1.hom(K1)
+    if give_maps and to_K2 is None:
+        to_K2 = K2.hom(K2)
+    K0 = K1.base_ring()
+    if K0 != K2.base_ring():
+        raise ValueError("The two given fields are not extensions of the same common field.")
     if K2.absolute_degree() < K1.absolute_degree():
-        if K0to1 != None and K0to2 != None:
-            if give_maps:
-                K, K2_to_K, K1_to_K = composite_field(K0to2, K0to1, give_maps=True)
-                return K, K1_to_K, K2_to_K
-            else:
-                return composite_field(K0to2, K0to1)
-        else:
-            if give_maps:
-                K, K2_to_K, K1_to_K = composite_field(K2, K1, give_maps=True)
-                return K, K1_to_K, K2_to_K
-            else:
-                return composite_field(K2, K1)
-    R = K1.embeddings(K2)
-    if len(R) == 0:
-        # Since we are only interested in one composite field
-        # instead of all of them, we can skip the part of
-        # the composite_fields method that checks isomorphisms
-        # This makes computation much faster
-        # The following is partially copied from number_field.py
-        if names is None:
-            name1 = K1.variable_name(); name2 = K2.variable_name()
-            names = name1 + (name2 if name2 != name1 else "")
-        f = K1.absolute_polynomial()
-        g = K2.absolute_polynomial().change_variable_name(f.variable_name())
-        R = f.parent()
-        f = f.__pari__(); f /= f.content()
-        g = g.__pari__(); g /= g.content()
         if give_maps:
-            h, a, b, _ = f.polcompositum(g, 1)[0]
-            L = NumberField(R(h), names, check=False)
-            aL = L(R(a.lift()))
-            bL = L(R(b.lift()))
-            K1_to_L = K1.hom([aL])
-            K2_to_L = K2.hom([bL])
-            return L, K1_to_L, K2_to_L
+            K, K2_to_K, K1_to_K = composite_field(K2, K1, give_maps=True)
+            return K, K1_to_K * to_K1, K2_to_K * to_K2
         else:
-            h = f.polcompositum(g)[0]
-            return NumberField(R(h), names, check=False)
+            return composite_field(K2, K1)
+    f = K2.relative_polynomial()
+    g = f.change_ring(K1).factor()[0][0]
+    if names is None:
+        name1 = K1.variable_name(); name2 = K2.variable_name()
+        names = name1 + (name2 if name2 != name1 else "")
+        if names == name1:
+            for n in range(len(names)):
+                if names[n:].isdigit():
+                    names = names[:n] + str(Integer(names[n:]) + 1)
+                    break
+            else:
+                names = names + "1"
+    K = K1.extension(g, names=names)
+    if give_maps:
+        K1_to_K = K1.hom(K)
+        K2_to_K = K2.hom([K.gen()])
+        return K, K1_to_K * to_K1, K2_to_K * to_K2
     else:
-        if give_maps:
-            return K2, R[0], K2.hom(K2)
-        else:
-            return K2
+        return K
 
 @cached_function
 def intersection_field(K1, K2, L=None, give_maps=False, names=None):
