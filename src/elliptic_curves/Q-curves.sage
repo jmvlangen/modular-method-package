@@ -436,7 +436,6 @@ class Qcurve(EllipticCurve_number_field):
                 self._phi_y[sigma] = phi[1](x)*y + phi[2](x)
         else:
             self._add_isogeny(sigma, (phi.x_rational_map(), _scalar_of_isogeny(phi)))
-        self._update_isogeny_field()
 
     def _has_isogeny(self, sigma):
         r"""Tell if an isogeny from a Galois conjugate is already registered.
@@ -480,6 +479,7 @@ class Qcurve(EllipticCurve_number_field):
         r"""Attempt to fill in missing isogenies by combining known ones.
 
         """
+        self._update_isogeny_field()
         G = self.definition_field().galois_group()
         Kphi = self._to_Kphi.codomain()
         for s in G:
@@ -2112,19 +2112,20 @@ class Qcurve(EllipticCurve_number_field):
         OUTPUT:
 
         A dictionary of which the keys are the elements of the galois
-        group of K, and the value for each element sigma is a tuple
-        containing the scalar and the degree of the isogeny from the
-        conjugate of this curve by sigma to itself, in that order.
+        group of K, and the value for each element sigma is a tuple of
+        a rational function in $x$ and an algebraic number, that are
+        respectively the $x$-coordinate map of the isogeny from the
+        sigma conjugate of this curve to this curve and the induced
+        scalar multiplication on the differentials.
 
         """
         G = K.galois_group()
+        F = self.isogeny_x_map
         l = self.isogeny_scalar
-        d = self.degree_map
-        return {s: (l(galois_field_change(s, self.definition_field())),
-                    d(galois_field_change(s, self.definition_field())))
-                for s in G}
+        return {s: (F(s), l(s)) for s in G}
 
     def base_extend(self, R):
+        # TODO Make sure this function respects the right field extension
         result = EllipticCurve_number_field.base_extend(self, R)
         if isinstance(result, EllipticCurve_number_field):
             K = self.definition_field()
@@ -2383,8 +2384,9 @@ class Qcurve(EllipticCurve_number_field):
                              " does not give a valid set of roots")
 
         # Let's compute the fields and corresponding embeddings
+        # TODO update this function
         Kbase = self.definition_field()
-        Kold = self._Kl
+        Kold = self.complete_definition_field()
         Kroots = QQ
         for i, a in enumerate(roots):
             Kroots = field_with_root(Kroots, a, names=('sqrt_a'+str(i)))
