@@ -397,7 +397,7 @@ class Qcurve(EllipticCurve_number_field):
         self._phi_x = dict()
         self._phi_y = dict()
         # Map from the base field of the elliptic curve:
-        self._to_Kphi = self.definition_field().hom(self.definition_field())
+        self._Kphi = self.definition_field()
         # Initialize the trivial isogeny that is there:
         R = self.definition_field()
         e = R.galois_group().identity()
@@ -460,20 +460,27 @@ class Qcurve(EllipticCurve_number_field):
             if self._has_isogeny(G[i]):
                 Ri = self._phi_x[G[i]].base_ring()
                 if Ri != self._to_Kphi.codomain():
-                    _, old_to_new, Ri_to_new = composite_field(self._to_Kphi, Ri,
+                    _, old_to_new, Ri_to_new = composite_field(self._Kphi, Ri,
                                                                give_maps=True)
-                    self._to_Kphi = old_to_new * self._to_Kphi
+                    def_to_new = (old_to_new *
+                                  self.definition_field().hom(self._Kphi))
+                    self._Kphi, iota = write_as_extension(def_to_new,
+                                                          give_map=True)
+                    old_to_new = iota * old_to_new
+                    Ri_to_new = iota * Ri_to_new
                     self._update_isogeny(G[i], Ri_to_new)
                     for j in range(i):
                         if _has_isogeny(self, G[j]):
-                            self._update_isogeny(G[j], Ri_to_new)
-        Kphi = self._to_Kphi.codomain()
-        if not Kphi.is_galois():
-            _, clos = Kphi.galois_closure(names='al', map=True)
-            self._to_Kphi = clos * self._to_Kphi
+                            self._update_isogeny(G[j], old_to_new)
+        if not self._Kphi.is_galois():
+            Kphi.<al> = self._Kphi.galois_closure()
+            clos = self._Kphi.embeddings(Kphi)[0]
+            def_to_clos = clos * self.definition_field().hom(self._Kphi)
+            self._Kphi, old_to_new = write_as_extension(def_to_clos,
+                                                        give_map=True)
             for s in G:
                 if self._has_isogeny(G[i]):
-                    self._update_isogeny(G[i], Ri_to_new)
+                    self._update_isogeny(G[i], old_to_new)
 
     def _fill_isogenies(self):
         r"""Attempt to fill in missing isogenies by combining known ones.
@@ -481,13 +488,12 @@ class Qcurve(EllipticCurve_number_field):
         """
         self._update_isogeny_field()
         G = self.definition_field().galois_group()
-        Kphi = self._to_Kphi.codomain()
         for s in G:
             for t in G:
                 if (not self._has_isogeny(s*t) and
                     self._has_isogeny(s) and
                     self._has_isogeny(t)):
-                    tL = galois_field_extend(t, Kphi)
+                    tL = galois_field_extend(t, self._Kphi)
                     tL_phi_s = (self._phi_x[s].change_ring(tL.as_hom()),
                                 self._phi_y[s].change_ring(tL.as_hom()))
                     self._phi_x[s*t] = self._phi_x[t](tL_phi_s)
@@ -611,7 +617,7 @@ class Qcurve(EllipticCurve_number_field):
             Number Field in tu0 with defining polynomial x^4 - 2*x^2 + 25
 
         """
-        return self._to_Kphi.codomain()
+        return self._Kphi
 
     @cached_method(key=_galois_cache_key)
     def degree_map(self, sigma):
@@ -1505,7 +1511,14 @@ class Qcurve(EllipticCurve_number_field):
             Number Field in tu0tzeta0 with defining polynomial x^8 + 32*x^6 + 456*x^4 - 1408*x^2 + 10000
 
         """
-        return composite_field(self.splitting_field(), self.complete_definition_field())
+        Ksplit = self.splitting_field()
+        Kphi = self.complete_definition_field()
+        K = self.definition_field()
+        Kd = self.degree_field()
+        to_Kphi = K.hom(Kphi) * Kd.embeddings(K)[0]
+        to_Ksplit = Kd.embeddings(Ksplit)[0]
+        _, _, from_Kphi = composite_field(to_Ksplit, to_Kphi, give_maps=True)
+        return write_as_extension(from_Kphi)
 
     @cached_method
     def does_decompose(self):
@@ -1619,11 +1632,17 @@ class Qcurve(EllipticCurve_number_field):
         Lbeta0 = self.splitting_image_field()
         chi = self.twist_character(i, galois=True)
         Lchi = self.twist_character(i).base_ring()
-        L = composite_field(Lbeta0, Lchi)
         Lbeta = self.splitting_image_field(i)
+        L, from_Lbeta0, from_Lchi = composite_field(Lbeta0, Lchi,
+                                                    give_maps=True)
+        L, to_L, from_Lbeta = composite_field(L, Lbeta, give_maps=True)
+        L, conv = write_as_extension(from_Lbeta, give_map=True)
+        to_L = conv * to_L
+        from_Lbeta0 = to_L * from_Lbeta0
+        from_Lchi = to_L * from_Lchi
         @cached_function(key=lambda s: (str(s), s.parent().number_field()))
         def beta(sigma):
-            return Lbeta(L(beta0(sigma)) * L(chi(sigma)))
+            return Lbeta(from_Lbeta0(beta0(sigma)) * from_Lchi(chi(sigma)))
         return beta
 
     @cached_method(key=lambda self, i, v: i)
@@ -1851,7 +1870,7 @@ class Qcurve(EllipticCurve_number_field):
         regard.
 
         """
-        Kphi = self._to_Kphi.codomain()
+        Kphi = self.complete_definition_field()
         products = [1]
         result = []
         for tmp in Kphi.subfields(degree=2):
@@ -2101,13 +2120,13 @@ class Qcurve(EllipticCurve_number_field):
                 beta_del.remove(beta_ls[j])
         return tuple(result)
 
-    def _isogeny_data(self, K):
+    def _isogeny_data(self, iota):
         r"""Give the isogeny data of this curve over a given field.
 
         INPUT:
 
-        - ``K`` -- A number field that is an extension of the
-          definition field of this Q-curve.
+        - ``iota`` -- A field homomorphism from the definition field
+          of this Q-curve to another number field.
 
         OUTPUT:
 
@@ -2122,17 +2141,31 @@ class Qcurve(EllipticCurve_number_field):
         G = K.galois_group()
         F = self.isogeny_x_map
         l = self.isogeny_scalar
-        return {s: (F(s), l(s)) for s in G}
+        Kphi = self.complete_definition_field()
+        _, to_L, from_Kphi = composite_field(iota, Kphi,
+                                             give_maps=True)
+        L, to_L = write_as_extension(to_L, give_map=True)
+        from_Kphi = to_L * from_Kphi
+        return {s : (F(s).change_ring(from_Kphi), from_Kphi(l(s)))
+                for s in G}
 
     def base_extend(self, R):
-        # TODO Make sure this function respects the right field extension
         result = EllipticCurve_number_field.base_extend(self, R)
         if isinstance(result, EllipticCurve_number_field):
             K = self.definition_field()
             L = result.base_ring()
-            r = K.gen().minpoly().change_ring(L).roots()
-            if len(r) > 0:
-                return Qcurve(result, isogenies=self._isogeny_data(L))
+            if (hasattr(R, "codomain") and
+                R.domain() == K and
+                R.codomain() == L):
+                K_to_L = R
+            else:
+                K_to_L = K.embeddings(L)
+                if len(K_to_L) > 0:
+                    K_to_L = K_to_L[0]
+                else:
+                    K_to_L = None
+            if K_to_L != None:
+                return Qcurve(result, isogenies=self._isogeny_data(K_to_L))
         return result
 
     def twist(self, gamma):
@@ -2169,10 +2202,12 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         K_gamma = gamma.parent()
-        K, iota, gamma_map = composite_field(self._to_Kphi, K_gamma,
+        Kdef = self.definition_field()
+        Kphi = self.complete_definition_field()
+        K, iota, gamma_map = composite_field(Kphi, K_gamma,
                                              give_maps=True)
         gamma = gamma_map(gamma)
-        E_map = iota * self._to_Kphi
+        E_map = iota * Kdef.hom(Kphi)
         E = twist_elliptic_curve(self.change_ring(E_map), gamma)
         ainvs = E.a_invariants()
         R.<x> = K[]
@@ -2189,17 +2224,6 @@ class Qcurve(EllipticCurve_number_field):
             ls = agamma * ls
             isogenies[s] = (Fs.change_ring(Ls), ls)
         # TODO: minimization of resulting field
-        # H = [t for t in G2 if (all(t(isogenies[s][0]) == isogenies[s][0]
-        #                            for s in G) and
-        #                        all(t(a) == a for a in ainvs))]
-        # Kmin = fixed_field(H)
-        # if Kmin != K:
-        #     isogenies_min = {}
-        #     for s in Kmin.galois_group():
-        #         l, d = isogenies[galois_field_change(s, Kold)]
-        #         isogenies_min[s] = (Kmin(l), d)
-        #     ainvs = [Kmin(a) for a in ainvs]
-        #     return Qcurve(ainvs, isogenies=isogenies_min)
         return Qcurve(ainvs, isogenies=isogenies)
 
     def _decomposable_twist_set(self):
@@ -2458,8 +2482,7 @@ class Qcurve(EllipticCurve_number_field):
         K0 = self.definition_field()
         K = self.decomposition_field()
         if K0 != K:
-            iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0]
-                           for a in K0.gens()], K)
+            iota = K0.hom(K)
             # Proposition 1 of Milne, On the arithmetic of Abelian varieties
             return (self.change_ring(iota).conductor().absolute_norm() *
                     K.discriminant()^2)
@@ -2620,6 +2643,83 @@ class Qcurve(EllipticCurve_number_field):
             if candidate:
                 x_ls.append(tuple(x for i in range(len(d))))
         return x_ls
+
+    def trace_of_frobenius(self, prime, power=1, splitting_map=0):
+        r"""Compute the trace of a Frobenius element acting on this curve.
+
+        Given that this Q-curve decomposes over its decomposition
+        field, one can associate to each splitting map $\beta$ a
+        $\QQ$-simple abelian variety $A_\beta$ of $GL_2$-type which
+        has this Q-curve as a 1-dimensional quotient. For each finite
+        prime $\lambda$ in the image field of $\beta$, this $A_\beta$
+        defines a 2-dimensional $\lambda$-adic Galois representation
+        of the absolute Galois group of $\QQ$ that extends the
+        $l$-adic Galois representation of this curve, where $l$ is the
+        prime number below $\lambda$.
+
+        Let $p$ be a prime number distinct from $l$ such that $p$ does
+        not ramify in the decomposition field of this curve; this
+        curve has good reduction at some prime $P$ above $p$ of the
+        decomposition field; and the reduction of the dual of $\phi$
+        to this good reduction is separable, where $\phi$ is the
+        isogeny of the conjugate of this curve by a $p$-Frobenius
+        element to this curve. In this case the corresponding
+        $\lambda$-adic representation is unramified at
+        $p$. Furthermore the trace of the Frobenius element at $p$ can
+        be explicitly computed and is an algebraic number that only
+        depends on $\beta$, the reduction at $P$ and the dual isogeny
+        of $\phi$.
+
+        This function computes the algebraic number that is the trace
+        of (a power of) a Frobenius element. It will first check that
+        the give prime number `prime` satisfies the mentioned
+        conditions and raise a ValueError if this is not the case.
+
+        INPUT:
+
+        - ``prime`` -- A prime number such that `prime` does not
+          ramify in the decomposition field of this curve; this curve
+          has good reduction at some prime $P$ above `prime` in the
+          decomposition field; and the reduction of the dual $\phi$ to
+          this good reduction is separable, where $\phi$ is the
+          isogeny from the conjugate of this curve by a Frobenius
+          element of `prime` to this curve itself.
+
+        - ``power`` -- A strictly positive integer (default: 1). If
+          set to a value higher than 1 will compute the trace of the
+          Frobenius element to the given power instead of the
+          Frobenius element itself.
+
+        - ``splitting_map`` -- A non-negative integer smaller than the
+          number of splitting maps associated to this Q-curve
+          (default: 0). This indicates the splitting map for which the
+          trace of frobenius should be computed.
+
+        OUTPUT:
+
+        An algebraic number that is the trace of the Frobenius element
+        at `prime` to the power `power` under any $\lambda$-adic
+        Galois representation associated to the splitting map given by
+        `splitting_map` for $\lambda$ not dividing `prime`.
+
+        """
+        if power > 1:
+            pass # TODO
+        else:
+            K = self.decomposition_field()
+            iota = self.definition_field().hom(K)
+            E = self.change_ring(iota)
+            if prime.divides(K.absolute_discriminant()):
+                raise ValueError("The decomposition field is ramified " +
+                                 "at " + str(prime))
+            for P in K.primes_above(prime):
+                if E.has_good_reduction(P):
+                    break
+            else:
+                raise ValueError("This curve does not have good " +
+                                 "reduction at any prime above " +
+                                 str(prime))
+            #TODO
 
     @cached_method
     def newform(self, algorithm='magma', verify=0):
