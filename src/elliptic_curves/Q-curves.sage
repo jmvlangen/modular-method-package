@@ -2711,7 +2711,7 @@ class Qcurve(EllipticCurve_number_field):
         return x_ls
 
     @cached_method
-    def _trace_power_formula(self, power)
+    def _trace_power_formula(self, power):
         r"""Give the formula to compute the trace of frobenius to a given
         power.
 
@@ -3067,7 +3067,7 @@ class Qcurve(EllipticCurve_number_field):
             nfs = done_cases[(N, eps)]
             for nf in nfs:
                 Kf = nf.coefficient_field()
-                if Kf.absolute_degree() == Lbeta.absolute_degree()
+                if Kf.absolute_degree() == Lbeta.absolute_degree():
                     for iota in Kf.embeddings(Lbeta):
                         candidates.append((nf, twists, i_min, iota))
 

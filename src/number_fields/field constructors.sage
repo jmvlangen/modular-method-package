@@ -361,15 +361,34 @@ def composite_field(K1, K2, give_maps=False, names=None):
         to_K1 = K1.hom(K1)
     if give_maps and to_K2 is None:
         to_K2 = K2.hom(K2)
-    K0 = K1.base_ring()
-    if K0 != K2.base_ring():
-        raise ValueError("The two given fields are not extensions of the same common field.")
     if K2.absolute_degree() < K1.absolute_degree():
         if give_maps:
             K, K2_to_K, K1_to_K = composite_field(K2, K1, give_maps=True)
             return K, K1_to_K * to_K1, K2_to_K * to_K2
         else:
             return composite_field(K2, K1)
+    if K1 == K2:
+        if give_maps:
+            K = K1.absolute_field(names=K1.variable_name())
+            K1_to_K = K.structure()[1] * to_K1
+            K2_to_K = K.structure()[1] * to_K2
+            return K, K1_to_K, K2_to_K
+        else:
+            return K1.absolute_field(names=K1.variable_name())
+    K01 = K1
+    K02 = K2
+    while K01 != K02:
+        if K01.absolute_degree() < K02.absolute_degree():
+            K02 = K02.base_ring()
+        else:
+            K01 = K01.base_ring()
+    K1 = write_as_extension(K01.hom(K1), give_map=give_maps)
+    K2 = write_as_extension(K02.hom(K2), give_map=give_maps)
+    if give_maps:
+        K1 = K1[0]
+        to_K1 = K1[1] * to_K1
+        K2 = K2[0]
+        to_K2 = K2[1] * to_K2
     f = K2.relative_polynomial()
     g = f.change_ring(K1).factor()[0][0]
     if names is None:
@@ -386,9 +405,12 @@ def composite_field(K1, K2, give_maps=False, names=None):
     if give_maps:
         K1_to_K = K1.hom(K)
         K2_to_K = K2.hom([K.gen()])
+        K = K.absolute_field(names=K.variable_name())
+        K1_to_K = K.structure()[1] * K1_to_K
+        K2_to_K = K.structure()[1] * K2_to_K
         return K, K1_to_K * to_K1, K2_to_K * to_K2
     else:
-        return K
+        return K.absolute_field(names=K.variable_name())
 
 @cached_function
 def intersection_field(K1, K2, L=None, give_maps=False, names=None):
