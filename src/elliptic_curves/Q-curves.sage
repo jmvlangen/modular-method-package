@@ -38,6 +38,78 @@ AUTHORS:
 # ****************************************************************************
 from sage.schemes.elliptic_curves.ell_number_field import EllipticCurve_number_field
 
+def _rational_maps_of_isomorphism(phi):
+    r"""Give the rational maps corresponding to an isomorphism of Elliptic
+    curves
+
+    INPUT:
+    
+    - ``phi`` -- An isomorphism of elliptic curve given by a
+      Weierstrass transformation.
+
+    OUTPUT:
+
+    A tuple consisting of two rational functions $F$ and $G$ in the
+    variables $x$ and $y$ giving respectively the $x$-coordinate and
+    $y$-coordinate maps of the given isomorphism.
+
+    """
+    u, r, s, t = phi.tuple()
+    R = u.parent()
+    Rxy = PolynomialRing(R, names=["x", "y"]).fraction_field()
+    x, y = R.gens()
+    F = x - r
+    G = y - s*F - t
+    return (F/u^2, G/u^3)
+
+def _scalar_of_rational_maps(x_map, y_map, dom, codom):
+    r"""Return the scalar associated to an isogeny given by rational maps
+
+    For an isogeny $\phi$ between elliptic curves returns the scalar
+    $\lambda$ such that ..MATH
+
+       \phi^* \omega = \lambda \omega,
+
+    where $\omega$ is the invariant differential in the corresponding
+    elliptic curve.
+
+    If both elliptic curves are defined over a subfield of the complex
+    numbers, this scalar is the same as the scalar in the map ..MATH
+
+       z \mapsto \lambda z
+
+    on the complex numbers that induces this isogeny on the
+    corresponding quotients.
+
+    INPUT:
+
+    - ``x_map`` -- The x-coordinate map of the isogeny
+    
+    - ``y_map`` -- The y-coordinate map of the isogeny
+    
+    - ``dom`` -- The elliptic curve that is the domain of the isogeny
+
+    - ``codom`` -- The elliptic curve that is the codomain of the
+      isogeny
+
+    OUTPUT:
+
+    The unique number $\lambda$ such that..MATH
+
+       \phi^* \omega = \lambda \omega,
+
+    where $\omega$ is the invariant differential in the corresponding
+    elliptic curve and $\phi$ is the isogeny defined by the given
+    maps.
+
+    """
+    R = y_map.parent().base_ring()
+    x, y = y_map.parent().gens()
+    f1 = dom.defining_polynomial()(x, y, 1)
+    f2 = codom.defining_polynomial()(x, y, 1)
+    return R(((x_map.derivative(x) * f1.derivative(y)) /
+              f2.derivative(y)(Fx, Fy)).numerator())
+
 def _scalar_of_isogeny(phi):
     r"""Return the scalar associated to an isogeny.
 
@@ -92,13 +164,8 @@ def _scalar_of_isogeny(phi):
 
     """
     Fx, Fy = phi.rational_maps()
-    x,y = Fy.parent().gens()
-    f1 = phi.domain().defining_polynomial()(x, y, 1)
-    f2 = phi.codomain().defining_polynomial()(x, y, 1)
-    R = Fy.parent().base().base()
-    u = R(((Fx.derivative(x) * f1.derivative(y)) / f2.derivative(y)(Fx, Fy)).numerator())
-    f = u.minpoly()
-    return NumberField(f, names='l').gen()
+    return _scalar_of_rational_maps(Fx, Fy, phi.domain(),
+                                    phi.codomain())
 
 def _scalar_of_isomorphism(E1, E2):
     """Return the scalar associated to an isomorphism.
@@ -184,8 +251,8 @@ class Qcurve(EllipticCurve_number_field):
 
     In this class a Q-curve is represented as an elliptic curve E
     defined over a galois number field K, together with for each
-    element s of the galois group of K a tuple containing the scalar
-    and degree associated to the isogeny from s(E) to E.
+    element s of the galois group of K the x- and y-coordinate maps of
+    an isogeny from E to s(E), the conjugate of E by s.
 
     .. NOTE::
 
@@ -219,15 +286,15 @@ class Qcurve(EllipticCurve_number_field):
         Next it will compute all the galois conjugates of itself with
         respect to the galois group of its base field.
 
-        Third it will fill in data about the isogenies from a galois
-        conjugate to itself using the provided data given.
+        Third it will fill in data about the isogenies from the curve
+        to a Galois conjugate using the provided data.
 
         Next it will determine the remaining isogenies using the
         guessed degrees and combining previously found isogenies.
         
-        If in this way it can not find isogenies from each galois
-        conjugate to itself, the initialization will produce an error
-        and the resulting object should not be used.
+        If in this way it can not find isogenies from this curve to
+        each Galois conjugate, the initialization will produce an
+        error and the resulting object should not be used.
 
         INPUT:
         
@@ -239,13 +306,13 @@ class Qcurve(EllipticCurve_number_field):
               Y^2 + a_1 X Y + a_3 Y = X^3 + a_2 X^2 + a_4 X + a_6
 
          - ``isogenies`` -- A dictionary (default: {}) with as keys
-           elements of the galois group of the base field of the
-           Q-curve and as values the corresponding isogeny from the
-           galois conjugate of this Q-curve to itself. Such isogenies
-           must be defined over the field over which the curve is
-           defined or a direct extension thereof. The isogeny can be
-           given as either an isogeny as a Sage object; a tuple of a
-           rational function in $x$ and an algebraic number, that are
+           elements s of the Galois group of the base field of the
+           Q-curve and as values the corresponding isogeny from this
+           curve to the Galois conjugate by s. Such isogenies must be
+           defined over the field over which the curve is defined or a
+           direct extension thereof. The isogeny can be given as
+           either an isogeny as a Sage object; a tuple of a rational
+           function in $x$ and an algebraic number, that are
            respectively the $x$-coordinate map of the isogeny and the
            induced scalar multiplication on the differentials; or a
            tuple of three rational functions $F$, $G$, $H$ in $x$ such
@@ -254,7 +321,7 @@ class Qcurve(EllipticCurve_number_field):
 
         - ``guessed_degrees`` -- A list (default: []) of strictly
            positive integers indicating possible degrees of isogenies
-           from galois conjugates of this curve to itself.
+           between this curve and its Galois conjugates.
 
         - ``verbose`` -- A boolean value or an integer (default:
            False). When set to True or any value larger then zero will
@@ -264,7 +331,7 @@ class Qcurve(EllipticCurve_number_field):
            the printing of any warnings. A higher value will cause
            more messages to be printed.
 
-        EXAMPLES:
+        EXAMPLES: (TODO update these)
 
         One can create a Qcurve using an explicit isogeny::
 
@@ -325,7 +392,7 @@ class Qcurve(EllipticCurve_number_field):
 
         .. NOTE::
 
-        This number field is always galois.
+        This number field is always Galois.
 
         OUTPUT:
 
@@ -361,11 +428,11 @@ class Qcurve(EllipticCurve_number_field):
         
     @cached_method(key=_galois_cache_key)
     def galois_conjugate(self, sigma):
-        r"""Give the galois conjugate of this curve.
+        r"""Give the Galois conjugate of this curve.
 
         INPUT:
 
-        - ``sigma`` -- A galois homomorphism of some number field
+        - ``sigma`` -- A Galois homomorphism of some number field
 
         OUTPUT:
         
@@ -397,9 +464,9 @@ class Qcurve(EllipticCurve_number_field):
         self._phi_x = dict()
         self._phi_y = dict()
         # Map from the base field of the elliptic curve:
-        self._Kphi = self.definition_field()
-        # Initialize the trivial isogeny that is there:
         R = self.definition_field()
+        self._to_Kphi = R.hom(R)
+        # Initialize the trivial isogeny that is there:
         e = R.galois_group().identity()
         Rxy = PolynomialRing(R, names=["x", "y"]).fraction_field()
         x, y = Rxy.gens()
@@ -414,8 +481,8 @@ class Qcurve(EllipticCurve_number_field):
         - ``sigma`` -- A galois homomorphism of the field over which
           this Q-curve is defined.
 
-        - ``phi`` -- An isogeny from the galois conjugate of this
-          curve by sigma to this curve itself, a tuple of the
+        - ``phi`` -- An isogeny from this curve to the galois
+          conjugate of this curve by sigma, a tuple of the
           corresponding x-coordinate map and a scalar, or a tuple of
           the rational functions in x defining the isogeny.
 
@@ -426,8 +493,8 @@ class Qcurve(EllipticCurve_number_field):
             x, y = Rxy.gens()
             self._phi_x[sigma] = phi[0](x)
             if len(phi) == 2:
-                dom = self.galois_conjugate(sigma)
-                codom = self
+                dom = self
+                codom = self.galois_conjugate(sigma)
                 self._phi_y[sigma] = ((self._phi_x[sigma].derivative(x)
                                        * (2*y + dom.a1()*x + dom.a3())
                                        / R(phi[1]))
@@ -438,7 +505,7 @@ class Qcurve(EllipticCurve_number_field):
             self._add_isogeny(sigma, (phi.x_rational_map(), _scalar_of_isogeny(phi)))
 
     def _has_isogeny(self, sigma):
-        r"""Tell if an isogeny from a Galois conjugate is already registered.
+        r"""Tell if an isogeny to a Galois conjugate is already registered.
 
         """
         return (sigma in self._phi_x and
@@ -459,28 +526,26 @@ class Qcurve(EllipticCurve_number_field):
         for i in range(len(G)):
             if self._has_isogeny(G[i]):
                 Ri = self._phi_x[G[i]].base_ring()
-                if Ri != self._to_Kphi.codomain():
-                    _, old_to_new, Ri_to_new = composite_field(self._Kphi, Ri,
-                                                               give_maps=True)
-                    def_to_new = (old_to_new *
-                                  self.definition_field().hom(self._Kphi))
-                    self._Kphi, iota = write_as_extension(def_to_new,
-                                                          give_map=True)
-                    old_to_new = iota * old_to_new
-                    Ri_to_new = iota * Ri_to_new
+                Kphi = self.complete_definition_field()
+                if Ri != Kphi:
+                    data = composite_field(self._to_Kphi, Ri,
+                                           give_maps=True)
+                    Kphi, old_to_new, Ri_to_new = data
+                    Kphi = Kphi.absolute_field(names=Kphi.variable_name())
+                    old_to_new = Kphi.structure()[1] * old_to_new
+                    Ri_to_new = Kphi.structure()[1] * Ri_to_new
+                    self._to_Kphi = old_to_new * self._to_Kphi
                     self._update_isogeny(G[i], Ri_to_new)
                     for j in range(i):
                         if _has_isogeny(self, G[j]):
                             self._update_isogeny(G[j], old_to_new)
-        if not self._Kphi.is_galois():
+        if not self.complete_definition_field().is_galois():
             Kphi.<al> = self._Kphi.galois_closure()
-            clos = self._Kphi.embeddings(Kphi)[0]
-            def_to_clos = clos * self.definition_field().hom(self._Kphi)
-            self._Kphi, old_to_new = write_as_extension(def_to_clos,
-                                                        give_map=True)
+            clos = self.complete_definition_field().embeddings(Kphi)[0]
+            self._to_Kphi = clos * self._to_Kphi
             for s in G:
                 if self._has_isogeny(G[i]):
-                    self._update_isogeny(G[i], old_to_new)
+                    self._update_isogeny(G[i], clos)
 
     def _fill_isogenies(self):
         r"""Attempt to fill in missing isogenies by combining known ones.
@@ -488,16 +553,19 @@ class Qcurve(EllipticCurve_number_field):
         """
         self._update_isogeny_field()
         G = self.definition_field().galois_group()
+        Kphi = self.complete_definition_field()
         for s in G:
             for t in G:
                 if (not self._has_isogeny(s*t) and
                     self._has_isogeny(s) and
                     self._has_isogeny(t)):
-                    tL = galois_field_extend(t, self._Kphi)
-                    tL_phi_s = (self._phi_x[s].change_ring(tL.as_hom()),
-                                self._phi_y[s].change_ring(tL.as_hom()))
-                    self._phi_x[s*t] = self._phi_x[t](tL_phi_s)
-                    self._phi_y[s*t] = self._phi_y[t](tL_phi_s)
+                    sL = galois_field_extend(t, Kphi,
+                                             embedding=self._to_Kphi)
+                    sL_phi_t_x = self._phi_x[t].change_ring(sL.as_hom())
+                    sL_phi_t_y = self._phi_y[t].change_ring(sL.as_hom())
+                    phi_s = (self._phi_x[s], self._phi_y[s])
+                    self._phi_x[s*t] = sL_phi_t_x(phi_s)
+                    self._phi_y[s*t] = sL_phi_t_y(phi_s)
         return all(self._has_isogeny(s) for s in G)
 
     def _add_isogenies_of_degree(self, degree, verbose=False):
@@ -519,16 +587,16 @@ class Qcurve(EllipticCurve_number_field):
                         print "Degree %s isogeny found for"%degree, s
                     E_s = self.galois_conjugate(s).change_ring(Kd)
                     psi.set_post_isomorphism(E_t.isomorphism_to(E_s))
-                    self._add_isogeny(s, psi.dual())
+                    self._add_isogeny(s, psi)
 
     @cached_method(key=_galois_cache_key)
     def isogeny_scalar(self, sigma):
-        r"""Return the scalar of the isogeny from the sigma conjugate of this
-        curve to this curve.
+        r"""Return the scalar of the isogeny from this curve to its sigma
+        conjugate.
 
         The scalar of an isogeny is the constant $\lambda$ such that
-        the isogeny becomes $z \mapsto \lambda z$ on the complex
-        numbers.
+        the pullback of the invariant differential is $\lambda$ times
+        the invariant differential.
 
         INPUT:
         
@@ -536,12 +604,12 @@ class Qcurve(EllipticCurve_number_field):
 
         OUTPUT:
 
-        The constant $\lambda$ such that the map $z \mapsto \lambda z$
-        on the complex number induces an isogeny from a galois
-        conjugate of this curve to itself. The galois conjugate is one
-        obtained by conjugating with an extension of sigma.
+        An algebraic integer $\lambda$ such that the isogeny from this
+        curve to its `sigma` Galois conjugate pulls back the invariant
+        differential to $\lambda$ times the invariant differential of
+        this curve.
 
-        EXAMPLE::
+        EXAMPLE:: (TODO update examples)
 
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
@@ -555,18 +623,14 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
-        Fx, Fy = (self._phi_x[sigma], self._phi_y[sigma])
-        x,y = Fy.parent().gens()
-        f1 = self.galois_conjugate(sigma).defining_polynomial()(x, y, 1)
-        f2 = self.defining_polynomial()(x, y, 1)
-        R = Fy.parent().base_ring()
-        return R(((Fx.derivative(x) * f1.derivative(y)) /
-                  f2.derivative(y)(Fx, Fy)).numerator())
+        return _scalar_of_isogeny(self._phi_x[sigma],
+                                  self._phi_y[sigma], self,
+                                  self.galois_conjugate(sigma))
 
     @cached_method(key=_galois_cache_key)
     def isogeny_x_map(self, sigma):
-        r"""Return the x-coordinate rational map of the isogeny from the sigma
-        conjugate of this curve to this curve.
+        r"""Return the x-coordinate rational map of the isogeny from this curve
+        to a Galois conjugate.
 
         The x-coordinate of the image of a point under an isogeny can
         be described as a rational function of the x-coordinate of the
@@ -574,14 +638,14 @@ class Qcurve(EllipticCurve_number_field):
 
         INPUT:
         
-        - ``sigma`` -- A galois homomorphism of a number field
+        - ``sigma`` -- A Galois homomorphism of a number field
 
         OUTPUT:
 
         A rational function in $x$ that gives the $x$-coordinate of an
         image point of the isogeny as a rational function in the $x$
         coordinate of the origin point. The isogeny is the registered
-        isogeny from the `sigma` galois conjugate of this curve to
+        isogeny from this curve to the `sigma` Galois conjugate of
         this curve.
 
         EXAMPLE::
@@ -617,23 +681,20 @@ class Qcurve(EllipticCurve_number_field):
             Number Field in tu0 with defining polynomial x^4 - 2*x^2 + 25
 
         """
-        return self._Kphi
+        return self._to_Kphi.codomain()
 
     @cached_method(key=_galois_cache_key)
     def degree_map(self, sigma):
-        r"""Give the degree of an isogeny from the sigma galois conjugate of
-        this curve to this curve.
+        r"""Give the degree of an isogeny from this curve to a Galois conjugate.
 
         INPUT:
 
-        - ``sigma`` -- A galois homomorphism of a number field
+        - ``sigma`` -- A Galois homomorphism of a number field
 
         OUTPUT:
         
-        The degree of an isogeny from a galois conjugate of this curve
-        to this curve itself. The galois conjugate is one obtained by
-        conjugating with an extension of the given galois homomorphism
-        sigma.
+        The degree of the registered isogeny from this curve to its
+        `sigma` Galois conjugate.
 
         EXAMPLE::
 
@@ -1512,13 +1573,15 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         Ksplit = self.splitting_field()
-        Kphi = self.complete_definition_field()
         K = self.definition_field()
         Kd = self.degree_field()
-        to_Kphi = K.hom(Kphi) * Kd.embeddings(K)[0]
+        to_Kphi = self._to_Kphi * Kd.embeddings(K)[0]
         to_Ksplit = Kd.embeddings(Ksplit)[0]
-        _, _, from_Kphi = composite_field(to_Ksplit, to_Kphi, give_maps=True)
-        return write_as_extension(from_Kphi)
+        Kdec, from_Kphi, from_Ksplit = composite_field(to_Ksplit,
+                                                       to_Kphi)
+        Kdec = Kdec.absolute_field(names=Kdec.variable_name())
+        self._to_Kdec = Kdec.structure()[1] * from_Kphi
+        return Kdec
 
     @cached_method
     def does_decompose(self):
@@ -2142,7 +2205,7 @@ class Qcurve(EllipticCurve_number_field):
         F = self.isogeny_x_map
         l = self.isogeny_scalar
         Kphi = self.complete_definition_field()
-        _, to_L, from_Kphi = composite_field(iota, Kphi,
+        _, to_L, from_Kphi = composite_field(iota, self._to_Kphi,
                                              give_maps=True)
         L, to_L = write_as_extension(to_L, give_map=True)
         from_Kphi = to_L * from_Kphi
@@ -2206,6 +2269,9 @@ class Qcurve(EllipticCurve_number_field):
         Kphi = self.complete_definition_field()
         K, iota, gamma_map = composite_field(Kphi, K_gamma,
                                              give_maps=True)
+        K = K.absolute_field(names=K.variable_name())
+        iota = K.structure()[1] * iota
+        gamma_map = K.structure()[1] * gamma_map
         gamma = gamma_map(gamma)
         E_map = iota * Kdef.hom(Kphi)
         E = twist_elliptic_curve(self.change_ring(E_map), gamma)
@@ -2644,6 +2710,24 @@ class Qcurve(EllipticCurve_number_field):
                 x_ls.append(tuple(x for i in range(len(d))))
         return x_ls
 
+    @cached_method
+    def _trace_power_formula(self, power)
+        r"""Give the formula to compute the trace of frobenius to a given
+        power.
+
+        The trace of the galois representation of this newform at a
+        frobenius element to the power $n$ can be computed from the
+        trace and determinant at the frobenius element with this
+        formula
+
+        INPUT:
+
+        - ``power`` -- The power $n$ of the frobenius element.
+
+        """
+        R.<x,y> = QQ[]
+        return polynomial_to_symmetric(x^power + y^power)
+
     def trace_of_frobenius(self, prime, power=1, splitting_map=0):
         r"""Compute the trace of a Frobenius element acting on this curve.
 
@@ -2707,7 +2791,7 @@ class Qcurve(EllipticCurve_number_field):
             pass # TODO
         else:
             K = self.decomposition_field()
-            iota = self.definition_field().hom(K)
+            iota = self._to_Kdec * self._to_Kphi
             E = self.change_ring(iota)
             if prime.divides(K.absolute_discriminant()):
                 raise ValueError("The decomposition field is ramified " +
@@ -2719,10 +2803,142 @@ class Qcurve(EllipticCurve_number_field):
                 raise ValueError("This curve does not have good " +
                                  "reduction at any prime above " +
                                  str(prime))
-            #TODO
 
+            # Setting up the isogeny between the right minimal models
+            Emin = E.local_data(P).minimal_model()
+            phi_min = Emin.isomorphism_to(E)
+            phi_min = _rational_maps_of_isomorphism(phi_min)
+            G = K.galois_group()
+            Frob = G.artin_symbol(P)
+            sE = E.galois_conjugate(Frob)
+            sP = s(P)
+            sEmin = sE.local_data(sP).minimal_model()
+            sphi_min = sE.isomorphism_to(sEmin)
+            sphi_min = _rational_maps_of_isomorphism(sphi_min)
+            phi = E._phi_x[Frob], E._phi_y[Frob]
+            phi = phi[0](phi_min), phi[1](phi_min)
+            phi = sphi_min[0](phi), sphi_min[1](phi)
+
+            # Checking whether the reduction of the isogeny is separable
+            R = P.residue_field()
+            Rx = PolynomialRing(R, names="x").fraction_field()
+            x = Rx.gens()[0]
+            phi0 = phi[0].change_ring(R)
+            F = phi0(x, 0)
+            if F.derivative(x) == 0:
+                raise ValueError("The reduction of the isogeny " +
+                                 "at the Frobenius element is " +
+                                 "separable.")
+
+            # Defining variables needed for both p = 2 and p != 2
+            phi1 = phi[1].change_ring(R)
+            H = phi1(x, 0)
+            G = phi1(x, 1) - H
+            Ered = Emin.reduction(P)
+            c1 = (F - x^p).numerator()
+
+            # Computing number of points in the set
+            # {P : phi P = Frob P}
+            p = P.smallest_integer()
+            if p == 2:
+                g = (Ered.a1()*x + Ered.a3()).numerator()
+                h = (x^3 + Ered.a2()*x^2 + Ered.a4()*x +
+                     Ered.a6()).numerator()
+                c3 = (g*G*h + g*G*H + G^2*h + g^2*H + h^2 +
+                      H^2).numerator()
+                c4 = (g - G).numerator()
+                gc13 = gcd(c1, c3)
+                gc134 = gcd(gc13, c4)
+                gc134g = gcd(gc134, g)
+                num = (1 + gc13.radical().degree() +
+                       gc134.radical().degree() -
+                       gc134g.radical().degree())
+            else:
+                R = (4*x^3 + Ered.b2()*x^2 + 2*Ered.b4()*x +
+                     Ered.b6()).numerator()
+                sEred = sEmin.reduction(sP)
+                l = _scalar_of_rational_maps(phi0, phi1, Ered, sEred)
+                c2 = (l * R^((p + 1)/2) -
+                      F.derivative(x) * R).numerator()
+                num = (1 + 2 * gcd(c1, c2).radical().degree() -
+                       gcd(c1, R).radical().degree())
+
+            # Computing a_p(E)
+            apE = F.numerator().degree() + p - num
+
+            # The final result
+            return self.splitting_map(splitting_map)(Frob)^(-1) * apE
+
+    def determinant_of_frobenius(self, prime, power=1, splitting_map=0):
+        r"""Compute the determinant of a Frobenius element acting on this
+        curve.
+
+        Given that this Q-curve decomposes over its decomposition
+        field, one can associate to each splitting map $\beta$ a
+        $\QQ$-simple abelian variety $A_\beta$ of $GL_2$-type which
+        has this Q-curve as a 1-dimensional quotient. For each finite
+        prime $\lambda$ in the image field of $\beta$, this $A_\beta$
+        defines a 2-dimensional $\lambda$-adic Galois representation
+        of the absolute Galois group of $\QQ$ that extends the
+        $l$-adic Galois representation of this curve, where $l$ is the
+        prime number below $\lambda$.
+
+        Let $p$ be a prime number distinct from $l$ such that $p$ does
+        not divide the conductor of the splitting character
+        corresponding to $\beta$. In that case the determinant of the
+        $\lambda$-adic Galois representation is
+        unramified. Furthermore the determinant of the Frobenius
+        element at $p$ can be explicitly computed and is an algebraic
+        number that only depends on the splitting character
+        corresponding to $\beta$ and the prime number $p$.
+
+        This function computes the algebraic number that is the
+        determinant of (a power of) a Frobenius element. It will first
+        check that the give prime number `prime` satisfies the
+        mentioned condition and raise a ValueError if this is not the
+        case.
+
+        INPUT:
+
+        - ``prime`` -- A prime number such that `prime` does not
+          divide the conductor of the splitting character associated
+          to the splitting map corresponding to `splitting_map`.
+
+        - ``power`` -- A strictly positive integer (default: 1). If
+          set to a value higher than 1 will compute the trace of the
+          Frobenius element to the given power instead of the
+          Frobenius element itself.
+
+        - ``splitting_map`` -- A non-negative integer smaller than the
+          number of splitting maps associated to this Q-curve
+          (default: 0). This indicates the splitting map for which the
+          determinant of frobenius should be computed.
+
+        OUTPUT:
+
+        An algebraic number that is the determinant of the Frobenius
+        element at `prime` to the power `power` under any
+        $\lambda$-adic Galois representation associated to the
+        splitting map given by `splitting_map` for $\lambda$ not
+        dividing `prime`.
+
+        """
+        if power > 1:
+            D = self.determinant_of_frobenius(prime,
+                                              splitting_map=splitting_map)
+            return D^power
+        else:
+            eps = self.splitting_character(splitting_map)
+            if prime.divides(eps.conductor()):
+                raise ValueError("The given prime number " +
+                                 str(prime) +
+                                 " divides the conductor of the " +
+                                 "splitting character corresponding "+
+                                 "to the given splitting map.")
+            return eps(prime)^(-1) * prime
+            
     @cached_method
-    def newform(self, algorithm='magma', verify=0):
+    def newform(self, algorithm='sage', verify=0):
         r"""Give a newform associated to this Q-curve.
 
         Each non-CM Q-curve is the quotient of a $\Q$-simple variety
@@ -2743,30 +2959,30 @@ class Qcurve(EllipticCurve_number_field):
         varieties.
         
         Next for each possible combination of levels, the space of
-        newforms of the lowest level is computed with the appropiate
-        character. For these newforms the L-series of this Q-curve and
-        the L-series of the newforms are compared until as many
-        newforms are left as expected. Some Q-curves have multiple
-        factors of the same level and character, so one is chosen.
+        newforms of the lowest level is computed with the appropriate
+        character. For these newforms the traces of Frobenius of this
+        Q-curve and the traces of Frobenius of the newforms are
+        compared until as many newforms are left as expected. Some
+        Q-curves have multiple factors of the same level and
+        character, so one is chosen.
 
         INPUT:
         
         - ``algorithm`` -- A string that determines which program
-          should be used to do computations. Allowed values are:
-          'magma' (default) or 'sage' to use MAGMA and Sage
-          respectively.  This program is used for computing newforms
-          and Euler factors of the L-series associated to the curve.
+          should be used to compute the spaces of newforms. Allowed
+          values are: 'sage' (default) or 'magma' to use Sage or
+          MAGMA respectively.
 
         - ``verify`` -- A non-negative integer determining what the
           biggest prime is for which the result should be verified
-          using the Euler factors of the L-series.
+          using the traces of the corresponding Frobenius elements.
 
         OUTPUT:
 
         A tuple consisting of
 
-        - a newform such that this curve is a quotient of the abelian
-          variety associated to that newform, i.e. a newform
+        - a wrapped newform such that this curve is a quotient of the
+          abelian variety associated to that newform, i.e. a newform
           associated to this Q-curve by modularity
 
         - A list of Dirichlet characters that twist this newform into
@@ -2814,13 +3030,6 @@ class Qcurve(EllipticCurve_number_field):
         if not self.does_decompose():
             raise ValueError("Can not compute newform if the restriction of " +
                              "scalars does not decompose.")
-
-        # Getting this curve over the decomposition field as E
-        Kl = self.complete_definition_field()
-        to_Kl = self._to_Kl
-        K = self.decomposition_field()
-        iota = Kl.embeddings(K)[0]
-        E = self.change_ring(iota * to_Kl)
         
         levels = self.newform_levels()
         twists_base = self.twist_character('conjugacy')
@@ -2840,8 +3049,8 @@ class Qcurve(EllipticCurve_number_field):
         max_level = lcm(lcm(tmp) for tmp in levels)
         # Keeps track of the lcm of all N considered
         # the primes in these will be excluded in checking
-        # the Euler factors.
-        done_cases = []
+        # the traces of Frobenius
+        done_cases = {}
         for k in range(len(levels)):
             # Newform with smallest level:
             i_min, N = min(enumerate(levels[k]), key=(lambda x: x[1]))
@@ -2850,101 +3059,32 @@ class Qcurve(EllipticCurve_number_field):
             twists = [chi_j * chi^(-1) for chi_j in twists_base]
             eps = eps_ls[i_min]
             Lbeta = Lbeta_ls[i_min]
-            expected_matches = sum(eps_ls[i] in eps.galois_orbit() and
-                                   levels[k][i] == N
-                                   for i in range(len(levels[k])))
-            # Prevent getting the same newform twice:
-            if (N, eps.galois_orbit(), Lbeta) in done_cases: 
-                continue
-            done_cases.append((N, eps.galois_orbit(), Lbeta))
 
-            if use_magma:
-                Dm = magma.DirichletGroup(eps.conductor(),
-                                          magma(eps.base_ring()))
-                for eps_m in Dm.Elements():
-                    candidate = True
-                    for i in Integers(eps.conductor()).unit_gens():
-                        i = ZZ(i)
-                        candidate = (eps(i) == eps_m(i))
-                        if not candidate: # Not the right one
-                            break
-                    if candidate: # Found the right one
-                        break
-                if not candidate:
-                    raise ValueError("No matching magma dirichlet character " +
-                                     "for %s"%(candidate,))
-                # The right level:
-                eps_m = magma.DirichletGroup(N, magma(eps.base_ring()))(eps_m)
-                cfs = magma.CuspForms(eps_m)
-                nfs = magma.Newforms(cfs)
-                nfs = [f[1] for f in nfs]
-                E = magma(E)
-            else:
-                nfs = Newforms(eps.extend(N), names='a')
+            # Computing the newforms, but only if not done already
+            if (N, eps) not in done_cases:
+                done_cases[(N, eps)] = get_newforms(N, character=eps,
+                                                    algorithm=algorithm)
+            nfs = done_cases[(N, eps)]
+            for nf in nfs:
+                Kf = nf.coefficient_field()
+                if Kf.absolute_degree() == Lbeta.absolute_degree()
+                    for iota in Kf.embeddings(Lbeta):
+                        candidates.append((nf, twists, i_min, iota))
 
-            # See if the coefficient field matches good enough:
-            for f in nfs:
-                if f.parent() == magma:
-                    Kf = f.BaseField().sage()
-                else:
-                    Kf = f.base_ring()
-                if (Kf.absolute_degree() == Lbeta.absolute_degree() and
-                    Kf.absolute_discriminant() == Lbeta.absolute_discriminant()):
-                    candidates.append((f, twists, N, eps))
-
-        valid_options = []
-        for k in range(len(levels)):
-            option = {}
-            for i in range(len(levels[k])):
-                key = (levels[k][i], eps_ls[i].galois_orbit()[0])
-                if key in option:
-                    option[key] += 1
-                else:
-                    option[key] = 1
-            valid_options.append(option)
-
-        def is_submultiset(small, big):
-            for key in small:
-                if key not in big or small[key] > big[key]:
-                    return False
-            return True
-        
-        def valid_candidates(candidates):
-            if len(candidates) > len(eps_ls):
-                return False
-            sub_option = {}
-            for f, twists, N, eps in candidates:
-                key = (N, eps.galois_orbit()[0])
-                if key in sub_option:
-                    sub_option[key] += 1
-                else:
-                    sub_option[key] = 1
-            return any(is_submultiset(sub_option, option)
-                       for option in valid_options)
-                    
         p = 1
-        while p.divides(max_level):
-            p = next_prime(p)
-        while p < verify or not valid_candidates(candidates):
-            if use_magma:
-                P_E = E.EulerFactor(p).sage()
-            else:
-                P_E = Euler_factor_elliptic_curve(E, p)
-            remove = []
-            for f, twists, N, eps in candidates:
-                P_f = Euler_factor_modular_form(f, p, twists=twists)
-                if P_f.parent() == magma:
-                    P_f = P_f.sage()
-                if P_f.list() != P_E.list():
-                    remove.append((f, twists, N, eps))
-
-            for tmp in remove:
-                candidates.remove(tmp)
-
-            p = next_prime(p)
+        while len(candidates) > 1 or p < verify:
             while p.divides(max_level):
                 p = next_prime(p)
-
+            removed = []
+            for nf, twists, i_min, iota in candidates:
+                Kf = nf.coefficient_field()
+                apf = iota(nf.trace_of_frobenius(p))
+                apE = nf.trace_of_frobenius(p)
+                if apf != apE:
+                    removed.append((nf, twists, i_min, iota))
+            for candidate in removed:
+                candidates.remove(candidate)
+            
         return candidates[0][0], candidates[0][1]
 
     def _repr_(self):
