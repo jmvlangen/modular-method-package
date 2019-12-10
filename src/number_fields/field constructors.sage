@@ -36,11 +36,11 @@ them is $\Q$::
     sage: composite_field(K1, K3)
     Number Field in asqrt2 with defining polynomial x^8 + 8*x^6 + 256*x^4 + 3648*x^2 + 14400
     sage: composite_field(K2, K3)
-    Cyclotomic Field of order 24 and degree 8
+    Number Field in sqrt2b with defining polynomial x^8 - x^4 + 1
     sage: composite_field(QQ, K3)
-    Number Field in sqrt2 with defining polynomial x^2 - 2 over its base field
+    Number Field in xsqrt2 with defining polynomial x^4 - 10*x^2 + 1
     sage: composite_field(QQ, K2)
-    Cyclotomic Field of order 24 and degree 8
+    Number Field in xb with defining polynomial x^8 - x^4 + 1
 
 AUTHORS:
 
@@ -253,11 +253,46 @@ def write_as_extension(phi, give_map=False, names=None):
         To:   Number Field in b with defining polynomial x^2 + a*x + 1 over its base field
         Defn: a |--> a
 
+    TESTS::
+
+    Still works if the codomain is the rationals::
+
+        sage: write_as_extension(QQ.hom(QQ))
+        Rational Field
+
+    Also works if the codomain is an extension of fields::
+
+        sage: K.<a> = QQ[sqrt(2), sqrt(3)]
+        sage: write_as_extension(QQ.hom(K), names='b')
+        Number Field in b with defining polynomial x^4 - 10*x^2 + 1
+
+    Resolves conflicts in naming::
+
+        sage: K.<a> = QuadraticField(2)
+        sage: L.<a> = CyclotomicField(8)
+        sage: write_as_extension(K.embeddings(L)[0])
+        Number Field in a1 with defining polynomial x^2 + a*x + 1 over its base field
+        sage: K.<a1> = QuadraticField(3)
+        sage: L.<a1> = CyclotomicField(12)
+        sage: write_as_extension(K.embeddings(L)[0])
+        Number Field in a2 with defining polynomial x^2 + a1*x + 1 over its base field
+
     """
     K = phi.domain()
     L = phi.codomain()
     if not is_field(K) and not is_field(L):
         raise ValueError("Input must be an embedding of fields.")
+    if L == QQ:
+        if give_map:
+            return QQ, phi
+        else:
+            return QQ
+    if not L.is_absolute():
+        L = L.absolute_field(names=L.variable_name())
+        phi = L.structure()[1] * phi
+        concat_map = True
+    else:
+        concat_map = False
     f = L.absolute_polynomial()
     for g in f.change_ring(K).factor():
         if g[0].change_ring(phi)(L.gen()) == 0:
@@ -272,7 +307,12 @@ def write_as_extension(phi, give_map=False, names=None):
                         names = names + "1"
             M = K.extension(g[0], names=names)
             if give_map:
-                return M, L.hom([M.gen()])
+                phi = L.hom([M.gen()])
+                if concat_map:
+                    phi = phi * L.structure()[1]
+                    phi = phi.domain().hom([phi(a) for a in
+                                            phi.domain().gens()])
+                return M, phi
             else:
                 return M
 
@@ -315,7 +355,7 @@ def composite_field(K1, K2, give_maps=False, names=None):
         sage: K1 = QuadraticField(2)
         sage: K2 = QuadraticField(3)
         sage: K = composite_field(K1, K2); K
-        Number Field in a1 with defining polynomial x^2 - 3 over its base field
+        Number Field in a1 with defining polynomial x^4 - 10*x^2 + 1
         sage: K(2).is_square() and K(3).is_square()
         True
 
@@ -324,7 +364,7 @@ def composite_field(K1, K2, give_maps=False, names=None):
         sage: K1 = QuadraticField(2)
         sage: K2 = CyclotomicField(8)
         sage: K = composite_field(K1, K2); K
-        Number Field in azeta8 with defining polynomial x^2 - a*x + 1 over its base field
+        Number Field in azeta8 with defining polynomial x^4 + 1
         sage: K2(2).is_square()
         True
 
@@ -333,19 +373,13 @@ def composite_field(K1, K2, give_maps=False, names=None):
         sage: K1 = QuadraticField(2)
         sage: K2 = QuadraticField(3)
         sage: composite_field(K1, K2, give_maps=True)
-        (Number Field in a1 with defining polynomial x^2 - 3 over its base field,
-         Composite map:
+        (Number Field in a1 with defining polynomial x^4 - 10*x^2 + 1, Ring morphism:
            From: Number Field in a with defining polynomial x^2 - 2
-           To:   Number Field in a1 with defining polynomial x^2 - 3 over its base field
-           Defn:   Identity endomorphism of Number Field in a with defining polynomial x^2 - 2
-                 then
-                   Coercion map:
-                   From: Number Field in a with defining polynomial x^2 - 2
-                   To:   Number Field in a1 with defining polynomial x^2 - 3 over its base field,
-         Ring morphism:
+           To:   Number Field in a1 with defining polynomial x^4 - 10*x^2 + 1
+           Defn: a |--> -1/2*a1^3 + 9/2*a1, Ring morphism:
            From: Number Field in a with defining polynomial x^2 - 3
-           To:   Number Field in a1 with defining polynomial x^2 - 3 over its base field
-           Defn: a |--> a1)
+           To:   Number Field in a1 with defining polynomial x^4 - 10*x^2 + 1
+           Defn: a |--> -1/2*a1^3 + 11/2*a1)
 
     """
     to_K1 = None; to_K2 = None
@@ -363,18 +397,39 @@ def composite_field(K1, K2, give_maps=False, names=None):
         to_K2 = K2.hom(K2)
     if K2.absolute_degree() < K1.absolute_degree():
         if give_maps:
-            K, K2_to_K, K1_to_K = composite_field(K2, K1, give_maps=True)
-            return K, K1_to_K * to_K1, K2_to_K * to_K2
+            K, K2_to_K, K1_to_K = composite_field(K2, K1,
+                                                  give_maps=True)
+            K1_to_K = K1_to_K * to_K1
+            K2_to_K = K2_to_K * to_K2
+            K1_to_K = K1_to_K.domain().hom([K1_to_K(a) for a in
+                                            K1_to_K.domain().gens()])
+            K2_to_K = K2_to_K.domain().hom([K2_to_K(a) for a in
+                                            K2_to_K.domain().gens()])
+            return K, K1_to_K, K2_to_K
         else:
             return composite_field(K2, K1)
     if K1 == K2:
         if give_maps:
-            K = K1.absolute_field(names=K1.variable_name())
-            K1_to_K = K.structure()[1] * to_K1
-            K2_to_K = K.structure()[1] * to_K2
-            return K, K1_to_K, K2_to_K
+            if K1.is_absolute():
+                to_K1 = to_K1.domain().hom([to_K1(a) for a in
+                                            to_K1.domain().gens()])
+                to_K2 = to_K2.domain().hom([to_K2(a) for a in
+                                            to_K2.domain().gens()])
+                return K1, to_K1, to_K2
+            else:
+                K = K1.absolute_field(names=K1.variable_name())
+                K1_to_K = K.structure()[1] * to_K1
+                K2_to_K = K.structure()[1] * to_K2
+                K1_to_K = K1_to_K.domain().hom([K1_to_K(a) for a in
+                                                K1_to_K.domain().gens()])
+                K2_to_K = K2_to_K.domain().hom([K2_to_K(a) for a in
+                                                K2_to_K.domain().gens()])
+                return K, K1_to_K, K2_to_K
         else:
-            return K1.absolute_field(names=K1.variable_name())
+            if K1.is_absolute():
+                return K1
+            else:
+                return K1.absolute_field(names=K1.variable_name())
     K01 = K1
     K02 = K2
     while K01 != K02:
@@ -385,10 +440,10 @@ def composite_field(K1, K2, give_maps=False, names=None):
     K1 = write_as_extension(K01.hom(K1), give_map=give_maps)
     K2 = write_as_extension(K02.hom(K2), give_map=give_maps)
     if give_maps:
-        K1 = K1[0]
         to_K1 = K1[1] * to_K1
-        K2 = K2[0]
+        K1 = K1[0]
         to_K2 = K2[1] * to_K2
+        K2 = K2[0]
     f = K2.relative_polynomial()
     g = f.change_ring(K1).factor()[0][0]
     if names is None:
@@ -405,12 +460,20 @@ def composite_field(K1, K2, give_maps=False, names=None):
     if give_maps:
         K1_to_K = K1.hom(K)
         K2_to_K = K2.hom([K.gen()])
-        K = K.absolute_field(names=K.variable_name())
-        K1_to_K = K.structure()[1] * K1_to_K
-        K2_to_K = K.structure()[1] * K2_to_K
+        if not K.is_absolute():
+            K = K.absolute_field(names=K.variable_name())
+            K1_to_K = K.structure()[1] * K1_to_K
+            K2_to_K = K.structure()[1] * K2_to_K
+        K1_to_K = K1_to_K.domain().hom([K1_to_K(a) for a in
+                                        K1_to_K.domain().gens()])
+        K2_to_K = K2_to_K.domain().hom([K2_to_K(a) for a in
+                                        K2_to_K.domain().gens()])
         return K, K1_to_K * to_K1, K2_to_K * to_K2
     else:
-        return K.absolute_field(names=K.variable_name())
+        if K.is_absolute():
+            return K
+        else:
+            return K.absolute_field(names=K.variable_name())
 
 @cached_function
 def intersection_field(K1, K2, L=None, give_maps=False, names=None):
