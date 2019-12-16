@@ -107,8 +107,18 @@ def _scalar_of_rational_maps(x_map, y_map, dom, codom):
     x, y = y_map.parent().gens()
     f1 = dom.defining_polynomial()(x, y, 1)
     f2 = codom.defining_polynomial()(x, y, 1)
-    return R(((x_map.derivative(x) * f1.derivative(y)) /
-              f2.derivative(y)(Fx, Fy)).numerator())
+    lfrac = ((x_map.derivative(x) * f1.derivative(y)) /
+             f2.derivative(y)(x_map, y_map))
+    if lfrac.numerator().monomials() != lfrac.denominator().monomials():
+        raise TypeError(str(lfrac) + " is not an algebraic integer " +
+                        "as it should be")
+    m = lfrac.numerator().monomials()[0]
+    l = (lfrac.numerator().monomial_coefficient(m) /
+         lfrac.denominator().monomial_coefficient(m))
+    if lfrac.numerator() != l * lfrac.denominator():
+        raise TypeError(str(lfrac) + " is not an algebraic integer " +
+                        "as it should be")
+    return R(l)
 
 def _scalar_of_isogeny(phi):
     r"""Return the scalar associated to an isogeny.
@@ -515,8 +525,14 @@ class Qcurve(EllipticCurve_number_field):
 
     def _update_isogeny(self, sigma, change):
         r"""Update the field of one specific isogeny"""
-        self._phi_x[sigma] = self._phi_x[sigma].change_ring(change)
-        self._phi_y[sigma] = self._phi_y[sigma].change_ring(change)
+        dom = change.domain()
+        change = dom.hom([change(dom.gens()[0])])
+        phi_x = self._phi_x[sigma]
+        self._phi_x[sigma] = (phi_x.numerator().change_ring(change)/
+                              phi_x.denominator().change_ring(change))
+        phi_y = self._phi_y[sigma]
+        self._phi_y[sigma] = (phi_y.numerator().change_ring(change)/
+                              phi_y.denominator().change_ring(change))
 
     def _update_isogeny_field(self):
         r"""Update the field over which all isogenies are defined
@@ -537,7 +553,7 @@ class Qcurve(EllipticCurve_number_field):
                     self._to_Kphi = old_to_new * self._to_Kphi
                     self._update_isogeny(G[i], Ri_to_new)
                     for j in range(i):
-                        if _has_isogeny(self, G[j]):
+                        if self._has_isogeny(G[j]):
                             self._update_isogeny(G[j], old_to_new)
         if not self.complete_definition_field().is_galois():
             Kphi.<al> = self._Kphi.galois_closure()
@@ -586,6 +602,23 @@ class Qcurve(EllipticCurve_number_field):
                     if verbose > 0:
                         print "Degree %s isogeny found for"%degree, s
                     E_s = self.galois_conjugate(s).change_ring(Kd)
+                    # Making sure the isomorphism is defined over Kd,
+                    # extending Kd if necessary
+                    c4s, c6s = E_s.c_invariants()
+                    c4t, c6t = E_t.c_invariants()
+                    if j_t == 0:
+                        m, um = 6, c6t/c6s
+                    elif j_t == 1728:
+                        m, um = 4, c4t/c4s
+                    else:
+                        m, um = 2, (c6t*c4s)/(c6s*c4t)
+                    f_iso = (x^m - um).factor()[0][0]
+                    if f_iso.degree() > 1:
+                        K_iso.<lu> = Kd.extension(f_iso)
+                        Ed = Ed.change_ring(K_iso)
+                        E_s = E_s.change_ring(K_iso)
+                        psi = Ed.isogeny((x - l).change_ring(K_iso))
+                        E_t = psi.codomain()
                     psi.set_post_isomorphism(E_t.isomorphism_to(E_s))
                     self._add_isogeny(s, psi)
 
@@ -623,9 +656,11 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
-        return _scalar_of_isogeny(self._phi_x[sigma],
-                                  self._phi_y[sigma], self,
-                                  self.galois_conjugate(sigma))
+        dom = EllipticCurve_number_field.base_extend(self, self._to_Kphi)
+        codom = self.galois_conjugate(sigma).base_extend(self._to_Kphi)
+        return _scalar_of_rational_maps(self._phi_x[sigma],
+                                        self._phi_y[sigma], dom,
+                                        codom)
 
     @cached_method(key=_galois_cache_key)
     def isogeny_x_map(self, sigma):
@@ -727,7 +762,7 @@ class Qcurve(EllipticCurve_number_field):
         sigma = galois_field_change(sigma, self.definition_field())
         Fx = self._phi_x[sigma].numerator()
         x, y = Fx.parent().gens()
-        return Fx.degree(x)
+        return ZZ(Fx.degree(x))
 
     @cached_method
     def degree_map_image(self):
@@ -1578,7 +1613,8 @@ class Qcurve(EllipticCurve_number_field):
         to_Kphi = self._to_Kphi * Kd.embeddings(K)[0]
         to_Ksplit = Kd.embeddings(Ksplit)[0]
         Kdec, from_Kphi, from_Ksplit = composite_field(to_Ksplit,
-                                                       to_Kphi)
+                                                       to_Kphi,
+                                                       give_maps=True)
         Kdec = Kdec.absolute_field(names=Kdec.variable_name())
         self._to_Kdec = Kdec.structure()[1] * from_Kphi
         return Kdec
@@ -2208,8 +2244,10 @@ class Qcurve(EllipticCurve_number_field):
         _, to_L, from_Kphi = composite_field(iota, self._to_Kphi,
                                              give_maps=True)
         L, to_L = write_as_extension(to_L, give_map=True)
-        from_Kphi = to_L * from_Kphi
-        return {s : (F(s).change_ring(from_Kphi), from_Kphi(l(s)))
+        from_Kphi = _concat_maps(from_Kphi, to_L)
+        return {s : ((F(s).numerator().change_ring(from_Kphi) /
+                      F(s).denominator().change_ring(from_Kphi)),
+                     from_Kphi(l(s)))
                 for s in G}
 
     def base_extend(self, R):
@@ -2270,10 +2308,10 @@ class Qcurve(EllipticCurve_number_field):
         K, iota, gamma_map = composite_field(Kphi, K_gamma,
                                              give_maps=True)
         K = K.absolute_field(names=K.variable_name())
-        iota = K.structure()[1] * iota
-        gamma_map = K.structure()[1] * gamma_map
+        iota = _concat_maps(iota, K.structure()[1])
+        gamma_map = _concat_maps(gamma_map, K.structure()[1])
         gamma = gamma_map(gamma)
-        E_map = iota * Kdef.hom(Kphi)
+        E_map = _concat_maps(self._to_Kphi, iota)
         E = twist_elliptic_curve(self.change_ring(E_map), gamma)
         ainvs = E.a_invariants()
         R.<x> = K[]

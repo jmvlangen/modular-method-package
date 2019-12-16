@@ -278,18 +278,19 @@ def write_as_extension(phi, give_map=False, names=None):
         Number Field in a2 with defining polynomial x^2 + a1*x + 1 over its base field
 
     """
+    phi = _write_as_im_gen_map(phi)
     K = phi.domain()
     L = phi.codomain()
     if not is_field(K) and not is_field(L):
         raise ValueError("Input must be an embedding of fields.")
-    if L == QQ:
+    if L == K and phi(K.gen()) == L.gen():
         if give_map:
-            return QQ, phi
+            return L, phi
         else:
-            return QQ
+            return L
     if not L.is_absolute():
         L = L.absolute_field(names=L.variable_name())
-        phi = L.structure()[1] * phi
+        phi = _concat_maps(phi, L.structure()[1])
         concat_map = True
     else:
         concat_map = False
@@ -309,9 +310,7 @@ def write_as_extension(phi, give_map=False, names=None):
             if give_map:
                 phi = L.hom([M.gen()])
                 if concat_map:
-                    phi = phi * L.structure()[1]
-                    phi = phi.domain().hom([phi(a) for a in
-                                            phi.domain().gens()])
+                    phi = _concat_maps(L.structure()[1], phi)
                 return M, phi
             else:
                 return M
@@ -388,7 +387,7 @@ def composite_field(K1, K2, give_maps=False, names=None):
         if give_maps:
             K1, to_K1 = K1
     if hasattr(K2, "codomain"):
-        K2 = write_as_extension(K2, give_maps=give_maps)
+        K2 = write_as_extension(K2, give_map=give_maps)
         if give_maps:
             K2, to_K2 = K2
     if give_maps and to_K1 is None:
@@ -399,32 +398,22 @@ def composite_field(K1, K2, give_maps=False, names=None):
         if give_maps:
             K, K2_to_K, K1_to_K = composite_field(K2, K1,
                                                   give_maps=True)
-            K1_to_K = K1_to_K * to_K1
-            K2_to_K = K2_to_K * to_K2
-            K1_to_K = K1_to_K.domain().hom([K1_to_K(a) for a in
-                                            K1_to_K.domain().gens()])
-            K2_to_K = K2_to_K.domain().hom([K2_to_K(a) for a in
-                                            K2_to_K.domain().gens()])
-            return K, K1_to_K, K2_to_K
+            return (K,
+                    _concat_maps(to_K1, K1_to_K),
+                    _concat_maps(to_K2, K2_to_K))
         else:
             return composite_field(K2, K1)
     if K1 == K2:
         if give_maps:
             if K1.is_absolute():
-                to_K1 = to_K1.domain().hom([to_K1(a) for a in
-                                            to_K1.domain().gens()])
-                to_K2 = to_K2.domain().hom([to_K2(a) for a in
-                                            to_K2.domain().gens()])
+                to_K1 = _write_as_im_gen_map(to_K1)
+                to_K2 = _write_as_im_gen_map(to_K2)
                 return K1, to_K1, to_K2
             else:
                 K = K1.absolute_field(names=K1.variable_name())
-                K1_to_K = K.structure()[1] * to_K1
-                K2_to_K = K.structure()[1] * to_K2
-                K1_to_K = K1_to_K.domain().hom([K1_to_K(a) for a in
-                                                K1_to_K.domain().gens()])
-                K2_to_K = K2_to_K.domain().hom([K2_to_K(a) for a in
-                                                K2_to_K.domain().gens()])
-                return K, K1_to_K, K2_to_K
+                return (K,
+                        _concat_maps(to_K1, K.structure()[1]),
+                        _concat_maps(to_K2, K.structure()[1]))
         else:
             if K1.is_absolute():
                 return K1
@@ -440,9 +429,9 @@ def composite_field(K1, K2, give_maps=False, names=None):
     K1 = write_as_extension(K01.hom(K1), give_map=give_maps)
     K2 = write_as_extension(K02.hom(K2), give_map=give_maps)
     if give_maps:
-        to_K1 = K1[1] * to_K1
+        to_K1 = _concat_maps(to_K1, K1[1])
         K1 = K1[0]
-        to_K2 = K2[1] * to_K2
+        to_K2 = _concat_maps(to_K2, K2[1])
         K2 = K2[0]
     f = K2.relative_polynomial()
     g = f.change_ring(K1).factor()[0][0]
@@ -458,17 +447,15 @@ def composite_field(K1, K2, give_maps=False, names=None):
                 names = names + "1"
     K = K1.extension(g, names=names)
     if give_maps:
-        K1_to_K = K1.hom(K)
+        K1_to_K = _write_as_im_gen_map(K1.hom(K))
         K2_to_K = K2.hom([K.gen()])
         if not K.is_absolute():
             K = K.absolute_field(names=K.variable_name())
-            K1_to_K = K.structure()[1] * K1_to_K
-            K2_to_K = K.structure()[1] * K2_to_K
-        K1_to_K = K1_to_K.domain().hom([K1_to_K(a) for a in
-                                        K1_to_K.domain().gens()])
-        K2_to_K = K2_to_K.domain().hom([K2_to_K(a) for a in
-                                        K2_to_K.domain().gens()])
-        return K, K1_to_K * to_K1, K2_to_K * to_K2
+            K1_to_K = _concat_maps(K1_to_K, K.structure()[1])
+            K2_to_K = _concat_maps(K2_to_K, K.structure()[1])
+        return (K,
+                _concat_maps(to_K1, K1_to_K),
+                _concat_maps(to_K2, K2_to_K))
     else:
         if K.is_absolute():
             return K
@@ -608,10 +595,18 @@ def intersection_field(K1, K2, L=None, give_maps=False, names=None):
                     if give_maps:
                         b2 = vector([B2 * b[n1:] for b in B.basis()])
                         alpha2 = b2 * v
-                        K_to_K1 = K.hom([alpha1]) * from_opt
-                        K_to_K2 = K.hom([alpha2]) * from_opt
-                        K_to_K1 = Kopt.hom([K_to_K1(Kopt.gen())])
-                        K_to_K2 = Kopt.hom([K_to_K2(Kopt.gen())])
-                        return Kopt, K_to_K1, K_to_K2
+                        return (Kopt,
+                                _concat_maps(from_opt, K.hom([alpha1])),
+                                _concat_maps(from_opt, K.hom([alpha2])))
                     else:
                         return Kopt
+
+def _write_as_im_gen_map(phi):
+    r"""Rewrites the map phi such that it is given by images of generators"""
+    dom = phi.domain()
+    g = dom.gen()
+    return dom.hom([phi(g)])
+                    
+def _concat_maps(phi, psi):
+    r"""Concatenates phi and psi, phi first"""
+    return _write_as_im_gen_map(psi * phi)
