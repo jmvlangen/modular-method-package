@@ -119,7 +119,7 @@ def field_with_root(K, a, names='sqrt_a', give_embedding=False):
            From: Cyclotomic Field of order 3 and degree 2
            To:   Number Field in a with defining polynomial x^4 - 2*x^3 + 7*x^2 - 6*x + 3
            Defn: zeta3 |--> 2/5*a^3 - 3/5*a^2 + 2*a - 7/5,
-         2/5*a^3 - 3/5*a^2 + 2*a - 2/5)
+         2/5*a^3 - 3/5*a^2 + 3*a - 7/5)
 
     """
     a = K(a)
@@ -528,13 +528,13 @@ def intersection_field(K1, K2, L=None, give_maps=False, names=None):
         sage: K1.<a1> = CyclotomicField(9)
         sage: K2.<a2> = NumberField(x^4 + 3)
         sage: intersection_field(K1, K2, give_maps=True, names=a0)
-        (Number Field in a0_1 with defining polynomial x^2 - x + 1, Ring morphism:
-           From: Number Field in a0_1 with defining polynomial x^2 - x + 1
+        (Number Field in a0 with defining polynomial x^2 + 3, Ring morphism:
+           From: Number Field in a0 with defining polynomial x^2 - x + 1
            To:   Cyclotomic Field of order 9 and degree 6
-           Defn: a0_1 |--> -a1^3, Ring morphism:
-           From: Number Field in a0_1 with defining polynomial x^2 - x + 1
+           Defn: a0 |--> -a1^3, Ring morphism:
+           From: Number Field in a0 with defining polynomial x^2 - x + 1
            To:   Number Field in a2 with defining polynomial x^4 + 3
-           Defn: a0_1 |--> -1/2*a2^2 + 1/2)
+           Defn: a0 |--> -1/2*a2^2 + 1/2)
 
     Note that the intersection field might depend on the choice of
     common field::
@@ -602,11 +602,16 @@ def intersection_field(K1, K2, L=None, give_maps=False, names=None):
                 if f.degree() == n:
                     K = NumberField(f, names=names)
                     Kopt, from_opt, to_opt = K.optimized_representation(name=names)
+                    Kopt = Kopt.change_names(K.variable_name())
+                    from_opt = from_opt * Kopt.structure()[0]
+                    to_opt = Kopt.structure()[1] * to_opt
                     if give_maps:
                         b2 = vector([B2 * b[n1:] for b in B.basis()])
                         alpha2 = b2 * v
-                        K_to_K1 = K.hom([alpha1])
-                        K_to_K2 = K.hom([alpha2])
-                        return Kopt, K_to_K1 * from_opt, K_to_K2 * from_opt
+                        K_to_K1 = K.hom([alpha1]) * from_opt
+                        K_to_K2 = K.hom([alpha2]) * from_opt
+                        K_to_K1 = Kopt.hom([K_to_K1(Kopt.gen())])
+                        K_to_K2 = Kopt.hom([K_to_K2(Kopt.gen())])
+                        return Kopt, K_to_K1, K_to_K2
                     else:
                         return Kopt
