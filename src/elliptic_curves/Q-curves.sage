@@ -8,7 +8,9 @@ multiplication.
 EXAMPLES::
 
     sage: K.<t> = QuadraticField(-2)
-    sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : (-t, 2)})
+    sage: R.<x> = K[]
+    sage: G.<s> = K.galois_group()
+    sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((x^2 - 12*x - 18*(t + 1))/(2*x), t)})
     Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
 
 Q-curves without CM are modular and are linked to classical newforms
@@ -53,11 +55,18 @@ def _rational_maps_of_isomorphism(phi):
     variables $x$ and $y$ giving respectively the $x$-coordinate and
     $y$-coordinate maps of the given isomorphism.
 
+    EXAMPLE::
+
+        sage: E = EllipticCurve([2, 3, 4, 5, 6])
+        sage: phi = E.isomorphism_to(E.minimal_model())
+        sage: _rational_maps_of_isomorphism(phi)
+        (x + 1, x + y + 2)
+
     """
     u, r, s, t = phi.tuple()
     R = u.parent()
     Rxy = PolynomialRing(R, names=["x", "y"]).fraction_field()
-    x, y = R.gens()
+    x, y = Rxy.gens()
     F = x - r
     G = y - s*F - t
     return (F/u^2, G/u^3)
@@ -177,81 +186,6 @@ def _scalar_of_isogeny(phi):
     return _scalar_of_rational_maps(Fx, Fy, phi.domain(),
                                     phi.codomain())
 
-def _scalar_of_isomorphism(E1, E2):
-    """Return the scalar associated to an isomorphism.
-    
-    For an isomorphism of the form .. MATH:
-
-        (x,y) \mapsto (F(x), y F'(x) / \lambda )
-
-    returns $ 1 / u $.
-
-    If both elliptic curves are defined over a subfield of the complex
-    numbers, this scalar is the same as the scalar in the map ..MATH
-
-       z \mapsto \lambda z
-
-    on the complex numbers that induces this isogeny on the
-    corresponding quotients.
-
-    INPUT:
-
-    - ``E1`` -- An elliptic curve given by a Weierstrass equation over
-      a field of characteristic not equal to 3 and given by a
-      Weierstrass equation of the form .. MATH:
-    
-        Y^2 = X^3 + a2*X^2 + a4*X + a6
-
-    - ``E2`` -- An elliptic curve defined over the same basefield as
-      E1, which is isomorphic to E1 and the isomorphism can be given
-      in a form as above. The isomorphism does not have to be defined
-      over the base field.
-
-    OUTPUT:
-
-    The unique number $\lambda$ such that the isomorphism from E1 to
-    E2 is of the form .. MATH:
-
-        (x,y) \mapsto (F(x), y F'(x) / \lambda)
-    
-    or an error if such a $\lambda$ does not exist.
-
-    """
-    if (E1.a1() != 0 or E1.a3() != 0):
-        raise ValueError("The curve %s is not of the correct form."%(E1,))
-    if (E2.a1() != 0 or E2.a3() != 0):
-        raise ValueError("The curve %s is not of the correct form."%(E2,))
-    E1 = E1.rst_transform(-E1.a2()/3,0,0);
-    E2 = E2.rst_transform(-E2.a2()/3,0,0);
-    ainv1 = list(E1.a_invariants())
-    ainv1.insert(0,0); ainv1.insert(5,0);
-    ainv2 = list(E2.a_invariants())
-    ainv2.insert(0,0); ainv2.insert(5,0);
-    k = []
-    u = []
-    for i in range(len(ainv1)):
-        if ainv1[i] != 0 and ainv2[i] != 0:
-            k.append(i)
-            u.append(ainv2[i]/ainv1[i])
-        else:
-            u.append(0)
-    n = gcd(k)
-    if n in k:
-        un = u[n]
-    elif n + min(k) in k:
-        un = u[n + min(k)]/(u[min(k)])
-    else:
-        raise Exception("Could not compute the sought scalar for some reason.")
-    if hasattr(un, "nth_root"):
-        try:
-            return 1 / un.nth_root(n)
-        except ValueError:
-            pass
-    K = un.parent()
-    R.<x> = K[]
-    L.<u> = K.extension(x^n - un)
-    return 1 / L.absolute_field(names='u')(u)
-
 class Qcurve(EllipticCurve_number_field):
     r"""A Q-curve over some number field
 
@@ -274,7 +208,9 @@ class Qcurve(EllipticCurve_number_field):
     EXAMPLE::
 
         sage: K.<t> = QuadraticField(-2)
-        sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : (-t, 2)})
+        sage: R.<x> = K[]
+        sage: G.<s> = K.galois_group()
+        sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((x^2 - 12*x - 18*(t + 1))/(2*x), t)})
         Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
 
     """
@@ -341,7 +277,7 @@ class Qcurve(EllipticCurve_number_field):
            the printing of any warnings. A higher value will cause
            more messages to be printed.
 
-        EXAMPLES: (TODO update these)
+        EXAMPLES:
 
         One can create a Qcurve using an explicit isogeny::
 
@@ -349,15 +285,17 @@ class Qcurve(EllipticCurve_number_field):
             sage: G.<s> = K.galois_group()
             sage: E = EllipticCurve([0, 12, 0, 18*(t + 1), 0])
             sage: Es = EllipticCurve([s(a) for a in E.a_invariants()])
-            sage: phi = Es.isogeny(Es([0,0]), codomain=E)
+            sage: phi = E.isogeny(E([0,0]), codomain=Es)
             sage: Qcurve(E, isogenies={s : phi})
             Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
 
-        However, it is sufficient to simply provide the scalar and the
-        degree of the isogeny::
+        However, it is sufficient to simply provide the x-coordinate
+        map and the scalar of the isogeny::
 
             sage: K.<t> = QuadraticField(-2)
-            sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : (-t, 2)})
+            sage: R.<x> = K[]
+            sage: G.<s> = K.galois_group()
+            sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((x^2 - 12*x - 18*(t + 1))/(2*x), t)})
             Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
         
         It is also possible to make the code 'guess' the isogenies by
@@ -399,6 +337,7 @@ class Qcurve(EllipticCurve_number_field):
 
     def definition_field(self):
         r"""Give the field over which this Q-curve is defined.
+
 
         .. NOTE::
 
@@ -644,7 +583,7 @@ class Qcurve(EllipticCurve_number_field):
         differential to $\lambda$ times the invariant differential of
         this curve.
 
-        EXAMPLE:: (TODO update examples)
+        EXAMPLE::
 
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
@@ -652,9 +591,9 @@ class Qcurve(EllipticCurve_number_field):
             sage: E.isogeny_scalar(G[0])
             1
             sage: E.isogeny_scalar(G[1])
-            1/10*tu0^3 + 3/10*tu0
+            1/10*tlu^3 + 3/10*tlu
             sage: E.isogeny_scalar(G[1]).parent()
-            Number Field in tu0 with defining polynomial x^4 - 2*x^2 + 25
+            Number Field in tlu with defining polynomial x^4 - 2*x^2 + 25
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
@@ -687,7 +626,13 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
-        TODO
+            sage: K.<t> = QuadraticField(-1)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: G.<s> = K.galois_group()
+            sage: E.isogeny_x_map(s)
+            (-1/2*x^2 - 6*x + (9/2*tlu^3 + 45/2*tlu - 9))/x
+            sage: E.isogeny_x_map(s^2)
+            x        
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
@@ -706,7 +651,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: K.<t> = QuadraticField(-2)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.complete_definition_field()
-            Number Field in t with defining polynomial x^2 + 2
+            Number Field in tl with defining polynomial x^2 + 2
 
         In general this field is bigger than the definition field::
 
@@ -715,7 +660,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: E.definition_field()
             Number Field in t with defining polynomial x^2 - 3
             sage: E.complete_definition_field()
-            Number Field in tu0 with defining polynomial x^4 - 2*x^2 + 25
+            Number Field in tlu with defining polynomial x^4 - 2*x^2 + 25
 
         """
         return self._to_Kphi.codomain()
@@ -1496,15 +1441,15 @@ class Qcurve(EllipticCurve_number_field):
         Keps = self.splitting_character_field(index)
         return self._splitting_image_field(eps, Keps)
 
-    def _splitting_field(self, Keps):
+    def _splitting_field(self, Keps, names=None):
         r"""Imlementation of :meth:`splitting_field`"""
         if isinstance(Keps, tuple):
             return tuple(self._splitting_field(Keps_i) for Keps_i in Keps)
         Kd = self.degree_field()
-        return composite_field(Kd, Keps)
+        return composite_field(Kd, Keps, names=names)
 
-    @cached_method
-    def splitting_field(self, index=0):
+    @cached_method(key=lambda self, index, names: index)
+    def splitting_field(self, index=0, names=None):
         r"""Give a splitting field of this Q-curve.
 
         A splitting map $\beta : G_\Q \to \overline{\Q}$ where $G_\Q$
@@ -1541,6 +1486,12 @@ class Qcurve(EllipticCurve_number_field):
           for each conjugacy class of splitting maps. Also accepts
           tuples of accepted values including tuples themselves.
 
+        - ``names`` -- A string providing a name for the generator of
+          the returned field. Note that this argument is ignored if a
+          splitting field has been computed before. If set to None
+          will use the default naming provided by
+          :func:`composite_field`.
+
         OUTPUT:
 
         The splitting field corresponding to the splitting map of the
@@ -1563,10 +1514,10 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         Keps = self.splitting_character_field(index)
-        return self._splitting_field(Keps)
+        return self._splitting_field(Keps, names=names)
 
-    @cached_method
-    def decomposition_field(self):
+    @cached_method(key=lambda self, names: ())
+    def decomposition_field(self, names=None):
         r"""Give the field over which the restriction of scalars of this
         Q-curve could decompose as a product of abelian varieties of
         GL_2-type.
@@ -1592,6 +1543,14 @@ class Qcurve(EllipticCurve_number_field):
             :meth:`c`,
             :meth:`decomposable_twist`
 
+        INPUT:
+
+        - `names` -- A string providing a name for the generator of
+          the returned field. Note that this argument is ignored if a
+          decomposition field has been computed before. If set to None
+          will use the default naming provided by
+          :func:`composite_field`.
+
         OUTPUT:
         
         The composite field of :meth:`complete_definition_field` and
@@ -1616,7 +1575,8 @@ class Qcurve(EllipticCurve_number_field):
         to_Ksplit = Kd.embeddings(Ksplit)[0]
         Kdec, from_Kphi, from_Ksplit = composite_field(to_Ksplit,
                                                        to_Kphi,
-                                                       give_maps=True)
+                                                       give_maps=True,
+                                                       names=names)
         Kdec = Kdec.absolute_field(names=Kdec.variable_name())
         self._to_Kdec = Kdec.structure()[1] * from_Kphi
         return Kdec
