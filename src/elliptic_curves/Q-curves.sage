@@ -480,8 +480,8 @@ class Qcurve(EllipticCurve_number_field):
         e = R.galois_group().identity()
         Rxy = PolynomialRing(R, names=["x", "y"]).fraction_field()
         x, y = Rxy.gens()
-        self._phi_x[e] = x
-        self._phi_y[e] = y
+        self._phi_x[e] = Rxy(x)
+        self._phi_y[e] = Rxy(y)
 
     def _add_isogeny(self, sigma, phi):
         r"""Add an isogeny to the stored isogeny data.
@@ -505,12 +505,12 @@ class Qcurve(EllipticCurve_number_field):
             if len(phi) == 2:
                 dom = self
                 codom = self.galois_conjugate(sigma)
-                self._phi_y[sigma] = ((self._phi_x[sigma].derivative(x)
-                                       * (2*y + dom.a1()*x + dom.a3())
-                                       / R(phi[1]))
-                                      - (codom.a1()*self._phi_x[sigma] + codom.a3())) / 2
+                self._phi_y[sigma] = Rxy(((self._phi_x[sigma].derivative(x)
+                                           * (2*y + dom.a1()*x + dom.a3())
+                                           / R(phi[1]))
+                                          - (codom.a1()*self._phi_x[sigma] + codom.a3())) / 2)
             elif len(phi) == 3: 
-                self._phi_y[sigma] = phi[1](x)*y + phi[2](x)
+                self._phi_y[sigma] = Rxy(phi[1](x)*y + phi[2](x))
         else:
             self._add_isogeny(sigma, (phi.x_rational_map(), _scalar_of_isogeny(phi)))
 
@@ -528,11 +528,13 @@ class Qcurve(EllipticCurve_number_field):
         dom = change.domain()
         change = dom.hom([change(dom.gens()[0])])
         phi_x = self._phi_x[sigma]
-        self._phi_x[sigma] = (phi_x.numerator().change_ring(change)/
-                              phi_x.denominator().change_ring(change))
         phi_y = self._phi_y[sigma]
-        self._phi_y[sigma] = (phi_y.numerator().change_ring(change)/
-                              phi_y.denominator().change_ring(change))
+        Rxy = phi_y.parent().base()
+        Sxy = Rxy.change_ring(change.codomain()).fraction_field()
+        self._phi_x[sigma] = Sxy(phi_x.numerator().change_ring(change)/
+                                 phi_x.denominator().change_ring(change))
+        self._phi_y[sigma] = Sxy(phi_y.numerator().change_ring(change)/
+                                 phi_y.denominator().change_ring(change))
 
     def _update_isogeny_field(self):
         r"""Update the field over which all isogenies are defined
@@ -2225,19 +2227,19 @@ class Qcurve(EllipticCurve_number_field):
         INPUT:
 
         - ``iota`` -- A field homomorphism from the definition field
-          of this Q-curve to another number field.
+          of this Q-curve to another Galois number field $K$. 
 
         OUTPUT:
 
-        A dictionary of which the keys are the elements of the galois
-        group of K, and the value for each element sigma is a tuple of
-        a rational function in $x$ and an algebraic number, that are
-        respectively the $x$-coordinate map of the isogeny from the
-        sigma conjugate of this curve to this curve and the induced
-        scalar multiplication on the differentials.
+        A dictionary of which the keys are the elements of the Galois
+        group of $K$, and the value for each element sigma is a tuple
+        of a rational function in $x$ and an algebraic number, that
+        are respectively the $x$-coordinate map of the isogeny from
+        the sigma conjugate of this curve to this curve and the
+        induced scalar multiplication on the differentials.
 
         """
-        G = K.galois_group()
+        G = iota.codomain().galois_group()
         F = self.isogeny_x_map
         l = self.isogeny_scalar
         Kphi = self.complete_definition_field()
@@ -2245,8 +2247,10 @@ class Qcurve(EllipticCurve_number_field):
                                              give_maps=True)
         L, to_L = write_as_extension(to_L, give_map=True)
         from_Kphi = _concat_maps(from_Kphi, to_L)
-        return {s : ((F(s).numerator().change_ring(from_Kphi) /
-                      F(s).denominator().change_ring(from_Kphi)),
+        Rx = PolynomialRing(L, names=["x"]).fraction_field()
+        x = Rx.gens()[0]
+        return {s : (Rx(F(s).numerator().change_ring(from_Kphi)(x,0) /
+                        F(s).denominator().change_ring(from_Kphi)(x,0)),
                      from_Kphi(l(s)))
                 for s in G}
 
@@ -2320,13 +2324,20 @@ class Qcurve(EllipticCurve_number_field):
         F = self.isogeny_x_map
         isogenies=dict()
         for s in G:
-            Fs = F(s).change_ring(iota)
-            ls = l(s).change_ring(iota)
-            x, y = Fs.parent().gens()
-            Ls.<agamma> = K.extension(x^2 - s(gamma)/gamma)
-            Fs = gamma * Fs(x / s(gamma), y)
+            Sx = R.fraction_field()
+            Fs = Sx(F(s).numerator().change_ring(iota)(x, 0) /
+                    F(s).denominator().change_ring(iota)(x, 0))
+            ls = iota(l(s))
+            Fs = gamma * Fs(x / s(gamma))
+            if (s(gamma)/gamma).is_square():
+                agamma = sqrt(s(gamma)/gamma)
+            else:
+                Ls.<agamma> = K.extension(x^2 - s(gamma)/gamma)
+                Sx = R.change_ring(Ls).fraction_field()
+                Fs = Sx(Fs.numerator().change_ring(Ls) /
+                        Fs.denominator().change_ring(Ls))
             ls = agamma * ls
-            isogenies[s] = (Fs.change_ring(Ls), ls)
+            isogenies[s] = (Fs, ls)
         # TODO: minimization of resulting field
         return Qcurve(ainvs, isogenies=isogenies)
 
