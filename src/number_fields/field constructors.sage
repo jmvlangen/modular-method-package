@@ -137,7 +137,7 @@ def field_with_root(K, a, names='sqrt_a', give_embedding=False):
         else:
             return L
 
-def fixed_field(H):
+def fixed_field(H, map=False):
     r"""Return the fixed field of a subset of a galois group
 
     INPUT:
@@ -145,10 +145,16 @@ def fixed_field(H):
     - ``H`` -- An iterable object containing elements of a galois
       group. len(H) should be at least 1
 
+    - ``map`` -- A boolean value (default: False) indicating whether a
+      map to the big field should be returned.
+
     OUTPUT:
 
     A number field K consisting of all those elements that are mapped
-    to themselves by elements of H.
+    to themselves by elements of H. It the argument `map` is set to
+    True, will return a tuple of which the first part is the mentioned
+    field K and the second part is an embedding of K into the galois
+    number field corresponding to elements of H.
 
     EXAMPLES:
 
@@ -186,17 +192,44 @@ def fixed_field(H):
         sage: fixed_field(G.gens())
         Rational Field
 
+    Maps can be returned in each of the above cases::
+
+        sage: K = CyclotomicField(12)
+        sage: G = K.galois_group()
+        sage: H = [G.identity()]
+        sage: fixed_field([G.gens()[0]], map=True)
+        (Number Field in zeta120 with defining polynomial x^2 - 2*x + 4, Ring morphism:
+           From: Number Field in zeta120 with defining polynomial x^2 - 2*x + 4
+           To:   Cyclotomic Field of order 12 and degree 4
+           Defn: zeta120 |--> 2*zeta12^2)
+        sage: fixed_field([G.identity()], map=True)
+        (Cyclotomic Field of order 12 and degree 4,
+         Identity endomorphism of Cyclotomic Field of order 12 and degree 4)
+        sage: fixed_field(G, map=True)
+        (Rational Field, Coercion map:
+           From: Rational Field
+           To:   Cyclotomic Field of order 12 and degree 4)
+
     """
     G = H[0].parent()
     if H == G:
-        return QQ
+        if map:
+            return QQ, QQ.hom(G.number_field())
+        else:
+            return QQ
     if hasattr(H, 'fixed_field'):
         result = H.fixed_field()
         if isinstance(result, tuple):
-            return result[0]
+            if map:
+                return result
+            else:
+                return result[0]
         else:
-            return result
-    return fixed_field(G.subgroup(H))
+            if map:
+                return result, result.hom(G.number_field())
+            else:
+                return result
+    return fixed_field(G.subgroup(H), map=map)
 
 def write_as_extension(phi, give_map=False, names=None):
     r"""Give a field embedding as a field extension
