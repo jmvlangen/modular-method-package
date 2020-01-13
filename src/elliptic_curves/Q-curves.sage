@@ -518,8 +518,12 @@ class Qcurve(EllipticCurve_number_field):
                     self._has_isogeny(t)):
                     sL = galois_field_extend(t, Kphi,
                                              embedding=self._to_Kphi)
-                    sL_phi_t_x = self._phi_x[t].change_ring(sL.as_hom())
-                    sL_phi_t_y = self._phi_y[t].change_ring(sL.as_hom())
+                    S = self._phi_x[t].parent()
+                    sL_phi_t_x = S(self._phi_x[t].numerator().change_ring(sL.as_hom()) /
+                                   self._phi_x[t].denominator().change_ring(sL.as_hom()))
+                    S = self._phi_y[t].parent()
+                    sL_phi_t_y = S(self._phi_y[t].numerator().change_ring(sL.as_hom()) /
+                                   self._phi_y[t].denominator().change_ring(sL.as_hom()))
                     phi_s = (self._phi_x[s], self._phi_y[s])
                     self._phi_x[s*t] = sL_phi_t_x(phi_s)
                     self._phi_y[s*t] = sL_phi_t_y(phi_s)
@@ -636,6 +640,7 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
+        # TODO make this return a map only in x
         return self._phi_x[sigma]
 
     def complete_definition_field(self):
@@ -762,7 +767,10 @@ class Qcurve(EllipticCurve_number_field):
 
             sage: K.<t> = CyclotomicField(3)
             sage: G.<s> = K.galois_group()
-            sage: E = Qcurve([0, -6*t + 2, 0, t, 0], isogenies={s : (2, 4)})
+            sage: R.<x> = K[]
+            sage: F = (1/4*t*x^4 + 3/2*x^2 - 9/4*t - 9/4)/(x^3 - 2*t*x^2 + (3*t + 3)*x)
+            sage: l = -2*t
+            sage: E = Qcurve([0, -2*t, 0, 3*t+3, 0], isogenies={s : (F, l)})
             sage: E.degree_field()
             Rational Field
 
@@ -1349,7 +1357,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: K1 = E.complete_definition_field(); K1
-            Number Field in tu0 with defining polynomial x^4 - 6*x^2 + 49
+            Number Field in tlu with defining polynomial x^4 - 6*x^2 + 49
             sage: K2 = E.splitting_character_field(); K2
             Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
             sage: K1.is_isomorphic(K2)
@@ -1506,7 +1514,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.splitting_field()
-            Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
+            Number Field in tzeta0 with defining polynomial x^4 - 5*x^2 + 5
             sage: E.degree_field()
             Number Field in t with defining polynomial x^2 - 5
             sage: E.splitting_character_field()
@@ -1561,11 +1569,11 @@ class Qcurve(EllipticCurve_number_field):
             sage: K.<t> = QuadraticField(-3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.complete_definition_field()
-            Number Field in tu0 with defining polynomial x^4 + 10*x^2 + 1
+            Number Field in tlu with defining polynomial x^4 + 10*x^2 + 1
             sage: E.splitting_field()
             Number Field in tzeta0 with defining polynomial x^4 + 36
             sage: E.decomposition_field()
-            Number Field in tu0tzeta0 with defining polynomial x^8 + 32*x^6 + 456*x^4 - 1408*x^2 + 10000
+            Number Field in tzeta0tlu with defining polynomial x^8 - x^4 + 1
 
         """
         Ksplit = self.splitting_field()
@@ -1642,12 +1650,14 @@ class Qcurve(EllipticCurve_number_field):
         r"""Give a naive guess of a splitting map.
 
         """
+        Leps = self.splitting_character().base_ring()
         eps = self.splitting_character(galois=True)
         d = self.degree_map
         Lbeta = self.splitting_image_field()
+        iota = Leps.embeddings(Lbeta)[0]
         @cached_function(key=lambda s: (str(s), s.parent().number_field()))
         def beta(sigma):
-            return sqrt(Lbeta(d(sigma) * eps(sigma)))
+            return sqrt(iota(d(sigma) * eps(sigma)))
         return beta
 
     def _first_splitting_map(self, verbose=False):
@@ -1703,7 +1713,13 @@ class Qcurve(EllipticCurve_number_field):
         from_Lchi = to_L * from_Lchi
         @cached_function(key=lambda s: (str(s), s.parent().number_field()))
         def beta(sigma):
-            return Lbeta(from_Lbeta0(beta0(sigma)) * from_Lchi(chi(sigma)))
+            result = (from_Lbeta0(beta0(sigma)) * from_Lchi(chi(sigma))).list()
+            if not all(result[i] == 0 for i in range(1, len(result))):
+                raise ValueError("Value " + str(L(result)) +
+                                 "of splitting map is not an" +
+                                 "element of the image field" +
+                                 str(Lbeta))
+            return result[0]
         return beta
 
     @cached_method(key=lambda self, i, v: i)
@@ -1799,27 +1815,35 @@ class Qcurve(EllipticCurve_number_field):
             [ 1 -1  1 -1 -1  1 -1  1]
             sage: matrix([[E.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1  1  1  1  1]
-            [ 1 -2  1  2 -2  1  2  1]
-            [ 1  1 -1 -1  1 -1 -1  1]
             [ 1  2 -1  2  2 -1  2  1]
-            [ 1 -2  1  2 -2  1  2  1]
-            [ 1  1 -1 -1  1 -1 -1  1]
+            [ 1 -1 -1  1 -1 -1  1  1]
+            [ 1  2  1 -2  2  1 -2  1]
             [ 1  2 -1  2  2 -1  2  1]
+            [ 1 -1 -1  1 -1 -1  1  1]
+            [ 1  2  1 -2  2  1 -2  1]
             [ 1  1  1  1  1  1  1  1]
             sage: E2 = E.decomposable_twist()
             sage: E2.does_decompose()
             True
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
-            [ 1  1  1  1]
-            [ 1  2  2 -1]
-            [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1  1  1  1  1  1  1  1]
+            [ 1 -2 -1 -2 -2 -1 -2  1]
+            [ 1 -1 -1  1  1 -1 -1  1]
+            [ 1 -2  1  2  2  1 -2  1]
+            [ 1 -2  1  2  2  1 -2  1]
+            [ 1 -1 -1  1  1 -1 -1  1]
+            [ 1 -2 -1 -2 -2 -1 -2  1]
+            [ 1  1  1  1  1  1  1  1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
-            [ 1  1  1  1]
-            [ 1  2  2 -1]
-            [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1  1  1  1  1  1  1  1]
+            [ 1 -2 -1 -2 -2 -1 -2  1]
+            [ 1 -1 -1  1  1 -1 -1  1]
+            [ 1 -2  1  2  2  1 -2  1]
+            [ 1 -2  1  2  2  1 -2  1]
+            [ 1 -1 -1  1  1 -1 -1  1]
+            [ 1 -2 -1 -2 -2 -1 -2  1]
+            [ 1  1  1  1  1  1  1  1]
 
         """
         if hasattr(index, "__iter__"):
@@ -1892,27 +1916,35 @@ class Qcurve(EllipticCurve_number_field):
             [ 1 -1  1 -1 -1  1 -1  1]
             sage: matrix([[E.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1  1  1  1  1]
-            [ 1 -2  1  2 -2  1  2  1]
-            [ 1  1 -1 -1  1 -1 -1  1]
             [ 1  2 -1  2  2 -1  2  1]
-            [ 1 -2  1  2 -2  1  2  1]
-            [ 1  1 -1 -1  1 -1 -1  1]
+            [ 1 -1 -1  1 -1 -1  1  1]
+            [ 1  2  1 -2  2  1 -2  1]
             [ 1  2 -1  2  2 -1  2  1]
+            [ 1 -1 -1  1 -1 -1  1  1]
+            [ 1  2  1 -2  2  1 -2  1]
             [ 1  1  1  1  1  1  1  1]
             sage: E2 = E.decomposable_twist()
             sage: E2.does_decompose()
             True
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
-            [ 1  1  1  1]
-            [ 1  2  2 -1]
-            [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1  1  1  1  1  1  1  1]
+            [ 1 -2 -1 -2 -2 -1 -2  1]
+            [ 1 -1 -1  1  1 -1 -1  1]
+            [ 1 -2  1  2  2  1 -2  1]
+            [ 1 -2  1  2  2  1 -2  1]
+            [ 1 -1 -1  1  1 -1 -1  1]
+            [ 1 -2 -1 -2 -2 -1 -2  1]
+            [ 1  1  1  1  1  1  1  1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
-            [ 1  1  1  1]
-            [ 1  2  2 -1]
-            [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1  1  1  1  1  1  1  1]
+            [ 1 -2 -1 -2 -2 -1 -2  1]
+            [ 1 -1 -1  1  1 -1 -1  1]
+            [ 1 -2  1  2  2  1 -2  1]
+            [ 1 -2  1  2  2  1 -2  1]
+            [ 1 -1 -1  1  1 -1 -1  1]
+            [ 1 -2 -1 -2 -2 -1 -2  1]
+            [ 1  1  1  1  1  1  1  1]
 
         """
         if not self._is_cached('_beta'):
@@ -2233,6 +2265,71 @@ class Qcurve(EllipticCurve_number_field):
                 return Qcurve(result, isogenies=self._isogeny_data(K_to_L))
         return result
 
+    def minimize_fields(self, names=None):
+        r"""Attempt to minimize the fields associated to this curve.
+
+        OUTPUT:
+
+        A Q-curve isomorphic to this Q-curve, but with a definition
+        field, complete definition field and decomposition field that
+        are as small as possible. The isomorphism is given by
+        compatible embeddings of the mentioned fields.
+
+        """
+        if names is None:
+            names = [self.definition_field().variable_name(),
+                     self.complete_definition_field().variable_name()]
+            
+        # Find a minimal field of definition
+        ainvs = self.a_invariants()
+        K = self.definition_field()
+        G = K.galois_group()
+        H = [s for s in G if all(s(a) == a for a in ainvs)]
+        Knew = fixed_field(H)
+        Knew = Knew.galois_closure(names=names[0])
+        from_new = Knew.embeddings(K)[0]
+        _, iota = write_as_extension(from_new, give_map=True)
+        ainvs = [iota(a).list()[0] for a in ainvs]
+
+        # Determine the appropriate x_rational maps
+        to_Kphi = _concat_maps(from_new, self._to_Kphi)
+        _, iota2 = write_as_extension(to_Kphi, give_map=True)
+        R.<x> = Knew[]
+        G = Knew.galois_group()
+        F = {}
+        for s in G:
+            Fs = self.isogeny_x_map(s)
+            Fsnum = Fs.numerator()
+            R = Fsnum.parent().change_ring(Knew)
+            Fsden = Fs.denominator()
+            Fsnum = sum(iota2(Fsnum.monomial_coefficient(m)).list()[0] *
+                        R(m) for m in Fsnum.monomials())
+            Fsden = sum(iota2(Fsden.monomial_coefficient(m)).list()[0] *
+                        R(m) for m in Fsden.monomials())
+            F[s] = (Fsnum, Fsden)
+
+        # Determine the appropriate isogeny scalars
+        Kphi = self.complete_definition_field()
+        Kbig, to_big = Kphi.galois_closure(names=names[1], map=True)
+        abig = to_big(to_Kphi(Knew.gen()))
+        l = {s : to_big(self.isogeny_scalar(s)) for s in G}
+        H = [s for s in Kbig.galois_group()
+             if (all(s(ls) == ls for ls in l.values()) and
+                 s(abig) == abig)]
+        Kphi2, phi_map = fixed_field(H, map=True)
+        _, iota3 = write_as_extension(phi_map, give_map=True)
+        l = {s : iota3(l[s]).list()[0] for s in l}
+        to_Kphi = [psi for psi in Knew.embeddings(Kphi2)
+                   if phi_map(psi(Knew.gen())) == abig][0]
+        _, iota4 = write_as_extension(to_Kphi, give_map=True)
+        l = {s : iota4(l[s]) for s in l}
+        iota5 = _concat_maps(to_Kphi, iota4)
+        F = {s : (F[s][0].change_ring(iota5), F[s][1].change_ring(iota5))
+             for s in F}
+        isogenies = {s : (F[s][0] / F[s][1], l[s]) for s in G}
+
+        return Qcurve(ainvs, isogenies=isogenies)
+    
     def twist(self, gamma):
         r"""Give the twist of this Q-curve by a given element gamma.
 
@@ -2261,9 +2358,9 @@ class Qcurve(EllipticCurve_number_field):
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2]); E
             Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 5
             sage: E2 = E.twist(t); E2
-            Q-curve defined by y^2 = x^3 + (1/4*sqrt_a0^3-3*sqrt_a0^2-11*sqrt_a0+76)*x^2 + (15/8*sqrt_a0^3-45/2*sqrt_a0^2-165/2*sqrt_a0+660)*x over Number Field in sqrt_a0 with defining polynomial x^4 - 16*x^3 - 8*x^2 + 576*x - 1264
+            Q-curve defined by y^2 = x^3 + (-6/7*ttlu^3+78/7*ttlu)*x^2 + (-45/7*ttlu^3+585/7*ttlu+90)*x over Number Field in ttlu with defining polynomial x^4 - 6*x^2 + 49
             sage: E2.complete_definition_field()
-            Number Field in sqrt_a0 with defining polynomial x^4 - 16*x^3 - 8*x^2 + 576*x - 1264
+            Number Field in ttluttluagammaagamma with defining polynomial x^8 - 8*x^6 + 128*x^4 - 1088*x^2 + 3136
 
         """
         K_gamma = gamma.parent()
@@ -2483,18 +2580,18 @@ class Qcurve(EllipticCurve_number_field):
                              " does not give a valid set of roots")
 
         # Let's compute the fields and corresponding embeddings
-        # TODO update this function
         Kbase = self.definition_field()
         Kold = self.complete_definition_field()
         Kroots = QQ
         for i, a in enumerate(roots):
             Kroots = field_with_root(Kroots, a, names=('sqrt_a'+str(i)))
-        base_to_old = self._to_Kl
+        base_to_old = self._to_Kphi
         Knew, base_to_new, roots_to_new = composite_field(Kbase, Kroots,
                                                           give_maps=True)
-        Kbig, old_to_big, new_to_big = composite_field(Kold, Knew,
+        Kbig, old_to_big, new_to_big = composite_field(base_to_old,
+                                                       base_to_new,
                                                        give_maps=True)
-        base_to_big = new_to_big * base_to_new
+        base_to_big = _concat_maps(base_to_new, new_to_big)
 
         # The map we want as scalars for the new curve
         d = self.degree_map
@@ -2511,6 +2608,8 @@ class Qcurve(EllipticCurve_number_field):
         # The twist parameter
         gamma = hilbert90(Kbig, alpha)
 
+        # TODO do the appropriate twist
+        
         # Check if we can twist by an element of Kbase
         gamma_ls = [x for x,e in gamma.minpoly().change_ring(Kbase).roots()
                     if base_to_big(x) == gamma]
