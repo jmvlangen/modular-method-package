@@ -310,24 +310,29 @@ def write_as_extension(phi, give_map=False, names=None):
         sage: write_as_extension(K.embeddings(L)[0])
         Number Field in a2 with defining polynomial x^2 + a1*x + 1 over its base field
 
+    Works if both fields are the same::
+
+        sage: K = QuadraticField(3)
+        sage: write_as_extension(K.hom(K))
+        Number Field in a1 with defining polynomial x - a over its base field
+
     """
     phi = _write_as_im_gen_map(phi)
     K = phi.domain()
     L = phi.codomain()
     if not is_field(K) and not is_field(L):
         raise ValueError("Input must be an embedding of fields.")
-    if L == K and phi(K.gen()) == L.gen():
-        if give_map:
-            return L, phi
-        else:
-            return L
     if not L.is_absolute():
         L = L.absolute_field(names=L.variable_name())
         phi = _concat_maps(phi, L.structure()[1])
         concat_map = True
     else:
         concat_map = False
-    f = L.absolute_polynomial()
+    if L == QQ:
+        R.<x> = QQ[]
+        f = x - 1
+    else:
+        f = L.absolute_polynomial()
     for g in f.change_ring(K).factor():
         if g[0].change_ring(phi)(L.gen()) == 0:
             if names is None:
@@ -468,16 +473,16 @@ def composite_field(K1, K2, give_maps=False, names=None):
         K2 = K2[0]
     f = K2.relative_polynomial()
     g = f.change_ring(K1).factor()[0][0]
+    name1 = K1.variable_name(); name2 = K2.variable_name()
     if names is None:
-        name1 = K1.variable_name(); name2 = K2.variable_name()
         names = name1 + (name2 if name2 != name1 else "")
-        if names == name1:
-            for n in range(len(names)):
-                if names[n:].isdigit():
-                    names = names[:n] + str(Integer(names[n:]) + 1)
-                    break
-            else:
-                names = names + "1"
+    if names == name1:
+        for n in range(len(names)):
+            if names[n:].isdigit():
+                names = names[:n] + str(Integer(names[n:]) + 1)
+                break
+        else:
+            names = names + "1"
     K = K1.extension(g, names=names)
     if give_maps:
         K1_to_K = _write_as_im_gen_map(K1.hom(K))
