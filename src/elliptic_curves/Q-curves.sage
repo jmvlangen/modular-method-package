@@ -486,7 +486,8 @@ class Qcurve(EllipticCurve_number_field):
                 Kphi = self.complete_definition_field()
                 if Ri != Kphi:
                     data = composite_field(self._to_Kphi, Ri,
-                                           give_maps=True)
+                                           give_maps=True,
+                                           names=Ri.variable_name())
                     Kphi, old_to_new, Ri_to_new = data
                     Kphi = Kphi.absolute_field(names=Kphi.variable_name())
                     old_to_new = Kphi.structure()[1] * old_to_new
@@ -595,9 +596,9 @@ class Qcurve(EllipticCurve_number_field):
             sage: E.isogeny_scalar(G[0])
             1
             sage: E.isogeny_scalar(G[1])
-            1/10*tlu^3 + 3/10*tlu
+            1/10*lu^3 + 3/10*lu
             sage: E.isogeny_scalar(G[1]).parent()
-            Number Field in tlu with defining polynomial x^4 - 2*x^2 + 25
+            Number Field in lu with defining polynomial x^4 - 2*x^2 + 25
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
@@ -622,11 +623,11 @@ class Qcurve(EllipticCurve_number_field):
 
         OUTPUT:
 
-        A rational function in $x$ that gives the $x$-coordinate of an
-        image point of the isogeny as a rational function in the $x$
-        coordinate of the origin point. The isogeny is the registered
-        isogeny from this curve to the `sigma` Galois conjugate of
-        this curve.
+        A rational function in $x$ over the definition field of this
+        Q-curve that gives the $x$-coordinate of an image point of the
+        isogeny as a rational function in the $x$ coordinate of the
+        origin point. The isogeny is the registered isogeny from this
+        curve to the `sigma` Galois conjugate of this curve.
 
         EXAMPLE::
 
@@ -636,12 +637,37 @@ class Qcurve(EllipticCurve_number_field):
             sage: E.isogeny_x_map(s)
             (-1/2*x^2 - 6*x + (9/2*tlu^3 + 45/2*tlu - 9))/x
             sage: E.isogeny_x_map(s^2)
-            x        
+            x
+
+        TESTS::
+
+            sage: K.<t> = QuadraticField(-1)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: G.<s> = K.galois_group()
+            sage: F = E.isogeny_x_map(s)
+            sage: F.parent()
+            Fraction Field of Univariate Polynomial Ring in x over Number Field in t with defining polynomial x^2 + 1
+            sage: F.parent().base_ring() == E.definition_field()
+            True
+
+        .. SEEALSO::
+
+            :meth:`isogeny_scalar`,
+            :meth:`definition_field`
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
-        # TODO make this return a map only in x
-        return self._phi_x[sigma]
+        R = self.definition_field()
+        Rx = PolynomialRing(R, names='x').fraction_field()
+        x = Rx.gen()
+        phi_x = self._phi_x[sigma]
+        num = phi_x.numerator()
+        den = phi_x.denominator()
+        _, iota = write_as_extension(self._to_Kphi, give_map=True)
+        return Rx(sum(iota(num.coefficient(e)).list()[0] * x^e[0]
+                      for e in num.exponents()) /
+                  sum(iota(den.coefficient(e)).list()[0] * x^e[0]
+                      for e in den.exponents()))
 
     def complete_definition_field(self):
         r"""Give the field over which the Q-curve is completely defined.
@@ -656,7 +682,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: K.<t> = QuadraticField(-2)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.complete_definition_field()
-            Number Field in tl with defining polynomial x^2 + 2
+            Number Field in l with defining polynomial x^2 + 2
 
         In general this field is bigger than the definition field::
 
@@ -665,7 +691,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: E.definition_field()
             Number Field in t with defining polynomial x^2 - 3
             sage: E.complete_definition_field()
-            Number Field in tlu with defining polynomial x^4 - 2*x^2 + 25
+            Number Field in lu with defining polynomial x^4 - 2*x^2 + 25
 
         """
         return self._to_Kphi.codomain()
@@ -1357,7 +1383,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: K1 = E.complete_definition_field(); K1
-            Number Field in tlu with defining polynomial x^4 - 6*x^2 + 49
+            Number Field in lu with defining polynomial x^4 - 6*x^2 + 49
             sage: K2 = E.splitting_character_field(); K2
             Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
             sage: K1.is_isomorphic(K2)
@@ -1827,23 +1853,15 @@ class Qcurve(EllipticCurve_number_field):
             True
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
-            [ 1  1  1  1  1  1  1  1]
-            [ 1 -2 -1 -2 -2 -1 -2  1]
-            [ 1 -1 -1  1  1 -1 -1  1]
-            [ 1 -2  1  2  2  1 -2  1]
-            [ 1 -2  1  2  2  1 -2  1]
-            [ 1 -1 -1  1  1 -1 -1  1]
-            [ 1 -2 -1 -2 -2 -1 -2  1]
-            [ 1  1  1  1  1  1  1  1]
+            [ 1  1  1  1]
+            [ 1 -2 -2 -1]
+            [ 1 -2  2  1]
+            [ 1 -1  1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
-            [ 1  1  1  1  1  1  1  1]
-            [ 1 -2 -1 -2 -2 -1 -2  1]
-            [ 1 -1 -1  1  1 -1 -1  1]
-            [ 1 -2  1  2  2  1 -2  1]
-            [ 1 -2  1  2  2  1 -2  1]
-            [ 1 -1 -1  1  1 -1 -1  1]
-            [ 1 -2 -1 -2 -2 -1 -2  1]
-            [ 1  1  1  1  1  1  1  1]
+            [ 1  1  1  1]
+            [ 1 -2 -2 -1]
+            [ 1 -2  2  1]
+            [ 1 -1  1 -1]
 
         """
         if hasattr(index, "__iter__"):
@@ -1928,23 +1946,15 @@ class Qcurve(EllipticCurve_number_field):
             True
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
-            [ 1  1  1  1  1  1  1  1]
-            [ 1 -2 -1 -2 -2 -1 -2  1]
-            [ 1 -1 -1  1  1 -1 -1  1]
-            [ 1 -2  1  2  2  1 -2  1]
-            [ 1 -2  1  2  2  1 -2  1]
-            [ 1 -1 -1  1  1 -1 -1  1]
-            [ 1 -2 -1 -2 -2 -1 -2  1]
-            [ 1  1  1  1  1  1  1  1]
+            [ 1  1  1  1]
+            [ 1 -2 -2 -1]
+            [ 1 -2  2  1]
+            [ 1 -1  1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
-            [ 1  1  1  1  1  1  1  1]
-            [ 1 -2 -1 -2 -2 -1 -2  1]
-            [ 1 -1 -1  1  1 -1 -1  1]
-            [ 1 -2  1  2  2  1 -2  1]
-            [ 1 -2  1  2  2  1 -2  1]
-            [ 1 -1 -1  1  1 -1 -1  1]
-            [ 1 -2 -1 -2 -2 -1 -2  1]
-            [ 1  1  1  1  1  1  1  1]
+            [ 1  1  1  1]
+            [ 1 -2 -2 -1]
+            [ 1 -2  2  1]
+            [ 1 -1  1 -1]
 
         """
         if not self._is_cached('_beta'):
@@ -2237,12 +2247,14 @@ class Qcurve(EllipticCurve_number_field):
         Kphi = self.complete_definition_field()
         _, to_L, from_Kphi = composite_field(iota, self._to_Kphi,
                                              give_maps=True)
+        iota = _concat_maps(iota, to_L)
         L, to_L = write_as_extension(to_L, give_map=True)
         from_Kphi = _concat_maps(from_Kphi, to_L)
+        iota = _concat_maps(iota, to_L)
         Rx = PolynomialRing(L, names=["x"]).fraction_field()
         x = Rx.gens()[0]
-        return {s : (Rx(F(s).numerator().change_ring(from_Kphi)(x,0) /
-                        F(s).denominator().change_ring(from_Kphi)(x,0)),
+        return {s : (Rx(F(s).numerator().change_ring(iota) /
+                        F(s).denominator().change_ring(iota)),
                      from_Kphi(l(s)))
                 for s in G}
 
@@ -2292,8 +2304,6 @@ class Qcurve(EllipticCurve_number_field):
         ainvs = [iota(a).list()[0] for a in ainvs]
 
         # Determine the appropriate x_rational maps
-        to_Kphi = _concat_maps(from_new, self._to_Kphi)
-        _, iota2 = write_as_extension(to_Kphi, give_map=True)
         R.<x> = Knew[]
         G = Knew.galois_group()
         F = {}
@@ -2302,15 +2312,16 @@ class Qcurve(EllipticCurve_number_field):
             Fsnum = Fs.numerator()
             R = Fsnum.parent().change_ring(Knew)
             Fsden = Fs.denominator()
-            Fsnum = sum(iota2(Fsnum.monomial_coefficient(m)).list()[0] *
+            Fsnum = sum(iota(Fsnum.monomial_coefficient(m)).list()[0] *
                         R(m) for m in Fsnum.monomials())
-            Fsden = sum(iota2(Fsden.monomial_coefficient(m)).list()[0] *
+            Fsden = sum(iota(Fsden.monomial_coefficient(m)).list()[0] *
                         R(m) for m in Fsden.monomials())
             F[s] = (Fsnum, Fsden)
 
         # Determine the appropriate isogeny scalars
         Kphi = self.complete_definition_field()
         Kbig, to_big = Kphi.galois_closure(names=names[1], map=True)
+        to_Kphi = _concat_maps(from_new, self._to_Kphi)
         abig = to_big(to_Kphi(Knew.gen()))
         l = {s : to_big(self.isogeny_scalar(s)) for s in G}
         H = [s for s in Kbig.galois_group()
@@ -2358,9 +2369,9 @@ class Qcurve(EllipticCurve_number_field):
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2]); E
             Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 5
             sage: E2 = E.twist(t); E2
-            Q-curve defined by y^2 = x^3 + (-6/7*ttlu^3+78/7*ttlu)*x^2 + (-45/7*ttlu^3+585/7*ttlu+90)*x over Number Field in ttlu with defining polynomial x^4 - 6*x^2 + 49
+            Q-curve defined by y^2 = x^3 + (-6*ttlu)*x^2 + (-45*ttlu+90)*x over Number Field in ttlu with defining polynomial x^2 - 20
             sage: E2.complete_definition_field()
-            Number Field in ttluttluagammaagamma with defining polynomial x^8 - 8*x^6 + 128*x^4 - 1088*x^2 + 3136
+            Number Field in ttluttluttluagammaagamma0ttluttluagammaagamma0 with defining polynomial x^4 - 16*x^3 - 8*x^2 + 576*x - 1264
 
         """
         K_gamma = gamma.parent()
@@ -2382,8 +2393,8 @@ class Qcurve(EllipticCurve_number_field):
         isogenies=dict()
         for s in G:
             Sx = R.fraction_field()
-            Fs = Sx(F(s).numerator().change_ring(iota)(x, 0) /
-                    F(s).denominator().change_ring(iota)(x, 0))
+            Fs = Sx(F(s).numerator().change_ring(E_map) /
+                    F(s).denominator().change_ring(E_map))
             ls = iota(l(s))
             Fs = gamma * Fs(x / s(gamma))
             if (s(gamma)/gamma).is_square():
@@ -2395,8 +2406,7 @@ class Qcurve(EllipticCurve_number_field):
                         Fs.denominator().change_ring(Ls))
             ls = agamma * ls
             isogenies[s] = (Fs, ls)
-        # TODO: minimization of resulting field
-        return Qcurve(ainvs, isogenies=isogenies)
+        return Qcurve(ainvs, isogenies=isogenies).minimize_fields()
 
     def _decomposable_twist_set(self):
         r"""Give the set of ideals required to compute the decomposable twist
