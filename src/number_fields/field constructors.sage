@@ -639,11 +639,17 @@ def intersection_field(K1, K2, L=None, give_maps=False, names=None):
                     else:
                         return Kopt
 
-def _write_as_im_gen_map(phi):
+def _write_as_im_gen_map(phi, dom=None):
     r"""Rewrites the map phi such that it is given by images of generators"""
-    dom = phi.domain()
+    if dom is None:
+        dom = phi.domain()
     g = dom.gen()
-    return dom.hom([phi(g)])
+    if dom.is_absolute():
+        return dom.hom([phi(g)])
+    else:
+        base_hom = _write_as_im_gen_map(phi, dom=dom.base_ring())
+        F = dom.Hom(phi.codomain())
+        return F(phi(g), base_hom=base_hom)
                     
 def _concat_maps(phi, psi):
     r"""Concatenates phi and psi, phi first"""
