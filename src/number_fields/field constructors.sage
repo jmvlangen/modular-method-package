@@ -383,7 +383,10 @@ def composite_field(K1, K2, give_maps=False, names=None):
     $K_0$ the field `K` will also be an extension of $K_0$ respecting
     the common structure. If `give_maps` was set to True, will instead
     return a tuple consisting of: the field K; an embedding of K1 into
-    K; and an embedding of K2 into K.
+    K; and an embedding of K2 into K. If one of the given fields `K1`
+    and `K2` is absolute and isomorphic to the field $K$, then $K$
+    will always be that field. In case both fields are absolute and
+    isomorphic, then $K$ will be the field `K2`.
 
     EXAMPLES:
 
@@ -396,14 +399,29 @@ def composite_field(K1, K2, give_maps=False, names=None):
         sage: K(2).is_square() and K(3).is_square()
         True
 
-    Also works if one of the fields contains the other::
+    If one of the fields is contained in the other, returns the bigger
+    field::
 
         sage: K1 = QuadraticField(2)
         sage: K2 = CyclotomicField(8)
-        sage: K = composite_field(K1, K2); K
-        Number Field in azeta8 with defining polynomial x^4 + 1
+        sage: K = composite_field(K1, K2)
+        sage: K2 == K
+        True
         sage: K2(2).is_square()
         True
+
+    Note that if both fields are isomorphic, will always return the
+    second field::
+
+        sage: K1 = QuadraticField(-1)
+        sage: K2 = QuadraticField(-4)
+        sage: K1.is_isomorphic(K2)
+        True
+        sage: K = composite_field(K1, K2)
+        sage: K == K2
+        True
+        sage: K == K1
+        False
 
     Can use the optional give_maps to obtain the embeddings::
 
@@ -420,11 +438,14 @@ def composite_field(K1, K2, give_maps=False, names=None):
 
     """
     to_K1 = None; to_K2 = None
+    K1or = K1; K2or = K2
     if hasattr(K1, "codomain"):
+        K1or = K1.codomain()
         K1 = write_as_extension(K1, give_map=give_maps)
         if give_maps:
             K1, to_K1 = K1
     if hasattr(K2, "codomain"):
+        K2or = K2.codomain()
         K2 = write_as_extension(K2, give_map=give_maps)
         if give_maps:
             K2, to_K2 = K2
@@ -441,22 +462,6 @@ def composite_field(K1, K2, give_maps=False, names=None):
                     _concat_maps(to_K2, K2_to_K))
         else:
             return composite_field(K2, K1)
-    if K1 == K2:
-        if give_maps:
-            if K1.is_absolute():
-                to_K1 = _write_as_im_gen_map(to_K1)
-                to_K2 = _write_as_im_gen_map(to_K2)
-                return K1, to_K1, to_K2
-            else:
-                K = K1.absolute_field(names=K1.variable_name())
-                return (K,
-                        _concat_maps(to_K1, K.structure()[1]),
-                        _concat_maps(to_K2, K.structure()[1]))
-        else:
-            if K1.is_absolute():
-                return K1
-            else:
-                return K1.absolute_field(names=K1.variable_name())
     K01 = K1
     K02 = K2
     while K01 != K02:
@@ -473,6 +478,29 @@ def composite_field(K1, K2, give_maps=False, names=None):
         K2 = K2[0]
     f = K2.relative_polynomial()
     g = f.change_ring(K1).factor()[0][0]
+    if g.degree() * K1.absolute_degree() == K2.absolute_degree():
+        if give_maps:
+            if K01 == QQ:
+                a0 = 1
+                i1 = K01.hom(K1or)
+                i2 = K01.hom(K2or)
+            else:
+                a0 = K01.absolute_generator()
+                i1 = [i for i in K01.embeddings(K1or) if to_K1(i(a0)) == a0][0]
+                i2 = [i for i in K01.embeddings(K2or) if to_K2(i(a0)) == a0][0]
+            iota = [i for i in K1or.embeddings(K2or) if i(i1(a0)) == i2(a0)][0]
+            if K2or.is_absolute():
+                return K2or, iota, K2or.hom(K2or)
+            else:
+                K = K2or.absolute_field(names=K2or.variable_name())
+                iota2 = _write_as_im_gen_map(K.structure()[1])
+                iota = _concat_maps(iota, iota2)
+                return K, iota, iota2
+        else:
+            if K2or.is_absolute():
+                return K2or
+            else:
+                return K2or.absolute_field(names=K2or.variable_name())
     name1 = K1.variable_name(); name2 = K2.variable_name()
     if names is None:
         names = name1 + (name2 if name2 != name1 else "")
