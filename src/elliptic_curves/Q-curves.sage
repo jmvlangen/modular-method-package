@@ -491,9 +491,10 @@ class Qcurve(EllipticCurve_number_field):
                                            give_maps=True,
                                            names=Ri.variable_name())
                     Kphi, Ri_to_new, old_to_new = data
-                    Kphi = Kphi.absolute_field(names=Kphi.variable_name())
-                    old_to_new = Kphi.structure()[1] * old_to_new
-                    Ri_to_new = Kphi.structure()[1] * Ri_to_new
+                    if not Kphi.is_absolute():
+                        Kphi = Kphi.absolute_field(names=Kphi.variable_name())
+                        old_to_new = _concat_maps(old_to_new, Kphi.structure()[1])
+                        Ri_to_new = _concat_maps(Ri_to_new, Kphi.structure()[1])
                     self._to_Kphi = _concat_maps(self._to_Kphi, old_to_new)
                     self._update_isogeny(G[i], Ri_to_new)
                     for j in range(i):
@@ -1618,8 +1619,10 @@ class Qcurve(EllipticCurve_number_field):
                                                        to_Kphi,
                                                        give_maps=True,
                                                        names=names)
-        Kdec = Kdec.absolute_field(names=Kdec.variable_name())
-        self._to_Kdec = _concat_maps(from_Kphi, Kdec.structure()[1])
+        self._to_Kdec = from_Kphi
+        if not Kdec.is_absolute():
+            Kdec = Kdec.absolute_field(names=Kdec.variable_name())
+            self._to_Kdec = _concat_maps(from_Kphi, Kdec.structure()[1])
         return Kdec
 
     @cached_method
@@ -2415,9 +2418,10 @@ class Qcurve(EllipticCurve_number_field):
         Kphi = self.complete_definition_field()
         K, iota, gamma_map = composite_field(Kphi, K_gamma,
                                              give_maps=True)
-        K = K.absolute_field(names=K.variable_name())
-        iota = _concat_maps(iota, K.structure()[1])
-        gamma_map = _concat_maps(gamma_map, K.structure()[1])
+        if not K.is_absolute():
+            K = K.absolute_field(names=K.variable_name())
+            iota = _concat_maps(iota, K.structure()[1])
+            gamma_map = _concat_maps(gamma_map, K.structure()[1])
         gamma = gamma_map(gamma)
         E_map = _concat_maps(self._to_Kphi, iota)
         E = twist_elliptic_curve(self.change_ring(E_map), gamma)
@@ -2962,7 +2966,14 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         if power > 1:
-            pass # TODO
+            T = self.trace_of_frobenius(prime,
+                                        splitting_map=splitting_map)
+            D = self.determinant_of_frobenius(prime,
+                                              splitting_map=splitting_map)
+            F = self._trace_power_formula(power)
+            K, T_map, D_map = composite_field(T.parent(), D.parent(),
+                                              give_maps=True)
+            return F(T_map(T), D_map(D))
         else:
             K = self.decomposition_field()
             iota = self._to_Kdec * self._to_Kphi
@@ -2995,29 +3006,31 @@ class Qcurve(EllipticCurve_number_field):
 
             # Checking whether the reduction of the isogeny is separable
             R = P.residue_field()
-            Rx = PolynomialRing(R, names="x").fraction_field()
-            x = Rx.gens()[0]
-            phi0 = phi[0].change_ring(R)
-            F = phi0(x, 0)
+            Rx.<x> = R[]
+            Rx = Rx.fraction_field()
+            phi0 = (phi[0].numerator().change_ring(R) /
+                    phi[0].denominator().change_ring(R))
+            F = Rx(phi0(x, 0))
             if F.derivative(x) == 0:
                 raise ValueError("The reduction of the isogeny " +
                                  "at the Frobenius element is " +
                                  "separable.")
 
             # Defining variables needed for both p = 2 and p != 2
-            phi1 = phi[1].change_ring(R)
+            phi1 = (phi[1].numerator().change_ring(R) /
+                    phi[1].denominator().change_ring(R))
             H = phi1(x, 0)
             G = phi1(x, 1) - H
             Ered = Emin.reduction(P)
+            p = P.smallest_integer()
             c1 = (F - x^p).numerator()
 
             # Computing number of points in the set
             # {P : phi P = Frob P}
-            p = P.smallest_integer()
             if p == 2:
-                g = (Ered.a1()*x + Ered.a3()).numerator()
+                g = Ered.a1()*x + Ered.a3()
                 h = (x^3 + Ered.a2()*x^2 + Ered.a4()*x +
-                     Ered.a6()).numerator()
+                     Ered.a6())
                 c3 = (g*G*h + g*G*H + G^2*h + g^2*H + h^2 +
                       H^2).numerator()
                 c4 = (g - G).numerator()
@@ -3029,7 +3042,7 @@ class Qcurve(EllipticCurve_number_field):
                        gc134g.radical().degree())
             else:
                 R = (4*x^3 + Ered.b2()*x^2 + 2*Ered.b4()*x +
-                     Ered.b6()).numerator()
+                     Ered.b6())
                 sEred = sEmin.reduction(sP)
                 l = _scalar_of_rational_maps(phi0, phi1, Ered, sEred)
                 c2 = (l * R^((p + 1)/2) -
