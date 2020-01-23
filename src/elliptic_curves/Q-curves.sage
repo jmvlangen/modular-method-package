@@ -10,7 +10,7 @@ EXAMPLES::
     sage: K.<t> = QuadraticField(-2)
     sage: R.<x> = K[]
     sage: G.<s> = K.galois_group()
-    sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((x^2 - 12*x - 18*(t + 1))/(2*x), t)})
+    sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((-x^2 - 12*x - 18*(t + 1))/(2*x), t)})
     Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
 
 Q-curves without CM are modular and are linked to classical newforms
@@ -210,7 +210,7 @@ class Qcurve(EllipticCurve_number_field):
         sage: K.<t> = QuadraticField(-2)
         sage: R.<x> = K[]
         sage: G.<s> = K.galois_group()
-        sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((x^2 - 12*x - 18*(t + 1))/(2*x), t)})
+        sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((-x^2 - 12*x - 18*(t + 1))/(2*x), t)})
         Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
 
     """
@@ -295,7 +295,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: K.<t> = QuadraticField(-2)
             sage: R.<x> = K[]
             sage: G.<s> = K.galois_group()
-            sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((x^2 - 12*x - 18*(t + 1))/(2*x), t)})
+            sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((-x^2 - 12*x - 18*(t + 1))/(2*x), t)})
             Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
         
         It is also possible to make the code 'guess' the isogenies by
@@ -313,6 +313,18 @@ class Qcurve(EllipticCurve_number_field):
             Traceback (most recent call last):
             ...
             ValueError: There is not sufficient isogeny information to make [0, 12, 0, 18*t + 18, 0] a Q-curve
+
+        TESTS:
+
+        If the isogeny data does not give a valid isogeny an error is raised::
+
+            sage: K.<t> = QuadraticField(-2)
+            sage: R.<x> = K[]
+            sage: G.<s> = K.galois_group()
+            sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((x^2 - 12*x - 18*(t + 1))/(2*x), t)})
+            Traceback (most recent call last):
+            ...
+            ValueError: The given isogeny data ((1/2*x^2 - 6*x - 9*t - 9)/x, t) for the galois conjugate (1,2) does not give a valid isogeny.
 
         """
         self._init_curve(curve)
@@ -440,16 +452,31 @@ class Qcurve(EllipticCurve_number_field):
             R = phi[0].base_ring()
             Rxy = PolynomialRing(R, names=['x','y']).fraction_field()
             x, y = Rxy.gens()
-            self._phi_x[sigma] = phi[0](x)
+            phi_x = phi[0](x)
+            dom = self
+            codom = self.galois_conjugate(sigma)
             if len(phi) == 2:
-                dom = self
-                codom = self.galois_conjugate(sigma)
-                self._phi_y[sigma] = Rxy(((self._phi_x[sigma].derivative(x)
-                                           * (2*y + dom.a1()*x + dom.a3())
-                                           / R(phi[1]))
-                                          - (codom.a1()*self._phi_x[sigma] + codom.a3())) / 2)
+                phi_y = Rxy(((phi_x.derivative(x)
+                              * (2*y + dom.a1()*x + dom.a3())
+                              / R(phi[1]))
+                             - (codom.a1()*phi_x + codom.a3())) / 2)
             elif len(phi) == 3: 
-                self._phi_y[sigma] = Rxy(phi[1](x)*y + phi[2](x))
+                phi_y = Rxy(phi[1](x)*y + phi[2](x))
+            # Check if these define a valid isogeny before registering
+            f = codom.defining_polynomial()(phi_x, phi_y, 1)
+            fnum = f.numerator()
+            cf = sum(fnum.coefficient(list(e)) * x^e[0]
+                     for e in fnum.exponents()
+                     if e[1] == 2) / f.denominator()
+            check = f - cf * dom.defining_polynomial()(x, y, 1)
+            if check != 0:
+                raise ValueError("The given isogeny data " +
+                                 str(phi) +
+                                 " for the galois conjugate " +
+                                 str(sigma) +
+                                 " does not give a valid isogeny.")
+            self._phi_x[sigma] = phi_x
+            self._phi_y[sigma] = phi_y
         else:
             self._add_isogeny(sigma, (phi.x_rational_map(), _scalar_of_isogeny(phi)))
 
@@ -464,8 +491,7 @@ class Qcurve(EllipticCurve_number_field):
 
     def _update_isogeny(self, sigma, change):
         r"""Update the field of one specific isogeny"""
-        dom = change.domain()
-        change = dom.hom([change(dom.gens()[0])])
+        change = _write_as_im_gen_map(change)
         phi_x = self._phi_x[sigma]
         phi_y = self._phi_y[sigma]
         Rxy = phi_y.parent().base()
@@ -1864,14 +1890,14 @@ class Qcurve(EllipticCurve_number_field):
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
             [ 1  1  1  1]
+            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1  1 -1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1]
+            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1  1 -1 -1]
 
         """
         if hasattr(index, "__iter__"):
@@ -1957,14 +1983,14 @@ class Qcurve(EllipticCurve_number_field):
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
             [ 1  1  1  1]
+            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1  1 -1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1]
+            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1  1 -1 -1]
 
         """
         if not self._is_cached('_beta'):
@@ -2416,7 +2442,8 @@ class Qcurve(EllipticCurve_number_field):
         K_gamma = gamma.parent()
         Kdef = self.definition_field()
         Kphi = self.complete_definition_field()
-        K, iota, gamma_map = composite_field(Kphi, K_gamma,
+        K, iota, gamma_map = composite_field(self._to_Kphi,
+                                             K_gamma,
                                              give_maps=True)
         if not K.is_absolute():
             K = K.absolute_field(names=K.variable_name())
@@ -2436,11 +2463,11 @@ class Qcurve(EllipticCurve_number_field):
             Fs = Sx(F(s).numerator().change_ring(E_map) /
                     F(s).denominator().change_ring(E_map))
             ls = iota(l(s))
-            Fs = gamma * Fs(x / s(gamma))
-            if (s(gamma)/gamma).is_square():
-                agamma = sqrt(s(gamma)/gamma)
+            Fs = s(gamma) * Fs(x / gamma)
+            if (gamma/s(gamma)).is_square():
+                agamma = sqrt(gamma/s(gamma))
             else:
-                Ls.<agamma> = K.extension(x^2 - s(gamma)/gamma)
+                Ls.<agamma> = K.extension(x^2 - gamma/s(gamma))
                 Sx = R.change_ring(Ls).fraction_field()
                 Fs = Sx(Fs.numerator().change_ring(Ls) /
                         Fs.denominator().change_ring(Ls))
