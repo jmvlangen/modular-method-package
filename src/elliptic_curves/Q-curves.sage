@@ -1915,6 +1915,43 @@ class Qcurve(EllipticCurve_number_field):
                          for ii in self._conjugacy_classes())
         raise Exception("Invalid index %s"%index)
 
+    @cached_method
+    def _splitting_field_map(self, index=0):
+        r"""Determine how the image of a splitting character embeds into the
+        image of the corresponding splitting map.
+
+        INPUT:
+
+        - ``index`` -- The index (default: 0) of the splitting
+          map. Accepted values are non-negative integers smaller than
+          the total amount of splitting maps.
+
+        OUTPUT:
+
+        A field homomorphism from the image field of the splitting
+        character with index `index` to the image field of the
+        splitting map with index `index`. This homomorphism is such
+        that the values of the splitting character and the
+        corresponding splitting map correspond in the image field
+        according to the relation ..MATH
+
+            \beta^2 = \eps d,
+
+        where $\beta$ is the splitting map, $\eps$ is the splitting
+        character and $d$ is the degree map.
+
+        """
+        Leps = self.splitting_character(index).base_ring()
+        Lbeta = self.splitting_image_field(index)
+        eps = self.splitting_character(index, galois=True)
+        beta = self.splitting_map(index)
+        d = self.degree_map
+        K = self.splitting_field()
+        G = K.galois_group()
+        return [iota for iota in Leps.embeddings(Lbeta)
+                if all(d(s) * iota(eps(s)) == beta(s)^2
+                       for s in G)][0]
+
     @cached_method(key=_galois_cache_key2)
     def c_splitting_map(self, sigma, tau):
         r"""Evaluate the coboundary of a splitting map of this Q-curve.
@@ -2991,6 +3028,24 @@ class Qcurve(EllipticCurve_number_field):
         Galois representation associated to the splitting map given by
         `splitting_map` for $\lambda$ not dividing `prime`.
 
+        TESTS::
+
+            sage: K.<t> = QuadraticField(5)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E = E.decomposable_twist()
+            sage: K = E.definition_field()
+            sage: def check(p):
+            ....:     P = K.prime_above(p)
+            ....:     F = P.residue_field()
+            ....:     f = F.degree()
+            ....:     En = E.reduction(P).count_points()
+            ....:     a1 = 1 + len(F) - En
+            ....:     a2 = E.trace_of_frobenius(p, power=f)
+            ....:     return a1 == a2
+            ....: 
+            sage: all(check(p) for p in prime_range(7, 100))
+            True
+
         """
         if power > 1:
             T = self.trace_of_frobenius(prime,
@@ -2998,9 +3053,8 @@ class Qcurve(EllipticCurve_number_field):
             D = self.determinant_of_frobenius(prime,
                                               splitting_map=splitting_map)
             F = self._trace_power_formula(power)
-            K, T_map, D_map = composite_field(T.parent(), D.parent(),
-                                              give_maps=True)
-            return F(T_map(T), D_map(D))
+            iota = self._splitting_field_map(splitting_map)
+            return F(T, iota(D))
         else:
             K = self.decomposition_field()
             iota = self._to_Kdec * self._to_Kphi
