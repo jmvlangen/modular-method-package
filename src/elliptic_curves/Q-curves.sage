@@ -16,12 +16,13 @@ EXAMPLES::
 Q-curves without CM are modular and are linked to classical newforms
 that can be computed::
 
-    sage: K.<t> = QuadraticField(3)
+    sage: K.<t> = QuadraticField(-3)
     sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
     sage: E2 = E.decomposable_twist()
-    sage: E2.newform() # long
-    (q + (-a + 1)*q^3 + a*q^5 + 3*a*q^7 + (-2*a - 1)*q^9 + 4*q^11 + O(q^12),
-     [Dirichlet character modulo 12 of conductor 1 mapping 7 |--> 1, 5 |--> 1])
+    sage: E2.newform() # long 12 s
+    (q - 1/2*a0*q^3 + (-1/4*a0^2 + 1)*q^5 + O(q^6),
+     [Dirichlet character modulo 8 of conductor 8 mapping 7 |--> 1, 5 |--> -1,
+      Dirichlet character modulo 1 of conductor 1])
 
 AUTHORS:
 
@@ -3206,7 +3207,8 @@ class Qcurve(EllipticCurve_number_field):
             return eps(prime)^(-1) * prime
             
     @cached_method
-    def newform(self, algorithm='sage', verify=0):
+    def newform(self, algorithm='sage', verify=0, warning=10^4,
+                path=None):
         r"""Give a newform associated to this Q-curve.
 
         Each non-CM Q-curve is the quotient of a $\Q$-simple variety
@@ -3230,20 +3232,31 @@ class Qcurve(EllipticCurve_number_field):
         newforms of the lowest level is computed with the appropriate
         character. For these newforms the traces of Frobenius of this
         Q-curve and the traces of Frobenius of the newforms are
-        compared until as many newforms are left as expected. Some
-        Q-curves have multiple factors of the same level and
-        character, so one is chosen.
+        compared until a single newform remains. Some Q-curves have
+        multiple factors of the same level and character, so one is
+        chosen.
 
         INPUT:
         
         - ``algorithm`` -- A string that determines which program
           should be used to compute the spaces of newforms. Allowed
-          values are: 'sage' (default) or 'magma' to use Sage or
-          MAGMA respectively.
+          values are: 'sage' (default) to use Sage, 'magma' to use
+          MAGMA, or 'file' to load the newforms from a file.
 
         - ``verify`` -- A non-negative integer determining what the
           biggest prime is for which the result should be verified
           using the traces of the corresponding Frobenius elements.
+
+        - ``warning`` -- A non-negative integer (default 10^4). If the
+          primes at which traces of frobenius are compared ever exceed
+          this value, a warning will be printed to the standard output
+          and this value will be doubled. If it is smaller than the
+          value of `verify` it will be set to `verify`.
+
+        - ``path`` -- A string or None (default: None). Only used in
+          case `algorithm` is set to 'file', in which case this should
+          be the (relative) path to the file from which the newforms
+          should be loaded as a string.
 
         OUTPUT:
 
@@ -3280,21 +3293,23 @@ class Qcurve(EllipticCurve_number_field):
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E2 = E.decomposable_twist()
-            sage: E2.newform() # long
-            (q + (-a + 1)*q^3 + a*q^5 + 3*a*q^7 + (-2*a - 1)*q^9 + 4*q^11 + O(q^12),
-             [Dirichlet character modulo 12 of conductor 1 mapping 7 |--> 1, 5 |--> 1])
+            sage: E2.newform() # long 22 min
+            (q - 1/2*a3*q^3 + (-1/2*a3 - 1)*q^5 + O(q^6),
+             [Dirichlet character modulo 1 of conductor 1])
 
         Or another example with two factors::
 
-            sage: K.<t> = QuadraticField(5)
+            sage: K.<t> = QuadraticField(-3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E2 = E.decomposable_twist()
-            sage: E2.newform() # long
-            (q + (a + 1)*q^7 - 4*a*q^11 + O(q^12),
-             [Dirichlet character modulo 20 of conductor 1 mapping 11 |--> 1, 17 |--> 1,
-              Dirichlet character modulo 20 of conductor 20 mapping 11 |--> -1, 17 |--> -zeta4])
+            sage: E2.newform() # long 12 s
+            (q - 1/2*a0*q^3 + (-1/4*a0^2 + 1)*q^5 + O(q^6),
+             [Dirichlet character modulo 8 of conductor 8 mapping 7 |--> 1, 5 |--> -1,
+              Dirichlet character modulo 1 of conductor 1])
 
         """
+        if warning < verify:
+            warning = verify
         if not self.does_decompose():
             raise ValueError("Can not compute newform if the restriction of " +
                              "scalars does not decompose.")
@@ -3304,13 +3319,22 @@ class Qcurve(EllipticCurve_number_field):
         # Find a common base for all twists
         M = lcm(chi.modulus() for chi in twists_base)
         twists_base = [chi.extend(M)^(-1) for chi in twists_base]
+        L = QQ
+        for i in range(len(twists_base)):
+            Li = twists_base[i].base_ring()
+            if L != Li:
+                L, old_to_new, i_to_new = composite_field(L, Li,
+                                                          give_maps=True)
+                twists_base[i] = twists_base[i].change_ring(i_to_new)
+                for j in range(i):
+                    twists_base[j] = twists_base[j].change_ring(old_to_new)
         # Characters of the newforms
         eps_ls = [(eps^(-1)).primitive_character()
                   for eps in self.splitting_character('conjugacy')]
         Lbeta_ls = self.splitting_image_field('conjugacy') # coefficient fields
 
-        use_magma = (algorithm == 'magma')
-        if not use_magma and algorithm != 'sage':
+        if (algorithm != 'magma' and algorithm != 'sage' and
+            algorithm != 'file'):
             raise ValueError("%s is not a valid algorithm to use."%algorithm)
 
         candidates = []
@@ -3319,40 +3343,54 @@ class Qcurve(EllipticCurve_number_field):
         # the primes in these will be excluded in checking
         # the traces of Frobenius
         done_cases = {}
+        done_cases2 = []
         for k in range(len(levels)):
             # Newform with smallest level:
             i_min, N = min(enumerate(levels[k]), key=(lambda x: x[1]))
-            chi = twists_base[i_min]
-            # Twists relative to i_min
-            twists = [chi_j * chi^(-1) for chi_j in twists_base]
             eps = eps_ls[i_min]
-            Lbeta = Lbeta_ls[i_min]
+            if (N, eps, i_min) not in done_cases2:
+                chi = twists_base[i_min]
+                # Twists relative to i_min
+                twists = [(chi_j * chi^(-1)).primitive_character().minimize_base_ring()
+                          for chi_j in twists_base]
+                Lbeta = Lbeta_ls[i_min]
 
-            # Computing the newforms, but only if not done already
-            if (N, eps) not in done_cases:
-                done_cases[(N, eps)] = get_newforms(N, character=eps,
-                                                    algorithm=algorithm)
-            nfs = done_cases[(N, eps)]
-            for nf in nfs:
-                Kf = nf.coefficient_field()
-                if Kf.absolute_degree() == Lbeta.absolute_degree():
-                    for iota in Kf.embeddings(Lbeta):
-                        candidates.append((nf, twists, i_min, iota))
+                # Computing the newforms, but only if not done already
+                if (N, eps) not in done_cases:
+                    done_cases[(N, eps)] = get_newforms(N, character=eps,
+                                                        algorithm=algorithm,
+                                                        path=path)
+                nfs = done_cases[(N, eps)]
+                for nf in nfs:
+                    Kf = nf.coefficient_field()
+                    if Kf.absolute_degree() == Lbeta.absolute_degree():
+                        for iota in Kf.embeddings(Lbeta):
+                            candidates.append((nf, twists, i_min, iota))
+                # Making sure we don't do this twice            
+                done_cases2.append((N, eps, i_min))
 
         p = 1
         while len(candidates) > 1 or p < verify:
+            if p > warning:
+                print ("Warning: Checked prime exceeds warning value " +
+                       str(warning))
+                warning = 2 * warning
             while p.divides(max_level):
                 p = next_prime(p)
             removed = []
             for nf, twists, i_min, iota in candidates:
-                Kf = nf.coefficient_field()
                 apf = iota(nf.trace_of_frobenius(p))
-                apE = nf.trace_of_frobenius(p)
+                splitting_map = self._conjugacy_classes()[i_min][0]
+                apE = self.trace_of_frobenius(p, splitting_map=splitting_map)
                 if apf != apE:
                     removed.append((nf, twists, i_min, iota))
             for candidate in removed:
                 candidates.remove(candidate)
-            
+            p = next_prime(p)
+
+        if len(candidates) < 1:
+            raise ValueError("No newform seems to correspond with " +
+                             "this curve. A bug?")
         return candidates[0][0], candidates[0][1]
 
     def _repr_(self):
