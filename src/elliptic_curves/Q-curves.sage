@@ -1744,6 +1744,7 @@ class Qcurve(EllipticCurve_number_field):
             beta0 = self._beta
             @cached_function(key=lambda s: (str(s), s.parent().number_field()))
             def beta(sigma):
+                sigma = galois_field_change(sigma, self.decomposition_field())
                 return beta0(sigma) * alpha(sigma)
             self._beta = beta
             self.c_splitting_map.clear_cache() # Delete values of previous beta
@@ -3029,6 +3030,47 @@ class Qcurve(EllipticCurve_number_field):
         Galois representation associated to the splitting map given by
         `splitting_map` for $\lambda$ not dividing `prime`.
 
+        EXAMPLES::
+
+            sage: K.<t> = QuadraticField(-2)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E = E.decomposable_twist()
+            sage: E.trace_of_frobenius(5)
+            a
+            sage: E.trace_of_frobenius(11)
+            2
+
+        The trace depends on the splitting map used::
+
+            sage: K.<t> = QuadraticField(-3)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E = E.decomposable_twist()
+            sage: E.trace_of_frobenius(7, splitting_map=0)
+            -1/3*zeta4a^3 - 1/3*zeta4a
+            sage: E.trace_of_frobenius(7, splitting_map=1)
+            1/3*zeta4a^3 + 1/3*zeta4a
+            sage: E.trace_of_frobenius(7, splitting_map=2)
+            -1/3*zeta4a^3 - 1/3*zeta4a
+            sage: E.trace_of_frobenius(7, splitting_map=3)
+            1/3*zeta4a^3 + 1/3*zeta4a
+
+        A sufficiently high power of the trace corresponds to the
+        trace of Frobenius from the normal galois representation of
+        the curve::
+
+            sage: K.<t> = QuadraticField(-5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E = E.decomposable_twist()
+            sage: L = E.definition_field()
+            sage: L == E.decomposition_field()
+            True
+            sage: P = L.prime_above(17)
+            sage: f = F.degree()
+            sage: 1 + len(F) - E.reduction(P).count_points() # Trace of Frob_P
+            322
+            sage: E.trace_of_frobenius(17, power=f)
+            322
+
         TESTS::
 
             sage: K.<t> = QuadraticField(5)
@@ -3190,6 +3232,41 @@ class Qcurve(EllipticCurve_number_field):
         $\lambda$-adic Galois representation associated to the
         splitting map given by `splitting_map` for $\lambda$ not
         dividing `prime`.
+
+        EXAMPLES::
+
+            sage: K.<t> = QuadraticField(5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E = E.decomposable_twist()
+            sage: E.determinant_of_frobenius(17)
+            -17*zeta4
+
+        The determinant will depend on the chosen splitting map::
+
+            sage: K.<t> = QuadraticField(-5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E = E.decomposable_twist()
+            sage: E.determinant_of_frobenius(7, splitting_map=0)
+            7*zeta4
+            sage: E.determinant_of_frobenius(7, splitting_map=4)
+            -7*zeta4
+
+        The determinant of a power of frobenius corresponds to the
+        determinant of the standard galois representation associated
+        with an elliptic curve::
+
+            sage: K.<t> = QuadraticField(-1)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E = E.decomposable_twist()
+            sage: L = E.definition_field()
+            sage: L == E.decomposition_field()
+            True
+            sage: P = L.prime_above(11)
+            sage: F = P.residue_field()
+            sage: len(F) # determinant of Frob_P
+            121
+            sage: E.determinant_of_frobenius(11, power=F.degree())
+            121
 
         """
         if power > 1:
