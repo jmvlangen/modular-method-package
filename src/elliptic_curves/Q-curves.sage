@@ -398,13 +398,19 @@ class Qcurve(EllipticCurve_number_field):
         r"""Give a cache key for an element of a galois group"""
         return str(sigma), sigma.parent().number_field()
         
-    @cached_method(key=_galois_cache_key)
-    def galois_conjugate(self, sigma):
+    @cached_method(key=lambda self, sigma, change : (self._galois_cache_key(sigma), change))
+    def galois_conjugate(self, sigma, change_ring=None):
         r"""Give the Galois conjugate of this curve.
 
         INPUT:
 
         - ``sigma`` -- A Galois homomorphism of some number field
+
+        - ``change_ring`` -- A field homomorphism from the definition
+          field of this curve to another field or None (default). If
+          set to a value other than None, this function will return
+          the Galois conjugate over the field that is the codomain of
+          this homomorphism.
 
         OUTPUT:
         
@@ -425,7 +431,10 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
-        return EllipticCurve(self.a_invariants()).change_ring(sigma.as_hom())
+        change = sigma.as_hom()
+        if change_ring != None:
+            change = _concat_maps(change, change_ring)
+        return EllipticCurve(self.a_invariants()).change_ring(change)
 
     # Isogeny related stuff
     def _init_isogenies(self):
@@ -448,13 +457,13 @@ class Qcurve(EllipticCurve_number_field):
 
     def _check_isogeny(self, dom, codom, phi_x, phi_y):
         r"""Check if phi_x and phi_y define a valid isogeny from dom to codom"""
-        x, y = phi_x.parent().gens()
+        x, y = phi_x.parent().base().gens()
         f = codom.defining_polynomial()(phi_x, phi_y, 1)
         fnum = f.numerator()
         cf = sum(fnum.coefficient(list(e)) * x^e[0]
                  for e in fnum.exponents()
-                 if e[1] == 2) / f.denominator()
-        check = f - cf * dom.defining_polynomial()(x, y, 1)
+                 if e[1] == 2)
+        check = fnum - cf * dom.defining_polynomial()(x, y, 1)
         return check == 0
         
     def _add_isogeny(self, sigma, phi):
@@ -599,8 +608,8 @@ class Qcurve(EllipticCurve_number_field):
                     phi_s = self._get_isogeny(s)
                     phi_x = sL_phi_t[0](phi_s)
                     phi_y = sL_phi_t[1](phi_s)
-                    dom = self.galois_conjugate(G[0]).change_ring(self._to_Kphi)
-                    codom = self.galois_conjugate(s*t).change_ring(self._to_Kphi)
+                    dom = self.galois_conjugate(G[0], change_ring=self._to_Kphi)
+                    codom = self.galois_conjugate(s*t, change_ring=self._to_Kphi)
                     if not self._check_isogeny(dom, codom, phi_x, phi_y):
                         raise ValueError("Concatenated isogeny is not a valid isogeny.")
                     self._phi_x[s*t] = phi_x
@@ -679,8 +688,8 @@ class Qcurve(EllipticCurve_number_field):
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
-        dom = EllipticCurve_number_field.base_extend(self, self._to_Kphi)
-        codom = self.galois_conjugate(sigma).base_extend(self._to_Kphi)
+        dom = self.galois_conjugate(sigma^0, change_ring=self._to_Kphi)
+        codom = self.galois_conjugate(sigma, change_ring=self._to_Kphi)
         return _scalar_of_rational_maps(self._phi_x[sigma],
                                         self._phi_y[sigma], dom,
                                         codom)
