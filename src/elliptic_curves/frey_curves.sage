@@ -1735,8 +1735,9 @@ class FreyQcurve(FreyCurve, Qcurve):
                         print "Degree %s isogeny found for"%degree, sigma
                     self._add_isogeny(sigma, psi)
     
-    @cached_method(key=_galois_cache_key)
-    def isogeny_x_map(self, sigma):
+    @cached_method(key=lambda self, sigma, change :
+                   (self._galois_cache_key(sigma), change))
+    def isogeny_x_map(self, sigma, change_ring=None):
         r"""Return the x-coordinate rational map of the isogeny from this curve
         to a Galois conjugate.
 
@@ -1748,13 +1749,20 @@ class FreyQcurve(FreyCurve, Qcurve):
         
         - ``sigma`` -- A Galois homomorphism of a number field
 
+        - ``change_ring`` -- A field homomorphism from the definition
+          field of this Q-curve or None (default). If set to a value
+          other than None, the base field of the returned rational map
+          will be changed by this homomorphism.
+
         OUTPUT:
 
         A rational function in $x$ over the definition field of this
         Q-curve that gives the $x$-coordinate of an image point of the
         isogeny as a rational function in the $x$ coordinate of the
         origin point. The isogeny is the registered isogeny from this
-        curve to the `sigma` Galois conjugate of this curve.
+        curve to the `sigma` Galois conjugate of this curve. If
+        `change_ring` was set to None, the returned rational function
+        will be defined over the codomain of `change_ring`.
 
         EXAMPLE::
 
@@ -1785,18 +1793,26 @@ class FreyQcurve(FreyCurve, Qcurve):
         """
         sigma = galois_field_change(sigma, self.definition_field())
         R = self.base_ring()
-        Rx = PolynomialRing(R, names='x').fraction_field()
-        x = Rx.gen()
+        Rx.<x> = PolynomialRing(R)
+        Fx = Rx.fraction_field()
         phi_x = self._phi_x[sigma]
         num = phi_x.numerator()
+        S = num.parent()
         den = phi_x.denominator()
         _, iota = write_as_extension(self._to_Kphi, give_map=True)
-        return Rx(sum((sum(iota(cf).list()[0] * R(m)
-                           for cf, m in num.coefficient(e))
-                       * x^e[0]) for e in num.exponents()) /
-                  sum((sum(iota(cf).list()[0] * R(m)
-                           for cf, m in den.coefficient(e))
-                       * x^e[0]) for e in den.exponents()))
+        result = (Fx(sum(sum(iota(cf).list()[0] * R(m)
+                             for cf, m in num.monomial_coefficient(S.monomial(*e)))
+                         * x^e[0] for e in num.exponents())) /
+                  Fx(sum(sum(iota(cf).list()[0] * R(m)
+                             for cf, m in den.monomial_coefficient(S.monomial(*e)))
+                         * x^e[0] for e in den.exponents())))
+        if change_ring is None:
+            return result
+        R2 = R.change_ring(change_ring.codomain())
+        Rx2 = Rx.change_ring(R2)
+        Fx2 = Rx2.fraction_field()
+        change_ring = Fx.Hom(Fx2)(Rx.Hom(Rx2)(R.Hom(R2)(change_ring)))
+        return change_ring(result)
 
     def _isogeny_data(self, iota):
         r"""Give the isogeny data of this curve over a given field.
@@ -1858,6 +1874,61 @@ class FreyQcurve(FreyCurve, Qcurve):
                                   condition=result._condition)
         return result
 
+    def _minimal_a_invariants(self, from_min):
+        r"""Give the a_invariants over the minimal definition_field
+
+        INPUT:
+
+        - ``from_min`` -- The map from the minimal definition field to
+          the definition field.
+
+        """
+        _, iota = write_as_extension(from_min, give_map=True)
+        R = self.base_ring().change_ring(from_min.domain())
+        return [sum(iota(a.monomial_coefficient(m)).list()[0] * R(m)
+                    for m in a.monomials()) for a in self.a_invariants()]
+        
+    def _minimal_isogeny_x_maps(self, Kmin, from_min, min_map):
+        r"""Give the x-coordinate maps of isogenies for :meth:minimize_fields
+
+        INPUT:
+
+        - ``Kmin`` -- The minimal definition field
+        
+        - ``from_min`` -- The map from the minimal definition field to
+          the definition field.
+
+        - ``min_map`` -- The map from the minimal definition field to
+          the minimal complete definition field.
+
+        """
+        result = {}
+        G = Kmin.galois_group()
+        _, iota = write_as_extension(from_min, give_map=True)
+        for s in G:
+            Fs = self.isogeny_x_map(s)
+            Fsnum = Fs.numerator()
+            Fsden = Fs.denominator()
+            R = Fsnum.parent().base().change_ring(Kmin)
+            S = Fsnum.parent().change_ring(R)
+            Fsnum = sum(sum(iota(cf.monomial_coefficient(mR)).list()[0] *
+                            R(mR) for mR in cf.monomials()) *
+                            S(mS) for cf, mS in
+                        [(Fsnum.monomial_coefficient(mS), mS)
+                         for mS in Fsnum.monomials()])
+            Fsden = sum(sum(iota(cf.monomial_coefficient(mR)).list()[0] *
+                            R(mR) for mR in cf.monomials()) *
+                            S(mS) for cf, mS in
+                        [(Fsden.monomial_coefficient(mS), mS)
+                         for mS in Fsden.monomials()])
+            R2 = R.change_ring(min_map.codomain())
+            S2 = S.change_ring(R2)
+            change = S.Hom(S2)(R.Hom(R2)(min_map))
+            Fsnum = Fsnum.change_ring(change)
+            Fsden = Fsden.change_ring(change)
+            result[s] = S2.fraction_field()(Fsnum / Fsden)
+        return result
+
     def minimize_fields(self, names=None):
         r"""Attempt to minimize the fields associated to this curve.
 
@@ -1898,67 +1969,14 @@ class FreyQcurve(FreyCurve, Qcurve):
             Number Field in s0 with defining polynomial x^4 - 38*x^2 + 1225
 
         """
-        if names is None:
-            names = [self.definition_field().variable_name(),
-                     self.complete_definition_field().variable_name()]
-            
-        # Find a minimal field of definition
-        ainvs = self.a_invariants()
-        K = self.definition_field()
-        G = K.galois_group()
-        H = [s for s in G
-             if ainvs == self.galois_conjugate(s).a_invariants()]
-        Knew = fixed_field(H)
-        Knew = Knew.galois_closure(names=names[0])
-        from_new = Knew.embeddings(K)[0]
-        _, iota = write_as_extension(from_new, give_map=True)
-        ainvs = [sum(iota(cf).list()[0] * m.change_ring(Knew)
-                     for cf, m in a) for a in ainvs]
-
-        # Determine the appropriate x_rational maps
-        R.<x> = Knew[]
-        G = Knew.galois_group()
-        F = {}
-        for s in G:
-            Fs = self.isogeny_x_map(s)
-            Fsnum = Fs.numerator()
-            R = Fsnum.parent().change_ring(Knew)
-            Fsden = Fs.denominator()
-            Fsnum = sum(sum(iota(cf) * m2.change_ring(Knew)
-                            for cf, m2 in Fsnum.monomial_coefficient(m1))
-                        * R(m1) for m1 in Fsnum.monomials())
-            Fsden = sum(sum(iota(cf) * m2.change_ring(Knew)
-                            for cf, m2 in Fsden.monomial_coefficient(m1))
-                        * R(m1) for m1 in Fsden.monomials())
-            F[s] = (Fsnum, Fsden)
-
-        # Determine the appropriate isogeny scalars
-        Kphi = self.complete_definition_field()
-        Kbig, to_big = Kphi.galois_closure(names=names[1], map=True)
-        to_Kphi = _concat_maps(from_new, self._to_Kphi)
-        abig = to_big(to_Kphi(Knew.gen()))
-        l = {s : self.isogeny_scalar(s).change_ring(to_big) for s in G}
-        H = [s for s in Kbig.galois_group()
-             if (all(ls.change_ring(s.as_hom()) == ls
-                     for ls in l.values()) and
-                 s(abig) == abig)]
-        Kphi2, phi_map = fixed_field(H, map=True)
-        _, iota3 = write_as_extension(phi_map, give_map=True)
-        l = {s : sum(iota3(cf).list()[0] * m.change_ring(Kphi2)
-                     for cf, m in l[s]) for s in l}
-        to_Kphi = [psi for psi in Knew.embeddings(Kphi2)
-                   if phi_map(psi(Knew.gen())) == abig][0]
-        _, iota4 = write_as_extension(to_Kphi, give_map=True)
-        l = {s : l[s].change_ring(iota4) for s in l}
-        iota5 = _concat_maps(to_Kphi, iota4)
-        Rphi = R.change_ring(iota4.codomain())
-        iota5 = R.Hom(Rphi)(iota5)
-        F = {s : (F[s][0].change_ring(iota5), F[s][1].change_ring(iota5))
-             for s in F}
-        isogenies = {s : (F[s][0] / F[s][1], l[s]) for s in G}
-
-        return Qcurve(ainvs, isogenies=isogenies)
-
+        Kmin, Kphi, from_min, min_map, phi_map = self._minimize_fields(names=names)
+        ainvs = self._minimal_a_invariants(from_min)
+        F = self._minimal_isogeny_x_maps(Kmin, from_min, min_map)
+        l = self._minimal_isogeny_scalars(Kmin, phi_map)
+        isogenies = {s : (F[s], l[s]) for s in Kmin.galois_group()}
+        return FreyQcurve(ainvs, isogenies=isogenies,
+                          parameter_ring=self._R,
+                          condition=self._condition)
 
     def twist(self, gamma):
         r"""Give the twist of this Frey Q-curve by a given element gamma.
@@ -1984,46 +2002,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         a Q-curve.
 
         """
-        K_gamma = gamma.parent()
-        K, iota, gamma_map = composite_field(self._to_Kphi, K_gamma,
-                                             give_maps=True)
-        if not K.is_absolute():
-            K = K.absolute_field(names=K.variable_name())
-            iota = _concat_maps(iota, K.structure()[1])
-            gamma_map = _concat_maps(gamma_map, K.structure()[1])
-        gamma = gamma_map(gamma)
-        E_map = _concat_maps(self._to_Kphi, iota)
-        E = twist_elliptic_curve(self.change_ring(E_map), gamma)
-        ainvs = E.a_invariants()
-        R = E.base_ring()
-        Rx.<x> = R[]
-        Sx = R.fraction_field()
-        Ky.<y> = K[]
-        G = K.galois_group()
-        l = self.isogeny_scalar
-        F = self.isogeny_x_map
-        isogenies = dict()
-        for s in G:
-            Fs = Sx(sum(cf.change_ring(E_map) * Rx(m)
-                        for cf, m in F(s).numerator()) /
-                    sum(cf.change_ring(E_map) * Rx(m)
-                        for cf, m in F(s).denominator()))
-            ls = l(s).change_ring(iota)
-            Fs = s(gamma) * Fs(x / gamma)
-            if (gamma/s(gamma)).is_square():
-                agamma = sqrt(gamma/s(gamma))
-            else:
-                Ls.<agamma> = K.extension(y^2 - gamma/s(gamma))
-                R_ = R.change_ring(Ls)
-                Rx_ = Rx.change_ring(R_)
-                Sx_ = Rx_.fraction_field()
-                Fs = Sx(sum(cf.change_ring(Ls) * Rx_(m)
-                            for cf, m in Fs.numerator()) /
-                        sum(cf.change_ring(Ls) * Rx_(m)
-                            for cf, m in Fs.denominator()))
-            ls = agamma * ls
-            isogenies[s] = (Fs, ls)
-
+        ainvs, isogenies = self._twist(gamma)
         return FreyQcurve(ainvs, isogenies=isogenies,
                           parameter_ring=self._R,
                           condition=self._condition).minimize_fields()
@@ -2378,8 +2357,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         characters = [(eps^(-1)).primitive_character()
                       for eps in self.splitting_character('conjugacy')]
         for levelsi in levels:
-            level, eps = min(zip(levelsi, characters,
-                                 self.splitting_image_field('conjugacy')),
+            level, eps = min(zip(levelsi, characters),
                              key=lambda x: x[0])
             if (level, eps) in done_levels:
                 continue # Already computed, continue on with the next
