@@ -316,6 +316,13 @@ def write_as_extension(phi, give_map=False, names=None):
         sage: write_as_extension(K.hom(K))
         Number Field in a1 with defining polynomial x - a over its base field
 
+    Resolves conflicts in naming if a name was provided::
+
+        sage: K.<a> = QuadraticField(2)
+        sage: L.<a> = CyclotomicField(8)
+        sage: write_as_extension(K.embeddings(L)[0], names='a')
+        Number Field in a1 with defining polynomial x^2 + a*x + 1 over its base field
+
     """
     phi = _write_as_im_gen_map(phi)
     K = phi.domain()
@@ -337,13 +344,13 @@ def write_as_extension(phi, give_map=False, names=None):
         if g[0].change_ring(phi)(L.gen()) == 0:
             if names is None:
                 names = L.variable_name()
-                if K.variable_name() == names:
-                    for n in range(len(names)):
-                        if names[n:].isdigit():
-                            names = names[:n] + str(Integer(names[n:]) + 1)
-                            break
-                    else:
-                        names = names + "1"
+            if K.variable_name() == names:
+                for n in range(len(names)):
+                    if names[n:].isdigit():
+                        names = names[:n] + str(Integer(names[n:]) + 1)
+                        break
+                else:
+                    names = names + "1"
             M = K.extension(g[0], names=names)
             if give_map:
                 phi = L.hom([M.gen()])
