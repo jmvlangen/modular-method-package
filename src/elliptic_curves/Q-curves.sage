@@ -3343,87 +3343,90 @@ pp        """
             F = self._trace_power_formula(power)
             iota = self._splitting_field_map(splitting_map)
             return F(T, iota(D))
-        else:
-            K = self.decomposition_field()
+        
+        K = self.decomposition_field()
+        if self.definition_field() != K:
             iota = self._to_Kdec * self._to_Kphi
             E = self.change_ring(iota)
-            if prime.divides(K.absolute_discriminant()):
-                raise ValueError("The decomposition field is ramified " +
-                                 "at " + str(prime))
-            for P in K.primes_above(prime):
-                if E.has_good_reduction(P):
-                    break
-            else:
-                raise ValueError("This curve does not have good " +
-                                 "reduction at any prime above " +
-                                 str(prime))
+        else:
+            E = self
+        if prime.divides(K.absolute_discriminant()):
+            raise ValueError("The decomposition field is ramified " +
+                             "at " + str(prime))
+        for P in K.primes_above(prime):
+            if E.has_good_reduction(P):
+                break
+        else:
+            raise ValueError("This curve does not have good " +
+                             "reduction at any prime above " +
+                             str(prime))
 
-            # Setting up the isogeny between the right minimal models
-            Emin = E.local_data(P).minimal_model()
-            phi_min = Emin.isomorphism_to(E)
-            phi_min = _rational_maps_of_isomorphism(phi_min)
-            G = K.galois_group()
-            Frob = G.artin_symbol(P)
-            sE = E.galois_conjugate(Frob)
-            sP = Frob(P)
-            sEmin = sE.local_data(sP).minimal_model()
-            sphi_min = sE.isomorphism_to(sEmin)
-            sphi_min = _rational_maps_of_isomorphism(sphi_min)
-            phi = E._phi_x[Frob], E._phi_y[Frob]
-            phi = phi[0](phi_min), phi[1](phi_min)
-            phi = sphi_min[0](phi), sphi_min[1](phi)
+        # Setting up the isogeny between the right minimal models
+        Emin = E.local_data(P).minimal_model()
+        phi_min = Emin.isomorphism_to(E)
+        phi_min = _rational_maps_of_isomorphism(phi_min)
+        G = K.galois_group()
+        Frob = G.artin_symbol(P)
+        sE = E.galois_conjugate(Frob)
+        sP = Frob(P)
+        sEmin = sE.local_data(sP).minimal_model()
+        sphi_min = sE.isomorphism_to(sEmin)
+        sphi_min = _rational_maps_of_isomorphism(sphi_min)
+        phi = E._phi_x[Frob], E._phi_y[Frob]
+        phi = phi[0](phi_min), phi[1](phi_min)
+        phi = sphi_min[0](phi), sphi_min[1](phi)
 
-            # Checking whether the reduction of the isogeny is separable
-            R = P.residue_field()
-            Rx.<x> = R[]
-            Rx = Rx.fraction_field()
-            phi0 = (phi[0].numerator().change_ring(R) /
-                    phi[0].denominator().change_ring(R))
-            F = Rx(phi0(x, 0))
-            if F.derivative(x) == 0:
-                raise ValueError("The reduction of the isogeny " +
-                                 "at the Frobenius element is " +
-                                 "separable.")
+        # Checking whether the reduction of the isogeny is separable
+        R = P.residue_field()
+        Rx.<x> = R[]
+        Rx = Rx.fraction_field()
+        phi0 = (phi[0].numerator().change_ring(R) /
+                phi[0].denominator().change_ring(R))
+        F = Rx(phi0(x, 0))
+        if F.derivative(x) == 0:
+            raise ValueError("The reduction of the isogeny " +
+                             "at the Frobenius element is " +
+                             "separable.")
 
-            # Defining variables needed for both p = 2 and p != 2
-            phi1 = (phi[1].numerator().change_ring(R) /
-                    phi[1].denominator().change_ring(R))
-            H = phi1(x, 0)
-            G = phi1(x, 1) - H
-            Ered = Emin.reduction(P)
-            p = P.smallest_integer()
-            c1 = (F - x^p).numerator()
+        # Defining variables needed for both p = 2 and p != 2
+        phi1 = (phi[1].numerator().change_ring(R) /
+                phi[1].denominator().change_ring(R))
+        H = phi1(x, 0)
+        G = phi1(x, 1) - H
+        Ered = Emin.reduction(P)
+        p = P.smallest_integer()
+        c1 = (F - x^p).numerator()
 
-            # Computing number of points in the set
-            # {P : phi P = Frob P}
-            if p == 2:
-                g = Ered.a1()*x + Ered.a3()
-                h = (x^3 + Ered.a2()*x^2 + Ered.a4()*x +
-                     Ered.a6())
-                c3 = (g*G*h + g*G*H + G^2*h + g^2*H + h^2 +
-                      H^2).numerator()
-                c4 = (g - G).numerator()
-                gc13 = gcd(c1, c3)
-                gc134 = gcd(gc13, c4)
-                gc134g = gcd(gc134, g)
-                num = (1 + gc13.radical().degree() +
-                       gc134.radical().degree() -
-                       gc134g.radical().degree())
-            else:
-                R = (4*x^3 + Ered.b2()*x^2 + 2*Ered.b4()*x +
-                     Ered.b6())
-                sEred = sEmin.reduction(sP)
-                l = _scalar_of_rational_maps(phi0, phi1, Ered, sEred)
-                c2 = (l * R^((p + 1)/2) -
-                      F.derivative(x) * R).numerator()
-                num = (1 + 2 * gcd(c1, c2).radical().degree() -
-                       gcd(c1, R).radical().degree())
+        # Computing number of points in the set
+        # {P : phi P = Frob P}
+        if p == 2:
+            g = Ered.a1()*x + Ered.a3()
+            h = (x^3 + Ered.a2()*x^2 + Ered.a4()*x +
+                 Ered.a6())
+            c3 = (g*G*h + g*G*H + G^2*h + g^2*H + h^2 +
+                  H^2).numerator()
+            c4 = (g - G).numerator()
+            gc13 = gcd(c1, c3)
+            gc134 = gcd(gc13, c4)
+            gc134g = gcd(gc134, g)
+            num = (1 + gc13.radical().degree() +
+                   gc134.radical().degree() -
+                   gc134g.radical().degree())
+        else:
+            R = (4*x^3 + Ered.b2()*x^2 + 2*Ered.b4()*x +
+                 Ered.b6())
+            sEred = sEmin.reduction(sP)
+            l = _scalar_of_rational_maps(phi0, phi1, Ered, sEred)
+            c2 = (l * R^((p + 1)/2) -
+                  F.derivative(x) * R).numerator()
+            num = (1 + 2 * gcd(c1, c2).radical().degree() -
+                   gcd(c1, R).radical().degree())
 
-            # Computing a_p(E)
-            apE = F.numerator().degree() + p - num
+        # Computing a_p(E)
+        apE = F.numerator().degree() + p - num
 
-            # The final result
-            return self.splitting_map(splitting_map)(Frob)^(-1) * apE
+        # The final result
+        return self.splitting_map(splitting_map)(Frob)^(-1) * apE
 
     def determinant_of_frobenius(self, prime, power=1, splitting_map=0):
         r"""Compute the determinant of a Frobenius element acting on this

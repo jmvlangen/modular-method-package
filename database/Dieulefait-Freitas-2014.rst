@@ -44,9 +44,7 @@ Q-curve.
 ::
 
    sage: a_invariants = [0, 2*(a + b), 0, -sigma(w)*phi1, 0]
-   sage: L.<sqrtm2> = QuadraticField(-2)
-   sage: isogenies = {sigma^0: (QQ(1), 1), sigma^1: (sqrtm2, 2)}
-   sage: E = FreyQcurve(a_invariants, isogenies=isogenies, condition=C)
+   sage: E = FreyQcurve(a_invariants, condition=C, guessed_degrees=[2])
 
 We check that the discriminant is indeed as stated in the article.
 
@@ -398,7 +396,7 @@ Q-curve.
 ::
 
    sage: a_invariants2 = [0, 2*(a - b), 0, (-3/10*sqrt(K(5)) + 1/2)*phi1, 0]
-   sage: F = FreyQcurve(a_invariants2, isogenies=isogenies, condition=C)
+   sage: F = FreyQcurve(a_invariants2, condition=C, guessed_degrees=[2])
 
 The article claims that :math:`F` has the same splitting behaviour as
 :math:`E` and that twisting by the same :math:`\gamma` gives a

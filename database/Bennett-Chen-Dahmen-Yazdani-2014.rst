@@ -71,9 +71,7 @@ The second Frey curve is a Q-curve and is given by
 
    sage: K.<sqrt3> = QuadraticField(3)
    sage: a_invariants2 = [0, 2*(sqrt3 - 1)*(s - t), 0, (2 - sqrt3)*((s - t)^2 - 2*sqrt3*s*t), 0]
-   sage: G.<sigma> = K.galois_group()
-   sage: isogenies2 = {sigma^0: (QQ(1), 1), sigma^1: (-1 - sqrt3, 2)}
-   sage: E2 = FreyQcurve(a_invariants2, isogenies=isogenies2, condition=C1)
+   sage: E2 = FreyQcurve(a_invariants2, condition=C1, guessed_degrees=[2])
 
 Again we compute the invariants as in the article, which agree with
 the results in the article.
@@ -82,6 +80,7 @@ the results in the article.
 
    sage: E2.discriminant() == (1664 - 960*sqrt3)*((s - t)^2 + 2*sqrt3*s*t)*((s - t)^2 - 2*sqrt3*s*t)^2
    True
+   sage: G = K.galois_group()
    sage: [E2.splitting_map()(tau).minpoly() for tau in G]
    [x - 1, x^2 + 2]
    sage: E2.splitting_image_field().is_isomorphic(QQ[sqrt(-2)])
@@ -102,8 +101,7 @@ field as this is in itself an abelian variety of GL_2 type.
 ::
 
    sage: E2.conductor_restriction_of_scalars()
-   Warning: Assuming that s and t are coprime.
-   589824*Norm(Rad_P( ((-960*zeta0 + 1664)) * (s^2 + (2*zeta0 - 2)*s*t + t^2) * (s^2 + (-2*zeta0 - 2)*s*t + t^2)^2 ))
+   589824*Norm(Rad_P( ((-960*sqrt3 + 1664)) * (s^2 + (2*sqrt3 - 2)*s*t + t^2) * (s^2 + (-2*sqrt3 - 2)*s*t + t^2)^2 ))
 
 We compute the newforms after level lowering, for which there are 10
 conjugacy classes associated to the second curve according to the
@@ -181,12 +179,10 @@ The second Frey curve introduced in this case is
 ::
 
    sage: K.<sqrt3> = QuadraticField(3)
-   sage: G.<sigma> = K.galois_group()
    sage: a_invariants21 = [0, 4*(sqrt3 - 1)*t, 0, -(sqrt3 - 1)^2*(sqrt3*s^2 + (-2 - sqrt3)*t^2), 0]
    sage: a_invariants22 = [0, 4*(sqrt3 - 1)*t, 0, -(sqrt3 - 1)^2*(sqrt3*s^2 + (-2 + sqrt3)*t^2), 0]
-   sage: isogenies2 = {sigma^0: (QQ(1), 1), sigma^1: (-1 - sqrt3, 2)}
-   sage: E21 = FreyQcurve(a_invariants21, isogenies=isogenies2, condition=C2)
-   sage: E22 = FreyQcurve(a_invariants22, isogenies=isogenies2, condition=C3)
+   sage: E21 = FreyQcurve(a_invariants21, condition=C2, guessed_degrees=[2])
+   sage: E22 = FreyQcurve(a_invariants22, condition=C3, guessed_degrees=[2])
 
 Again both curves have the same conductor and the conductor according
 to the article is the same as computed here.
@@ -209,11 +205,9 @@ agrees with the following computation.
 ::
 
    sage: E21.conductor_restriction_of_scalars()
-   Warning: Assuming that s and t are coprime.
-   589824*Norm(Rad_P( ((39936*zeta0 - 69120)) * (s^2 + (2/3*zeta0 - 1)*t^2) * (s^2 + (-2/3*zeta0 - 1)*t^2)^2 ))
+   589824*Norm(Rad_P( ((39936*sqrt3 - 69120)) * (s^2 + (2/3*sqrt3 - 1)*t^2) * (s^2 + (-2/3*sqrt3 - 1)*t^2)^2 ))
    sage: E22.conductor_restriction_of_scalars()
-   Warning: Assuming that s and t are coprime.
-   589824*Norm(Rad_P( ((39936*zeta0 - 69120)) * (s^2 + (2/3*zeta0 + 1)*t^2) * (s^2 + (-2/3*zeta0 + 1)*t^2)^2 ))
+   589824*Norm(Rad_P( ((39936*sqrt3 - 69120)) * (s^2 + (2/3*sqrt3 + 1)*t^2) * (s^2 + (-2/3*sqrt3 + 1)*t^2)^2 ))
 
 As in the article we now apply the multi-Frey method to these two/four
 Frey curves first.
@@ -263,9 +257,8 @@ remaining newforms.
 
    sage: a_invariants31 = [0, 12*(sqrt3 - 1)*s, 0, 3*sqrt3*(sqrt3 - 1)^2*(t^2 + (2*sqrt3+3)*s^2), 0]
    sage: a_invariants32 = [0, 12*(sqrt3 - 1)*s, 0, 3*sqrt3*(sqrt3 - 1)^2*(t^2 + (2*sqrt3-3)*s^2), 0]
-   sage: isogenies3 = {sigma^0: (QQ(1), 1), sigma^1: (-1 - sqrt3, 2)}
-   sage: E31 = FreyQcurve(a_invariants31, isogenies=isogenies3, condition=C2)
-   sage: E32 = FreyQcurve(a_invariants32, isogenies=isogenies3, condition=C3)
+   sage: E31 = FreyQcurve(a_invariants31, condition=C2, guessed_degrees=[2])
+   sage: E32 = FreyQcurve(a_invariants32, condition=C3, guessed_degrees=[2])
 
 We compute the newforms of these curves and quickly note that their
 level is indeed the indicated level in the article.

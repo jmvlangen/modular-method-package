@@ -33,9 +33,7 @@ denote ``Cp`` for the quantity :math:`C^p`.
    sage: con = CoprimeCondition([A, B]) & ~CongruenceCondition(A, 2)
    sage: K.<r> = QQ[sqrt(-2)]
    sage: a_invariants = [0, 4*A, 0, 2*(A^2 + r*B), 0]
-   sage: G.<sigma> = K.galois_group()
-   sage: isogenies = {sigma^0: (QQ(1), 1), sigma^1: (r, 2)}
-   sage: E = FreyQcurve(a_invariants, isogenies=isogenies, condition=con)
+   sage: E = FreyQcurve(a_invariants, condition=con, guessed_degrees=[2])
 
 We check the claims in the article that the field of complete
 definition is unramified at 3 and that the curve has good or
@@ -168,10 +166,7 @@ C)` we must assume that :math:`A` and :math:`B` are coprime and that
    sage: con = CoprimeCondition([A, B]) & ~CongruenceCondition(A, 3)
    sage: K.<r> = QuadraticField(-3)
    sage: a_invariants = [0, 4*A, 0, 2*(A^2 + r*B), 0]
-   sage: G.<sigma> = K.galois_group()
-   sage: L.<sqrtm2> = QuadraticField(-2)
-   sage: isogenies = {sigma^0: (QQ(1), 1), sigma^1: (sqrtm2, 2)}
-   sage: E = FreyQcurve(a_invariants, isogenies=isogenies, condition=con)
+   sage: E = FreyQcurve(a_invariants, condition=con, guessed_degrees=[2])
 
 The article reasons that the restriction of scalars of the curve
 itself is not an abelian variety of GL_2-type which we verify.

@@ -33,9 +33,7 @@ congruent to 1 modulo 4.
    sage: con = CoprimeCondition([A, B]) & ~CongruenceCondition(B-1, 4)
    sage: K.<i> = QuadraticField(-1)
    sage: a_invariants = [0, 2*(1+i)*A, 0, B + i*A^2, 0]
-   sage: G.<sigma> = K.galois_group()
-   sage: isogenies={sigma^0: (QQ(1), 1), sigma^1: (1+i, 2)}
-   sage: E = FreyQcurve(a_invariants, isogenies=isogenies, condition=con)
+   sage: E = FreyQcurve(a_invariants, condition=con, guessed_degrees=[2])
 
 We check that the invariants :math:`c_4` and :math:`\Delta` as in the
 article are as mentioned.
