@@ -204,7 +204,7 @@ class FreyCurve(EllipticCurve_generic):
             if n == 1:
                 return QQ(c4.resultant(D)).numerator().prime_factors()
             elif n == 2 and c4.is_homogeneous() and D.is_homogeneous():
-                print ("Warning: Assuming that " + str(self.parameters()[0]) +
+                print("Warning: Assuming that " + str(self.parameters()[0]) +
                        " and " + str(self.parameters()[1]) + " are coprime.")
                 return QQ(c4.macaulay_resultant(D)).numerator().prime_factors()
             else:
@@ -213,20 +213,20 @@ class FreyCurve(EllipticCurve_generic):
                 M = gcd(gcd([ZZ(c) for c in (N * c4).coefficients()]),
                         gcd([ZZ(c) for c in (N * D).coefficients()]))
                 result = QQ(M/N).numerator().prime_factors()
-                print ("Warning: Assuming that %s and %s "%(c4,D) +
+                print("Warning: Assuming that %s and %s "%(c4,D) +
                        " are coprime outside %s."%(tuple(result),))
                 return result
         if n == 1:
             return K.ideal(c4.resultant(D)).prime_factors()
         elif n == 2 and c4.is_homogeneous() and D.is_homogeneous():
-            print ("Warning: Assuming that " + str(self.parameters()[0]) +
+            print("Warning: Assuming that " + str(self.parameters()[0]) +
                    " and " + str(self.parameters()[1]) + " are coprime.")
             return K.ideal(c4.macaulay_resultant(D)).prime_factors()
         else:
             I = sum(K.ideal(c) for c in c4.coefficients())
             J = sum(K.ideal(c) for c in D.coefficients())
             result = (I + J).prime_factors()
-            print ("Warning: Assuming that %s and %s"%(c4,D) +
+            print("Warning: Assuming that %s and %s"%(c4,D) +
                    " are coprime outside %s."%(tuple(P._repr_short()
                                                     for P in result),))
             return result
@@ -1237,7 +1237,7 @@ class FreyCurve(EllipticCurve_generic):
             raise ValueError("Can only find newforms associated to " +
                              "Frey curves over the rationals.")
         if bad_primes is None and verbose >= 0:
-            print ("Warning: The bad primes chosen by default only take into "+
+            print("Warning: The bad primes chosen by default only take into "+
                    "account primes of additive reduction.")
         N = self.conductor(additive_primes=bad_primes, condition=condition,
                            verbose=verbose, precision_cap=precision_cap).left()
@@ -1732,7 +1732,7 @@ class FreyQcurve(FreyCurve, Qcurve):
                     phi = WeierstrassIsomorphism(E=EdL, urst=(lu, r, s, t))
                     psi.set_post_isomorphism(phi)
                     if verbose > 0:
-                        print "Degree %s isogeny found for"%degree, sigma
+                        print("Degree %s isogeny found for"%degree, sigma)
                     self._add_isogeny(sigma, psi)
     
     @cached_method(key=lambda self, sigma, change :
@@ -2362,7 +2362,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             if (level, eps) in done_levels:
                 continue # Already computed, continue on with the next
             if verbose > 0:
-                print "Computing newforms of level %s and character %s"%(level, eps)
+                print("Computing newforms of level %s and character %s"%(level, eps))
             result.extend(get_newforms(level, character=eps,
                                        algorithm=algorithm, path=path))
             done_levels.append((level, eps))

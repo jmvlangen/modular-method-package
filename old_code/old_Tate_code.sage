@@ -843,7 +843,7 @@ def performTatesAlgorithm( ellipticCurve , prime , coefficientRing ,
     char = getCorrespondingZquotient( R.quotient(P,names='b') ).characteristic()
     variables = list(S.gens())
     if printProgress:
-        print "Detected variables: " , variables
+        print("Detected variables: " , variables)
     numberOfVariables = len(variables)
     if initialCase == 0:
         if coPrimality not in ZZ or coPrimality < 0 or coPrimality > numberOfVariables:
@@ -866,69 +866,69 @@ def performTatesAlgorithm( ellipticCurve , prime , coefficientRing ,
         for case in cases:
             if case[0] == 1:
                 if printProgress:
-                    print "Performing Step 1"
+                    print("Performing Step 1")
                 newCases.extend( performTatesAlgorithmStep1( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] ) )
             elif case[0] == 2:         
                 if printProgress:
-                    print "Performing Step 2 transformation"  
+                    print("Performing Step 2 transformation"  )
                 newCases.extend( performTatesAlgorithmStep2Transformation( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] , char ) )
             elif case[0] == 2 + 1/2:
                 if printProgress:
-                    print "Performing Step 2"
+                    print("Performing Step 2")
                 newCases.extend( performTatesAlgorithmStep2( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] ) )
             elif case[0] == 3:
                 if printProgress:
-                    print "Performing Step 3"
+                    print("Performing Step 3")
                 newCases.extend( performTatesAlgorithmStep3( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] ) )
             elif case[0] == 4:
                 if printProgress:
-                    print "Performing Step 4"
+                    print("Performing Step 4")
                 newCases.extend( performTatesAlgorithmStep4( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] ) )
             elif case[0] == 5:
                 if printProgress:
-                    print "Performing Step 5"
+                    print("Performing Step 5")
                 newCases.extend( performTatesAlgorithmStep5( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] ) )
             elif case[0] == 6:
                 if printProgress:
-                    print "Performing Step 6 transformation"
+                    print("Performing Step 6 transformation")
                 newCases.extend( performTatesAlgorithmStep6Transformation( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] , char ) )
             elif case[0] == 6 + 1/2:
                 if printProgress:
-                    print "Performing Step 6"
+                    print("Performing Step 6")
                 newCases.extend( performTatesAlgorithmStep6( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] ) )
             elif case[0] == 7:
                 if printProgress:
-                    print "Performing Step 7"
+                    print("Performing Step 7")
                 newCases.extend( performTatesAlgorithmStep7( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] , char ) )
             elif case[0] in QQ and case[0] < 8:
                 n , b = decodeQuotient( case[0] - 7 )
                 if b == 0:
                     if printProgress:
-                        print "Performing Step 7sub transformation"
+                        print("Performing Step 7sub transformation")
                     newCases.extend( performTatesAlgorithmStep7subTransformation( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] , n ) )
                 else:
                     if printProgress:
-                        print "Performing Step 7sub"
+                        print("Performing Step 7sub")
                     newCases.extend( performTatesAlgorithmStep7sub( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] , n ) )
             elif case[0] == 8:
                 if printProgress:
-                    print "Performing Step 8 transformation"
+                    print("Performing Step 8 transformation")
                 newCases.extend( performTatesAlgorithmStep8Transformation( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] , char ) )
             elif case[0] == 8 + 1/2:
                 if printProgress:
-                    print "Performing Step 8"
+                    print("Performing Step 8")
                 newCases.extend( performTatesAlgorithmStep8( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] ) )
             elif case[0] == 9:
                 if printProgress:
-                    print "Performing Step 9 transformation"
+                    print("Performing Step 9 transformation")
                 newCases.extend( performTatesAlgorithmStep9Transformation( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] , char ) )
             elif case[0] == 9 + 1/2:
                 if printProgress:
-                    print "Performing Step 9"
+                    print("Performing Step 9")
                 newCases.extend( performTatesAlgorithmStep9( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] ) )
             elif case[0] == 10:
                 if printProgress:
-                    print "Performing Step 10"
+                    print("Performing Step 10")
                 newCases.extend( performTatesAlgorithmStep10( case[2] , P , R , S , variables , numberOfVariables , case[1][0] , case[1][1] ) )
             else:
                 doneCases.append(case)

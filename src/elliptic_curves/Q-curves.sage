@@ -642,7 +642,7 @@ class Qcurve(EllipticCurve_number_field):
             for s in G:
                 if Kd(self.galois_conjugate(s).j_invariant()) == j_t:
                     if verbose > 0:
-                        print "Degree %s isogeny found for"%degree, s
+                        print("Degree %s isogeny found for"%degree, s)
                     E_s = self.galois_conjugate(s).change_ring(Kd)
                     # Making sure the isomorphism is defined over Kd,
                     # extending Kd if necessary
@@ -1832,7 +1832,7 @@ class Qcurve(EllipticCurve_number_field):
                 raise ValueError("Should be impossible to reach this code!");
         except ArithmeticError:
             if verbose >= 0:
-                print ("Warning: The restriction of scalars of this Q-curve " +
+                print("Warning: The restriction of scalars of this Q-curve " +
                        "over the decomposition field does not decompose into "+
                        "abelian varieties of GL_2-type. Use the method " +
                        "decomposable_twist to find a twist that does.")
@@ -3697,7 +3697,7 @@ pp        """
         p = 1
         while len(candidates) > 1 or p < verify:
             if p > warning:
-                print ("Warning: Checked prime exceeds warning value " +
+                print("Warning: Checked prime exceeds warning value " +
                        str(warning))
                 warning = 2 * warning
             while p.divides(max_level):

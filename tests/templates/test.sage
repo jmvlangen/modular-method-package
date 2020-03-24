@@ -2,4 +2,4 @@
 
 print "Hi my value is <n>"
 n = <n>
-print "Indeed it is %s"%(n,)
+print("Indeed it is %s"%(n,))

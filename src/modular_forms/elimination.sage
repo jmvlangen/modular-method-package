@@ -373,7 +373,7 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
                                           newforms, use_condition=True,
                                           default_condition=C)
     if verbose > 0:
-        print ("Comparing traces of frobenius at " + str(p) + " for " +
+        print("Comparing traces of frobenius at " + str(p) + " for " +
                str(len(newforms)) + " cases.")
     nE = len(curves)
     fields = tuple(curve.definition_field() for curve in curves)

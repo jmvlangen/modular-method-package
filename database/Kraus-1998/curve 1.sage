@@ -20,9 +20,9 @@ a_invariants = [0, 0, 0, 3*a*b, b^3 - a^3]
 E = FreyCurve(a_invariants, condition=C)
 
 # Data
-print ""
+print("")
 N = E.conductor()
-print N
+print(N)
 #
 # (article: 2   * 3^2 * Rad if b = -1 (mod 4), c = 0 (mod 2)
 #           2^4 * 3^2 * Rad if b =  1 (mod 4), c = 0 (mod 2)
@@ -31,8 +31,8 @@ print N
 #           2^2 * 3^2 * Rad if b =  1 (mod 4), c = 1 (mod 2), 4 | a
 
 # Newforms
-print ""
+print("")
 nfs = E.newforms(algorithm='magma')
-print nfs
+print(nfs)
 # 
 # (article: eliminated for specific l)

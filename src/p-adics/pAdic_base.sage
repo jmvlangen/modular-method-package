@@ -382,7 +382,7 @@ class pAdicBase(SageObject):
             return []
             
     def power_series(self, x, precision=10):
-        """r Write an element x as a power series in the uniformizer.
+        r""" Write an element x as a power series in the uniformizer.
         
         INPUT:
         
@@ -492,7 +492,7 @@ class pAdicBase(SageObject):
             ....:     if x2 not in squares:
             ....:         squares.append(x2)
             ....: squares.sort();
-            ....: print squares
+            ....: print(squares)
             ....:
             [1, 3, 4, 5, 9]
             
@@ -508,7 +508,7 @@ class pAdicBase(SageObject):
             sage: for z in pAdics.representatives(width=2):
             ....:     if pAdics.valuation(f(z)) > 0:
             ....:         roots.append(z)
-            ....: print roots
+            ....: print(roots)
             ....:
             [(0, 0), (7/2*a + 7/2, 7/2*a + 7/2), (a + 1, 3/2*a + 3/2), (3*a + 3, 5*a + 5), (5*a + 5, 3*a + 3), (4*a + 4, a + 1), (4*a + 4, 9/2*a + 9/2), (5*a + 5, 5/2*a + 5/2), (3*a + 3, 1/2*a + 1/2), (a + 1, 4*a + 4), (7/2*a + 7/2, 2*a + 2)]
 

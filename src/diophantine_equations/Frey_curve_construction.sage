@@ -80,7 +80,7 @@ def getEllipticCurveFromBinarySymmetricSixForm(sixForm):
     
 def my_factor(x):
     if x == 0:
-        print 0
+        print(0)
         return
     f = x.factor()
     if f.unit() == 1:
@@ -91,7 +91,7 @@ def my_factor(x):
         result += " * (" + str(a) + ")"
         if n != 1:
             result += "^" + str(n)
-    print result
+    print(result)
 
 def make_degree_dict(poly_list):
     result = {}

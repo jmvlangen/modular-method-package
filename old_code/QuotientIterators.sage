@@ -59,7 +59,7 @@ class PolynomialRingQuotientIterator:
         sage: R = A.quotient([phi,15])
         sage: for a in PolynomialRingQuotientIterator(R.ambient(), R.defining_ideal()):
         ....:     if a^2 + 1 in R.defining_ideal():
-        ....:         print a
+        ....:         print(a)
         ....:         
         5*x^3 + 5*x^2 + 7
         5*x^3 + 5*x^2 + 13
@@ -230,7 +230,7 @@ class MonomialQuotientIterator:
         sage: I = R.ideal(x^2 + 3*y*z - x*y, y^3*z + 4*x*y^2 - 12*y, z^4 + 12)
         sage: J = R.ideal([g.lt() for g in I.groebner_basis()])
         sage: ls = list(MonomialQuotientIterator(R, J))
-        sage: print ls
+        sage: print(ls)
         [1, x, y, x*y, y^2, x*y^2, y^3, x*y^3, y^4, z, x*z, y*z,
         x*y*z, y^2*z, x*y^2*z, z^2, x*z^2, y*z^2, x*y*z^2, y^2*z^2,
         z^3, x*z^3, y*z^3, y^2*z^3]
@@ -241,7 +241,7 @@ class MonomialQuotientIterator:
         sage: R = QQ[x,y]
         sage: I = R.ideal(x^2)
         sage: for a in MonomialQuotientIterator(R, I):
-        ....:     print a
+        ....:     print(a)
         ....:
         ValueError: The quotient of 'Multivariate Polynomial Ring
         in x, y over Rational Field' by the ideal 'Ideal (x^2) of

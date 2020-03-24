@@ -43,11 +43,11 @@ RHSQ = [polynomial_split_on_basis(hi, B) for hi in RHS]
 RHS5 = [[tmp2.change_ring(GF(5)) for tmp2 in tmp1] for tmp1 in RHSQ]
 # For each case we have a way of writing the pair a,b
 # using the fact that the last two entries of RHS5 should be zero
-print (RHS5[0][0],               RHS5[0][1] -  RHS5[0][3]) # (a,b) = (-,0) (mod 5)
-print (RHS5[1][0] -  RHS5[1][2], RHS5[1][1] +  RHS5[1][3]) # (a,b) = (0,0) (mod 5)
-print (RHS5[2][0] +  RHS5[2][2], RHS5[2][1])               # (a,b) = (0,0) (mod 5)
-print (RHS5[3][0],               RHS5[3][1] +2*RHS5[3][3]) # (a,b) = (0,0) (mod 5)
-print (RHS5[4][0] +2*RHS5[4][2], RHS5[4][1] +  RHS5[4][3]) # (a,b) = (0,-) (mod 5)
+print((RHS5[0][0],               RHS5[0][1] -  RHS5[0][3]) # (a,b) = (-,0) (mod 5))
+print((RHS5[1][0] -  RHS5[1][2], RHS5[1][1] +  RHS5[1][3]) # (a,b) = (0,0) (mod 5))
+print((RHS5[2][0] +  RHS5[2][2], RHS5[2][1])               # (a,b) = (0,0) (mod 5))
+print((RHS5[3][0],               RHS5[3][1] +2*RHS5[3][3]) # (a,b) = (0,0) (mod 5))
+print((RHS5[4][0] +2*RHS5[4][2], RHS5[4][1] +  RHS5[4][3]) # (a,b) = (0,-) (mod 5))
 # Since a and b are coprime, only the first and last case remain
 
 ### Phase 2: Exluding the remaining cases through hyperelliptic curves
@@ -87,7 +87,7 @@ RHSQ = [polynomial_split_on_basis(gi, B) for gi in RHS]
 # by 3 as a^2 and b^2 are integral, hence we can substitute 3*t1 for t1
 RHSQ = [[poly(3*t1, t2) for poly in case] for case in RHSQ]
 # We can exclude the case t2 = 0 as for that case a^2 and b^2 are not coprime
-print [[poly(t1, 0).change_ring(GF(3)) for poly in case] for case in RHSQ]
+print([[poly(t1, 0).change_ring(GF(3)) for poly in case] for case in RHSQ])
 # Multiplying the two equations for a case and dividing by t2^10 gives
 # us the affine part of a hyperelliptic curve in terms of x = (t1/t2) and y = (a*b/t2)
 Hs = [HyperellipticCurve(product(case)(x, 1)) for case in RHSQ]
@@ -95,36 +95,36 @@ Hm = [magma(H) for H in Hs]
 # Note that both curves have odd degree models as they contain a rational point
 HmOdd = [H.HasOddDegreeModel(nvals=2)[1] for H in Hm]
 # The rational points correspond to the linear factors of RHSQ[0][1] and RHSQ[1][0] respectively
-print RHSQ[0][1].factor() # (5) * (6*t1 + t2) * (419049*t1^4 + 295272*t1^3*t2 + 78036*t1^2*t2^2 + 9168*t1*t2^3 + 404*t2^4)
-print RHSQ[1][0].factor() # (-5) * (23*t1 + 88*t2) * (201580749*t1^4 + 3084714072*t1^3*t2 + 17701580436*t1^2*t2^2 + 45146766768*t1*t2^3 + 43178995204*t2^4)
+print(RHSQ[0][1].factor()) # (5) * (6*t1 + t2) * (419049*t1^4 + 295272*t1^3*t2 + 78036*t1^2*t2^2 + 9168*t1*t2^3 + 404*t2^4)
+print(RHSQ[1][0].factor()) # (-5) * (23*t1 + 88*t2) * (201580749*t1^4 + 3084714072*t1^3*t2 + 17701580436*t1^2*t2^2 + 45146766768*t1*t2^3 + 43178995204*t2^4)
 # Since t1 and t2 must be coprime, as a^2 and b^2 are
 # these correspond to the points
 #   (t1, t2) = (1, -6), (-1, 6) for the first case
 #   (t1, t2) = (88, -23), (-88, 23) for the second case
 # which give rise to the points (a^2, b^2):
-print (RHSQ[0][0](1, -6), RHSQ[0][1](1, -6)) # (a^2, b^2) = (9, 0)
-print (RHSQ[0][0](-1, 6), RHSQ[0][1](-1, 6)) # (a^2, b^2) = (-9, 0)
-print (RHSQ[1][0](88, -23), RHSQ[1][1](88, -23)) # (a^2, b^2) = (0, 4)
-print (RHSQ[1][0](-88, 23), RHSQ[1][1](-88, 23)) # (a^2, b^2) = (0, -4)
+print((RHSQ[0][0](1, -6), RHSQ[0][1](1, -6))) # (a^2, b^2) = (9, 0)
+print((RHSQ[0][0](-1, 6), RHSQ[0][1](-1, 6))) # (a^2, b^2) = (-9, 0)
+print((RHSQ[1][0](88, -23), RHSQ[1][1](88, -23))) # (a^2, b^2) = (0, 4)
+print((RHSQ[1][0](-88, 23), RHSQ[1][1](-88, 23))) # (a^2, b^2) = (0, -4)
 # Hence they do not correspond to solutions
 # We can find bounds on the elements of their jacobians
 Jm = [H.Jacobian() for H in Hm]
 JmOdd = [H.Jacobian() for H in HmOdd]
 # Note that we use an odd degree model for the first case for the rankbound on
 # its jacobian as it gives a lower bound.
-print [JmOdd[0].RankBound(), Jm[1].RankBound()] # [0, 0]
-print [J.TorsionBound(50) for J in Jm] # [4, 4]
+print([JmOdd[0].RankBound(), Jm[1].RankBound()]) # [0, 0]
+print([J.TorsionBound(50) for J in Jm]) # [4, 4]
 # Hence both jacobians contain at most 4 elements, hence only torsion elements
 # The torsion maps injectively into the reduction modulo a good prime.
-print [H.BadPrimes() for H in Hm] # [[ 2, 3, 5 ], [ 2, 3, 5 ]]
+print([H.BadPrimes() for H in Hm]) # [[ 2, 3, 5 ], [ 2, 3, 5 ]]
 # So we can glance the torsion structure from looking modulo 7
 Jm7 = [H.ChangeRing(GF(7)).Jacobian() for H in Hm]
-print [ZZ(len(J.RationalPoints())).factor() for J in Jm7] # [2^2 * 5 * 11^2, 2^2 * 5 * 11^2]
+print([ZZ(len(J.RationalPoints())).factor() for J in Jm7]) # [2^2 * 5 * 11^2, 2^2 * 5 * 11^2]
 # So the torsion must be Z/2Z, Z/2Z x Z/2Z or Z/4Z in both cases
-print [(lcm([g.Order().sage() for g in J.AbelianGroup().Generators()])).factor() for J in Jm7] # (2 * 5 * 11^2, 2 * 5 * 11^2)
+print([(lcm([g.Order().sage() for g in J.AbelianGroup().Generators()])).factor() for J in Jm7]) # (2 * 5 * 11^2, 2 * 5 * 11^2)
 # So all torsion points on the Jacobians must be two torsion points
 # These we can compute explicitly, since both curves have an odd degree model
-print [J.TwoTorsionSubgroup().Order() for J in JmOdd] # [2, 2]
+print([J.TwoTorsionSubgroup().Order() for J in JmOdd]) # [2, 2]
 # So both Jacobians contain only two points
 # One of each arises from the rational point on the corresponding hyperelliptic curve
 # that does not correspond to a solution

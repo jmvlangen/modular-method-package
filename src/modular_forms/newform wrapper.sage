@@ -980,7 +980,7 @@ def _read_element(f):
     The element read from from the file.
 
     """
-    whitespace = re.compile('\s')
+    whitespace = re.compile('\\s')
     label = None
     element = None
     s = f.read(1)
@@ -1019,7 +1019,7 @@ def _read_colon_equals(f):
     - ``f`` -- The file to be read from
 
     """
-    whitespace = re.compile('\s')
+    whitespace = re.compile('\\s')
     s = f.read(1)
     while len(s) > 0:
         if whitespace.match(s):
@@ -1082,7 +1082,7 @@ def _read_list(f):
     The list read from the file.
 
     """
-    whitespace = re.compile('\s')
+    whitespace = re.compile('\\s')
     s = f.read(1)
     if s != '[':
         raise ValueError("Attempting to read the start of a list at '" +

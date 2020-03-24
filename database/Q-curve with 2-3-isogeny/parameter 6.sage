@@ -1,7 +1,7 @@
 load('~/Documents/SageFiles/load.sage')
 load('~/Documents/SageFiles/examples/Q-curve families.sage')
 
-print "Q-curve with 2-3-isogeny for parameter 6"
+print("Q-curve with 2-3-isogeny for parameter 6")
 
 try:
     E = Qcurve_with_2_3_isogeny(6).decomposable_twist()
@@ -15,22 +15,22 @@ try:
             E = Etwist
             N = E.conductor_restriction_of_scalars()
 
-    print ""
-    print "Decomposable curve of lowest conductor:"
-    print ""
-    print E
-    print ""
-    print "Newform levels:"
-    print ""
+    print("")
+    print("Decomposable curve of lowest conductor:")
+    print("")
+    print(E)
+    print("")
+    print("Newform levels:")
+    print("")
     for tmp in E.newform_levels():
-        print tmp
-    print ""
+        print(tmp)
+    print("")
     f, twists = E.newform()
-    print "Newform of level %s:"%f.Level()
-    print ""
-    print f
+    print("Newform of level %s:"%f.Level())
+    print("")
+    print(f)
     
 except Exception as e:
-    print ""
-    print "An exception occured:"
-    print e
+    print("")
+    print("An exception occured:")
+    print(e)

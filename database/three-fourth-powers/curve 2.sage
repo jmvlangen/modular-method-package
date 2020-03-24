@@ -26,24 +26,24 @@ E = FreyQcurve(a_invariants,
 E = E.decomposable_twist()
 
 # Conductor
-print ""
+print("")
 N = E.conductor()
-print N
+print(N)
 #
 
 # The levels of the newforms
-print ""
+print("")
 levels = E.newform_levels()
-print levels
+print(levels)
 # [(23040, 23040, 115200, 115200), (115200, 115200, 23040, 23040)] if ('a', 'b') == (1, 0) mod 2 and ('a', 'b') == (1, 0) mod 2
 # []                                                               if ('a', 'b') == (1, 0) mod 2 and ('a', 'b') == (1, 1) mod 2
 # []                                                               if ('a', 'b') == (1, 1) mod 2 and ('a', 'b') == (1, 0) mod 2
 # [(11520, 11520, 57600, 57600), (57600, 57600, 11520, 11520)]     if ('a', 'b') == (1, 1) mod 2 and ('a', 'b') == (1, 1) mod 2
 
 # Newforms
-print ""
+print("")
 primes = prime_range(7, 40) + prime_range(50, 70) + [97, 193]
 nfs = E.newforms(algorithm='file', primes=primes, path='tmp/all_full.nfs')
-print len(nfs)
-# print nfs
+print(len(nfs))
+# print(nfs)
 # 

@@ -262,7 +262,7 @@ def is_twist(E1, E2):
         return _is_twist_good_char(E1, E2)
 
 def twist_elliptic_curve(E, d):
-    """Give the twist of an elliptic curve by 'd'.
+    r"""Give the twist of an elliptic curve by 'd'.
 
     Twisting an elliptic curve with Weierstrass equation ..MATH::
     
@@ -272,7 +272,7 @@ def twist_elliptic_curve(E, d):
     
         y^2 = x^3 + d a_2 x^2 + d^2 a_4 x + d^3 a_6
 
-    which is isomorphic to the first curve over $R(\\sqrt{d})$, where
+    which is isomorphic to the first curve over $R(\sqrt{d})$, where
     $R$ is the ring over which the curve was defined.
 
     INPUT:

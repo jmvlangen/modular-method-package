@@ -454,7 +454,7 @@ class PolynomialCondition(Condition_base):
         """
         if "precision_cap" in kwds and precision > kwds["precision_cap"]:
             if verbose >= 0:
-                print ("Warning: A p-Adic tree for " + str(self) +
+                print("Warning: A p-Adic tree for " + str(self) +
                        " is computed with a lower precision than the given " +
                        "precision " + str(precision) + ", due to a given " +
                        "precision_cap " + str(kwds["precision_cap"]) + "!")
@@ -2452,7 +2452,7 @@ class ConditionalValue(SageObject):
 class ConditionalExpression(SageObject):
     SUM_OPERATOR = ('+', '+', 0)
     MINUS_OPERATOR = ('-', '-', 0.5)
-    PRODUCT_OPERATOR = ('*', '\cdot', 2)
+    PRODUCT_OPERATOR = ('*', '\\cdot', 2)
     DIVISION_OPERATOR = ('/','/', 2.5)
     EXPONENT_OPERATOR = ('^', '^', 4.5)
     r"""An expression containing conditional values.

@@ -489,7 +489,7 @@ def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
     polynomial_derivatives = _init_derivatives(polynomial, variables)
 
     if verbose > 0:
-        print ("Finding roots of " + str(polynomial) + " modulo " +
+        print("Finding roots of " + str(polynomial) + " modulo " +
                str(pAdics.prime_ideal()._repr_short()) + "^" + str(precision))
        
     result = _find_pAdic_roots(polynomial, polynomial_derivatives, value_tree,
@@ -526,7 +526,7 @@ def _pAdic_fill_in_check(f, T, prec, pAdics, verbose=False):
 
     """
     if verbose > 0:
-        print "Checking for roots at level 1"
+        print("Checking for roots at level 1")
     Tno = pAdicNode(pAdics=T.pAdics(), width=T.width)
     for node in T.children_at_level(1):
         if pAdics.valuation(f(node.representative())) < prec:
@@ -610,13 +610,13 @@ def _pAdic_hensel_check(f, fder, T, level, step_size, pAdics, verbose=False):
 
     """
     if verbose > 0:
-        print "Checking for roots at level %d"%level
+        print("Checking for roots at level %d"%level)
     Tyes = pAdicNode(pAdics=T.pAdics(), width=T.width)
     phi = _pAdic_convert_function(pAdics, T.pAdics(), step_size)
     F = T.pAdics().residue_field()
     pi = T.pAdics().uniformizer()
     if verbose > 1:
-        print "Start loop of %d cycles"%T.count_children_at_level(level-1)
+        print("Start loop of %d cycles"%T.count_children_at_level(level-1))
     for node in T.children_at_level(level - 1):
         fa = phi(f(node.representative())/(pi^(level-1)))
         fdera = [phi(fderi(node.representative())) for fderi in fder]
@@ -910,7 +910,7 @@ def _init_precision(precision, precision_cap, least_power, multiplicity,
     precision = precision - least_power
     if precision > multiplicity * precision_cap and verbose >= 0:
         precision = multiplicity * precision_cap
-        print ("Warning: Lowering precision on root to " +
+        print("Warning: Lowering precision on root to " +
                str(precision+least_power) +
                " to accomodate for precision cap " + str(precision_cap) +
                " on variables")

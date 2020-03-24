@@ -27,18 +27,18 @@ E = E.decomposable_twist()
 
 # Conductor
 N = E.conductor()
-print ""
-print N
+print("")
+print(N)
 #
 
 # The levels of the newforms
 levels = E.newform_levels()
-print ""
-print levels
+print("")
+print(levels)
 # [(15360, 15360, 76800, 76800), (76800, 76800, 15360, 15360)]
 
 # Newforms
 nfs = E.newforms(algorithm='file', path='tmp/15360_full_magma.nfs')
-print ""
-print len(nfs)
+print("")
+print(len(nfs))
 # 

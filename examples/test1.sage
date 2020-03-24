@@ -11,11 +11,11 @@ for p in prime_range(40):
     T.apply_congruence_anti_restriction(x, [19], 37)
     answers = tates_algorithm(E, initial_values=T,
                                    only_calculate=['conductor','minimal_model'])
-    print "Conductor valuations for %d:"%p
+    print("Conductor valuations for %d:"%p)
     for answer in answers:
-        print answer[2].give_as_congruence_condition(), '->', answer[0]
-        print 'Minimal model:', answer[1]
-    print ""
+        print(answer[2].give_as_congruence_condition(), '->', answer[0])
+        print('Minimal model:', answer[1])
+    print("")
     
 # FLT:
 # E = EllipticCurve([0,b-a,0,-a*b,0])

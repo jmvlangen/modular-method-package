@@ -105,7 +105,7 @@ def ap_possibilities(E, p, K, L, vals, mod, c0):
                 for twisted_factor in _poly_galois_conjugates(G, factor):
                     remaining.append(twisted_factor)
             else:
-                print "Error:", factor, "has an incorrect degree!"
+                print("Error:", factor, "has an incorrect degree!")
         for i in range(len(remaining)):
             for j in range(i+1, len(remaining)):
                 factor = remaining[i] * remaining[j]
@@ -116,7 +116,7 @@ def ap_possibilities(E, p, K, L, vals, mod, c0):
 
 def ap_possibilities_print(E, p_start, p_stop, K, L, vals, mod, eps):
     for p in prime_range(p_start, p_stop):
-        print p, ap_possibilities(E, p, K, L, vals, mod, eps(p)*p)
+        print(p, ap_possibilities(E, p, K, L, vals, mod, eps(p)*p))
 
 def eliminate_nf(E, K_E, g, K_f, eps, vals, mod, bad_p, max_p=200, l_cap=[]):
     K_g = g.base_ring()
@@ -130,7 +130,7 @@ def eliminate_nf(E, K_E, g, K_f, eps, vals, mod, bad_p, max_p=200, l_cap=[]):
             else:
                 prev_pos = len(possible_l)
             ap_f_list = ap_possibilities(E, p, K_E, K_f, vals, mod, eps(p)*p)
-            print ap_f_list
+            print(ap_f_list)
             ap_g = g.coefficient(7)
             nrm = 1
             for ap_f in ap_f_list:
@@ -145,10 +145,10 @@ def eliminate_nf(E, K_E, g, K_f, eps, vals, mod, bad_p, max_p=200, l_cap=[]):
                             possible_l.remove(l)
             # Printing a helpful message for the user
             if possible_l != 0 and prev_pos != len(possible_l):
-                print p, possible_l
+                print(p, possible_l)
                 important_p.append(p)
             else:
-                print p, "No change"
+                print(p, "No change")
             # Stopping if cap is reached, i.e. can not do any better.
             if possible_l != 0:
                 flag = True

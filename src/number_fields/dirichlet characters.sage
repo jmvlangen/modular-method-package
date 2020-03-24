@@ -71,7 +71,7 @@ def dirichlet_fixed_field(eps):
 
         sage: D = DirichletGroup(8)
         sage: for eps in D.gens():
-        ....:     print dirichlet_fixed_field(eps)
+        ....:     print(dirichlet_fixed_field(eps))
         ....:     
         Cyclotomic Field of order 4 and degree 2
         Number Field in zeta0 with defining polynomial x^2 - 2
@@ -132,7 +132,7 @@ def dirichlet_to_galois(eps):
         Dirichlet character modulo 5 of conductor 5 mapping 2 |--> zeta4
         sage: eps_gal = dirichlet_to_galois(eps)
         sage: for g in CyclotomicField(5).galois_group():
-        ....:     print eps_gal(g)
+        ....:     print(eps_gal(g))
         ....:     
         1
         zeta4
