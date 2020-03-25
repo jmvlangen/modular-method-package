@@ -597,7 +597,7 @@ def _get_number_of_roots_cases(poly_list, pAdics, T, name, general_case,
         if not Tdict.has_key(m):
             Tdict[m] = pAdicNode(pAdics=T.pAdics(), width=T.width)
         Tdict[m].merge(child, from_root=True)
-    for (m,Tm) in Tdict.iteritems():
+    for (m,Tm) in Tdict.items():
         case = general_case.copy()
         case[name] = m
         case['T'] = Tm
@@ -785,7 +785,7 @@ def _tate_step2_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
     # Doing the actual transformations
     if verbose > 0:
         print("Performing transformation for %d cases"%(len(replaceCases),))
-    for (point,Tn) in replaceCases.iteritems():
+    for (point,Tn) in replaceCases.items():
         xn = F.lift(point[0])
         yn = F.lift(point[1])
         En = E.rst_transform(xn,0,yn)
@@ -1108,7 +1108,7 @@ def _tate_step6_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
     # Performing the necessary transformations
     if verbose > 0:
         print("Performing %d transformations"%len(changeDict))
-    for (alphaBetaPair, Tn) in changeDict.iteritems():
+    for (alphaBetaPair, Tn) in changeDict.items():
         En = E.rst_transform(0, F.lift(alphaBetaPair[0]),
                              F.lift(alphaBetaPair[1])*pi)
         result.append(dict(next_step=6+1/2, T=Tn, E=En, E0=E0))
@@ -1408,7 +1408,7 @@ def _tate_step7sub_t(E, S, pAdics, T, E0, n, verbose=False, result=[], **kwds):
     # Performing the necessary transformations
     if verbose > 0: 
         print("Performing %d transformations."%len(changeDict))
-    for (change, Tn) in changeDict.iteritems():
+    for (change, Tn) in changeDict.items():
         if n==1:
             En = E.rst_transform(pi * F.lift(change), 0, 0)
         elif is_odd(n):
@@ -1587,7 +1587,7 @@ def _tate_step8_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
         # Performing the necessary transformations
         if verbose > 0:
             print("Performing %d transformations."%len(changeDict))
-        for (change, Tn) in changeDict.iteritems():
+        for (change, Tn) in changeDict.items():
             En = E.rst_transform(-pi * F.lift(change), 0, 0)
             result.append(dict(next_step=8+1/2, T=Tn, E=En, E0=E0))
         
@@ -1740,7 +1740,7 @@ def _tate_step9_t(E, S, pAdics, T, E0, verbose=False, result=[],
         # Performing all necessary transformations
         if verbose > 0:
             print("Performing %d transformations."%len(changeDict))
-        for (change, Tn) in changeDict.iteritems():
+        for (change, Tn) in changeDict.items():
             En = E.rst_transform(0, 0, -pi^2 * F.lift(change))
             result.append(dict(next_step=9+1/2, T=Tn, E=En, E0=E0))
         

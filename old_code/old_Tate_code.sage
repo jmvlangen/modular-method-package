@@ -313,7 +313,7 @@ def performTatesAlgorithmStep2Transformation( E , P , R , S , variables , number
             else:
                 replaceCases[singularPoint] = [m]
     
-    for (point,values) in replaceCases.iteritems():
+    for (point,values) in replaceCases.items():
         x0 = point[0].lift()
         y0 = point[1].lift()
         E0 = E.rst_transform(x0,0,y0)
@@ -390,7 +390,7 @@ def performTatesAlgorithmStep6Transformation( E , P , R , S , variables , number
                     changeDict[alphaBetaPair] = [ m ]
         
         result = []
-        for ( alphaBetaPair , values ) in changeDict.iteritems():
+        for ( alphaBetaPair , values ) in changeDict.items():
             E0 = E.rst_transform( 0 , ( M.base_ring()( alphaBetaPair[0] ) ).lift() , ( M.base_ring()( alphaBetaPair[1] ) ).lift() * pi  )
             result.append( [ 6 + 1/2 , [ M , values ] , E0 ] )
         return result
@@ -442,7 +442,7 @@ def performTatesAlgorithmStep6Transformation( E , P , R , S , variables , number
                     changeDict[alphaBetaPair] = [ m ]
         
         result = []
-        for ( alphaBetaPair , values ) in changeDict.iteritems():
+        for ( alphaBetaPair , values ) in changeDict.items():
             E0 = E.rst_transform( 0 , ( M.base_ring()( alphaBetaPair[0] ) ).lift() , ( M.base_ring()( alphaBetaPair[1] ) ).lift() * pi  )
             result.append( [ 6 + 1/2 , [ M , values ] , E0 ] )
         return result
@@ -527,7 +527,7 @@ def performTatesAlgorithmStep7subTransformation( E , P , R , S , variables , num
                     changeDict[change] = [ m ]
         
         result = []
-        for ( change , values ) in changeDict.iteritems():
+        for ( change , values ) in changeDict.items():
             E0 = E.rst_transform( pi * change.lift() , 0 , 0 )
             result.append( [ 7 + encodeQuotient( n , 1 ) , [ M , values ] , E0 ] )
         
@@ -586,7 +586,7 @@ def performTatesAlgorithmStep7subTransformation( E , P , R , S , variables , num
                     changeDict[change] = [ m ]
         
         result = []
-        for ( change , values ) in changeDict.iteritems():
+        for ( change , values ) in changeDict.items():
             if is_odd( n ):
                 E0 = E.rst_transform( - pi^( ZZ( ( n + 1 ) / 2 ) ) * change.lift() , 0 , 0 )
             else:
@@ -652,7 +652,7 @@ def performTatesAlgorithmStep8Transformation( E , P , R , S , variables , number
                     changeDict[change] = [ m ]
         
         result = []
-        for ( change , values ) in changeDict.iteritems():
+        for ( change , values ) in changeDict.items():
             E0 = E.rst_transform( -pi * change.lift() , 0, 0  )
             result.append( [ 8 + 1/2 , [ M , values ] , E0 ] )
         
@@ -714,7 +714,7 @@ def performTatesAlgorithmStep9Transformation( E , P , R , S , variables , number
                     changeDict[change] = [ m ]
         
         result = []
-        for ( change , values ) in changeDict.iteritems():
+        for ( change , values ) in changeDict.items():
             E0 = E.rst_transform( 0, 0, - pi^2 * change.lift()  )
             result.append( [ 9 + 1/2 , [ M , values ] , E0 ] )
         

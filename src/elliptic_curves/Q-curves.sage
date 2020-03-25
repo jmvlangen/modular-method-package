@@ -342,7 +342,7 @@ class Qcurve(EllipticCurve_number_field):
         """
         self._init_curve(curve)
         self._init_isogenies()
-        for sigma, phi in isogenies.iteritems():
+        for sigma, phi in isogenies.items():
             self._add_isogeny(sigma, phi)
         flag = self._fill_isogenies()
         for d in guessed_degrees:

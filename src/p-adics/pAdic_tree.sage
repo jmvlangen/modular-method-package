@@ -1718,7 +1718,7 @@ class pAdicNodeCollection(SageObject):
         """
         self._check_pAdic_node(parent)
         self._parent = weakref.ref(parent)
-        for v in self._dict.itervalues():
+        for v in self._dict.values():
             v._set_parent(parent)
             
     def _update_existing_children(self):
@@ -1731,7 +1731,7 @@ class pAdicNodeCollection(SageObject):
         this structure changes. This method makes sure this happens.
 
         """
-        for v in self._dict.itervalues():
+        for v in self._dict.values():
             v._update_sub_tree()
     
     def _check_pAdic_node(self, node):
@@ -1946,7 +1946,7 @@ class pAdicNodeCollection(SageObject):
         return self._dict.values()
         
     def __iter__(self):
-        return self._dict.itervalues()
+        return iter(self._dict.values())
         
     def size(self):
         r"""Give the number of nodes in this collection.
@@ -2310,7 +2310,7 @@ class pAdicNodeCollection(SageObject):
 
         """
         resorted_dict = {}
-        for node in self._dict.itervalues():
+        for node in self._dict.values():
             node.permute_coefficients(permutation, from_root=False)
             resorted_dict[node.coefficients] = node
         self._dict = resorted_dict
@@ -2383,7 +2383,7 @@ class pAdicNodeCollection(SageObject):
     def _repr_(self):
         result = "["
         firstLoop = True
-        for c in self._dict.itervalues():
+        for c in self._dict.values():
             if firstLoop:
                 firstLoop = False
             else:
@@ -2414,7 +2414,7 @@ class pAdicNodeCollection(SageObject):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(tuple(self._dict.itervalues()))
+        return hash(tuple(self._dict.values()))
             
 class pAdicNodeCollection_inverted(pAdicNodeCollection):
     r"""A collection of p-adic nodes indexed by their coefficients.
@@ -2773,7 +2773,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
         for cfs in pAdics.representatives(width=n):
             for cfs0 in self._removed:
                 result.remove_by_coefficients(cfs0 + cfs)
-            for node in self._dict.itervalues():
+            for node in self._dict.values():
                 result._dict[coefficients] = node.increase_width(n, pAdics=pAdics,
                                                                  coefficients=cfs)
         return result
@@ -2816,7 +2816,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
             if c == s:
                 result.remove_by_coefficients(removal_candidates[i])
             i += c
-        for node in self._dict.itervalues():
+        for node in self._dict.values():
             new_node = node.decrease_width(indices, pAdics=pAdics)
             if result.contains(new_node.coefficients):
                 result.get(new_node.coefficients).merge(new_node,
@@ -2918,7 +2918,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
         """
         if len(self._removed) > 0:
             return False
-        for node in self._dict.itervalues():
+        for node in self._dict.values():
             if not node.is_full():
                 return False
         return True
@@ -2961,7 +2961,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
             return True
         if self.maximal_size() - len(self._removed) - len(self._dict) > 0:
             return False
-        for node in self._dict.itervalues():
+        for node in self._dict.values():
             if not node.is_empty():
                 return False
         return True
@@ -3005,7 +3005,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
                                               width=self.width)
         for c in self._removed:
             result.remove_by_coefficients(c)
-        for (k,v) in self._dict.iteritems():
+        for (k,v) in self._dict.items():
             result._dict[k] = v.copy()
         return result
         
@@ -3064,7 +3064,7 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
         return result
 
     def __hash__(self):
-        return hash((tuple(self._removed), tuple(self._dict.itervalues())))
+        return hash((tuple(self._removed), tuple(self._dict.values())))
 
 class pAdicTree(SageObject):
     r"""A p-adic tree describing possible values of certain variables.

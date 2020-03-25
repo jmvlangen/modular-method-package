@@ -1130,7 +1130,7 @@ class FreyCurve(EllipticCurve_generic):
         if isinstance(red_type, ConditionalValue):
             for val, con in red_type:
                 for a, T in self._trace_of_frobenius(pAdics, val, con, verbose,
-                                                     precision_cap).iteritems():
+                                                     precision_cap).items():
                     if a in result:
                         result[a] = result[a].merge(T)
                     else:
@@ -1138,7 +1138,7 @@ class FreyCurve(EllipticCurve_generic):
         else:
             for a, T in self._trace_of_frobenius(pAdics, red_type, condition,
                                                  verbose,
-                                                 precision_cap).iteritems():
+                                                 precision_cap).items():
                 if a in result:
                     result[a] = result[a].merge(T)
                 else:
@@ -1148,7 +1148,7 @@ class FreyCurve(EllipticCurve_generic):
             return list(result)[0]
         else:
             Tls = [(a, pAdicTree(variables=self.parameters(), root=T))
-                   for a, T in result.iteritems()]
+                   for a, T in result.items()]
             return ConditionalValue([(a, TreeCondition(T)) for a, T in Tls])
 
     @cached_method
@@ -2095,9 +2095,9 @@ class FreyQcurve(FreyCurve, Qcurve):
                     left_factors[p] = e
             if hasattr(disc_factors, 'unit') and disc_factors.unit() != 1:
                 left = (Dsqr.factor().unit() *
-                        product(p^e for p, e in left_factors.iteritems()))
+                        product(p^e for p, e in left_factors.items()))
             else:
-                left = product(p^e for p,e in left_factors.iteritems())
+                left = product(p^e for p,e in left_factors.items())
         else:
             left = additive_part.absolute_norm() * Dsqr
         return ConditionalExpression(N.operator(),
