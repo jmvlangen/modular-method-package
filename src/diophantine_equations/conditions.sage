@@ -3046,7 +3046,7 @@ def apply_to_conditional_value(function, value, singleton=False,
         if not singleton and len(values) == 1:
             return values[0]
         else:
-            return ConditionalValue(zip(values, conditions))
+            return ConditionalValue(list(zip(values, conditions)))
     else:
         if use_condition:
             result = function(value, default_condition)

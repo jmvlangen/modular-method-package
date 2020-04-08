@@ -896,7 +896,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.degree_field()
-            Number Field in t with defining polynomial x^2 - 3
+            Number Field in t0 with defining polynomial x^2 - 3
 
         The degree field is always a subfield of the definition field,
         but can be strictly smaller::
@@ -1334,7 +1334,7 @@ class Qcurve(EllipticCurve_number_field):
         if not self._is_cached('_eps') or 0 not in self._eps:
             self._eps = dict()
             self._eps[0] = [self._first_splitting_character()]
-        if hasattr(i, "__iter__"):
+        if not isinstance(i, str) and hasattr(i, "__iter__"):
             return tuple(self._splitting_character_data(ii, j) for ii in i)
         if i in ZZ:
             if i not in self._eps:
@@ -1654,7 +1654,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: E.splitting_field()
             Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
             sage: E.degree_field()
-            Number Field in t with defining polynomial x^2 - 5
+            Number Field in t0 with defining polynomial x^2 - 5
             sage: E.splitting_character_field()
             Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
 
@@ -1709,9 +1709,9 @@ class Qcurve(EllipticCurve_number_field):
             sage: E.complete_definition_field()
             Number Field in lu with defining polynomial x^4 + 10*x^2 + 1
             sage: E.splitting_field()
-            Number Field in tzeta0 with defining polynomial x^4 + 36
+            Number Field in t0zeta0 with defining polynomial x^4 + 36
             sage: E.decomposition_field()
-            Number Field in tzeta0lu with defining polynomial x^8 - x^4 + 1
+            Number Field in t0zeta0lu with defining polynomial x^8 - x^4 + 1
 
         """
         Ksplit = self.splitting_field()
@@ -1959,12 +1959,12 @@ class Qcurve(EllipticCurve_number_field):
             [ 1 -1  1 -1 -1  1 -1  1]
             sage: matrix([[E.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1  1  1  1  1]
+            [ 1 -2  1  2 -2  1  2  1]
+            [ 1  1 -1 -1  1 -1 -1  1]
             [ 1  2 -1  2  2 -1  2  1]
-            [ 1 -1 -1  1 -1 -1  1  1]
-            [ 1  2  1 -2  2  1 -2  1]
+            [ 1 -2  1  2 -2  1  2  1]
+            [ 1  1 -1 -1  1 -1 -1  1]
             [ 1  2 -1  2  2 -1  2  1]
-            [ 1 -1 -1  1 -1 -1  1  1]
-            [ 1  2  1 -2  2  1 -2  1]
             [ 1  1  1  1  1  1  1  1]
             sage: E2 = E.decomposable_twist()
             sage: E2.does_decompose()
@@ -1972,17 +1972,17 @@ class Qcurve(EllipticCurve_number_field):
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  1 -1 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  1 -1 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
 
         """
-        if hasattr(index, "__iter__"):
+        if not isinstance(index, str) and hasattr(index, "__iter__"):
             return tuple(self.splitting_map(i, verbose=verbose) for i in index)
         if index in ZZ:
             if index == 0:
@@ -2089,12 +2089,12 @@ class Qcurve(EllipticCurve_number_field):
             [ 1 -1  1 -1 -1  1 -1  1]
             sage: matrix([[E.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1  1  1  1  1]
+            [ 1 -2  1  2 -2  1  2  1]
+            [ 1  1 -1 -1  1 -1 -1  1]
             [ 1  2 -1  2  2 -1  2  1]
-            [ 1 -1 -1  1 -1 -1  1  1]
-            [ 1  2  1 -2  2  1 -2  1]
+            [ 1 -2  1  2 -2  1  2  1]
+            [ 1  1 -1 -1  1 -1 -1  1]
             [ 1  2 -1  2  2 -1  2  1]
-            [ 1 -1 -1  1 -1 -1  1  1]
-            [ 1  2  1 -2  2  1 -2  1]
             [ 1  1  1  1  1  1  1  1]
             sage: E2 = E.decomposable_twist()
             sage: E2.does_decompose()
@@ -2102,14 +2102,14 @@ class Qcurve(EllipticCurve_number_field):
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  1 -1 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  1 -1 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
 
         """
         if not self._is_cached('_beta'):
@@ -2226,7 +2226,7 @@ class Qcurve(EllipticCurve_number_field):
         """
         if not self._is_cached('_chi'):
             self._init_twist_characters()
-        if hasattr(i, "__iter__"):
+        if not isinstance(i, str) and hasattr(i, "__iter__"):
             return [self._twist_character_data(ii, j) for ii in i]
         if i in ZZ:
             if j == 1 and len(self._chi[i]) < 2:
@@ -2750,9 +2750,9 @@ class Qcurve(EllipticCurve_number_field):
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2]); E
             Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 5
             sage: E2 = E.twist(t); E2
-            Q-curve defined by y^2 = x^3 + 6*lu*x^2 + (-45*lu+90)*x over Number Field in lu with defining polynomial x^2 - 20
+            Q-curve defined by y^2 = x^3 + 6*lu0*x^2 + (-45*lu0+90)*x over Number Field in lu0 with defining polynomial x^2 - 20
             sage: E2.complete_definition_field()
-            Number Field in agamma with defining polynomial x^4 - 16*x^3 - 8*x^2 + 576*x - 1264
+            Number Field in agamma00 with defining polynomial x^4 - 16*x^3 - 8*x^2 + 576*x - 1264
 
         """
         ainvs, isogenies = self._twist(gamma)
@@ -2912,9 +2912,9 @@ class Qcurve(EllipticCurve_number_field):
             sage: K1(2).is_square()
             False
             sage: E2 = E.complete_definition_twist([2]); E2
-            Q-curve defined by y^2 = x^3 + (-6*lutsqrt_a0)*x^2 + (27*lutsqrt_a0+54)*x over Number Field in lutsqrt_a0 with defining polynomial x^2 - 12
+            Q-curve defined by y^2 = x^3 + (-6*lutsqrt_a00)*x^2 + (27*lutsqrt_a00+54)*x over Number Field in lutsqrt_a00 with defining polynomial x^2 - 12
             sage: K2 = E2.complete_definition_field(); K2
-            Number Field in lutsqrt_a00 with defining polynomial x^4 - 4*x^2 + 1
+            Number Field in lutsqrt_a000 with defining polynomial x^4 - 4*x^2 + 1
             sage: K2(2).is_square()
             True
 

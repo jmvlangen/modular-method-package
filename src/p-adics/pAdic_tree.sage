@@ -1833,7 +1833,7 @@ class pAdicNodeCollection(SageObject):
 
         """
         self._check_pAdic_node(node)
-        if self._dict.has_key(node.coefficients):
+        if node.coefficients in self._dict:
             raise ValueError("A node like " + str(node) + " already exists: " +
                              str(self._dict[node.coefficients]))
         self._dict[node.coefficients] = node
@@ -1877,7 +1877,7 @@ class pAdicNodeCollection(SageObject):
             :meth:`pAdicBase.representatives`
 
         """
-        return self._dict.has_key(coefficients)
+        return coefficients in self._dict
         
     def get(self, coefficients):
         r"""Get a node from this collection by its coefficients.
@@ -1918,7 +1918,7 @@ class pAdicNodeCollection(SageObject):
             :meth:`contains`
 
         """
-        if not self._dict.has_key(coefficients):
+        if not (coefficients in self._dict):
             raise ValueError("No node with coefficients " + str(coefficients) +
                              " exists")
         return self._dict[coefficients]
@@ -1943,7 +1943,7 @@ class pAdicNodeCollection(SageObject):
              p-adic node represented by (1, 1) with 4 children]
 
         """
-        return self._dict.values()
+        return list(self._dict.values())
         
     def __iter__(self):
         return iter(self._dict.values())

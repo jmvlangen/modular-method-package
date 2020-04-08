@@ -36,11 +36,11 @@ them is $\Q$::
     sage: composite_field(K1, K3)
     Number Field in asqrt2 with defining polynomial x^8 + 8*x^6 + 256*x^4 + 3648*x^2 + 14400
     sage: composite_field(K2, K3)
-    Number Field in sqrt2b with defining polynomial x^8 - x^4 + 1
+    Cyclotomic Field of order 24 and degree 8
     sage: composite_field(QQ, K3)
     Number Field in xsqrt2 with defining polynomial x^4 - 10*x^2 + 1
     sage: composite_field(QQ, K2)
-    Number Field in xb with defining polynomial x^8 - x^4 + 1
+    Cyclotomic Field of order 24 and degree 8
 
 AUTHORS:
 
@@ -173,7 +173,7 @@ def fixed_field(H, map=False):
         sage: G = K.galois_group()
         sage: H = [G.identity()]
         sage: fixed_field(H)
-        Cyclotomic Field of order 12 and degree 4
+        Number Field in zeta120 with defining polynomial x^4 - x^2 + 1
 
     H empty does not work::
 
@@ -211,7 +211,10 @@ def fixed_field(H, map=False):
            To:   Cyclotomic Field of order 12 and degree 4)
 
     """
-    G = H[0].parent()
+    if hasattr(H, '_ambient'):
+        G = H._ambient
+    else:
+        G = H[0].parent()
     if H == G:
         if map:
             return QQ, QQ.hom(G.number_field())
@@ -277,21 +280,21 @@ def write_as_extension(phi, give_map=False, names=None):
         sage: M, phi = write_as_extension(K.embeddings(L)[0], give_map=True)
         sage: phi
         Ring morphism:
-        From: Cyclotomic Field of order 12 and degree 4
-        To:   Number Field in b with defining polynomial x^2 + a*x + 1 over its base field
-        Defn: b |--> b
+          From: Cyclotomic Field of order 12 and degree 4
+          To:   Number Field in b with defining polynomial x^2 + a*x + 1 over its base field
+          Defn: b |--> b
         sage: phi * K.embeddings(L)[0]
         Ring morphism:
-        From: Number Field in a with defining polynomial x^2 - 3
-        To:   Number Field in b with defining polynomial x^2 + a*x + 1 over its base field
-        Defn: a |--> a
+          From: Number Field in a with defining polynomial x^2 - 3
+          To:   Number Field in b with defining polynomial x^2 + a*x + 1 over its base field
+          Defn: a |--> a
 
     TESTS::
 
     Still works if the codomain is the rationals::
 
         sage: write_as_extension(QQ.hom(QQ))
-        Rational Field
+        Number Field in x1 with defining polynomial x - 1
 
     Also works if the codomain is an extension of fields::
 
@@ -605,9 +608,9 @@ def intersection_field(K1, K2, L=None, give_maps=False, names=None):
         sage: K1.<a1> = L.subfields(degree=12)[0][0]
         sage: K2.<a2> = [k for k, _, _ in L.subfields(degree=12) if not K1.is_isomorphic(k)][0]
         sage: intersection_field(K1, K2, L=(L, K1.embeddings(L)[0], K2.embeddings(L)[0]))
-        Number Field in a0a6_1 with defining polynomial x^6 - x^4 - x^3 - x^2 + 1
+        Number Field in a0a6 with defining polynomial x^6 - x^4 - x^3 - x^2 + 1
         sage: intersection_field(K1, K2, L=(L, K1.embeddings(L)[1], K2.embeddings(L)[0]))
-        Number Field in a0a6_1 with defining polynomial x^3 - 4*x - 1    
+        Number Field in a0a6 with defining polynomial x^3 - 4*x - 1    
 
     .. SEEALSO::
 
@@ -684,7 +687,7 @@ def _write_as_im_gen_map(phi, dom=None):
     else:
         base_hom = _write_as_im_gen_map(phi, dom=dom.base_ring())
         F = dom.Hom(phi.codomain())
-        return F(phi(g), base_hom=base_hom)
+        return F(phi(g), base_map=base_hom)
                     
 def _concat_maps(phi, psi):
     r"""Concatenates phi and psi, phi first"""

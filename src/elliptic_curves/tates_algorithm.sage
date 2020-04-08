@@ -179,7 +179,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
         cases = newCases
         newCases = []
         for case in cases:
-            if case.has_key('next_step'):
+            if 'next_step' in case:
                 if case['next_step'] == 1:
                     if verbose > 0:
                         print("Performing step 1")
@@ -594,7 +594,7 @@ def _get_number_of_roots_cases(poly_list, pAdics, T, name, general_case,
         for i in range(k+1):
             f += coeff_list[i] * x^(k-i)
         m = sum([r[1] for r in f.roots()])
-        if not Tdict.has_key(m):
+        if not (m in Tdict):
             Tdict[m] = pAdicNode(pAdics=T.pAdics(), width=T.width)
         Tdict[m].merge(child, from_root=True)
     for (m,Tm) in Tdict.items():
@@ -1923,7 +1923,7 @@ def _should_calculate_vDelta(case, restrictions):
     discriminant. False otherwise.
 
     """
-    return (not case.has_key('vDelta') and
+    return (not ('vDelta' in case) and
             (len(restrictions) == 0 or 'discriminant' in restrictions or
              _should_calculate_m(case, restrictions) or
              _should_calculate_f(case, restrictions) or
@@ -1983,7 +1983,7 @@ def _should_calculate_m(case, restrictions):
     otherwise.
 
     """
-    return (not case.has_key('m') and
+    return (not ('m' in case) and
             (len(restrictions) == 0 or
              _should_calculate_f(case, restrictions)))
     
@@ -2067,7 +2067,7 @@ def _should_calculate_c(case, restrictions):
     components. False otherwise.
 
     """
-    return (not case.has_key('c') and len(restrictions) == 0)
+    return (not ('c' in case) and len(restrictions) == 0)
     
 def _tate_calculate_c(E, S, pAdics, T, case, result=[], **kwds):
     r"""Compute the order of the group of components.
@@ -2111,7 +2111,7 @@ def _tate_calculate_c(E, S, pAdics, T, case, result=[], **kwds):
     pi = pAdics.uniformizer()
     if KS.endswith('*'):
         if KS.startswith('IV'): #IV*
-            if case.has_key('roots'):
+            if 'roots' in case:
                 case['c'] = case['roots'] + 1
             else:
                 return _get_number_of_roots_cases([S(1), S(E.a3()/(pi^2)),
@@ -2123,7 +2123,7 @@ def _tate_calculate_c(E, S, pAdics, T, case, result=[], **kwds):
         elif KS.startswith('II'): #II*
             case['c'] = 1
         elif KS.startswith('I0'): #I0*
-            if case.has_key('roots'):
+            if 'roots' in case:
                 case['c'] = case['roots'] + 1
             else:
                 return _get_number_of_roots_cases([S(1), S(E.a2()/pi),
@@ -2132,7 +2132,7 @@ def _tate_calculate_c(E, S, pAdics, T, case, result=[], **kwds):
                                                   T, 'roots', case,
                                                   result=result, **kwds)
         else: #In*
-            if case.has_key('roots'):
+            if 'roots' in case:
                 case['c'] = case['roots'] + 2
             else:
                 n = Integer(KS[1:-1])
@@ -2152,7 +2152,7 @@ def _tate_calculate_c(E, S, pAdics, T, case, result=[], **kwds):
                                                       result=result, **kwds)
     else:
         if KS.startswith('IV'): #IV
-            if case.has_key('roots'):
+            if 'roots' in case:
                 case['c'] = case['roots'] + 1
             else:
                 return _get_number_of_roots_cases([S(1), S(E.a3()/pi),
@@ -2189,7 +2189,7 @@ def _should_calculate_f(case, restrictions):
     otherwise.
 
     """
-    return (not case.has_key('f') and (len(restrictions) == 0 or
+    return (not ('f' in case) and (len(restrictions) == 0 or
                                        'conductor' in restrictions or
                                        'reduction_type' in restrictions))
     
@@ -2316,7 +2316,7 @@ def _should_calculate_split(case, restrictions):
     """
     return ((_should_calculate_c(case, restrictions) or
              'reduction_type' in restrictions) and
-            (case['f'] == 1 and not case.has_key('split')))
+            (case['f'] == 1 and not ('split' in case)))
             
 
 def _tate_calculate_split(E, S, pAdics, T, case, result=[], **kwds):
@@ -2355,7 +2355,7 @@ def _tate_calculate_split(E, S, pAdics, T, case, result=[], **kwds):
     the appropiate values for the variables.
 
     """
-    if case.has_key('roots'):
+    if 'roots' in case:
         if case['roots'] > 0:
             case['split'] = True
         else:

@@ -181,20 +181,21 @@ def function_with_coboundary(G, A, c, action=None):
 
         sage: G = SymmetricGroup(3)
         sage: A = AbelianGroup(3)
-        sage: action = {s : matrix([[(1 if s(j) == i else 0) for i in range(1,4)] for j in range(1,4)]) for s i
-        ....: n G}
+        sage: action = {s : matrix([[(1 if s(j) == i else 0) for i in range(1,4)]
+        ....:                       for j in range(1,4)]) for s in G}
         sage: def alpha(s):
         ....:     return A([(s.order() if s(i) != i else 0) for i in range(1,4)])
         ....: 
         sage: def c(s, t):
-        ....:     return A(vector(alpha(s).list()) + vector(alpha(t).list()) * action[s] - vector(alpha(s*t).li
-        ....: st()))
+        ....:     return (A(vector(alpha(s).list())
+        ....:             + vector(alpha(t).list()) * action[s]
+        ....:                      - vector(alpha(s*t).list())))
         ....: 
         sage: alpha2 = function_with_coboundary(G, A, c, action=action)
         sage: [alpha(s) for s in G]
-        [1, f0^2*f1^2, f0^3*f1^3*f2^3, f0^3*f1^3*f2^3, f1^2*f2^2, f0^2*f2^2]
+        [1, f0^3*f1^3*f2^3, f0^3*f1^3*f2^3, f1^2*f2^2, f0^2*f2^2, f0^2*f1^2]
         sage: [alpha2(s) for s in G]
-        [1, f0^2*f1^2, f0^3*f1^3*f2^3, f0^3*f1^3*f2^3, f1^2*f2^2, f0^2*f2^2]
+        [1, f0^3*f1^3*f2^3, f0^3*f1^3*f2^3, f1^2*f2^2, f0^2*f2^2, f0^2*f1^2]
 
     """
     if isinstance(A, tuple):
@@ -226,7 +227,7 @@ def function_with_coboundary(G, A, c, action=None):
     alpha0[G.identity()] = c_to_matrix(G.identity(), G.identity())
     relations.remove((G.identity(), G.identity()))
     while len(alpha0) < len(G):
-        keys = alpha0.keys()
+        keys = list(alpha0.keys())
         for s in keys:
             for t in keys:
                 if s*t not in alpha0:
