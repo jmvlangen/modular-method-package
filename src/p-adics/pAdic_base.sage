@@ -781,35 +781,8 @@ class pAdicBase(SageObject):
         key = (K,P)
         if key not in self._ext:
             F = self.residue_field()
-            L = self.number_field()
-            gamma = F.multiplicative_generator()
-            VF = F.vector_space()
             G = other.residue_field()
-            p = self.characteristic()
-            VG = G.vector_space()
-            m = VG.rank()
-            n = ZZ(VF.rank()/m)
-            WG = G^n
-            
-            e = [G(a) for a in VG.basis()] # Basis of G
-            Fe = [F(L(G.lift(ei))) for ei in e] # Embedding of that basis in F
-            # Making the matrix that describes the map VG^n -> VF
-            # Note the matrix will be on the right of the vector
-            # in multiplication!
-            MF = Fe
-            gammaFe = Fe
-            for i in range(1,n):
-                gammaFe = [gamma * ei for ei in gammaFe]
-                MF.extend(gammaFe)
-            M = matrix([VF(MFi._vector_()) for MFi in MF])
-            N = M.inverse() # The matrix describing VF -> VG^n
-            
-            def phi(x):
-                x = F(x)
-                Vx = VF(x._vector_()) * N
-                result = [G(VG(Vx[m*i:m*(i+1)])) for i in range(n)]
-                return WG(result)
-            
+            phi = F.free_module(base=G, map=True)[2]
             self._ext[key] = phi
         return self._ext[key]
                                                                      
@@ -842,7 +815,7 @@ class pAdicBase(SageObject):
             sage: F = pAdicsL.residue_field()
             sage: phi = pAdicsL.extension_vector_space(pAdicsQ)
             sage: [phi(a) for a in F]
-            [(0, 0), (1, 2), (2, 2), (0, 1), (2, 0), (2, 1), (1, 1), (0, 2), (1, 0)]
+            [(0, 0), (2, 1), (0, 1), (2, 2), (2, 0), (1, 2), (0, 2), (1, 1), (1, 0)]
 
         """
         if self.is_extension_of(other):
