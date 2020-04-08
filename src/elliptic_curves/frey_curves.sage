@@ -1924,8 +1924,8 @@ class FreyQcurve(FreyCurve, Qcurve):
             R2 = R.change_ring(min_map.codomain())
             S2 = S.change_ring(R2)
             change = S.Hom(S2)(R.Hom(R2)(min_map))
-            Fsnum = Fsnum.change_ring(change)
-            Fsden = Fsden.change_ring(change)
+            Fsnum = change(Fsnum)
+            Fsden = change(Fsden)
             result[s] = S2.fraction_field()(Fsnum / Fsden)
         return result
 
