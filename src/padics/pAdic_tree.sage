@@ -84,6 +84,7 @@ EXAMPLES:
 
 Creation of a tree::
 
+    sage: from modular_method.padics.pAdic_tree import pAdicTree
     sage: T = pAdicTree('x', prime=7); T
     p-adic tree for the variables ('x',) with respect to p-adics given by Rational Field and (7)
     sage: T.root()
@@ -93,6 +94,7 @@ Creation of a tree::
 
 Operations on trees::
 
+    sage: from modular_method.padics.pAdic_tree import pAdicTree
     sage: T1 = pAdicTree(('x', 'y'), prime=2)
     sage: T2 = pAdicTree(('y', 'z'), prime=2)
     sage: T1.union(T2)
@@ -102,6 +104,7 @@ Operations on trees::
 
 Manipulating the tree manually::
 
+    sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
     sage: T = pAdicTree(('a', 'b'), prime=2)
     sage: N = T.root()
     sage: N.children.remove_by_coefficients((0,1))
@@ -121,6 +124,16 @@ AUTHORS:
 
 """
 import weakref
+
+from sage.structure.sage_object import SageObject
+from sage.misc.cachefunc import cached_method
+
+from modular_method.padics.pAdic_base import pAdicBase
+
+from sage.all import Integer, ZZ
+from sage.rings.ideal import Ideal
+
+from sage.sets.set import Set
 
 # ****************************************************************************
 #       Copyright (C) 2019 Joey van Langen <j.m.van.langen@vu.nl>
@@ -188,6 +201,8 @@ class pAdicNode(SageObject):
     
     EXAMPLE::
 
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.padics.pAdic_tree import pAdicNode
         sage: pAdics = pAdicBase(ZZ, 3)
         sage: R = pAdicNode(pAdics=pAdics)
         sage: R.children
@@ -255,6 +270,8 @@ class pAdicNode(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 5)
             sage: N = pAdicNode(pAdics=pAdics); N
             p-adic node represented by (0,) with 0 children
@@ -378,6 +395,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 2)
             sage: N = pAdicNode(pAdics=pAdics, full=True)
             sage: N.parent() == None
@@ -400,6 +419,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 7)
             sage: N = pAdicNode(pAdics=pAdics, full=True)
             sage: N.is_root()
@@ -419,6 +440,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 5)
             sage: N = pAdicNode(pAdics=pAdics, full=True)
             sage: N.root() == N
@@ -460,6 +483,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 7)
             sage: N = pAdicNode(pAdics=pAdics, full=True, width=2)
             sage: N.representative()
@@ -504,6 +529,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 5)
             sage: N = pAdicNode(pAdics=pAdics, full=True, width=2)
             sage: N.quotient_tuple()
@@ -535,6 +562,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 3)
             sage: N = pAdicNode(pAdics=pAdics, full=True)
             sage: N.pAdics()
@@ -558,6 +587,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 2)
             sage: R = pAdicNode(pAdics=pAdics, full=True)
             sage: N = R; N.level()
@@ -597,6 +628,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 2)
             sage: R = pAdicNode(pAdics=pAdics, full=True)
             sage: N = R.children_at_level(4)[13]
@@ -656,6 +689,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 5)
             sage: R = pAdicNode(pAdics=pAdics, full=True)
             sage: N = R.children_at_level(2)[13]
@@ -712,6 +747,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 2)
             sage: R = pAdicNode(pAdics=pAdics, full=True)
             sage: N = R.children_at_level(2)[3]
@@ -764,6 +801,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2)
             sage: N1 = pAdicNode(pAdics=pAdics, coefficients=(1, 1))
@@ -806,6 +845,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2)
             sage: N1 = pAdicNode(pAdics=pAdics, coefficients=(1, 1))
@@ -838,6 +879,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2)
             sage: N1 = pAdicNode(pAdics=pAdics, coefficients=(1, 1))
@@ -874,6 +917,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 5)
             sage: R = pAdicNode(pAdics=pAdics, full=True)
             sage: R.copy()
@@ -925,6 +970,8 @@ class pAdicNode(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 3)
             sage: N = pAdicNode(pAdics = pAdics, width=2); N
             p-adic node represented by (0, 0) with 0 children
@@ -934,6 +981,8 @@ class pAdicNode(SageObject):
         The number of nodes increases accordingly when increasing the
         width::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 3)
             sage: N = pAdicNode(pAdics = pAdics, width=2, full=True); N
             p-adic node represented by (0, 0) with 9 children
@@ -942,6 +991,8 @@ class pAdicNode(SageObject):
 
         One can decide what coefficients should fit in the new spots::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 3)
             sage: N = pAdicNode(pAdics = pAdics, width=2, full=True); N
             p-adic node represented by (0, 0) with 9 children
@@ -988,6 +1039,8 @@ class pAdicNode(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 3)
             sage: N = pAdicNode(pAdics = pAdics, width=5); N
             p-adic node represented by (0, 0, 0, 0, 0) with 0 children
@@ -997,6 +1050,8 @@ class pAdicNode(SageObject):
         The number of children changes accordingly when decreasing the
         width::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 3)
             sage: N = pAdicNode(pAdics = pAdics, width=5, full=True); N
             p-adic node represented by (0, 0, 0, 0, 0) with 243 children
@@ -1005,6 +1060,8 @@ class pAdicNode(SageObject):
 
         We can also choose which indices to keep and in what order::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 3)
             sage: N = pAdicNode(pAdics = pAdics, width=5, full=True); N
             p-adic node represented by (0, 0, 0, 0, 0) with 243 children
@@ -1049,6 +1106,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 5)
             sage: R = pAdicNode(pAdics=pAdics, full=True, width=4)
             sage: N = R.children.list()[358]; N
@@ -1097,6 +1156,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 2)
             sage: R = pAdicNode(pAdics=pAdics, full=True, width=2)
             sage: N = R.children_at_level(2)[7]; N
@@ -1140,6 +1201,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 2)
             sage: R = pAdicNode(pAdics=pAdics, full=True, width=2)
             sage: N = R.children_at_level(2)[7]; N
@@ -1271,6 +1334,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 3)
             sage: R1 = pAdicNode(pAdics=pAdics, width=2, full=False)
             sage: R2 = pAdicNode(pAdics=pAdics, width=2, full=True)
@@ -1370,6 +1435,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 2)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: N = R.children_at_level(2)[7]; N
@@ -1490,6 +1557,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 2)
             sage: R1 = pAdicNode(pAdics=pAdics, width=2, full=False)
             sage: R2 = pAdicNode(pAdics=pAdics, width=2, full=True)
@@ -1526,6 +1595,8 @@ class pAdicNode(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(QQ, 2)
             sage: R1 = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: R1.children_at_level(1)[3].remove()
@@ -1591,6 +1662,8 @@ class pAdicNodeCollection(SageObject):
 
     EXAMPLES::
 
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
         sage: pAdics = pAdicBase(ZZ, 3)
         sage: C = pAdicNodeCollection(None, pAdics=pAdics, width=2)
         sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(1, 2)))
@@ -1599,9 +1672,9 @@ class pAdicNodeCollection(SageObject):
         sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(0, 0)))
         sage: C.list()
         [p-adic node represented by (1, 2) with 0 children,
+         p-adic node represented by (2, 2) with 9 children,
          p-adic node represented by (0, 1) with 9 children,
-         p-adic node represented by (0, 0) with 0 children,
-         p-adic node represented by (2, 2) with 9 children]
+         p-adic node represented by (0, 0) with 0 children]
         sage: C.contains((1, 2))
         True
         sage: C.contains((1, 0))
@@ -1609,8 +1682,8 @@ class pAdicNodeCollection(SageObject):
         sage: C.remove_by_coefficients((0, 0))
         sage: C.list()
         [p-adic node represented by (1, 2) with 0 children,
-         p-adic node represented by (0, 1) with 9 children,
-         p-adic node represented by (2, 2) with 9 children]
+         p-adic node represented by (2, 2) with 9 children,
+         p-adic node represented by (0, 1) with 9 children]
         sage: C.size()
         3
         sage: C.maximal_size()
@@ -1629,6 +1702,8 @@ class pAdicNodeCollection(SageObject):
     The children of a pAdicNode form a p-adic collection and can be
     used as such::
 
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
         sage: pAdics = pAdicBase(ZZ, 2)
         sage: N = pAdicNode(pAdics=pAdics, width=2, full=True)
         sage: isinstance(N.children, pAdicNodeCollection)
@@ -1668,12 +1743,16 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 5)
             sage: pAdicNodeCollection(None, pAdics=pAdics)
             []
 
         By giving a parent, no other arguments are required::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 7)
             sage: N = pAdicNode(pAdics=pAdics)
             sage: pAdicNodeCollection(N)
@@ -1756,6 +1835,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 5)
             sage: N = pAdicNode(pAdics=pAdics, full=True)
             sage: isinstance(N.children, pAdicNodeCollection)
@@ -1776,6 +1857,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 2)
             sage: N = pAdicNode(pAdics=pAdics, full=True)
             sage: isinstance(N.children, pAdicNodeCollection)
@@ -1785,6 +1868,8 @@ class pAdicNodeCollection(SageObject):
 
         There might not be a parent::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode
             sage: pAdics = pAdicBase(ZZ, 11)
             sage: S = pAdicNodeCollection(None, pAdics=pAdics)
             sage: S.parent() == None
@@ -1809,6 +1894,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2)
             sage: N1 = pAdicNode(pAdics=pAdics, coefficients=(1, 2))
@@ -1862,6 +1949,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 5)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: R.children.list()[7].remove()
@@ -1900,6 +1989,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -1932,6 +2023,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 2)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -1958,6 +2051,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -1988,6 +2083,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 7)
             sage: C = pAdicNodeCollection(None, pAdics=pAdics, width=2)
             sage: C.maximal_size()
@@ -2017,6 +2114,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2059,6 +2158,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2102,6 +2203,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 2)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2145,6 +2248,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 2)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2179,6 +2284,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2233,6 +2340,8 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 3)
             sage: C = pAdicNodeCollection(None, pAdics=pAdics, width=2)
             sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(1,2), full=True))
@@ -2289,20 +2398,22 @@ class pAdicNodeCollection(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 11)
             sage: C = pAdicNodeCollection(None, pAdics=pAdics, width=4)
             sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(1,2,3,4)))
             sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(7,4,1,6)))
             sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(9,2,8,3)))
             sage: C.list()
-            [p-adic node represented by (9, 2, 8, 3) with 0 children,
-             p-adic node represented by (1, 2, 3, 4) with 0 children,
-             p-adic node represented by (7, 4, 1, 6) with 0 children]
+            [p-adic node represented by (1, 2, 3, 4) with 0 children,
+             p-adic node represented by (7, 4, 1, 6) with 0 children,
+             p-adic node represented by (9, 2, 8, 3) with 0 children]
             sage: C.permute_coefficients([1,3,2,0])
             sage: C.list()
-            [p-adic node represented by (4, 6, 1, 7) with 0 children,
-             p-adic node represented by (2, 3, 8, 9) with 0 children,
-             p-adic node represented by (2, 4, 3, 1) with 0 children]
+            [p-adic node represented by (2, 4, 3, 1) with 0 children,
+             p-adic node represented by (4, 6, 1, 7) with 0 children,
+             p-adic node represented by (2, 3, 8, 9) with 0 children]
 
         .. SEEALSO::
 
@@ -2436,6 +2547,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
     EXAMPLES::
 
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
         sage: pAdics = pAdicBase(ZZ, 3)
         sage: C = pAdicNodeCollection(None, pAdics=pAdics, width=2)
         sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(1, 2)))
@@ -2444,9 +2557,9 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
         sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(0, 0)))
         sage: C.list()
         [p-adic node represented by (1, 2) with 0 children,
+         p-adic node represented by (2, 2) with 9 children,
          p-adic node represented by (0, 1) with 9 children,
-         p-adic node represented by (0, 0) with 0 children,
-         p-adic node represented by (2, 2) with 9 children]
+         p-adic node represented by (0, 0) with 0 children]
         sage: C.contains((1, 2))
         True
         sage: C.contains((1, 0))
@@ -2454,8 +2567,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
         sage: C.remove_by_coefficients((0, 0))
         sage: C.list()
         [p-adic node represented by (1, 2) with 0 children,
-         p-adic node represented by (0, 1) with 9 children,
-         p-adic node represented by (2, 2) with 9 children]
+         p-adic node represented by (2, 2) with 9 children,
+         p-adic node represented by (0, 1) with 9 children]
         sage: C.size()
         3
         sage: C.maximal_size()
@@ -2474,6 +2587,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
     The children of a pAdicNode form a p-adic collection and can be
     used as such::
 
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
         sage: pAdics = pAdicBase(ZZ, 2)
         sage: N = pAdicNode(pAdics=pAdics, width=2, full=True)
         sage: isinstance(N.children, pAdicNodeCollection)
@@ -2514,12 +2629,16 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 5)
             sage: pAdicNodeCollection(None, pAdics=pAdics)
             []
 
         By giving a parent, no other arguments are required::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 7)
             sage: N = pAdicNode(pAdics=pAdics)
             sage: pAdicNodeCollection(N)
@@ -2547,6 +2666,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2)
             sage: N1 = pAdicNode(pAdics=pAdics, coefficients=(1, 2))
@@ -2600,6 +2721,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 5)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: R.children.list()[7].remove()
@@ -2638,6 +2761,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2681,6 +2806,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 2)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2724,6 +2851,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 2)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2834,6 +2963,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 2)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2866,6 +2997,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2894,6 +3027,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2936,6 +3071,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -2980,6 +3117,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(ZZ, 3)
             sage: R = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: isinstance(R.children, pAdicNodeCollection)
@@ -3027,20 +3166,22 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicNodeCollection
             sage: pAdics = pAdicBase(QQ, 11)
             sage: C = pAdicNodeCollection(None, pAdics=pAdics, width=4)
             sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(1,2,3,4)))
             sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(7,4,1,6)))
             sage: C.add(pAdicNode(pAdics=pAdics, coefficients=(9,2,8,3)))
             sage: C.list()
-            [p-adic node represented by (9, 2, 8, 3) with 0 children,
-             p-adic node represented by (1, 2, 3, 4) with 0 children,
-             p-adic node represented by (7, 4, 1, 6) with 0 children]
+            [p-adic node represented by (1, 2, 3, 4) with 0 children,
+             p-adic node represented by (7, 4, 1, 6) with 0 children,
+             p-adic node represented by (9, 2, 8, 3) with 0 children]
             sage: C.permute_coefficients([1,3,2,0])
             sage: C.list()
-            [p-adic node represented by (4, 6, 1, 7) with 0 children,
-             p-adic node represented by (2, 3, 8, 9) with 0 children,
-             p-adic node represented by (2, 4, 3, 1) with 0 children]
+            [p-adic node represented by (2, 4, 3, 1) with 0 children,
+             p-adic node represented by (4, 6, 1, 7) with 0 children,
+             p-adic node represented by (2, 3, 8, 9) with 0 children]
 
         .. SEEALSO::
 
@@ -3092,6 +3233,7 @@ class pAdicTree(SageObject):
 
     Manipulating the variables in a p-adic tree::
 
+        sage: from modular_method.padics.pAdic_tree import pAdicTree
         sage: T = pAdicTree(('a', 'b'), prime=3); T
         p-adic tree for the variables ('a', 'b') with respect to p-adics given by Rational Field and (3)
         sage: T.add_variable('c')
@@ -3105,6 +3247,8 @@ class pAdicTree(SageObject):
 
     Set like operations on p-adic trees::
 
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
         sage: pAdics = pAdicBase(ZZ, 2)
         sage: N1 = pAdicNode(pAdics=pAdics, width=2, full=True)
         sage: N1.children.remove_by_coefficients((0, 0))
@@ -3176,15 +3320,17 @@ class pAdicTree(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: pAdicTree('x', prime=3)
             p-adic tree for the variables ('x',) with respect to p-adics given by Rational Field and (3)
             sage: pAdicTree(('a', 'b', 'c'), prime=2)
             p-adic tree for the variables ('a', 'b', 'c') with respect to p-adics given by Rational Field and (2)
             sage: pAdicTree(('x1', 'x2'), prime=3, ring=QuadraticField(-1))
-            p-adic tree for the variables ('x1', 'x2') with respect to p-adics given by Number Field in a with defining polynomial x^2 + 1 and (3)
+            p-adic tree for the variables ('x1', 'x2') with respect to p-adics given by Number Field in a with defining polynomial x^2 + 1 with a = 1*I and (3)
 
         The difference between full and empty::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree('x', prime=2, full=True)
             sage: T.is_full()
             True
@@ -3194,6 +3340,8 @@ class pAdicTree(SageObject):
 
         Using a custom node to initialize the tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
             sage: pAdics = pAdicBase(QQ, 7)
             sage: N = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: T = pAdicTree(('x', 'y'), root=N)
@@ -3239,6 +3387,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree(('x', 'y'), prime=3)
             sage: T.root()
             p-adic node represented by (0, 0) with 9 children
@@ -3270,6 +3419,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree(('x', 'y'), prime=2)
             sage: ls, Tc = T.nodes_at_level(2); ls
             [p-adic node represented by (0, 0) with 4 children,
@@ -3307,6 +3457,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree('a', prime=11)
             sage: T.pAdics()
             p-adics given by Rational Field and (11)
@@ -3324,6 +3475,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree(('a1','a2','a3','a4'), prime=2)
             sage: T.variables()
             ('a1', 'a2', 'a3', 'a4')
@@ -3358,6 +3510,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree(('x','y'), prime=3); T
             p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (3)
             sage: T.add_variable('z')
@@ -3410,11 +3563,12 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree(('a','b','c','d'), prime=5); T
             p-adic tree for the variables ('a', 'b', 'c', 'd') with respect to p-adics given by Rational Field and (5)
             sage: T.remove_variable('c')
             p-adic tree for the variables ('a', 'b', 'd') with respect to p-adics given by Rational Field and (5)
-            sage: T.remove_variable(['a', 'd'])
+            sage: T.remove_variable('a', 'd')
             p-adic tree for the variables ('b', 'c') with respect to p-adics given by Rational Field and (5)
 
         .. SEEALSO::
@@ -3453,6 +3607,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree(('a','b','c'), prime=5); T
             p-adic tree for the variables ('a', 'b', 'c') with respect to p-adics given by Rational Field and (5)
             sage: T.reorder_variables(('b', 'c', 'a'))
@@ -3515,6 +3670,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree(('a1','b1','c1'), prime=2); T
             p-adic tree for the variables ('a1', 'b1', 'c1') with respect to p-adics given by Rational Field and (2)
             sage: T.change_variables_to(('b1', 'b2', 'b3'))
@@ -3557,6 +3713,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
             sage: T = pAdicTree('x', prime=2)
             sage: T1 = pAdicTree('x', prime=2)
             sage: T2 = pAdicTree('y', prime=2, full=False)
@@ -3592,6 +3749,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
             sage: T = pAdicTree('x', prime=2)
             sage: T1 = pAdicTree('x', prime=2)
             sage: T2 = pAdicTree('y', prime=2, full=False)
@@ -3634,6 +3792,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree(('x', 'y'), prime=2)
             sage: T.get_values_at_level(2)
             [(0, 0),
@@ -3683,6 +3842,8 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
             sage: pAdics = pAdicBase(QQ, 2)
             sage: N = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: N.children.remove_by_coefficients((1, 0))
@@ -3752,6 +3913,7 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_tree import pAdicTree
             sage: T = pAdicTree(('a', 'b'), prime=5); T
             p-adic tree for the variables ('a', 'b') with respect to p-adics given by Rational Field and (5)
             sage: T.copy()
@@ -3782,6 +3944,8 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
             sage: pAdics = pAdicBase(ZZ, 2)
             sage: N1 = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: N1.children.remove_by_coefficients((0, 0))
@@ -3829,6 +3993,8 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
             sage: pAdics = pAdicBase(ZZ, 2)
             sage: N1 = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: N1.children.remove_by_coefficients((0, 0))
@@ -3877,6 +4043,8 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
             sage: pAdics = pAdicBase(ZZ, 2)
             sage: N1 = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: N1.children.remove_by_coefficients((0, 0))
@@ -3914,6 +4082,8 @@ class pAdicTree(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
             sage: pAdics = pAdicBase(ZZ, 2)
             sage: N1 = pAdicNode(pAdics=pAdics, width=2, full=True)
             sage: N1.children.remove_by_coefficients((0, 0))

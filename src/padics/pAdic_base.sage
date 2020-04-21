@@ -6,6 +6,7 @@ code.
 
 EXAMPLES::
 
+    sage: from modular_method.padics.pAdic_base import pAdicBase
     sage: pAdics = pAdicBase(QQ, 7)
     sage: pAdics.order()
     Integer Ring
@@ -20,14 +21,15 @@ EXAMPLES::
 
 ::
 
+    sage: from modular_method.padics.pAdic_base import pAdicBase
     sage: K = QuadraticField(-3)
     sage: pAdics = pAdicBase(K, K.prime_above(7))
     sage: pAdics.order()
-    Eisenstein Integers in Number Field in a with defining polynomial x^2 + 3
+    Eisenstein Integers in Number Field in a with defining polynomial x^2 + 3 with a = 1.732050807568878?*I
     sage: pAdics.prime()
     Fractional ideal (-3/2*a - 1/2)
     sage: pAdics.quotient_ring(3)
-    Quotient of Eisenstein Integers in Number Field in a with defining polynomial x^2 + 3 by the ideal (9*a + 10)
+    Quotient of Eisenstein Integers in Number Field in a with defining polynomial x^2 + 3 with a = 1.732050807568878?*I by the ideal (9*a + 10)
     sage: pi = pAdics.uniformizer(); pi
     7
     sage: pAdics.power_series(2 + 3*pi + 5*pi^2, precision=3)
@@ -51,7 +53,11 @@ AUTHORS:
 
 from sage.rings.number_field.order import Order
 from sage.rings.number_field.number_field import NumberField_generic
+
 from sage.structure.sage_object import SageObject
+from sage.misc.cachefunc import cached_method
+
+from sage.all import Integer, ZZ, QQ
 
 class pAdicBase(SageObject):
     r"""A class that stores basic information related to p-adic arithmatic.
@@ -61,7 +67,8 @@ class pAdicBase(SageObject):
     or prime number in the case of the rationals.
         
     EXAMPLES::
-        
+
+        sage: from modular_method.padics.pAdic_base import pAdicBase        
         sage: pAdics = pAdicBase(ZZ, 5)
         sage: pAdics
         p-adics given by Rational Field and (5)
@@ -70,10 +77,11 @@ class pAdicBase(SageObject):
         
     Example using a number field::
     
+        sage: from modular_method.padics.pAdic_base import pAdicBase
         sage: K = QuadraticField(-7)
         sage: pAdics = pAdicBase(K, K.prime_above(2))
         sage: pAdics
-        p-adics given by Number Field in a with defining polynomial x^2 + 7 and (-1/2*a + 1/2)
+        p-adics given by Number Field in a with defining polynomial x^2 + 7 with a = 2.645751311064591?*I and (-1/2*a + 1/2)
         sage: pAdics.characteristic()
         2
 
@@ -92,11 +100,13 @@ class pAdicBase(SageObject):
           
         EXAMPLES::
             
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: pAdicBase(QQ,3)
             p-adics given by Rational Field and (3)
             
         Example using a number field::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = CyclotomicField(5)
             sage: pAdicBase(K, K.prime_above(5))
             p-adics given by Cyclotomic Field of order 5 and degree 4 and (zeta5 - 1)
@@ -128,6 +138,7 @@ class pAdicBase(SageObject):
         
         EXAMPLE::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(7)
             sage: pAdics = pAdicBase(K, K.prime_above(2))
             sage: K == pAdics.number_field()
@@ -149,12 +160,14 @@ class pAdicBase(SageObject):
         
         EXAMPLES::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(-5)
             sage: pAdicBase(K, K.prime_above(17)).order()
-            Maximal Order in Number Field in a with defining polynomial x^2 + 5
+            Maximal Order in Number Field in a with defining polynomial x^2 + 5 with a = 2.236067977499790?*I
             
         ::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = CyclotomicField(7)
             sage: pAdics = pAdicBase(K, K.prime_above(3))
             sage: pAdics.order() == K.ring_of_integers()
@@ -172,12 +185,14 @@ class pAdicBase(SageObject):
         
         EXAMPLES::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: pAdics = pAdicBase(ZZ,13)
             sage: pAdics.prime_ideal()
             Principal ideal (13) of Integer Ring
             
         ::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(-1)
             sage: pAdics = pAdicBase(K, K.prime_above(7))
             sage: pAdics.prime_ideal() == K.prime_above(7)
@@ -201,6 +216,7 @@ class pAdicBase(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: pAdics = pAdicBase(ZZ, 13)
             sage: pAdics.prime()
             13
@@ -209,6 +225,7 @@ class pAdicBase(SageObject):
 
         ::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(-2)
             sage: pAdics = pAdicBase(K, K.prime_above(5))
             sage: pAdics.prime()
@@ -241,6 +258,7 @@ class pAdicBase(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(7)
             sage: pAdics = pAdicBase(K, K.prime_above(3))
             sage: pAdics.prime_below(ZZ)
@@ -248,6 +266,7 @@ class pAdicBase(SageObject):
 
         ::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(5)
             sage: L = CyclotomicField(5)
             sage: pAdics = pAdicBase(L, L.prime_above(11))
@@ -288,12 +307,13 @@ class pAdicBase(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(5)
             sage: L = CyclotomicField(5)
             sage: pAdics = pAdicBase(L, L.prime_above(11)); pAdics
             p-adics given by Cyclotomic Field of order 5 and degree 4 and (zeta5^3 + 2*zeta5^2 + zeta5 + 2)
             sage: pAdics.pAdics_below(K)
-            p-adics given by Number Field in a with defining polynomial x^2 - 5 and (3/2*a - 1/2)
+            p-adics given by Number Field in a with defining polynomial x^2 - 5 with a = 2.236067977499790? and (3/2*a - 1/2)
             sage: pAdics.pAdics_below(QQ)
             p-adics given by Rational Field and (11)
 
@@ -314,6 +334,7 @@ class pAdicBase(SageObject):
         
         EXAMPLE:
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K.<a> = QuadraticField(10)
             sage: P = K.ideal(3, a + 1)
             sage: pAdics = pAdicBase(K, P)
@@ -352,6 +373,7 @@ class pAdicBase(SageObject):
         
         EXAMPLES::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: pAdics = pAdicBase(QQ, 2)
             sage: pAdics.valuation(24)
             3
@@ -360,6 +382,7 @@ class pAdicBase(SageObject):
             
         ::
             
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K.<a> = QuadraticField(-3)
             sage: pAdics = pAdicBase(K, K.prime_above(7))
             sage: pAdics.valuation(18*a + 20)
@@ -407,15 +430,16 @@ class pAdicBase(SageObject):
 
         EXAMPLE::
 
-            sage: K = CyclotomicField(3)
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: K.<zeta> = CyclotomicField(3)
             sage: pAdics = pAdicBase(K, K.prime_above(7))
-            sage: c = pAdics.power_series(8); c
-            [1, 5, 6, 2, 3, 3, 3, 3, 3, 3]
+            sage: c = pAdics.power_series(8*zeta); c
+            [4, 6, 2, 3, 2, 4, 5, 4, 6, 5]
             sage: pi = pAdics.uniformizer(); pi
-            zeta3 + 3
+            7
             sage: a = sum(c[i]*pi^i for i in range(10)); a
-            10907*zeta3 - 22074
-            sage: pAdics.valuation(a - 8)
+            240312461
+            sage: pAdics.valuation(a - 8*zeta)
             10
 
         .. SEEALSO::
@@ -445,11 +469,13 @@ class pAdicBase(SageObject):
         
         EXAMPLES::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: pAdicBase(ZZ, 5).residue_field()
             Residue field of Integers modulo 5
             
         ::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(-1)
             sage: pAdicBase(K, K.prime_above(5)).residue_field()
             Residue field of Fractional ideal (-a - 2)
@@ -484,6 +510,7 @@ class pAdicBase(SageObject):
         Determining the squares modulo 11. Note that the function
         returns tuples, hence we have to take the first argument::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: pAdics = pAdicBase(ZZ, 11)
             sage: F = pAdics.residue_field()
             sage: squares = []
@@ -491,14 +518,15 @@ class pAdicBase(SageObject):
             ....:     x2 = F(x[0]^2)
             ....:     if x2 not in squares:
             ....:         squares.append(x2)
-            ....: squares.sort();
-            ....: print(squares)
             ....:
-            [1, 3, 4, 5, 9]
+            sage: squares.sort();
+            sage: print(squares)
+            [0, 1, 3, 4, 5, 9]
             
         Calculating representatives of possible roots modulo a prime
         ideal for a polynomial in two variables::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(5)
             sage: pAdics = pAdicBase(K, K.prime_above(11))
             sage: R = pAdics.order()
@@ -508,8 +536,8 @@ class pAdicBase(SageObject):
             sage: for z in pAdics.representatives(width=2):
             ....:     if pAdics.valuation(f(z)) > 0:
             ....:         roots.append(z)
-            ....: print(roots)
             ....:
+            sage: print(roots)
             [(0, 0), (7/2*a + 7/2, 7/2*a + 7/2), (a + 1, 3/2*a + 3/2), (3*a + 3, 5*a + 5), (5*a + 5, 3*a + 3), (4*a + 4, a + 1), (4*a + 4, 9/2*a + 9/2), (5*a + 5, 5/2*a + 5/2), (3*a + 3, 1/2*a + 1/2), (a + 1, 4*a + 4), (7/2*a + 7/2, 2*a + 2)]
 
         ..SEEALSO ::
@@ -535,6 +563,7 @@ class pAdicBase(SageObject):
         
         EXAMPLE::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(3)
             sage: pAdics = pAdicBase(K, K.prime_above(5))
             sage: pAdics.size_residue_field()
@@ -559,6 +588,7 @@ class pAdicBase(SageObject):
         
         EXAMPLE::
             
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = CyclotomicField(11)
             sage: pAdics = pAdicBase(K, K.prime_above(7))
             sage: pAdics.characteristic()
@@ -593,15 +623,17 @@ class pAdicBase(SageObject):
         
         EXAMPLES::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: pAdicBase(ZZ, 3).quotient_ring(2)
             Ring of integers modulo 9
             
         Another example over a number field::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(-2)
             sage: pAdics = pAdicBase(K, K.prime_above(7))
             sage: pAdics.quotient_ring(3, names='a')
-            Quotient of Maximal Order in Number Field in a with defining polynomial x^2 + 2 by the ideal (343)
+            Quotient of Maximal Order in Number Field in a with defining polynomial x^2 + 2 with a = 1.414213562373095?*I by the ideal (343)
 
         .. SEEALSO::
 
@@ -626,7 +658,8 @@ class pAdicBase(SageObject):
         associated with these p-adics.
         
         EXAMPLE::
-        
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: pAdicBase(ZZ, 11).zero()
             0
 
@@ -660,6 +693,7 @@ class pAdicBase(SageObject):
         
         EXAMPLES::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(-7)
             sage: p1 = pAdicBase(QQ, 7)
             sage: P = K.prime_above(7)
@@ -669,6 +703,7 @@ class pAdicBase(SageObject):
             
         If one field does not extend another::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(-3)
             sage: L = QuadraticField(5)
             sage: P = K.prime_above(2)
@@ -680,6 +715,7 @@ class pAdicBase(SageObject):
         
         If the primes do not match::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = CyclotomicField(3)
             sage: P = K.prime_above(3)
             sage: p1 = pAdicBase(QQ, 2)
@@ -694,11 +730,11 @@ class pAdicBase(SageObject):
 
         """
         if not isinstance(other, pAdicBase):
-            return false
+            return False
         L = self.number_field()
         iota_ls = other.number_field().embeddings(L)
         if len(iota_ls) < 1:
-            return false
+            return False
         P = other.prime_ideal()
         if other.number_field() == QQ:
             if self.number_field() == QQ:
@@ -729,6 +765,7 @@ class pAdicBase(SageObject):
         
         EXAMPLES::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(-5)
             sage: P = K.prime_above(5)
             sage: p1 = pAdicBase(QQ, 5)
@@ -740,6 +777,7 @@ class pAdicBase(SageObject):
         
         An example not over QQ::
             
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = CyclotomicField(4)
             sage: L = CyclotomicField(8)
             sage: P = K.prime_above(3)
@@ -751,6 +789,7 @@ class pAdicBase(SageObject):
         
         It produces the right result when other==self::
         
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: K = QuadraticField(3)
             sage: P = K.prime_above(7)
             sage: pAdics = pAdicBase(K, P)
@@ -809,6 +848,7 @@ class pAdicBase(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
             sage: L = CyclotomicField(12)
             sage: pAdicsL = pAdicBase(L, L.prime_above(3))
             sage: pAdicsQ = pAdicsL.pAdics_below(QQ)

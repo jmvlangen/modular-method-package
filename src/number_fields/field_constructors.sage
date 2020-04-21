@@ -9,6 +9,7 @@ EXAMPLES:
 
 We can build field extensions by adding roots::
 
+    sage: from modular_method.number_fields.field_constructors import field_with_root
     sage: K1.<a> = field_with_root(QQ, 2); K1
     Number Field in a with defining polynomial x^2 - 2
     sage: K2.<b> = field_with_root(K1, 3); K2
@@ -18,16 +19,18 @@ We can build field extensions by adding roots::
 
 We can find the fixed field of some galois elements::
 
+    sage: from modular_method.number_fields.field_constructors import fixed_field
     sage: L = CyclotomicField(24)
     sage: G = L.galois_group()
     sage: fixed_field([G[1], G[4]])
-    Number Field in zeta240 with defining polynomial x^2 - 2
+    Number Field in zeta240 with defining polynomial x^2 - 2 with zeta240 = 1.414213562373095?
     sage: fixed_field([G[5]])
-    Number Field in zeta240 with defining polynomial x^4 - 4*x^2 + 1
+    Number Field in zeta240 with defining polynomial x^4 - 4*x^2 + 1 with zeta240 = 1.931851652578137?
 
 We can find the composite field of two number fields, even if one of
 them is $\Q$::
 
+    sage: from modular_method.number_fields.field_constructors import composite_field
     sage: K1.<a> = QuadraticField(-7)
     sage: K2.<b> = CyclotomicField(24)
     sage: K3.<c> = QQ[sqrt(2), sqrt(3)]
@@ -38,7 +41,7 @@ them is $\Q$::
     sage: composite_field(K2, K3)
     Cyclotomic Field of order 24 and degree 8
     sage: composite_field(QQ, K3)
-    Number Field in xsqrt2 with defining polynomial x^4 - 10*x^2 + 1
+    Number Field in sqrt2 with defining polynomial x^4 - 10*x^2 + 1
     sage: composite_field(QQ, K2)
     Cyclotomic Field of order 24 and degree 8
 
@@ -57,6 +60,22 @@ AUTHORS:
 # (at your option) any later version.
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
+
+from sage.misc.cachefunc import cached_function
+
+from sage.misc.functional import is_field
+from sage.rings.number_field.number_field import NumberField
+
+from sage.rings.integer import Integer
+from sage.all import QQ
+from sage.functions.other import sqrt
+
+from sage.modules.free_module_element import vector
+from sage.matrix.constructor import matrix
+from sage.matrix.special import block_matrix
+
+from sage.combinat.partition import Partitions
+from sage.combinat.permutation import Permutations
 
 def field_with_root(K, a, names='sqrt_a', give_embedding=False):
     r"""Get a field extension of K that contains the specified root.
@@ -88,6 +107,7 @@ def field_with_root(K, a, names='sqrt_a', give_embedding=False):
 
     Simple examples over $\Q$::
     
+        sage: from modular_method.number_fields.field_constructors import field_with_root
         sage: field_with_root(QQ, 3)
         Number Field in sqrt_a with defining polynomial x^2 - 3
         sage: field_with_root(QQ, -2)
@@ -95,6 +115,7 @@ def field_with_root(K, a, names='sqrt_a', give_embedding=False):
     
     Working over a bigger field also works::
 
+        sage: from modular_method.number_fields.field_constructors import field_with_root
         sage: K = CyclotomicField(5); K
         Cyclotomic Field of order 5 and degree 4
         sage: field_with_root(K, -2, names='a')
@@ -102,6 +123,7 @@ def field_with_root(K, a, names='sqrt_a', give_embedding=False):
 
     The root might already be contained in the field::
 
+        sage: from modular_method.number_fields.field_constructors import field_with_root
         sage: K = CyclotomicField(5); K
         Cyclotomic Field of order 5 and degree 4
         sage: field_with_root(K, 5)
@@ -111,6 +133,7 @@ def field_with_root(K, a, names='sqrt_a', give_embedding=False):
 
     A map can also be generated::
 
+        sage: from modular_method.number_fields.field_constructors import field_with_root
         sage: K = CyclotomicField(3); K
         Cyclotomic Field of order 3 and degree 2
         sage: field_with_root(K, -2, names='a', give_embedding=True)
@@ -160,31 +183,35 @@ def fixed_field(H, map=False):
 
     A simple example::
 
+        sage: from modular_method.number_fields.field_constructors import fixed_field
         sage: K = CyclotomicField(12)
         sage: G = K.galois_group()
         sage: H = [G.gens()[0]]
         sage: fixed_field(H)
-        Number Field in zeta120 with defining polynomial x^2 - 2*x + 4
+        Number Field in zeta120 with defining polynomial x^2 - 2*x + 4 with zeta120 = 1 + 1.732050807568878?*I
 
     If H only contains the trivial element, the entire field is
     returned::
 
+        sage: from modular_method.number_fields.field_constructors import fixed_field
         sage: K = CyclotomicField(12)
         sage: G = K.galois_group()
         sage: H = [G.identity()]
         sage: fixed_field(H)
-        Number Field in zeta120 with defining polynomial x^4 - x^2 + 1
+        Number Field in zeta120 with defining polynomial x^4 - x^2 + 1 with zeta120 = 0.866025403784439? + 0.500000000000000?*I
 
     H empty does not work::
 
+        sage: from modular_method.number_fields.field_constructors import fixed_field
         sage: fixed_field([])
-        Traceback (most recent call last)
+        Traceback (most recent call last):
         ...
         IndexError: list index out of range
 
     If H generates or is the entire galois group we get the rational
     field::
 
+        sage: from modular_method.number_fields.field_constructors import fixed_field
         sage: K = CyclotomicField(24)
         sage: G = K.galois_group()
         sage: fixed_field(G)
@@ -194,17 +221,22 @@ def fixed_field(H, map=False):
 
     Maps can be returned in each of the above cases::
 
+        sage: from modular_method.number_fields.field_constructors import fixed_field
         sage: K = CyclotomicField(12)
         sage: G = K.galois_group()
         sage: H = [G.identity()]
         sage: fixed_field([G.gens()[0]], map=True)
-        (Number Field in zeta120 with defining polynomial x^2 - 2*x + 4, Ring morphism:
-           From: Number Field in zeta120 with defining polynomial x^2 - 2*x + 4
+        (Number Field in zeta120 with defining polynomial x^2 - 2*x + 4 with zeta120 = 1 + 1.732050807568878?*I,
+         Ring morphism:
+           From: Number Field in zeta120 with defining polynomial x^2 - 2*x + 4 with zeta120 = 1 + 1.732050807568878?*I
            To:   Cyclotomic Field of order 12 and degree 4
            Defn: zeta120 |--> 2*zeta12^2)
         sage: fixed_field([G.identity()], map=True)
-        (Cyclotomic Field of order 12 and degree 4,
-         Identity endomorphism of Cyclotomic Field of order 12 and degree 4)
+        (Number Field in zeta120 with defining polynomial x^4 - x^2 + 1 with zeta120 = 0.866025403784439? + 0.500000000000000?*I,
+         Ring morphism:
+           From: Number Field in zeta120 with defining polynomial x^4 - x^2 + 1 with zeta120 = 0.866025403784439? + 0.500000000000000?*I
+           To:   Cyclotomic Field of order 12 and degree 4
+           Defn: zeta120 |--> zeta12)
         sage: fixed_field(G, map=True)
         (Rational Field, Coercion map:
            From: Rational Field
@@ -259,11 +291,13 @@ def write_as_extension(phi, give_map=False, names=None):
 
     EXAMPLES::
 
+        sage: from modular_method.number_fields.field_constructors import write_as_extension
         sage: write_as_extension(QuadraticField(5).embeddings(CyclotomicField(5))[0])
         Number Field in zeta5 with defining polynomial x^2 + (1/2*a + 1/2)*x + 1 over its base field
     
     One can name the variables as usual::
 
+        sage: from modular_method.number_fields.field_constructors import write_as_extension
         sage: K.<a> = QuadraticField(2)
         sage: L.<b> = CyclotomicField(8)
         sage: M.<c> = write_as_extension(K.embeddings(L)[0])
@@ -275,6 +309,7 @@ def write_as_extension(phi, give_map=False, names=None):
     One can also request the corresponding isomorphism. Note that its
     combination with the embeddings is simply the coercion map::
 
+        sage: from modular_method.number_fields.field_constructors import write_as_extension
         sage: K.<a> = QuadraticField(3)
         sage: L.<b> = CyclotomicField(12)
         sage: M, phi = write_as_extension(K.embeddings(L)[0], give_map=True)
@@ -285,7 +320,7 @@ def write_as_extension(phi, give_map=False, names=None):
           Defn: b |--> b
         sage: phi * K.embeddings(L)[0]
         Ring morphism:
-          From: Number Field in a with defining polynomial x^2 - 3
+          From: Number Field in a with defining polynomial x^2 - 3 with a = 1.732050807568878?
           To:   Number Field in b with defining polynomial x^2 + a*x + 1 over its base field
           Defn: a |--> a
 
@@ -293,17 +328,20 @@ def write_as_extension(phi, give_map=False, names=None):
 
     Still works if the codomain is the rationals::
 
+        sage: from modular_method.number_fields.field_constructors import write_as_extension
         sage: write_as_extension(QQ.hom(QQ))
         Number Field in x1 with defining polynomial x - 1
 
     Also works if the codomain is an extension of fields::
 
+        sage: from modular_method.number_fields.field_constructors import write_as_extension
         sage: K.<a> = QQ[sqrt(2), sqrt(3)]
         sage: write_as_extension(QQ.hom(K), names='b')
         Number Field in b with defining polynomial x^4 - 10*x^2 + 1
 
     Resolves conflicts in naming::
 
+        sage: from modular_method.number_fields.field_constructors import write_as_extension
         sage: K.<a> = QuadraticField(2)
         sage: L.<a> = CyclotomicField(8)
         sage: write_as_extension(K.embeddings(L)[0])
@@ -315,12 +353,14 @@ def write_as_extension(phi, give_map=False, names=None):
 
     Works if both fields are the same::
 
+        sage: from modular_method.number_fields.field_constructors import write_as_extension
         sage: K = QuadraticField(3)
         sage: write_as_extension(K.hom(K))
         Number Field in a1 with defining polynomial x - a over its base field
 
     Resolves conflicts in naming if a name was provided::
 
+        sage: from modular_method.number_fields.field_constructors import write_as_extension
         sage: K.<a> = QuadraticField(2)
         sage: L.<a> = CyclotomicField(8)
         sage: write_as_extension(K.embeddings(L)[0], names='a')
@@ -402,6 +442,7 @@ def composite_field(K1, K2, give_maps=False, names=None):
 
     Combining two quadratic fields::
 
+        sage: from modular_method.number_fields.field_constructors import composite_field
         sage: K1 = QuadraticField(2)
         sage: K2 = QuadraticField(3)
         sage: K = composite_field(K1, K2); K
@@ -412,6 +453,7 @@ def composite_field(K1, K2, give_maps=False, names=None):
     If one of the fields is contained in the other, returns the bigger
     field::
 
+        sage: from modular_method.number_fields.field_constructors import composite_field
         sage: K1 = QuadraticField(2)
         sage: K2 = CyclotomicField(8)
         sage: K = composite_field(K1, K2)
@@ -423,6 +465,7 @@ def composite_field(K1, K2, give_maps=False, names=None):
     Note that if both fields are isomorphic, will always return the
     second field::
 
+        sage: from modular_method.number_fields.field_constructors import composite_field
         sage: K1 = QuadraticField(-1)
         sage: K2 = QuadraticField(-4)
         sage: K1.is_isomorphic(K2)
@@ -435,14 +478,15 @@ def composite_field(K1, K2, give_maps=False, names=None):
 
     Can use the optional give_maps to obtain the embeddings::
 
+        sage: from modular_method.number_fields.field_constructors import composite_field
         sage: K1 = QuadraticField(2)
         sage: K2 = QuadraticField(3)
         sage: composite_field(K1, K2, give_maps=True)
         (Number Field in a1 with defining polynomial x^4 - 10*x^2 + 1, Ring morphism:
-           From: Number Field in a with defining polynomial x^2 - 2
+           From: Number Field in a with defining polynomial x^2 - 2 with a = 1.414213562373095?
            To:   Number Field in a1 with defining polynomial x^4 - 10*x^2 + 1
            Defn: a |--> -1/2*a1^3 + 9/2*a1, Ring morphism:
-           From: Number Field in a with defining polynomial x^2 - 3
+           From: Number Field in a with defining polynomial x^2 - 3 with a = 1.732050807568878?
            To:   Number Field in a1 with defining polynomial x^4 - 10*x^2 + 1
            Defn: a |--> -1/2*a1^3 + 11/2*a1)
 
@@ -578,6 +622,7 @@ def intersection_field(K1, K2, L=None, give_maps=False, names=None):
 
     A simple example::
 
+        sage: from modular_method.number_fields.field_constructors import intersection_field
         sage: R.<x> = QQ[]
         sage: K1.<a1> = CyclotomicField(8)
         sage: K2.<a2> = NumberField(x^4 - 2)
@@ -587,11 +632,12 @@ def intersection_field(K1, K2, L=None, give_maps=False, names=None):
     Using the method give_maps, one can obtain the corresponding
     embeddings::
 
+        sage: from modular_method.number_fields.field_constructors import intersection_field
         sage: R.<x> = QQ[]
         sage: K1.<a1> = CyclotomicField(9)
         sage: K2.<a2> = NumberField(x^4 + 3)
         sage: intersection_field(K1, K2, give_maps=True, names=a0)
-        (Number Field in a0 with defining polynomial x^2 + 3, Ring morphism:
+        (Number Field in a0 with defining polynomial x^2 - x + 1, Ring morphism:
            From: Number Field in a0 with defining polynomial x^2 - x + 1
            To:   Cyclotomic Field of order 9 and degree 6
            Defn: a0 |--> -a1^3, Ring morphism:
@@ -602,6 +648,7 @@ def intersection_field(K1, K2, L=None, give_maps=False, names=None):
     Note that the intersection field might depend on the choice of
     common field::
 
+        sage: from modular_method.number_fields.field_constructors import intersection_field
         sage: R.<x> = QQ[]
         sage: K.<a> = NumberField(x^4 - x + 1)
         sage: L.<a> = K.galois_closure()

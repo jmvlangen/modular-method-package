@@ -18,6 +18,7 @@ same last digit, i.e. congruent modulo 10::
     sage: VT = vector([0]); VT
     (0)
     sage: N = 10
+    sage: from modular_method.linear_algebra.solver import solve_integer_problem_with_torsion
     sage: solve_integer_problem_with_torsion(M, V, MT, VT, N, all=True)
     (
                 [ 5]
@@ -39,6 +40,12 @@ AUTHORS:
 # (at your option) any later version.
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
+
+from sage.rings.integer_ring import ZZ
+from sage.all import Integers, Integer
+from sage.matrix.special import block_matrix, zero_matrix, diagonal_matrix
+from sage.modules.free_module_element import vector
+from sage.arith.misc import xgcd
 
 def solve_integer_problem_with_torsion(M, V, MT, VT, N, all=False):
     r"""Solve a linear problem over the integers with some relations
@@ -96,6 +103,7 @@ def solve_integer_problem_with_torsion(M, V, MT, VT, N, all=False):
         sage: VT = vector([0]); VT
         (0)
         sage: N = 10
+        sage: from modular_method.linear_algebra.solver import solve_integer_problem_with_torsion
         sage: solve_integer_problem_with_torsion(M, V, MT, VT, N, all=True)
         (
                     [ 5]

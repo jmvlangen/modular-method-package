@@ -18,10 +18,11 @@ EXAMPLES:
 We can interpret a Dirichlet character as a galois character over the
 fixed field of its kernel::
 
+    sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field, dirichlet_to_galois
     sage: eps = DirichletGroup(24)[5]; eps
     Dirichlet character modulo 24 of conductor 12 mapping 7 |--> -1, 13 |--> 1, 17 |--> -1
     sage: K = dirichlet_fixed_field(eps); K
-    Number Field in zeta0 with defining polynomial x^2 - 3
+    Number Field in zeta0 with defining polynomial x^2 - 3 with zeta0 = 1.732050807568878?
     sage: G = K.galois_group()
     sage: eps_gal = dirichlet_to_galois(eps)
     sage: [eps_gal(s) for s in G]
@@ -30,10 +31,11 @@ fixed field of its kernel::
 Conversely we can find the dirichlet character corresponding to a
 quadratic galois character::
 
+    sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field, character_for_root
     sage: eps = character_for_root(-5); eps
     Dirichlet character modulo 20 of conductor 20 mapping 11 |--> -1, 17 |--> -1
     sage: dirichlet_fixed_field(eps)
-    Number Field in zeta0 with defining polynomial x^2 + 5
+    Number Field in zeta0 with defining polynomial x^2 + 5 with zeta0 = 2.236067977499790?*I
 
 AUTHORS:
 
@@ -50,6 +52,14 @@ AUTHORS:
 # (at your option) any later version.
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
+
+from modular_method.number_fields.field_constructors import fixed_field
+from modular_method.number_fields.galois_group import cyclotomic_galois_isomorphism
+
+from sage.all import Integer, ZZ
+from sage.rings.finite_rings.integer_mod import mod
+
+from sage.modular.dirichlet import DirichletGroup
 
 def dirichlet_fixed_field(eps):
     r"""Give the fixed field of the kernel of a Dirichlet chracter.
@@ -69,15 +79,17 @@ def dirichlet_fixed_field(eps):
     Generators of the Dirichlet group of modulus 8 have quadratic
     fixed fields::
 
+        sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field
         sage: D = DirichletGroup(8)
         sage: for eps in D.gens():
         ....:     print(dirichlet_fixed_field(eps))
         ....:     
-        Cyclotomic Field of order 4 and degree 2
-        Number Field in zeta0 with defining polynomial x^2 - 2
+        Number Field in zeta0 with defining polynomial x^2 + 1 with zeta0 = 1*I
+        Number Field in zeta0 with defining polynomial x^2 - 2 with zeta0 = 1.414213562373095?
 
     The trivial character has the rational field as its fixed field::
 
+        sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field
         sage: eps = DirichletGroup(5)[0]; eps
         Dirichlet character modulo 5 of conductor 1 mapping 2 |--> 1
         sage: dirichlet_fixed_field(eps)
@@ -86,10 +98,11 @@ def dirichlet_fixed_field(eps):
     A primitive character with a prime modulus has the entire
     cyclotomic field as a fixed field::
     
+        sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field
         sage: eps = DirichletGroup(7).gen(); eps
         Dirichlet character modulo 7 of conductor 7 mapping 3 |--> zeta6
         sage: dirichlet_fixed_field(eps)
-        Cyclotomic Field of order 7 and degree 6
+        Number Field in zeta0 with defining polynomial x^6 + x^5 + x^4 + x^3 + x^2 + x + 1 with zeta0 = 0.6234898018587335? + 0.7818314824680299?*I
 
     """
     eps = eps.primitive_character()
@@ -127,7 +140,8 @@ def dirichlet_to_galois(eps):
     absolute galois group of~$\Q$.
 
     EXAMPLE::
-    
+
+        sage: from modular_method.number_fields.dirichlet_characters import dirichlet_to_galois
         sage: eps = DirichletGroup(5).gen(); eps
         Dirichlet character modulo 5 of conductor 5 mapping 2 |--> zeta4
         sage: eps_gal = dirichlet_to_galois(eps)
@@ -160,10 +174,11 @@ def character_for_root(a):
 
     EXAMPLES::
 
+        sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field, character_for_root
         sage: eps = character_for_root(-3); eps
         Dirichlet character modulo 3 of conductor 3 mapping 2 |--> -1
         sage: K = dirichlet_fixed_field(eps); K
-        Cyclotomic Field of order 3 and degree 2
+        Number Field in zeta0 with defining polynomial x^2 + x + 1 with zeta0 = -0.50000000000000000? + 0.866025403784439?*I
         sage: K(-3).is_square()
         True
 
@@ -172,7 +187,7 @@ def character_for_root(a):
         sage: eps = character_for_root(6); eps
         Dirichlet character modulo 24 of conductor 24 mapping 7 |--> -1, 13 |--> -1, 17 |--> -1
         sage: K = dirichlet_fixed_field(eps); K
-        Number Field in zeta0 with defining polynomial x^2 - 6
+        Number Field in zeta0 with defining polynomial x^2 - 6 with zeta0 = 2.449489742783178?
 
     .. SEEALSO::
 

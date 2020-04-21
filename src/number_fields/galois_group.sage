@@ -11,6 +11,7 @@ EXAMPLES:
 We can extend and restrict galois homomorphisms in towers of number
 fields, but the construction only works well in one direction::
 
+    sage: from modular_method.number_fields.galois_group import galois_field_extend, galois_field_restrict
     sage: K1 = QuadraticField(3)
     sage: K2 = CyclotomicField(12)
     sage: G1.<s> = K1.galois_group()
@@ -25,6 +26,7 @@ fields, but the construction only works well in one direction::
 The method :func:`galois_field_change` finds the best way to convert
 between two fields::
 
+    sage: from modular_method.number_fields.galois_group import galois_field_change
     sage: K1 = QuadraticField(3)
     sage: K2 = CyclotomicField(12)
     sage: K3 = CyclotomicField(20)
@@ -33,13 +35,14 @@ between two fields::
     sage: G3.<v,w> = K3.galois_group()
     sage: galois_field_change(s, K2) == t
     True
-    sage: galois_field_change(v, K2) == u
+    sage: galois_field_change(v, K2) == u^4
     True
-    sage: galois_field_change(u, K3) == v^2
+    sage: galois_field_change(u, K3) == v^4
     True
 
 For cyclotomic fields we can jump back and forth::
 
+    sage: from modular_method.number_fields.galois_group import cyclotomic_galois_isomorphism
     sage: N = 120
     sage: n = 19
     sage: s = cyclotomic_galois_isomorphism(n, N=N); s
@@ -50,9 +53,12 @@ For cyclotomic fields we can jump back and forth::
 We can inspect how the galois group acts on the units of a number
 field::
 
+    sage: from modular_method.number_fields.galois_group import galois_on_units
     sage: K = QuadraticField(3)
     sage: G.<s> = K.galois_group()
+    sage: U = K.unit_group()
     sage: d = galois_on_units(K)
+    sage: exp = [1, -2]
     sage: U(s(product(U.gens()[i]^exp[i] for i in range(2))))
     u0*u1^2
     sage: exps = vector(exp)*d[s]
@@ -74,6 +80,15 @@ AUTHORS:
 # (at your option) any later version.
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
+
+from sage.misc.cachefunc import cached_function
+
+from sage.all import ZZ, QQ, Integer
+
+from sage.matrix.constructor import matrix
+
+from sage.rings.number_field.number_field import CyclotomicField
+from modular_method.number_fields.field_constructors import intersection_field, composite_field
 
 @cached_function(key=lambda s, K, e: (str(s), s.parent().number_field(), K, e))
 def galois_field_extend(sigma, K, embedding=None):
@@ -99,6 +114,7 @@ def galois_field_extend(sigma, K, embedding=None):
 
     Simple example::
 
+        sage: from modular_method.number_fields.galois_group import galois_field_extend, galois_field_restrict
         sage: K = QuadraticField(2)
         sage: L = CyclotomicField(8)
         sage: sigma = K.galois_group().gen()
@@ -111,6 +127,7 @@ def galois_field_extend(sigma, K, embedding=None):
 
     Note that the extension is not unique::
 
+        sage: from modular_method.number_fields.galois_group import galois_field_extend, galois_field_restrict
         sage: K = QuadraticField(2)
         sage: L = CyclotomicField(8)
         sage: tau = L.galois_group()[3]
@@ -122,6 +139,7 @@ def galois_field_extend(sigma, K, embedding=None):
     depends on the chosen embedding. Therefore an error is raised if
     none is given::
 
+        sage: from modular_method.number_fields.galois_group import galois_field_extend, galois_field_restrict
         sage: R.<x> = QQ[]
         sage: K0.<a0> = NumberField(x^3 - 2)
         sage: K.<a> = K0.galois_closure()
@@ -178,16 +196,18 @@ def galois_field_restrict(sigma, K, embedding=None):
 
     EXAMPLES::
 
+        sage: from modular_method.number_fields.galois_group import galois_field_restrict
         sage: K = QuadraticField(3)
         sage: L = CyclotomicField(24)
         sage: tau = L.galois_group().gens()[0]
         sage: sigma = galois_field_restrict(tau, K); sigma
         (1,2)
         sage: sigma.parent()
-        Galois group of Number Field in a with defining polynomial x^2 - 3
+        Galois group of Number Field in a with defining polynomial x^2 - 3 with a = 1.732050807568878?
 
     If the smaller field is not abelian, the restriction is not unique::
 
+        sage: from modular_method.number_fields.galois_group import galois_field_restrict
         sage: R.<x> = QQ[]
         sage: K0.<a0> = NumberField(x^3 - 2)
         sage: K.<a> = K0.galois_closure()
@@ -195,7 +215,7 @@ def galois_field_restrict(sigma, K, embedding=None):
         sage: L.<b> = L0.galois_closure()
         sage: sigma = L.galois_group().gens()[0]
         sage: galois_field_restrict(sigma, K)
-        Traceback (most recent call last)
+        Traceback (most recent call last):
         ...
         ValueError: The restriction of Galois elements is not unique if no embedding is given.
         sage: tau = [galois_field_restrict(sigma, K, embedding=phi) for phi in K.embeddings(L)]
@@ -265,6 +285,7 @@ def galois_field_change(sigma, K, L=None):
 
     Can convert from a very complicated field to a very simple one::
 
+        sage: from modular_method.number_fields.galois_group import galois_field_change
         sage: K = QuadraticField(10)
         sage: L = CyclotomicField(120)
         sage: tau = L.galois_group()[5]; tau
@@ -272,11 +293,12 @@ def galois_field_change(sigma, K, L=None):
         sage: sigma = galois_field_change(tau, K); sigma
         (1,2)
         sage: sigma.parent()
-        Galois group of Number Field in a with defining polynomial x^2 - 10
+        Galois group of Number Field in a with defining polynomial x^2 - 10 with a = 3.162277660168380?
 
     Can also be used on two totally unrelated fields, but the result
     can be totally unexpected::
 
+        sage: from modular_method.number_fields.galois_group import galois_field_change
         sage: K = QuadraticField(2)
         sage: L = QuadraticField(3)
         sage: sigma = K.galois_group().gen(); sigma
@@ -284,25 +306,28 @@ def galois_field_change(sigma, K, L=None):
         sage: tau = galois_field_change(sigma, L); tau
         ()
         sage: tau.parent()
-        Galois group of Number Field in a with defining polynomial x^2 - 3
+        Galois group of Number Field in a with defining polynomial x^2 - 3 with a = 1.732050807568878?
 
     Note that if the intersection of the two fields is not abelian,
     the change in Galois homomorphism depends on chosen embeddings::
 
+        sage: from modular_method.number_fields.galois_group import galois_field_change
         sage: R.<x> = QQ[]
         sage: K1.<a1> = NumberField(x^6 - 2)
         sage: K1.<a1> = K1.galois_closure()
         sage: K2.<a2> = NumberField(x^6 - 3*x^4 - 2*x^3 + 3*x^2 + 6*x + 1)
         sage: K2.<a2> = K2.galois_closure()
+        sage: G.<sigma, tau> = K1.galois_group()
         sage: galois_field_change(sigma, K2)
         Traceback (most recent call last):
         ...
         ValueError: The intersection field must be abelian to make restrictions of Galois homomorphism unique.
+        sage: from modular_method.number_fields.field_constructors import composite_field
         sage: L = composite_field(K1, K2)
         sage: galois_field_change(sigma, K2, L=(L, K1.embeddings(L)[0], K2.embeddings(L)[0]))
         (1,9)(2,10)(3,11)(4,12)(5,6)(7,8)
         sage: galois_field_change(sigma, K2, L=(L, K1.embeddings(L)[0], K2.embeddings(L)[1]))
-        (1,6)(2,12)(3,9)(4,8)(5,11)(7,10)
+        (1,10)(2,6)(3,8)(4,11)(5,12)(7,9)
 
     .. SEEALSO::
 
@@ -362,6 +387,7 @@ def cyclotomic_galois_isomorphism(s, N=None):
 
     Converting from an integer to a galois homomorphism::
 
+        sage: from modular_method.number_fields.galois_group import cyclotomic_galois_isomorphism
         sage: sigma = cyclotomic_galois_isomorphism(3, N=8); sigma
         (1,4)(2,3)
         sage: sigma.parent()
@@ -370,6 +396,7 @@ def cyclotomic_galois_isomorphism(s, N=None):
     Converting from a galois homomorphism to the corresponding
     integer::
 
+        sage: from modular_method.number_fields.galois_group import cyclotomic_galois_isomorphism
         sage: L = CyclotomicField(30)
         sage: sigma = L.galois_group()[2]; sigma
         (1,3)(2,4)(5,7)(6,8)
@@ -379,6 +406,7 @@ def cyclotomic_galois_isomorphism(s, N=None):
     If the modulus is given can convert from a galois homomorphism
     over any field::
 
+        sage: from modular_method.number_fields.galois_group import cyclotomic_galois_isomorphism
         sage: K = QuadraticField(5)
         sage: sigma = K.galois_group().gen()
         sage: cyclotomic_galois_isomorphism(sigma, N=5)
@@ -429,9 +457,12 @@ def galois_on_units(K):
 
     EXAMPLE::
 
+        sage: from modular_method.number_fields.galois_group import galois_on_units
         sage: K = QuadraticField(3)
         sage: G.<s> = K.galois_group()
+        sage: U = K.unit_group()
         sage: d = galois_on_units(K)
+        sage: exp = [1, -2]
         sage: U(s(product(U.gens()[i]^exp[i] for i in range(2))))
         u0*u1^2
         sage: exps = vector(exp)*d[s]

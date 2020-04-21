@@ -7,41 +7,43 @@ P up to a certain precision and return the result as a p-adic tree.
 
 EXAMPLES::
 
+    sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
     sage: R.<x,y> = QQ[]
     sage: f = x^2 + y^2 - 1
     sage: T, _ = find_pAdic_roots(f, prime=3, precision=2)
     sage: T.children_at_level(2)
-    [p-adic node represented by (6, 1) with 9 children,
-     p-adic node represented by (3, 1) with 9 children,
-     p-adic node represented by (0, 1) with 9 children,
+    [p-adic node represented by (1, 0) with 9 children,
+     p-adic node represented by (1, 3) with 9 children,
+     p-adic node represented by (1, 6) with 9 children,
      p-adic node represented by (8, 0) with 9 children,
      p-adic node represented by (8, 3) with 9 children,
      p-adic node represented by (8, 6) with 9 children,
-     p-adic node represented by (1, 3) with 9 children,
-     p-adic node represented by (1, 0) with 9 children,
-     p-adic node represented by (1, 6) with 9 children,
-     p-adic node represented by (3, 8) with 9 children,
+     p-adic node represented by (0, 1) with 9 children,
+     p-adic node represented by (3, 1) with 9 children,
+     p-adic node represented by (6, 1) with 9 children,
      p-adic node represented by (0, 8) with 9 children,
+     p-adic node represented by (3, 8) with 9 children,
      p-adic node represented by (6, 8) with 9 children]
 
 Working with coefficients with negative valuation::
 
+    sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
     sage: R.<x, y> = QQ[]
     sage: f = x^2 / 9 + y^3 / 27
     sage: T1, _ = find_pAdic_roots(f, prime = 2, precision=2)
     sage: T1.children_at_level(2)
-    [p-adic node represented by (0, 2) with 4 children,
+    [p-adic node represented by (0, 0) with 4 children,
      p-adic node represented by (2, 0) with 4 children,
-     p-adic node represented by (0, 0) with 4 children,
+     p-adic node represented by (0, 2) with 4 children,
      p-adic node represented by (2, 2) with 4 children,
-     p-adic node represented by (3, 1) with 4 children,
-     p-adic node represented by (1, 1) with 4 children]
+     p-adic node represented by (1, 1) with 4 children,
+     p-adic node represented by (3, 1) with 4 children]
     sage: T2, _ = find_pAdic_roots(f, prime=3, precision=1)
     sage: T2.minimum_full_level()
     2
     sage: T2.children_at_level(2)
-    [p-adic node represented by (3, 6) with 9 children,
-     p-adic node represented by (0, 0) with 9 children,
+    [p-adic node represented by (0, 0) with 9 children,
+     p-adic node represented by (3, 6) with 9 children,
      p-adic node represented by (6, 6) with 9 children]
     sage: T3, _ = find_pAdic_roots(f, prime=3, precision=-1)
     sage: T3.minimum_full_level()
@@ -51,6 +53,8 @@ Working with coefficients with negative valuation::
 
 Different ways of giving the p-adics::
 
+    sage: from modular_method.padics.pAdic_base import pAdicBase
+    sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
     sage: R.<x, y> = ZZ[]
     sage: f = y^2 - x^3 - 1
     sage: T1, _ = find_pAdic_roots(f, pAdics=pAdicBase(QQ, 5), precision=2)
@@ -64,6 +68,7 @@ Different ways of giving the p-adics::
 If variables are not specified it only takes into account
 variables that actually occur::
 
+    sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
     sage: R.<x,y> = QQ[]
     sage: f = x^2 + x + 1
     sage: T1, _ = find_pAdic_roots(f, prime=3, precision=2)
@@ -75,6 +80,9 @@ variables that actually occur::
 
 Using an initial tree to limit the possibilities::
 
+    sage: from modular_method.padics.pAdic_base import pAdicBase
+    sage: from modular_method.padics.pAdic_tree import pAdicNode
+    sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
     sage: R.<x,y> = QQ[]
     sage: f = y^2 - x^3
     sage: pAdics = pAdicBase(QQ, 5)
@@ -82,29 +90,32 @@ Using an initial tree to limit the possibilities::
     sage: N.children.remove_by_coefficients((0,0))
     sage: T, _ = find_pAdic_roots(f, pAdics=pAdics, value_tree=N, precision=2)
     sage: T.children_at_level(2)
-    [p-adic node represented by (24, 7) with 25 children,
-     p-adic node represented by (9, 2) with 25 children,
-     p-adic node represented by (19, 22) with 25 children,
-     p-adic node represented by (4, 17) with 25 children,
-     p-adic node represented by (14, 12) with 25 children,
-     p-adic node represented by (21, 19) with 25 children,
-     p-adic node represented by (6, 4) with 25 children,
-     p-adic node represented by (16, 14) with 25 children,
-     p-adic node represented by (11, 9) with 25 children,
-     p-adic node represented by (1, 24) with 25 children,
-     p-adic node represented by (21, 6) with 25 children,
-     p-adic node represented by (16, 11) with 25 children,
-     p-adic node represented by (1, 1) with 25 children,
-     p-adic node represented by (11, 16) with 25 children,
+    [p-adic node represented by (1, 1) with 25 children,
      p-adic node represented by (6, 21) with 25 children,
+     p-adic node represented by (11, 16) with 25 children,
+     p-adic node represented by (16, 11) with 25 children,
+     p-adic node represented by (21, 6) with 25 children,
+     p-adic node represented by (9, 2) with 25 children,
+     p-adic node represented by (14, 12) with 25 children,
+     p-adic node represented by (19, 22) with 25 children,
+     p-adic node represented by (24, 7) with 25 children,
+     p-adic node represented by (4, 17) with 25 children,
      p-adic node represented by (19, 3) with 25 children,
+     p-adic node represented by (24, 18) with 25 children,
      p-adic node represented by (4, 8) with 25 children,
      p-adic node represented by (9, 23) with 25 children,
-     p-adic node represented by (24, 18) with 25 children,
-     p-adic node represented by (14, 13) with 25 children]
+     p-adic node represented by (14, 13) with 25 children,
+     p-adic node represented by (6, 4) with 25 children,
+     p-adic node represented by (11, 9) with 25 children,
+     p-adic node represented by (16, 14) with 25 children,
+     p-adic node represented by (21, 19) with 25 children,
+     p-adic node represented by (1, 24) with 25 children]
 
 Letting $K$ be a strict subfield of $L$::
 
+    sage: from modular_method.padics.pAdic_base import pAdicBase
+    sage: from modular_method.padics.pAdic_tree import pAdicNode
+    sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
     sage: L.<z> = CyclotomicField(3)
     sage: R.<x,y> = L[]
     sage: f = x^2 + z*x*y + z^2*y^2
@@ -112,15 +123,15 @@ Letting $K$ be a strict subfield of $L$::
     sage: N = pAdicNode(pAdics=pAdics.pAdics_below(QQ), width=2, full=True)
     sage: T, _ = find_pAdic_roots(f, pAdics=pAdics, value_tree=N, precision=4)
     sage: T.children_at_level(2)
-    [p-adic node represented by (0, 3) with 9 children,
-     p-adic node represented by (3, 6) with 9 children,
-     p-adic node represented by (0, 0) with 9 children,
+    [p-adic node represented by (0, 0) with 9 children,
+     p-adic node represented by (3, 0) with 9 children,
+     p-adic node represented by (6, 0) with 9 children,
+     p-adic node represented by (0, 3) with 9 children,
+     p-adic node represented by (3, 3) with 9 children,
      p-adic node represented by (6, 3) with 9 children,
      p-adic node represented by (0, 6) with 9 children,
-     p-adic node represented by (6, 0) with 9 children,
+     p-adic node represented by (3, 6) with 9 children,
      p-adic node represented by (6, 6) with 9 children,
-     p-adic node represented by (3, 0) with 9 children,
-     p-adic node represented by (3, 3) with 9 children,
      p-adic node represented by (1, 1) with 9 children,
      p-adic node represented by (4, 4) with 9 children,
      p-adic node represented by (7, 7) with 9 children,
@@ -130,51 +141,53 @@ Letting $K$ be a strict subfield of $L$::
 
 Using the `precision_cap` argument::
 
+    sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
     sage: R.<x,y> = QQ[]
     sage: f = y^3 - x^2 - x*y
     sage: T, _ = find_pAdic_roots(f, prime=3, precision_cap=2)
     Warning: Lowering precision on root to 2 to accomodate for precision cap 2 on variables
     sage: T.children_at_level(2)
-    [p-adic node represented by (0, 3) with 9 children,
-     p-adic node represented by (3, 6) with 9 children,
-     p-adic node represented by (0, 0) with 9 children,
+    [p-adic node represented by (0, 0) with 9 children,
+     p-adic node represented by (3, 0) with 9 children,
+     p-adic node represented by (6, 0) with 9 children,
+     p-adic node represented by (0, 3) with 9 children,
+     p-adic node represented by (3, 3) with 9 children,
      p-adic node represented by (6, 3) with 9 children,
      p-adic node represented by (0, 6) with 9 children,
-     p-adic node represented by (6, 0) with 9 children,
+     p-adic node represented by (3, 6) with 9 children,
      p-adic node represented by (6, 6) with 9 children,
-     p-adic node represented by (3, 0) with 9 children,
-     p-adic node represented by (3, 3) with 9 children,
-     p-adic node represented by (8, 2) with 9 children,
+     p-adic node represented by (2, 2) with 9 children,
      p-adic node represented by (5, 2) with 9 children,
-     p-adic node represented by (2, 2) with 9 children]
+     p-adic node represented by (8, 2) with 9 children]
 
 The special output when using the argument `give_list`. Note that
 the first values are not, the second are only roots
 modulo 2 and the third are roots modulo 4::
 
+    sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
     sage: R.<x,y> = QQ[]
     sage: f = x^2 + y^2 - 4
     sage: Tls, s = find_pAdic_roots(f, prime=2, precision=2, give_list=True)
     sage: s
     0
     sage: Tls[0].children_at_level(2)
-    [p-adic node represented by (0, 1) with 4 children,
-     p-adic node represented by (2, 1) with 4 children,
-     p-adic node represented by (0, 3) with 4 children,
-     p-adic node represented by (2, 3) with 4 children,
-     p-adic node represented by (1, 0) with 4 children,
+    [p-adic node represented by (1, 0) with 4 children,
      p-adic node represented by (3, 0) with 4 children,
      p-adic node represented by (1, 2) with 4 children,
-     p-adic node represented by (3, 2) with 4 children]
+     p-adic node represented by (3, 2) with 4 children,
+     p-adic node represented by (0, 1) with 4 children,
+     p-adic node represented by (2, 1) with 4 children,
+     p-adic node represented by (0, 3) with 4 children,
+     p-adic node represented by (2, 3) with 4 children]
     sage: Tls[1].children_at_level(2)
     [p-adic node represented by (1, 1) with 4 children,
      p-adic node represented by (3, 1) with 4 children,
      p-adic node represented by (1, 3) with 4 children,
      p-adic node represented by (3, 3) with 4 children]
     sage: Tls[2].children_at_level(2)
-    [p-adic node represented by (0, 2) with 4 children,
+    [p-adic node represented by (0, 0) with 4 children,
      p-adic node represented by (2, 0) with 4 children,
-     p-adic node represented by (0, 0) with 4 children,
+     p-adic node represented by (0, 2) with 4 children,
      p-adic node represented by (2, 2) with 4 children]
 
 AUTHORS:
@@ -193,10 +206,17 @@ AUTHORS:
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
-from sage.all import Infinity
+from sage.all import Integer, Infinity, ZZ
+from sage.functions.other import ceil
 
 from sage.rings.polynomial.multi_polynomial import MPolynomial
 from sage.rings.polynomial.polynomial_element import Polynomial
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+from sage.matrix.constructor import matrix
+
+from modular_method.padics.pAdic_base import pAdicBase
+from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
 
 def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
                     variables=None, value_tree=None, precision=20,
@@ -306,41 +326,43 @@ def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
 
     EXAMPLES::
 
+        sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
         sage: R.<x,y> = QQ[]
         sage: f = x^2 + y^2 - 1
         sage: Ty, Tn = find_pAdic_roots(f, prime=3, precision=2)
         sage: Ty.children_at_level(2)
-        [p-adic node represented by (6, 1) with 9 children,
-         p-adic node represented by (3, 1) with 9 children,
-         p-adic node represented by (0, 1) with 9 children,
+        [p-adic node represented by (1, 0) with 9 children,
+         p-adic node represented by (1, 3) with 9 children,
+         p-adic node represented by (1, 6) with 9 children,
          p-adic node represented by (8, 0) with 9 children,
          p-adic node represented by (8, 3) with 9 children,
          p-adic node represented by (8, 6) with 9 children,
-         p-adic node represented by (1, 3) with 9 children,
-         p-adic node represented by (1, 0) with 9 children,
-         p-adic node represented by (1, 6) with 9 children,
-         p-adic node represented by (3, 8) with 9 children,
+         p-adic node represented by (0, 1) with 9 children,
+         p-adic node represented by (3, 1) with 9 children,
+         p-adic node represented by (6, 1) with 9 children,
          p-adic node represented by (0, 8) with 9 children,
+         p-adic node represented by (3, 8) with 9 children,
          p-adic node represented by (6, 8) with 9 children]
 
     Working with coefficients with negative valuation::
 
+        sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
         sage: R.<x, y> = QQ[]
         sage: f = x^2 / 9 + y^3 / 27
         sage: T1, _ = find_pAdic_roots(f, prime = 2, precision=2)
         sage: T1.children_at_level(2)
-        [p-adic node represented by (0, 2) with 4 children,
+        [p-adic node represented by (0, 0) with 4 children,
          p-adic node represented by (2, 0) with 4 children,
-         p-adic node represented by (0, 0) with 4 children,
+         p-adic node represented by (0, 2) with 4 children,
          p-adic node represented by (2, 2) with 4 children,
-         p-adic node represented by (3, 1) with 4 children,
-         p-adic node represented by (1, 1) with 4 children]
+         p-adic node represented by (1, 1) with 4 children,
+         p-adic node represented by (3, 1) with 4 children]
         sage: T2, _ = find_pAdic_roots(f, prime=3, precision=1)
         sage: T2.minimum_full_level()
         2
         sage: T2.children_at_level(2)
-        [p-adic node represented by (3, 6) with 9 children,
-         p-adic node represented by (0, 0) with 9 children,
+        [p-adic node represented by (0, 0) with 9 children,
+         p-adic node represented by (3, 6) with 9 children,
          p-adic node represented by (6, 6) with 9 children]
         sage: T3, _ = find_pAdic_roots(f, prime=3, precision=-1)
         sage: T3.minimum_full_level()
@@ -350,6 +372,8 @@ def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
 
     Different ways of giving the p-adics::
 
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
         sage: R.<x, y> = ZZ[]
         sage: f = y^2 - x^3 - 1
         sage: T1, _ = find_pAdic_roots(f, pAdics=pAdicBase(QQ, 5), precision=2)
@@ -363,6 +387,7 @@ def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
     If variables are not specified it only takes into account
     variables that actually occur::
 
+        sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
         sage: R.<x,y> = QQ[]
         sage: f = x^2 + x + 1
         sage: T1, _ = find_pAdic_roots(f, prime=3, precision=2)
@@ -374,6 +399,9 @@ def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
 
     Using an initial tree to limit the possibilities::
 
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.padics.pAdic_tree import pAdicNode
+        sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
         sage: R.<x,y> = QQ[]
         sage: f = y^2 - x^3
         sage: pAdics = pAdicBase(QQ, 5)
@@ -381,29 +409,32 @@ def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
         sage: N.children.remove_by_coefficients((0,0))
         sage: T, _ = find_pAdic_roots(f, pAdics=pAdics, value_tree=N, precision=2)
         sage: T.children_at_level(2)
-        [p-adic node represented by (24, 7) with 25 children,
-         p-adic node represented by (9, 2) with 25 children,
-         p-adic node represented by (19, 22) with 25 children,
-         p-adic node represented by (4, 17) with 25 children,
-         p-adic node represented by (14, 12) with 25 children,
-         p-adic node represented by (21, 19) with 25 children,
-         p-adic node represented by (6, 4) with 25 children,
-         p-adic node represented by (16, 14) with 25 children,
-         p-adic node represented by (11, 9) with 25 children,
-         p-adic node represented by (1, 24) with 25 children,
-         p-adic node represented by (21, 6) with 25 children,
-         p-adic node represented by (16, 11) with 25 children,
-         p-adic node represented by (1, 1) with 25 children,
-         p-adic node represented by (11, 16) with 25 children,
+        [p-adic node represented by (1, 1) with 25 children,
          p-adic node represented by (6, 21) with 25 children,
+         p-adic node represented by (11, 16) with 25 children,
+         p-adic node represented by (16, 11) with 25 children,
+         p-adic node represented by (21, 6) with 25 children,
+         p-adic node represented by (9, 2) with 25 children,
+         p-adic node represented by (14, 12) with 25 children,
+         p-adic node represented by (19, 22) with 25 children,
+         p-adic node represented by (24, 7) with 25 children,
+         p-adic node represented by (4, 17) with 25 children,
          p-adic node represented by (19, 3) with 25 children,
+         p-adic node represented by (24, 18) with 25 children,
          p-adic node represented by (4, 8) with 25 children,
          p-adic node represented by (9, 23) with 25 children,
-         p-adic node represented by (24, 18) with 25 children,
-         p-adic node represented by (14, 13) with 25 children]
+         p-adic node represented by (14, 13) with 25 children,
+         p-adic node represented by (6, 4) with 25 children,
+         p-adic node represented by (11, 9) with 25 children,
+         p-adic node represented by (16, 14) with 25 children,
+         p-adic node represented by (21, 19) with 25 children,
+         p-adic node represented by (1, 24) with 25 children]
 
     Letting $K$ be a strict subfield of $L$::
 
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.padics.pAdic_tree import pAdicNode
+        sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
         sage: L.<z> = CyclotomicField(3)
         sage: R.<x,y> = L[]
         sage: f = x^2 + z*x*y + z^2*y^2
@@ -411,15 +442,15 @@ def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
         sage: N = pAdicNode(pAdics=pAdics.pAdics_below(QQ), width=2, full=True)
         sage: T, _ = find_pAdic_roots(f, pAdics=pAdics, value_tree=N, precision=4)
         sage: T.children_at_level(2)
-        [p-adic node represented by (0, 3) with 9 children,
-         p-adic node represented by (3, 6) with 9 children,
-         p-adic node represented by (0, 0) with 9 children,
+        [p-adic node represented by (0, 0) with 9 children,
+         p-adic node represented by (3, 0) with 9 children,
+         p-adic node represented by (6, 0) with 9 children,
+         p-adic node represented by (0, 3) with 9 children,
+         p-adic node represented by (3, 3) with 9 children,
          p-adic node represented by (6, 3) with 9 children,
          p-adic node represented by (0, 6) with 9 children,
-         p-adic node represented by (6, 0) with 9 children,
+         p-adic node represented by (3, 6) with 9 children,
          p-adic node represented by (6, 6) with 9 children,
-         p-adic node represented by (3, 0) with 9 children,
-         p-adic node represented by (3, 3) with 9 children,
          p-adic node represented by (1, 1) with 9 children,
          p-adic node represented by (4, 4) with 9 children,
          p-adic node represented by (7, 7) with 9 children,
@@ -429,51 +460,53 @@ def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
 
     Using the `precision_cap` argument::
 
+        sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
         sage: R.<x,y> = QQ[]
         sage: f = y^3 - x^2 - x*y
         sage: T, _ = find_pAdic_roots(f, prime=3, precision_cap=2)
         Warning: Lowering precision on root to 2 to accomodate for precision cap 2 on variables
         sage: T.children_at_level(2)
-        [p-adic node represented by (0, 3) with 9 children,
-         p-adic node represented by (3, 6) with 9 children,
-         p-adic node represented by (0, 0) with 9 children,
+        [p-adic node represented by (0, 0) with 9 children,
+         p-adic node represented by (3, 0) with 9 children,
+         p-adic node represented by (6, 0) with 9 children,
+         p-adic node represented by (0, 3) with 9 children,
+         p-adic node represented by (3, 3) with 9 children,
          p-adic node represented by (6, 3) with 9 children,
          p-adic node represented by (0, 6) with 9 children,
-         p-adic node represented by (6, 0) with 9 children,
+         p-adic node represented by (3, 6) with 9 children,
          p-adic node represented by (6, 6) with 9 children,
-         p-adic node represented by (3, 0) with 9 children,
-         p-adic node represented by (3, 3) with 9 children,
-         p-adic node represented by (8, 2) with 9 children,
+         p-adic node represented by (2, 2) with 9 children,
          p-adic node represented by (5, 2) with 9 children,
-         p-adic node represented by (2, 2) with 9 children]
+         p-adic node represented by (8, 2) with 9 children]
 
     The special output when using the argument `give_list`. Note that
     the first values are roots modulo 4, the second are only roots
     modulo 2 and the third are not roots at all::
 
+        sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
         sage: R.<x,y> = QQ[]
         sage: f = x^2 + y^2 - 4
         sage: Tls, s = find_pAdic_roots(f, prime=2, precision=2, give_list=True)
         sage: s
         0
         sage: Tls[0].children_at_level(2)
-        [p-adic node represented by (0, 1) with 4 children,
-         p-adic node represented by (2, 1) with 4 children,
-         p-adic node represented by (0, 3) with 4 children,
-         p-adic node represented by (2, 3) with 4 children,
-         p-adic node represented by (1, 0) with 4 children,
+        [p-adic node represented by (1, 0) with 4 children,
          p-adic node represented by (3, 0) with 4 children,
          p-adic node represented by (1, 2) with 4 children,
-         p-adic node represented by (3, 2) with 4 children]
+         p-adic node represented by (3, 2) with 4 children,
+         p-adic node represented by (0, 1) with 4 children,
+         p-adic node represented by (2, 1) with 4 children,
+         p-adic node represented by (0, 3) with 4 children,
+         p-adic node represented by (2, 3) with 4 children]
         sage: Tls[1].children_at_level(2)
         [p-adic node represented by (1, 1) with 4 children,
          p-adic node represented by (3, 1) with 4 children,
          p-adic node represented by (1, 3) with 4 children,
          p-adic node represented by (3, 3) with 4 children]
         sage: Tls[2].children_at_level(2)
-        [p-adic node represented by (0, 2) with 4 children,
+        [p-adic node represented by (0, 0) with 4 children,
          p-adic node represented by (2, 0) with 4 children,
-         p-adic node represented by (0, 0) with 4 children,
+         p-adic node represented by (0, 2) with 4 children,
          p-adic node represented by (2, 2) with 4 children]
 
     """

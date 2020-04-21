@@ -22,6 +22,7 @@ using the method :func:`apply_to_conditional_value`.
 
 EXAMPLES::
 
+    sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
     sage: R.<x,y> = QQ[]
     sage: CoprimeCondition([x, y])
     The condition that the variables ('x', 'y') are pairwise coprime.
@@ -46,8 +47,18 @@ AUTHORS:
 
 import itertools
 
+from sage.structure.sage_object import SageObject
+from sage.misc.cachefunc import cached_method
+from sage.functions.other import floor, ceil
+
+from sage.all import Integer, RealNumber, QQ
+
 from sage.rings.polynomial.multi_polynomial import is_MPolynomial
 from sage.rings.polynomial.polynomial_element import is_Polynomial
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+from modular_method.padics.pAdic_tree import pAdicTree
+from modular_method.padics.pAdic_solver import find_pAdic_roots
 
 class Condition_base(SageObject):
     """A class that represents a condition on some variables.
@@ -56,6 +67,7 @@ class Condition_base(SageObject):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
         sage: R.<x,y> = QQ[]
         sage: CoprimeCondition([x, y])
         The condition that the variables ('x', 'y') are pairwise coprime.
@@ -75,6 +87,7 @@ class Condition_base(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<x,y> = QQ[]
             sage: CoprimeCondition([x, y])
             The condition that the variables ('x', 'y') are pairwise coprime.
@@ -94,6 +107,7 @@ class Condition_base(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<x, y> = QQ[]
             sage: CoprimeCondition([x, y]).variables()
             ('x', 'y')
@@ -101,6 +115,7 @@ class Condition_base(SageObject):
         Note that even when a ring has multiple variables only the
         relevant variables for this condition are returned::
 
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y, z> = ZZ[]
             sage: PolynomialCondition(x^2 - y^2 - 4).variables()
             ('x', 'y')
@@ -123,6 +138,7 @@ class Condition_base(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: CoprimeCondition([x,y]) & PolynomialCondition(x^2 + y^2 - 4)
             The condition that the variables ('x', 'y') are pairwise coprime and the condition that x^2 + y^2 - 4 == 0
@@ -149,6 +165,7 @@ class Condition_base(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: CoprimeCondition([x,y]) | PolynomialCondition(x^2 + y^2 - 4)
             The condition that the variables ('x', 'y') are pairwise coprime or the condition that x^2 + y^2 - 4 == 0
@@ -170,6 +187,7 @@ class Condition_base(SageObject):
 
         EXAMPLES::
         
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: ~ PolynomialCondition(x^2 + y^2 - 4)
             The condition that x^2 + y^2 - 4 ~= 0
@@ -177,6 +195,7 @@ class Condition_base(SageObject):
         Note that a double not simplifies in print, but gives a
         different object::
 
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1); C
             The condition that -x^3 + y^2 - 1 == 0
@@ -226,6 +245,8 @@ class Condition_base(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -235,6 +256,8 @@ class Condition_base(SageObject):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -246,6 +269,8 @@ class Condition_base(SageObject):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -258,14 +283,14 @@ class Condition_base(SageObject):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -274,6 +299,8 @@ class Condition_base(SageObject):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -301,6 +328,7 @@ class PolynomialCondition(Condition_base):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
         sage: R.<x, y> = ZZ[]
         sage: PolynomialCondition(x^2 + y^2 - 4)
         The condition that x^2 + y^2 - 4 == 0
@@ -319,6 +347,7 @@ class PolynomialCondition(Condition_base):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: PolynomialCondition(x^2 + y^2 - 4)
             The condition that x^2 + y^2 - 4 == 0
@@ -341,6 +370,7 @@ class PolynomialCondition(Condition_base):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: PolynomialCondition(x^2 + y^2 - 4).polynomial()
             x^2 + y^2 - 4
@@ -393,6 +423,8 @@ class PolynomialCondition(Condition_base):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -402,6 +434,8 @@ class PolynomialCondition(Condition_base):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -413,6 +447,8 @@ class PolynomialCondition(Condition_base):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -425,14 +461,14 @@ class PolynomialCondition(Condition_base):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -441,6 +477,8 @@ class PolynomialCondition(Condition_base):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -511,6 +549,7 @@ class CongruenceCondition(PolynomialCondition):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
         sage: R.<x, y> = ZZ[]
         sage: CongruenceCondition(x, 3)
         The condition that x == 0 modulo 3
@@ -533,6 +572,7 @@ class CongruenceCondition(PolynomialCondition):
 
         EXAMPLES::
 
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: CongruenceCondition(x, 3)
             The condition that x == 0 modulo 3
@@ -541,6 +581,7 @@ class CongruenceCondition(PolynomialCondition):
 
         We can also work over some number field::
 
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: K.<w> = QuadraticField(30)
             sage: S.<x, y> = K[]
             sage: I = K.prime_above(3)^5
@@ -563,12 +604,14 @@ class CongruenceCondition(PolynomialCondition):
 
         EXAMPLES::
 
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: CongruenceCondition(x^2 + 2*y, 7).modulus()
             7
 
         Over number fields the modulus can be an ideal::
 
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: K.<w> = QuadraticField(30)
             sage: S.<x, y> = K[]
             sage: I = K.prime_above(3)^5
@@ -578,6 +621,7 @@ class CongruenceCondition(PolynomialCondition):
         However, if the ideal is principal it will be replaced by a
         generator::
 
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: K.<w> = QuadraticField(30)
             sage: S.<x, y> = K[]
             sage: I = K.prime_above(3)^4
@@ -635,6 +679,8 @@ class CongruenceCondition(PolynomialCondition):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -644,6 +690,8 @@ class CongruenceCondition(PolynomialCondition):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -655,6 +703,8 @@ class CongruenceCondition(PolynomialCondition):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -667,14 +717,14 @@ class CongruenceCondition(PolynomialCondition):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -683,6 +733,8 @@ class CongruenceCondition(PolynomialCondition):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -738,6 +790,7 @@ class PowerCondition(PolynomialCondition):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import PowerCondition
         sage: R.<x, y> = ZZ[]
         sage: PowerCondition(x^3 + y^3, 3)
         The condition that x^3 + y^3 == x0^n0 with n0 >= 3
@@ -757,6 +810,7 @@ class PowerCondition(PolynomialCondition):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import PowerCondition
             sage: R.<x, y> = ZZ[]
             sage: PowerCondition(x^3 + y^3, 3)
             The condition that x^3 + y^3 == x0^n0 with n0 >= 3
@@ -775,6 +829,7 @@ class PowerCondition(PolynomialCondition):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import PowerCondition
             sage: R.<x, y> = ZZ[]
             sage: PowerCondition(x^3 + y^3, 3).least_exponent()
             3
@@ -824,6 +879,8 @@ class PowerCondition(PolynomialCondition):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -833,6 +890,8 @@ class PowerCondition(PolynomialCondition):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -844,6 +903,8 @@ class PowerCondition(PolynomialCondition):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -856,14 +917,14 @@ class PowerCondition(PolynomialCondition):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -872,6 +933,8 @@ class PowerCondition(PolynomialCondition):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -945,6 +1008,7 @@ class OrderCondition(PolynomialCondition):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import OrderCondition
         sage: R.<x, y> = ZZ[]
         sage: OrderCondition(x*y + y, n=2)
         The condition that x*y + y has order at most 2 at each prime.
@@ -964,6 +1028,7 @@ class OrderCondition(PolynomialCondition):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import OrderCondition
             sage: R.<x, y> = ZZ[]
             sage: OrderCondition(x*y + y, n=2)
             The condition that x*y + y has order at most 2 at each prime.
@@ -1013,6 +1078,8 @@ class OrderCondition(PolynomialCondition):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -1022,6 +1089,8 @@ class OrderCondition(PolynomialCondition):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -1033,6 +1102,8 @@ class OrderCondition(PolynomialCondition):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -1045,14 +1116,14 @@ class OrderCondition(PolynomialCondition):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -1061,6 +1132,8 @@ class OrderCondition(PolynomialCondition):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -1113,6 +1186,7 @@ class SquarefreeCondition(PolynomialCondition):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import SquarefreeCondition
         sage: R.<x, y> = ZZ[]
         sage: SquarefreeCondition(x*y + y)
         The condition that x*y + y is square free
@@ -1129,6 +1203,7 @@ class SquarefreeCondition(PolynomialCondition):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import SquarefreeCondition
             sage: R.<x, y> = ZZ[]
             sage: SquarefreeCondition(x*y + y)
             The condition that x*y + y is square free
@@ -1187,6 +1262,8 @@ class SquarefreeCondition(PolynomialCondition):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -1196,6 +1273,8 @@ class SquarefreeCondition(PolynomialCondition):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -1207,6 +1286,8 @@ class SquarefreeCondition(PolynomialCondition):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -1219,14 +1300,14 @@ class SquarefreeCondition(PolynomialCondition):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -1235,6 +1316,8 @@ class SquarefreeCondition(PolynomialCondition):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -1281,6 +1364,7 @@ class CoprimeCondition(Condition_base):
 
     EXAMPLES::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
         sage: R.<x, y> = ZZ[]
         sage: CoprimeCondition([x,y])
         The condition that the variables ('x', 'y') are pairwise coprime.
@@ -1288,6 +1372,7 @@ class CoprimeCondition(Condition_base):
     By default variables are assumed to be pairwise coprime, but other
     options are possible::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
         sage: R.<a, b, c, d> = ZZ[]
         sage: CoprimeCondition([a, b, c, d], n=0)
         The condition that always holds
@@ -1315,6 +1400,7 @@ class CoprimeCondition(Condition_base):
 
         EXAMPLES::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<x, y> = ZZ[]
             sage: CoprimeCondition([x,y])
             The condition that the variables ('x', 'y') are pairwise coprime.
@@ -1322,6 +1408,7 @@ class CoprimeCondition(Condition_base):
         By default variables are assumed to be pairwise coprime, but
         other options are possible::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<a, b, c, d> = ZZ[]
             sage: CoprimeCondition([a, b, c, d], n=0)
             The condition that always holds
@@ -1343,6 +1430,7 @@ class CoprimeCondition(Condition_base):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<a, b, c, d> = ZZ[]
             sage: CoprimeCondition([a, b, c, d], n=0).number_of_coprimes()
             0
@@ -1387,6 +1475,8 @@ class CoprimeCondition(Condition_base):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -1396,6 +1486,8 @@ class CoprimeCondition(Condition_base):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -1407,6 +1499,8 @@ class CoprimeCondition(Condition_base):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -1419,14 +1513,14 @@ class CoprimeCondition(Condition_base):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -1435,6 +1529,8 @@ class CoprimeCondition(Condition_base):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -1510,6 +1606,7 @@ class NotCondition(Condition_base):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
         sage: R.<x, y> = ZZ[]
         sage: C = CoprimeCondition([x, y]); C
         The condition that the variables ('x', 'y') are pairwise coprime.
@@ -1527,6 +1624,7 @@ class NotCondition(Condition_base):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]); C
             The condition that the variables ('x', 'y') are pairwise coprime.
@@ -1546,6 +1644,7 @@ class NotCondition(Condition_base):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]); C
             The condition that the variables ('x', 'y') are pairwise coprime.
@@ -1585,6 +1684,8 @@ class NotCondition(Condition_base):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -1594,6 +1695,8 @@ class NotCondition(Condition_base):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -1605,6 +1708,8 @@ class NotCondition(Condition_base):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -1617,14 +1722,14 @@ class NotCondition(Condition_base):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -1633,6 +1738,8 @@ class NotCondition(Condition_base):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -1713,6 +1820,7 @@ class AndCondition(Condition_base):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
         sage: R.<x, y> = ZZ[]
         sage: CoprimeCondition([x,y]) & PolynomialCondition(x^2 + y^2 - 4)
         The condition that the variables ('x', 'y') are pairwise coprime and the condition that x^2 + y^2 - 4 == 0
@@ -1731,6 +1839,7 @@ class AndCondition(Condition_base):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: CoprimeCondition([x,y]) & PolynomialCondition(x^2 + y^2 - 4)
             The condition that the variables ('x', 'y') are pairwise coprime and the condition that x^2 + y^2 - 4 == 0
@@ -1752,6 +1861,7 @@ class AndCondition(Condition_base):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C1 = CoprimeCondition([x, y]); C1
             The condition that the variables ('x', 'y') are pairwise coprime.
@@ -1796,6 +1906,8 @@ class AndCondition(Condition_base):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -1805,6 +1917,8 @@ class AndCondition(Condition_base):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -1816,6 +1930,8 @@ class AndCondition(Condition_base):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -1828,14 +1944,14 @@ class AndCondition(Condition_base):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -1844,6 +1960,8 @@ class AndCondition(Condition_base):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -1890,6 +2008,7 @@ class OrCondition(Condition_base):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
         sage: R.<x, y> = ZZ[]
         sage: CoprimeCondition([x,y]) | PolynomialCondition(x^2 + y^2 - 4)
         The condition that the variables ('x', 'y') are pairwise coprime or the condition that x^2 + y^2 - 4 == 0
@@ -1908,6 +2027,7 @@ class OrCondition(Condition_base):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: CoprimeCondition([x,y]) | PolynomialCondition(x^2 + y^2 - 4)
             The condition that the variables ('x', 'y') are pairwise coprime or the condition that x^2 + y^2 - 4 == 0
@@ -1929,6 +2049,7 @@ class OrCondition(Condition_base):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C1 = CoprimeCondition([x, y]); C1
             The condition that the variables ('x', 'y') are pairwise coprime.
@@ -1973,6 +2094,8 @@ class OrCondition(Condition_base):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -1982,6 +2105,8 @@ class OrCondition(Condition_base):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -1993,6 +2118,8 @@ class OrCondition(Condition_base):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -2005,14 +2132,14 @@ class OrCondition(Condition_base):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -2021,6 +2148,8 @@ class OrCondition(Condition_base):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -2072,6 +2201,8 @@ class TreeCondition(Condition_base):
 
     EXAMPLE::
 
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
         sage: R.<x, y> = ZZ[]
         sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 3))
         sage: TreeCondition(T)
@@ -2089,6 +2220,8 @@ class TreeCondition(Condition_base):
 
         EXAMPLE::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 3))
             sage: TreeCondition(T)
@@ -2141,6 +2274,8 @@ class TreeCondition(Condition_base):
 
         EXAMPLES::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
@@ -2150,6 +2285,8 @@ class TreeCondition(Condition_base):
         The complement can be used to get two sets, one for which the
         condition is satisfied and one for which it is not::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(y^2 - x^3 - 1)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
@@ -2161,6 +2298,8 @@ class TreeCondition(Condition_base):
         One can use custom trees to limit the values on which a
         condition should be applied::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
             sage: R.<x, y> = ZZ[]
             sage: C = PolynomialCondition(x^2 + y^2 - 4)
             sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
@@ -2173,14 +2312,14 @@ class TreeCondition(Condition_base):
         argument and pAdics argument are set to None, but only in case
         it is obvious which tree should be returned::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
             sage: C2 = TreeCondition(T)
             sage: C2.pAdic_tree()
-            pAdic tree over Rational Field
-            for the prime Principal ideal (5) of Integer Ring
-            and the variables ('x', 'y').
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
@@ -2189,6 +2328,8 @@ class TreeCondition(Condition_base):
         The complement returned might not in all cases be disjoint
         from the first tree::
 
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
             sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
@@ -2303,6 +2444,7 @@ class ConditionalValue(SageObject):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue
         sage: R.<x, y> = ZZ[]
         sage: C = CoprimeCondition([x, y])
         sage: ConditionalValue([(1, C), (0, ~C)])
@@ -2326,6 +2468,7 @@ class ConditionalValue(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: ConditionalValue([(1, C), (0, ~C)])
@@ -2350,6 +2493,7 @@ class ConditionalValue(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition, ConditionalValue
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x + y, 4)
             sage: V = ConditionalValue([(12, C)]); V
@@ -2459,6 +2603,7 @@ class ConditionalExpression(SageObject):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import CongruenceCondition, ConditionalValue
         sage: R.<x, y> = ZZ[]
         sage: C = CongruenceCondition(x + y, 4)
         sage: V = ConditionalValue([(2, C), (-2, ~C)])
@@ -2482,6 +2627,7 @@ class ConditionalExpression(SageObject):
 
         EXAMPLES::
 
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition, ConditionalValue
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x + y, 4)
             sage: V = ConditionalValue([(2, C), (-2, ~C)])
@@ -2494,6 +2640,7 @@ class ConditionalExpression(SageObject):
         ConditionalExpressions can be used to write formulas with
         objects that normally don't support this::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: ConditionalValue([(2, C),(0, ~C)]) + "I"
@@ -2505,11 +2652,11 @@ class ConditionalExpression(SageObject):
         Constructing expressions explicitly allows for custom symbols
         to be used::
 
+            sage: from modular_method.diophantine_equations.conditions import ConditionalExpression
             sage: E = ConditionalExpression((' & ', ' \\alpha ', 1), "Hello", "World"); E
             Hello & World
             sage: latex(E)
             Hello \alpha World
-            \\ 	ext{ where } \\
 
         """
         self._op = operator
@@ -2528,6 +2675,7 @@ class ConditionalExpression(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue()
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: E = ConditionalValue([(2, C), (-2, ~C)]) + "I"; E
@@ -2560,6 +2708,7 @@ class ConditionalExpression(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue()
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: E = ConditionalValue([(2, C), (-2, ~C)]) + "I"; E
@@ -2590,6 +2739,7 @@ class ConditionalExpression(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue()
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: E = ConditionalValue([(2, C), (-2, ~C)]) + "I"; E
@@ -2668,6 +2818,7 @@ class ConditionalExpression(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition, ConditionalValue
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x + 2*y, 5)
             sage: V = ConditionalValue([(2, C), (3, ~C)])
@@ -2780,6 +2931,7 @@ class ConditionalExpression(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition, ConditionalValue
             sage: R.<x, y> = ZZ[]
             sage: C = CongruenceCondition(x + 2*y, 5)
             sage: V = ConditionalValue([(2, C), (3, ~C)])
@@ -2960,6 +3112,7 @@ def apply_to_conditional_value(function, value, singleton=False,
 
     EXAMPLES::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue, apply_to_conditional_value
         sage: R.<x, y> = ZZ[]
         sage: C = CoprimeCondition([x, y])
         sage: V = ConditionalValue([(1, C), (0, ~C)])
@@ -2972,6 +3125,7 @@ def apply_to_conditional_value(function, value, singleton=False,
 
     Acts as the function on normal values::
 
+        sage: from modular_method.diophantine_equations.conditions import apply_to_conditional_value
         sage: def f(x):
         ....:     return 3 * x
         ....: 
@@ -2980,6 +3134,7 @@ def apply_to_conditional_value(function, value, singleton=False,
 
     The function can use the condition::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue, apply_to_conditional_value
         sage: R.<x, y> = ZZ[]
         sage: C = CoprimeCondition([x, y])
         sage: V = ConditionalValue([(1, C), (0, ~C)])
@@ -2993,6 +3148,7 @@ def apply_to_conditional_value(function, value, singleton=False,
     A single answer is by default just returned as the value, but can
     be forced to be a ConditionalValue::
 
+        sage: from modular_method.diophantine_equations.conditions import CongruenceCondition, ConditionalValue, apply_to_conditional_value
         sage: R.<x, y> = ZZ[]
         sage: C = CongruenceCondition(x + 2*y, 5)
         sage: V = ConditionalValue([(-2, C), (2, ~C)])
@@ -3007,6 +3163,7 @@ def apply_to_conditional_value(function, value, singleton=False,
     The default condition has to be given in some cases for the answer
     to be as expected::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, apply_to_conditional_value
         sage: R.<x, y> = ZZ[]
         sage: C = CoprimeCondition([x, y])
         sage: def f(x, con):
@@ -3078,6 +3235,7 @@ def conditional_product(*args):
 
     EXAMPLE::
 
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition, ConditionalValue, conditional_product
         sage: R.<x, y> = ZZ[]
         sage: C1 = CoprimeCondition([x, y])
         sage: V1 = ConditionalValue([(2, C1), (7, ~C1)])
