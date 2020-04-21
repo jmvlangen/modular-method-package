@@ -66,6 +66,9 @@ g;d" "${name}.py"
 }
 
 compile_directory() {
+    if [[ "$1" =~ .*/__pycache__ ]]; then
+	return
+    fi
     echo "Compiling ${1}"
     for file in ${1}/*; do
 	if [[ -d $file ]]; then
