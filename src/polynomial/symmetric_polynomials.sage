@@ -3,6 +3,7 @@ standard symmetric polynomials.
 
 EXAMPLE::
 
+    sage: from modular_method.polynomial.symmetric_polynomials import polynomial_to_symmetric
     sage: R.<x,y,z> = QQ[]
     sage: f = x^2 + y^2 + z^2
     sage: g = polynomial_to_symmetric(f); g
@@ -26,6 +27,14 @@ AUTHORS:
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+from sage.combinat.sf.sf import SymmetricFunctions
+
+from sage.all import Integer
+
+from sage.misc.misc_c import prod as product
+from sage.misc.misc_c import balanced_sum as sum
+
 def polynomial_to_symmetric(polynomial, names=None):
     r"""Represent a polynomial in terms of the symmetric polynomials.
 
@@ -46,6 +55,7 @@ def polynomial_to_symmetric(polynomial, names=None):
 
     EXAMPLE::
 
+        sage: from modular_method.polynomial.symmetric_polynomials import polynomial_to_symmetric
         sage: R.<x,y,z> = QQ[]
         sage: f = x^2 + y^2 + z^2
         sage: g = polynomial_to_symmetric(f); g

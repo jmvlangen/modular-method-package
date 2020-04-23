@@ -11,25 +11,25 @@ EXAMPLES:
 
 An example of computing the function with a given coboundary::
 
+    sage: from modular_method.group_cohomology.calculations import function_with_coboundary
     sage: G = SymmetricGroup(3)
     sage: A = AbelianGroup(3)
-    sage: action = {s : matrix([[(1 if s(j) == i else 0) for i in range(1,4)] for j in range(1,4)]) for s i
-    ....: n G}
+    sage: action = {s : matrix([[(1 if s(j) == i else 0) for i in range(1,4)]
+    ....:                       for j in range(1,4)]) for s in G}
     sage: def alpha(s):
     ....:     return A([(s.order() if s(i) != i else 0) for i in range(1,4)])
     ....: 
     sage: def c(s, t):
-    ....:     return A(vector(alpha(s).list()) + vector(alpha(t).list()) * action[s] - vector(alpha(s*t).li
-    ....: st()))
+    ....:     return A(vector(alpha(s).list()) + vector(alpha(t).list()) * action[s]
+    ....:              - vector(alpha(s*t).list()))
     ....: 
     sage: alpha2 = function_with_coboundary(G, A, c, action=action)
-    sage: [alpha(s) for s in G]
-    [1, f0^2*f1^2, f0^3*f1^3*f2^3, f0^3*f1^3*f2^3, f1^2*f2^2, f0^2*f2^2]
-    sage: [alpha2(s) for s in G]
-    [1, f0^2*f1^2, f0^3*f1^3*f2^3, f0^3*f1^3*f2^3, f1^2*f2^2, f0^2*f2^2]
+    sage: [alpha(s) for s in G] == [alpha2(s) for s in G]
+    True
 
 We do an explicit computation of Hilbert90::
 
+    sage: from modular_method.group_cohomology.calculations import hilbert90
     sage: K.<a> = QuadraticField(3)
     sage: G = K.galois_group()
     sage: def f(s):
@@ -60,6 +60,17 @@ AUTHORS:
 # ****************************************************************************
 
 from sage.rings.number_field.number_field import is_NumberField
+
+from sage.all import ZZ, QQ, Integer
+
+from sage.matrix.constructor import matrix
+from sage.matrix.special import block_matrix, identity_matrix, zero_matrix
+from sage.modules.free_module_element import vector
+from sage.arith.functions import lcm
+
+from sage.misc.cachefunc import cached_function
+
+from modular_method.linear_algebra.solver import solve_integer_problem_with_torsion
 
 def _independent_cocycle_arguments(G):
     r"""Give a list of arguments for a 2-cocycle that uniquely determines
@@ -157,6 +168,7 @@ def function_with_coboundary(G, A, c, action=None):
     A typical example is the case where we have the galois group of a
     field act on the group of units::
 
+        sage: from modular_method.group_cohomology.calculations import function_with_coboundary
         sage: K = QuadraticField(3)
         sage: U = K.unit_group()
         sage: G = K.galois_group()
@@ -179,6 +191,7 @@ def function_with_coboundary(G, A, c, action=None):
     An example in which we obtain back the function from which the
     coboundary was constructed::
 
+        sage: from modular_method.group_cohomology.calculations import function_with_coboundary
         sage: G = SymmetricGroup(3)
         sage: A = AbelianGroup(3)
         sage: action = {s : matrix([[(1 if s(j) == i else 0) for i in range(1,4)]
@@ -305,6 +318,7 @@ def hilbert90(K, f):
 
     EXAMPLE::
 
+        sage: from modular_method.group_cohomology.calculations import hilbert90
         sage: K.<a> = QuadraticField(3)
         sage: G = K.galois_group()
         sage: def f(s):

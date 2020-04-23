@@ -7,6 +7,7 @@ by some element.
 
 EXAMPLES::
 
+    sage: from modular_method.elliptic_curves.twist import twist_elliptic_curve, is_twist
     sage: E1 = EllipticCurve([1, 1]); E1
     Elliptic Curve defined by y^2 = x^3 + x + 1 over Rational Field
     sage: E2 = twist_elliptic_curve(E1, 2); E2
@@ -16,6 +17,7 @@ EXAMPLES::
 
 One can also work over number fields::
 
+    sage: from modular_method.elliptic_curves.twist import twist_elliptic_curve, is_twist
     sage: K.<v> = CyclotomicField(7)
     sage: E1 = EllipticCurve([v, 1 + v^2]); E1
     Elliptic Curve defined by y^2 = x^3 + v*x + (v^2+1) over Cyclotomic Field of order 7 and degree 6
@@ -31,6 +33,7 @@ One can also work over number fields::
 The methods also work over polynomial rings, or rather over their
 field of fractions::
 
+    sage: from modular_method.elliptic_curves.twist import twist_elliptic_curve, is_twist
     sage: R.<a> = QQ[]
     sage: E1 = EllipticCurve([a+1, a^2 + 2*a - 4]); E1
     Elliptic Curve defined by y^2 = x^3 + (a+1)*x + (a^2+2*a-4) over Univariate Polynomial Ring in a over Rational Field
@@ -54,6 +57,10 @@ AUTHORS:
 # (at your option) any later version.
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
+
+from sage.schemes.elliptic_curves.constructor import EllipticCurve
+
+from sage.all import Integer
 
 def _is_twist_good_char(E1, E2):
     """Determine whether the curve E1 is a twist of E2.
@@ -241,6 +248,7 @@ def is_twist(E1, E2):
 
     EXAMPLE::
 
+        sage: from modular_method.elliptic_curves.twist import is_twist
         sage: E1 = EllipticCurve([1, 1])
         sage: E2 = EllipticCurve([2, 4])
         sage: E3 = EllipticCurve([4, 8])
@@ -294,6 +302,7 @@ def twist_elliptic_curve(E, d):
     
     A simple example::
 
+        sage: from modular_method.elliptic_curves.twist import twist_elliptic_curve
         sage: E = EllipticCurve([1,2]); E
         Elliptic Curve defined by y^2 = x^3 + x + 2 over Rational Field
         sage: twist_elliptic_curve(E,-1)
@@ -301,6 +310,7 @@ def twist_elliptic_curve(E, d):
 
     An example over a more complicated field ::
 
+        sage: from modular_method.elliptic_curves.twist import twist_elliptic_curve
         sage: K = CyclotomicField(5)
         sage: K.<zeta> = CyclotomicField(5)
         sage: E = EllipticCurve([zeta,3]); E
@@ -310,6 +320,7 @@ def twist_elliptic_curve(E, d):
 
     We can also twist using parameters ::
 
+        sage: from modular_method.elliptic_curves.twist import twist_elliptic_curve
         sage: R.<a> = QQ[]
         sage: E = EllipticCurve([a^2 + 3, a-1]); E
         Elliptic Curve defined by y^2 = x^3 + (a^2+3)*x + (a-1) over Univariate Polynomial Ring in a over Rational Field

@@ -46,12 +46,13 @@ AUTHORS:
 # ****************************************************************************
 
 import itertools
+from functools import reduce
 
 from sage.structure.sage_object import SageObject
 from sage.misc.cachefunc import cached_method
 from sage.functions.other import floor, ceil
 
-from sage.all import Integer, RealNumber, QQ
+from sage.all import Integer, RealNumber, QQ, ZZ
 
 from sage.rings.polynomial.multi_polynomial import is_MPolynomial
 from sage.rings.polynomial.polynomial_element import is_Polynomial
@@ -294,7 +295,7 @@ class Condition_base(SageObject):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -472,7 +473,7 @@ class PolynomialCondition(Condition_base):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -728,7 +729,7 @@ class CongruenceCondition(PolynomialCondition):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -928,7 +929,7 @@ class PowerCondition(PolynomialCondition):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -1127,7 +1128,7 @@ class OrderCondition(PolynomialCondition):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -1311,7 +1312,7 @@ class SquarefreeCondition(PolynomialCondition):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -1524,7 +1525,7 @@ class CoprimeCondition(Condition_base):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -1733,7 +1734,7 @@ class NotCondition(Condition_base):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -1955,7 +1956,7 @@ class AndCondition(Condition_base):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -2143,7 +2144,7 @@ class OrCondition(Condition_base):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -2323,7 +2324,7 @@ class TreeCondition(Condition_base):
             sage: C.pAdic_tree()
             Traceback (most recent call last):
             ...
-            ValueError: At least the argument prime must be set.
+            ValueError: At least the argument prime must be set
 
         The complement returned might not in all cases be disjoint
         from the first tree::
@@ -2675,7 +2676,7 @@ class ConditionalExpression(SageObject):
 
         EXAMPLE::
 
-            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue()
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: E = ConditionalValue([(2, C), (-2, ~C)]) + "I"; E
@@ -2708,7 +2709,7 @@ class ConditionalExpression(SageObject):
 
         EXAMPLE::
 
-            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue()
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: E = ConditionalValue([(2, C), (-2, ~C)]) + "I"; E
@@ -2739,7 +2740,7 @@ class ConditionalExpression(SageObject):
 
         EXAMPLE::
 
-            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue()
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, ConditionalValue
             sage: R.<x, y> = ZZ[]
             sage: C = CoprimeCondition([x, y])
             sage: E = ConditionalValue([(2, C), (-2, ~C)]) + "I"; E

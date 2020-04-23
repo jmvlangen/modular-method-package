@@ -7,19 +7,21 @@ multiplication.
 
 EXAMPLES::
 
+    sage: from modular_method.elliptic_curves.Qcurves import Qcurve
     sage: K.<t> = QuadraticField(-2)
     sage: R.<x> = K[]
     sage: G.<s> = K.galois_group()
     sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((-x^2 - 12*x - 18*(t + 1))/(2*x), t)})
-    Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
+    Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2 with t = 1.414213562373095?*I
 
 Q-curves without CM are modular and are linked to classical newforms
 that can be computed::
 
+    sage: from modular_method.elliptic_curves.Qcurves import Qcurve
     sage: K.<t> = QuadraticField(-3)
     sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
     sage: E2 = E.decomposable_twist()
-    sage: E2.newform() # long 12 s
+    sage: E2.newform() # long time (12 seconds)
     (q + a0*q^3 + (-a0^2 + 1)*q^5 + O(q^6),
      [Dirichlet character modulo 8 of conductor 8 mapping 7 |--> 1, 5 |--> -1,
       Dirichlet character modulo 1 of conductor 1])
@@ -39,9 +41,40 @@ AUTHORS:
 # (at your option) any later version.
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
+
 from sage.schemes.elliptic_curves.ell_number_field import EllipticCurve_number_field
+from sage.schemes.elliptic_curves.constructor import EllipticCurve
 
 from sage.rings.fraction_field import is_FractionField
+from sage.rings.number_field.number_field import CyclotomicField, QuadraticField
+
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+from sage.misc.cachefunc import cached_method, cached_function
+
+from sage.all import Integer, ZZ, QQ, copy
+from sage.arith.functions import lcm
+from sage.functions.other import sqrt
+from sage.functions.generalized import sign
+
+from sage.misc.misc_c import prod as product
+from sage.misc.mrange import mrange
+
+from sage.arith.misc import hilbert_symbol, euler_phi, gcd, next_prime
+
+from sage.modular.dirichlet import DirichletGroup
+
+from modular_method.number_fields.galois_group import galois_field_change, galois_field_extend
+from modular_method.number_fields.field_constructors import composite_field, _concat_maps, _write_as_im_gen_map, fixed_field, write_as_extension, field_with_root
+from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field, dirichlet_to_galois
+
+from modular_method.group_cohomology.calculations import function_with_coboundary, hilbert90
+
+from modular_method.elliptic_curves.twist import twist_elliptic_curve
+
+from modular_method.modular_forms.newform_wrapper import get_newforms
+
+from modular_method.polynomial.symmetric_polynomials import polynomial_to_symmetric
 
 def _rational_maps_of_isomorphism(phi):
     r"""Give the rational maps corresponding to an isomorphism of Elliptic
@@ -60,6 +93,7 @@ def _rational_maps_of_isomorphism(phi):
 
     EXAMPLE::
 
+        sage: from modular_method.elliptic_curves.Qcurves import _rational_maps_of_isomorphism
         sage: E = EllipticCurve([2, 3, 4, 5, 6])
         sage: phi = E.isomorphism_to(E.minimal_model())
         sage: _rational_maps_of_isomorphism(phi)
@@ -166,6 +200,7 @@ def _scalar_of_isogeny(phi):
 
     EXAMPLES::
 
+        sage: from modular_method.elliptic_curves.Qcurves import _scalar_of_isogeny
         sage: E = EllipticCurve([0,0,0,1,0])
         sage: P = E.torsion_points()[0]
         sage: phi = E.isogeny(P)
@@ -175,6 +210,7 @@ def _scalar_of_isogeny(phi):
     Note that the scalar of an isogeny and its dual multiply to the
     degree of the isogeny::
 
+        sage: from modular_method.elliptic_curves.Qcurves import _scalar_of_isogeny
         sage: E = EllipticCurve("20a4")
         sage: phi = E.isogenies_prime_degree(3)[0]
         sage: _scalar_of_isogeny(phi)
@@ -210,11 +246,12 @@ class Qcurve(EllipticCurve_number_field):
 
     EXAMPLE::
 
+        sage: from modular_method.elliptic_curves.Qcurves import Qcurve
         sage: K.<t> = QuadraticField(-2)
         sage: R.<x> = K[]
         sage: G.<s> = K.galois_group()
         sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((-x^2 - 12*x - 18*(t + 1))/(2*x), t)})
-        Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
+        Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2 with t = 1.414213562373095?*I
 
     """
     def _is_cached(self, var):
@@ -284,33 +321,37 @@ class Qcurve(EllipticCurve_number_field):
 
         One can create a Qcurve using an explicit isogeny::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-2)
             sage: G.<s> = K.galois_group()
             sage: E = EllipticCurve([0, 12, 0, 18*(t + 1), 0])
             sage: Es = EllipticCurve([s(a) for a in E.a_invariants()])
             sage: phi = E.isogeny(E([0,0]), codomain=Es)
             sage: Qcurve(E, isogenies={s : phi})
-            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2 with t = 1.414213562373095?*I
 
         However, it is sufficient to simply provide the x-coordinate
         map and the scalar of the isogeny::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-2)
             sage: R.<x> = K[]
             sage: G.<s> = K.galois_group()
             sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((-x^2 - 12*x - 18*(t + 1))/(2*x), t)})
-            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2 with t = 1.414213562373095?*I
         
         It is also possible to make the code 'guess' the isogenies by
         giving a suggestion for their degree::
         
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
-            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
 
         Note that giving no data with regards to the isogenies will
         result in an error::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: Qcurve([0, 12, 0, 18*(t + 1), 0])
             Traceback (most recent call last):
@@ -321,6 +362,7 @@ class Qcurve(EllipticCurve_number_field):
 
         If the isogeny data does not give a valid isogeny an error is raised::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-2)
             sage: R.<x> = K[]
             sage: G.<s> = K.galois_group()
@@ -331,6 +373,7 @@ class Qcurve(EllipticCurve_number_field):
 
         Filling in isogenies by combining other isogenies works correctly::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<w> = QQ[sqrt(2), sqrt(5)].absolute_field()
             sage: t = sqrt(K(2))
             sage: s = sqrt(K(5))
@@ -374,10 +417,11 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.definition_field()
-            Number Field in t with defining polynomial x^2 - 3
+            Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
 
         """
         return self.base_ring()
@@ -424,13 +468,14 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E
-            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
             sage: sigma = K.galois_group().gens()[0]
             sage: E.galois_conjugate(sigma)
-            Elliptic Curve defined by y^2 = x^3 + 12*x^2 + (-18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
+            Elliptic Curve defined by y^2 = x^3 + 12*x^2 + (-18*t+18)*x over Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
@@ -686,6 +731,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: G = K.galois_group()
@@ -735,11 +781,12 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-1)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: G.<s> = K.galois_group()
             sage: E.isogeny_x_map(s)
-            (-1/2*x^2 - 6*x + (9/2*tlu^3 + 45/2*tlu - 9))/x
+            (-1/2*x^2 - 6*x - 9*t - 9)/x
             sage: E.isogeny_x_map(s^2)
             x
 
@@ -750,7 +797,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: G.<s> = K.galois_group()
             sage: F = E.isogeny_x_map(s)
             sage: F.parent()
-            Fraction Field of Univariate Polynomial Ring in x over Number Field in t with defining polynomial x^2 + 1
+            Fraction Field of Univariate Polynomial Ring in x over Number Field in t with defining polynomial x^2 + 1 with t = 1*I
             sage: F.parent().base_ring() == E.definition_field()
             True
 
@@ -789,17 +836,19 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLES::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-2)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.complete_definition_field()
-            Number Field in t with defining polynomial x^2 + 2
+            Number Field in t with defining polynomial x^2 + 2 with t = 1.414213562373095?*I
 
         In general this field is bigger than the definition field::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.definition_field()
-            Number Field in t with defining polynomial x^2 - 3
+            Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
             sage: E.complete_definition_field()
             Number Field in lu with defining polynomial x^4 - 2*x^2 + 25
 
@@ -821,6 +870,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(2)
             sage: G.<s> = K.galois_group()
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
@@ -830,6 +880,7 @@ class Qcurve(EllipticCurve_number_field):
         The isomorphism from the curve to itself will always have a
         degree that is a square::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: G = K.galois_group()
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
@@ -839,6 +890,7 @@ class Qcurve(EllipticCurve_number_field):
         One can also use galois homomorphisms not necessarily defined
         over the definition field::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-1)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: L.<u> = CyclotomicField(12)
@@ -864,6 +916,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-3)
             sage: G.<s> = K.galois_group()
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
@@ -893,14 +946,16 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLES::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.degree_field()
-            Number Field in t0 with defining polynomial x^2 - 3
+            Number Field in t0 with defining polynomial x^2 - 3 with t0 = 1.732050807568878?
 
         The degree field is always a subfield of the definition field,
         but can be strictly smaller::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = CyclotomicField(3)
             sage: G.<s> = K.galois_group()
             sage: R.<x> = K[]
@@ -947,6 +1002,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLES::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<w> = QQ[sqrt(2), sqrt(5)].absolute_field()
             sage: t = sqrt(K(2))
             sage: s = sqrt(K(5))
@@ -960,6 +1016,7 @@ class Qcurve(EllipticCurve_number_field):
 
         One can also fix the first entry::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<w> = QQ[sqrt(-2), sqrt(-3)].absolute_field()
             sage: t = sqrt(K(-2))
             sage: s = sqrt(K(-3))
@@ -1048,6 +1105,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLES::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: G = K.galois_group()
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
@@ -1058,6 +1116,7 @@ class Qcurve(EllipticCurve_number_field):
         Note that the value of this function always squares to the
         coboundary of the degree map::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-5)
             sage: G = K.galois_group()
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
@@ -1121,6 +1180,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-3)
             sage: G = K.galois_group()
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
@@ -1185,6 +1245,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-3)
             sage: G = K.galois_group()
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
@@ -1219,6 +1280,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(2)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.xi_pm()
@@ -1268,6 +1330,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.xi_pm()
@@ -1416,6 +1479,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLES::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.splitting_character()
@@ -1424,6 +1488,7 @@ class Qcurve(EllipticCurve_number_field):
         There are as many splitting characters as the degree of the
         decomposition field::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.splitting_character('all')
@@ -1441,6 +1506,7 @@ class Qcurve(EllipticCurve_number_field):
         The galois version of the splitting character relates to the
         degree map and the corresponding splitting map::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(12)
             sage: E = Qcurve([0, 6*t - 12, 0, -54*t + 180, 0], guessed_degrees=[2])
             sage: n = E.decomposition_field().degree()
@@ -1485,19 +1551,21 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.splitting_character_field()
-            Number Field in zeta0 with defining polynomial x^2 - 3
+            Number Field in zeta0 with defining polynomial x^2 - 3 with zeta0 = 1.732050807568878?
 
         In general it is distinct from the complete definition field::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: K1 = E.complete_definition_field(); K1
             Number Field in lu with defining polynomial x^4 - 6*x^2 + 49
             sage: K2 = E.splitting_character_field(); K2
-            Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
+            Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5 with zeta0 = 1.902113032590308?
             sage: K1.is_isomorphic(K2)
             False
 
@@ -1573,10 +1641,11 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12*t - 12, 0, 180 - 108*t, 0], guessed_degrees=[2])
             sage: K1 = E.splitting_image_field(); K1
-            Number Field in zeta4a0 with defining polynomial x^2 + 2
+            Number Field in zeta4a0 with defining polynomial x^2 + 2 with zeta4a0 = -1/2*zeta4a^2 + 1/2
             sage: beta = E.splitting_map()
             sage: G = E.splitting_field().galois_group()
             sage: [beta(s) for s in G]
@@ -1649,14 +1718,15 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.splitting_field()
-            Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
+            Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5 with zeta0 = 1.902113032590308?
             sage: E.degree_field()
-            Number Field in t0 with defining polynomial x^2 - 5
+            Number Field in t0 with defining polynomial x^2 - 5 with t0 = 2.236067977499790?
             sage: E.splitting_character_field()
-            Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5
+            Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5 with zeta0 = 1.902113032590308?
 
         """
         Keps = self.splitting_character_field(index)
@@ -1704,6 +1774,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
         
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.complete_definition_field()
@@ -1774,6 +1845,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLES::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.does_decompose()
@@ -1930,6 +2002,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLES::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12*t - 12, 0, 180 - 108*t, 0], guessed_degrees=[2])
             sage: beta = E.splitting_map()
@@ -1943,6 +2016,7 @@ class Qcurve(EllipticCurve_number_field):
         coboundary of the splitting map agree if this Q-curve
         decomposes::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.does_decompose()
@@ -1972,14 +2046,14 @@ class Qcurve(EllipticCurve_number_field):
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1  2  2 -1]
             [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1 -2 -2 -1]
+            [ 1  1 -1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1  2  2 -1]
             [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1 -2 -2 -1]
+            [ 1  1 -1 -1]
 
         """
         if not isinstance(index, str) and hasattr(index, "__iter__"):
@@ -2073,6 +2147,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.does_decompose()
@@ -2102,14 +2177,14 @@ class Qcurve(EllipticCurve_number_field):
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1  2  2 -1]
             [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1 -2 -2 -1]
+            [ 1  1 -1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1  2  2 -1]
             [ 1  2 -2  1]
-            [ 1 -1  1 -1]
+            [ 1 -2 -2 -1]
+            [ 1  1 -1 -1]
 
         """
         if not self._is_cached('_beta'):
@@ -2163,12 +2238,13 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: N = E.cyclotomic_order(); N
             40
             sage: L = E.decomposition_field(); L
-            Number Field in zeta0lu with defining polynomial x^8 - 22*x^6 - 20*x^5 + 199*x^4 + 380*x^3 + 882*x^2 + 740*x + 1721
+            Number Field in zeta0lu with defining polynomial x^8 - 22*x^6 + 20*x^5 + 199*x^4 - 380*x^3 + 882*x^2 - 740*x + 1721
             sage: len(L.gen().minpoly().change_ring(CyclotomicField(N)).roots()) > 0
             True
 
@@ -2280,6 +2356,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12*t - 12, 0, 180 - 108*t, 0], guessed_degrees=[2])
             sage: beta = E.splitting_map('all')
@@ -2326,6 +2403,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-1)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.number_of_splitting_maps()
@@ -2456,12 +2534,13 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: iota = K.embeddings(CyclotomicField(12))[0]
             sage: E2 = E.change_ring(iota)
             sage: E2.minimal_definition_field()
-            Number Field in t with defining polynomial x^2 - 3
+            Number Field in zeta120 with defining polynomial x^2 - 3 with zeta120 = 1.732050807568878?
             sage: E2.definition_field()
             Cyclotomic Field of order 12 and degree 4
 
@@ -2518,6 +2597,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: iota = K.embeddings(CyclotomicField(12))[0]
@@ -2525,7 +2605,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: E2.complete_definition_field()
             Number Field in zeta12lu with defining polynomial x^8 - 18*x^6 + 239*x^4 - 1638*x^2 + 6241
             sage: E2.minimal_complete_definition_field()
-            Number Field in zeta12lu00 with defining polynomial x^4 - 38*x^2 + 1225
+            Number Field in zeta12lu00 with defining polynomial x^4 - 38*x^2 + 1225 with zeta12lu00 = 3/3871*zeta12lu0^7 - 29/7742*zeta12lu0^5 + 407/7742*zeta12lu0^3 + 15531/7742*zeta12lu0
 
         """
         K = self.definition_field()
@@ -2660,17 +2740,18 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: iota = K.embeddings(CyclotomicField(12))[0]
             sage: E2 = E.change_ring(iota)
             sage: E3 = E2.minimize_fields(names=["t", "s"])
             sage: E.definition_field()
-            Number Field in t with defining polynomial x^2 - 3
+            Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
             sage: E2.definition_field()
             Cyclotomic Field of order 12 and degree 4
             sage: E3.definition_field()
-            Number Field in t with defining polynomial x^2 - 3
+            Number Field in zeta120 with defining polynomial x^2 - 3 with zeta120 = 1.732050807568878?
             sage: E.complete_definition_field()
             Number Field in lu with defining polynomial x^4 - 2*x^2 + 25
             sage: E2.complete_definition_field()
@@ -2746,11 +2827,12 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2]); E
-            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 5
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 5 with t = 2.236067977499790?
             sage: E2 = E.twist(t); E2
-            Q-curve defined by y^2 = x^3 + 6*lu0*x^2 + (-45*lu0+90)*x over Number Field in lu0 with defining polynomial x^2 - 20
+            Q-curve defined by y^2 = x^3 + (-6*lu0)*x^2 + (-45*lu0+90)*x over Number Field in lu0 with defining polynomial x^2 - 20 with lu0 = -1/7*lu^3 + 13/7*lu
             sage: E2.complete_definition_field()
             Number Field in agamma00 with defining polynomial x^4 - 16*x^3 - 8*x^2 + 576*x - 1264
 
@@ -2826,6 +2908,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(7)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.does_decompose()
@@ -2866,6 +2949,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(7)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.does_decompose()
@@ -2902,9 +2986,10 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2]); E
-            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
             sage: E.degree_map_image()
             [1, 2]
             sage: K1 = E.complete_definition_field(); K1
@@ -2912,7 +2997,7 @@ class Qcurve(EllipticCurve_number_field):
             sage: K1(2).is_square()
             False
             sage: E2 = E.complete_definition_twist([2]); E2
-            Q-curve defined by y^2 = x^3 + (-6*lutsqrt_a00)*x^2 + (27*lutsqrt_a00+54)*x over Number Field in lutsqrt_a00 with defining polynomial x^2 - 12
+            Q-curve defined by y^2 = x^3 + (-6*lutsqrt_a00)*x^2 + (27*lutsqrt_a00+54)*x over Number Field in lutsqrt_a00 with defining polynomial x^2 - 12 with lutsqrt_a00 = -2*lutsqrt_a0^6 + 4*lutsqrt_a0^2
             sage: K2 = E2.complete_definition_field(); K2
             Number Field in lutsqrt_a000 with defining polynomial x^4 - 4*x^2 + 1
             sage: K2(2).is_square()
@@ -2981,6 +3066,7 @@ class Qcurve(EllipticCurve_number_field):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E.conductor_restriction_of_scalars()
@@ -3052,6 +3138,7 @@ pp        """
 
         EXAMPLES::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E = E.decomposable_twist()
@@ -3061,6 +3148,7 @@ pp        """
         If the restriction of scalars decomposes as a product of
         abelian varieties, then there are multiple levels::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E = E.decomposable_twist()
@@ -3073,6 +3161,7 @@ pp        """
         the list may contain multiple options of how the levels are
         distributed among the components::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E = E.decomposable_twist()
@@ -3276,6 +3365,7 @@ pp        """
 
         EXAMPLES::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-2)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E = E.decomposable_twist()
@@ -3286,6 +3376,7 @@ pp        """
 
         The trace depends on the splitting map used::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E = E.decomposable_twist()
@@ -3302,6 +3393,7 @@ pp        """
         trace of Frobenius from the normal galois representation of
         the curve::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E = E.decomposable_twist()
@@ -3318,6 +3410,7 @@ pp        """
 
         TESTS::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E = E.decomposable_twist()
@@ -3483,6 +3576,7 @@ pp        """
 
         EXAMPLES::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E = E.decomposable_twist()
@@ -3491,6 +3585,7 @@ pp        """
 
         The determinant will depend on the chosen splitting map::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-5)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E = E.decomposable_twist()
@@ -3503,6 +3598,7 @@ pp        """
         determinant of the standard galois representation associated
         with an elliptic curve::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-1)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E = E.decomposable_twist()
@@ -3615,19 +3711,21 @@ pp        """
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E2 = E.decomposable_twist()
-            sage: E2.newform() # long 22 min
+            sage: E2.newform() # long time (22 minutes)
             (q - 1/2*a3*q^3 + (-1/2*a3 - 1)*q^5 + O(q^6),
              [Dirichlet character modulo 1 of conductor 1])
 
         Or another example with two factors::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: E2 = E.decomposable_twist()
-            sage: E2.newform() # long 12 s
+            sage: E2.newform() # long time (12 seconds)
             (q + a0*q^3 + (-a0^2 + 1)*q^5 + O(q^6),
              [Dirichlet character modulo 8 of conductor 8 mapping 7 |--> 1, 5 |--> -1,
               Dirichlet character modulo 1 of conductor 1])

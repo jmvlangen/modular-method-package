@@ -27,6 +27,7 @@ EXAMPLES:
 
 Working with newforms from Sage::
 
+    sage: from modular_method.modular_forms.newform_wrapper import get_newforms
     sage: eps = DirichletGroup(16).gens()[1]
     sage: nf = get_newforms(16, character=eps)[0]; nf
     q + (-zeta4 - 1)*q^2 + (zeta4 - 1)*q^3 + 2*zeta4*q^4 + (-zeta4 - 1)*q^5 + O(q^6)
@@ -37,6 +38,7 @@ Working with newforms from Sage::
 
 Working with newforms from magma::
 
+    sage: from modular_method.modular_forms.newform_wrapper import get_newforms
     sage: eps = DirichletGroup(16).gens()[1]
     sage: nf = get_newforms(16, character=eps, algorithm='magma')[0]; nf
     q + (-a - 1)*q^2 + (a - 1)*q^3 + 2*a*q^4 + (-a - 1)*q^5 + 2*q^6 - 2*a*q^7 + (-2*a + 2)*q^8 + a*q^9 + 2*a*q^10 + (a + 1)*q^11 + O(q^12)
@@ -47,6 +49,7 @@ Working with newforms from magma::
 
 Saving and reloading newforms::
 
+    sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
     sage: eps = DirichletGroup(16).gens()[1]
     sage: save_newforms(get_newforms(16, character=eps), 'tmp.nfs')
     sage: nf = load_newforms('tmp.nfs')[0]; nf
@@ -58,6 +61,7 @@ Saving and reloading newforms::
 
 Computations that can be done with newforms::
 
+    sage: from modular_method.modular_forms.newform_wrapper import get_newforms
     sage: nf = get_newforms(19)[0]
     sage: nf.trace_of_frobenius(5)
     3
@@ -83,7 +87,25 @@ AUTHORS:
 # ****************************************************************************
 import re
 
-from sage.modular.dirichlet import is_DirichletCharacter
+from sage.structure.sage_object import SageObject
+
+from sage.all import Integer, QQ, ZZ, Integers
+
+from sage.misc.cachefunc import cached_method
+
+from sage.interfaces.magma import magma
+
+from sage.rings.number_field.number_field import is_NumberField, NumberField
+from sage.rings.polynomial.polynomial_element import is_Polynomial
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+from sage.modular.dirichlet import is_DirichletCharacter, DirichletGroup
+
+from sage.modular.modform.constructor import Newforms
+
+from modular_method.number_fields.field_constructors import composite_field
+
+from modular_method.polynomial.symmetric_polynomials import polynomial_to_symmetric
 
 def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
                  names='a', path=None):
@@ -126,6 +148,7 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
 
     Getting newforms using Sage's algorithm::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms
         sage: get_newforms(26, algorithm='sage')
         [q - q^2 + q^3 + q^4 - 3*q^5 + O(q^6), q + q^2 - 3*q^3 + q^4 - q^5 + O(q^6)]
         sage: eps = DirichletGroup(16).gens()[1]
@@ -136,6 +159,7 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
 
     Using magma to do the computations instead::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms
         sage: get_newforms(26, algorithm='magma') # optional - magma
         [q - q^2 + q^3 + q^4 - 3*q^5 - q^6 - q^7 - q^8 - 2*q^9 + 3*q^10 + 6*q^11 + O(q^12),
          q + q^2 - 3*q^3 + q^4 - q^5 - 3*q^6 + q^7 + q^8 + 6*q^9 - q^10 - 2*q^11 + O(q^12)]
@@ -145,6 +169,7 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
 
     Getting newforms from a file::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms
         sage: save_newforms(get_newforms(26), 'tmp.nfs')
         sage: get_newforms(26, algorithm='file', path='tmp.nfs')
         [q - q^2 + q^3 + q^4 - 3*q^5 - q^6 - q^7 - q^8 - 2*q^9 + 3*q^10 + 6*q^11 + q^12 + q^13 + q^14 - 3*q^15 + q^16 - 3*q^17 + 2*q^18 + 2*q^19 + O(q^20),
@@ -323,6 +348,7 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
 
     EXAMPLES::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(26); nfs
         [q - q^2 + q^3 + q^4 - 3*q^5 + O(q^6), q + q^2 - 3*q^3 + q^4 - q^5 + O(q^6)]
         sage: save_newforms(nfs, 'tmp.nfs')
@@ -332,6 +358,7 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
 
     One can store multiple newform lists in a single file::
     
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs1 = get_newforms(26); nfs1
         [q - q^2 + q^3 + q^4 - 3*q^5 + O(q^6), q + q^2 - 3*q^3 + q^4 - q^5 + O(q^6)]
         sage: eps = DirichletGroup(16).gens()[1]
@@ -345,6 +372,7 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
 
     The number of coefficients stored can be changed::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(17); nfs
         [q - q^2 - q^4 - 2*q^5 + O(q^6)]
         sage: save_newforms(nfs, 'tmp.nfs')
@@ -365,6 +393,7 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
 
     Storing whether a curve has complex multiplication is optional::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(19); nfs
         [q - 2*q^3 - 2*q^4 + 3*q^5 + O(q^6)]
         sage: save_newforms(nfs, 'tmp.nfs')
@@ -378,9 +407,9 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
 
     """
     if coefficients in ZZ and coefficients > 0:
-        coefficients = range(coefficients)
+        coefficients = list(range(coefficients))
     if repr_coefficients:
-        coefficients = range(20) + [c for c in coefficients if c > 20]
+        coefficients = list(range(20)) + [c for c in coefficients if c > 20]
     else:
         coefficients = [c for c in coefficients]
     with open(file_name, "w+") as f:
@@ -720,6 +749,7 @@ def load_newforms(file_name):
 
     EXAMPLES::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(26); nfs
         [q - q^2 + q^3 + q^4 - 3*q^5 + O(q^6), q + q^2 - 3*q^3 + q^4 - q^5 + O(q^6)]
         sage: save_newforms(nfs, 'tmp.nfs')
@@ -729,6 +759,7 @@ def load_newforms(file_name):
 
     One can store multiple newform lists in a single file::
     
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs1 = get_newforms(26); nfs1
         [q - q^2 + q^3 + q^4 - 3*q^5 + O(q^6), q + q^2 - 3*q^3 + q^4 - q^5 + O(q^6)]
         sage: eps = DirichletGroup(16).gens()[1]
@@ -742,6 +773,7 @@ def load_newforms(file_name):
 
     The number of coefficients stored can be changed::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(17); nfs
         [q - q^2 - q^4 - 2*q^5 + O(q^6)]
         sage: save_newforms(nfs, 'tmp.nfs')
@@ -762,6 +794,7 @@ def load_newforms(file_name):
 
     Storing whether a curve has complex multiplication is optional::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(19); nfs
         [q - 2*q^3 - 2*q^4 + 3*q^5 + O(q^6)]
         sage: save_newforms(nfs, 'tmp.nfs')
@@ -1259,6 +1292,7 @@ class WrappedNewform(SageObject):
 
     A wrapper around a Sage newform::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms
         sage: eps = DirichletGroup(16).gens()[1]
         sage: nf = get_newforms(16, character=eps)[0]; nf
         q + (-zeta4 - 1)*q^2 + (zeta4 - 1)*q^3 + 2*zeta4*q^4 + (-zeta4 - 1)*q^5 + O(q^6)
@@ -1269,6 +1303,7 @@ class WrappedNewform(SageObject):
 
     A wrapper around a magma newform::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms
         sage: eps = DirichletGroup(16).gens()[1]
         sage: nf = get_newforms(16, character=eps, algorithm='magma')[0]; nf
         q + (-a - 1)*q^2 + (a - 1)*q^3 + 2*a*q^4 + (-a - 1)*q^5 + 2*q^6 - 2*a*q^7 + (-2*a + 2)*q^8 + a*q^9 + 2*a*q^10 + (a + 1)*q^11 + O(q^12)
@@ -1279,6 +1314,7 @@ class WrappedNewform(SageObject):
 
     A wrapper around a newform from a file::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: eps = DirichletGroup(16).gens()[1]
         sage: save_newforms(get_newforms(16, character=eps), 'tmp.nfs')
         sage: nf = load_newforms('tmp.nfs')[0]; nf
@@ -1299,6 +1335,7 @@ class WrappedNewform(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.level()
             19
@@ -1316,6 +1353,7 @@ class WrappedNewform(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: eps = DirichletGroup(16).gens()[1]
             sage: nf = get_newforms(16, character=eps)[0]
             sage: nf.character()
@@ -1338,6 +1376,7 @@ class WrappedNewform(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.coefficient(19)
             1
@@ -1363,6 +1402,7 @@ class WrappedNewform(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.coefficient_field()
             Rational Field
@@ -1395,6 +1435,7 @@ class WrappedNewform(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.q_expansion()
             q - 2*q^3 - 2*q^4 + 3*q^5 - q^7 + q^9 + 3*q^11 + 4*q^12 - 4*q^13 - 6*q^15 + 4*q^16 - 3*q^17 + q^19 + O(q^20)
@@ -1460,6 +1501,7 @@ class WrappedNewform(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.trace_of_frobenius(2)
             0
@@ -1517,6 +1559,7 @@ class WrappedNewform(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.determinant_of_frobenius(5)
             5
@@ -1569,6 +1612,7 @@ class WrappedNewform(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.characteristic_polynomial(5)
             x^2 - 3*x + 5
@@ -1606,6 +1650,7 @@ class WrappedNewform(SageObject):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.has_cm()
             False
@@ -1631,6 +1676,7 @@ class WrappedNewform_sage(WrappedNewform):
 
     EXAMPLE::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms
         sage: eps = DirichletGroup(16).gens()[1]
         sage: nf = get_newforms(16, character=eps)[0]; nf
         q + (-zeta4 - 1)*q^2 + (zeta4 - 1)*q^3 + 2*zeta4*q^4 + (-zeta4 - 1)*q^5 + O(q^6)
@@ -1650,6 +1696,7 @@ class WrappedNewform_sage(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import WrappedNewform_sage
             sage: WrappedNewform_sage(Newforms(19)[0])
             q - 2*q^3 - 2*q^4 + 3*q^5 + O(q^6)
 
@@ -1665,6 +1712,7 @@ class WrappedNewform_sage(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.level()
             19
@@ -1682,6 +1730,7 @@ class WrappedNewform_sage(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: eps = DirichletGroup(16).gens()[1]
             sage: nf = get_newforms(16, character=eps)[0]
             sage: nf.character()
@@ -1704,6 +1753,7 @@ class WrappedNewform_sage(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.coefficient(19)
             1
@@ -1732,6 +1782,7 @@ class WrappedNewform_sage(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.coefficient_field()
             Rational Field
@@ -1764,6 +1815,7 @@ class WrappedNewform_sage(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.q_expansion()
             q - 2*q^3 - 2*q^4 + 3*q^5 - q^7 + q^9 + 3*q^11 + 4*q^12 - 4*q^13 - 6*q^15 + 4*q^16 - 3*q^17 + q^19 + O(q^20)
@@ -1794,6 +1846,7 @@ class WrappedNewform_sage(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.has_cm()
             False
@@ -1819,6 +1872,7 @@ class WrappedNewform_magma(WrappedNewform):
 
     EXAMPLE::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms
         sage: eps = DirichletGroup(16).gens()[1]
         sage: nf = get_newforms(16, character=eps, algorithm='magma')[0]; nf
         q + (-a - 1)*q^2 + (a - 1)*q^3 + 2*a*q^4 + (-a - 1)*q^5 + 2*q^6 - 2*a*q^7 + (-2*a + 2)*q^8 + a*q^9 + 2*a*q^10 + (a + 1)*q^11 + O(q^12)
@@ -1838,6 +1892,7 @@ class WrappedNewform_magma(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import WrappedNewform_magma
             sage: cfs = magma.CuspForms(19)
             sage: WrappedNewform_magma(magma.Newforms(cfs)[1][1])
             q - 2*q^3 - 2*q^4 + 3*q^5 - q^7 + q^9 + 3*q^11 + O(q^12)
@@ -1854,6 +1909,7 @@ class WrappedNewform_magma(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.level()
             19
@@ -1872,6 +1928,7 @@ class WrappedNewform_magma(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: eps = DirichletGroup(16).gens()[1]
             sage: nf = get_newforms(16, character=eps)[0]
             sage: nf.character()
@@ -1902,6 +1959,7 @@ class WrappedNewform_magma(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.coefficient(19)
             1
@@ -1927,6 +1985,7 @@ class WrappedNewform_magma(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.coefficient_field()
             Rational Field
@@ -1958,6 +2017,7 @@ class WrappedNewform_magma(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.has_cm()
             False
@@ -1988,6 +2048,7 @@ class WrappedNewform_stored(WrappedNewform):
 
     EXAMPLE::
 
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: eps = DirichletGroup(16).gens()[1]
         sage: save_newforms(get_newforms(16, character=eps), 'tmp.nfs')
         sage: nf = load_newforms('tmp.nfs')[0]; nf
@@ -2019,6 +2080,7 @@ class WrappedNewform_stored(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms, WrappedNewform_stored
             sage: eps = DirichletGroup(16).gens()[1]
             sage: nf = get_newforms(16, character=eps)[0]
             sage: K = nf.coefficient_field()
@@ -2042,6 +2104,7 @@ class WrappedNewform_stored(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.level()
             19
@@ -2060,6 +2123,7 @@ class WrappedNewform_stored(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: eps = DirichletGroup(16).gens()[1]
             sage: nf = get_newforms(16, character=eps)[0]
             sage: nf.character()
@@ -2082,6 +2146,7 @@ class WrappedNewform_stored(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.coefficient(19)
             1
@@ -2110,6 +2175,7 @@ class WrappedNewform_stored(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.coefficient_field()
             Rational Field
@@ -2141,6 +2207,7 @@ class WrappedNewform_stored(WrappedNewform):
 
         EXAMPLE::
 
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
             sage: nf = get_newforms(19)[0]
             sage: nf.has_cm()
             False
