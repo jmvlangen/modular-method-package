@@ -1573,7 +1573,7 @@ class CoprimeCondition(Condition_base):
             return ("The condition that the variables " +
                     str(self.variables()) + " are pairwise coprime.")
         return ("The condition that the variables " + str(self.variables()) +
-                " are " + str(self._n()) + "-wise coprime.")
+                " are " + str(self._n) + "-wise coprime.")
 
     def _repr_short(self):
         if self._n == 0:

@@ -988,15 +988,15 @@ def _read_element(f):
         if whitespace.match(s):
             pass
         elif s == '<':
-            f.seek(-1,1)
+            f.seek(f.tell()-1)
             label = _read_identifier(f)
             _read_colon_equals(f)
         elif s == '[':
-            f.seek(-1,1)
+            f.seek(f.tell()-1)
             element = _read_list(f)
             break
         elif s.isdigit() or s == '-':
-            f.seek(-1,1)
+            f.seek(f.tell()-1)
             element = _read_rational(f)
             break
         else:
@@ -1100,7 +1100,7 @@ def _read_list(f):
             need_comma = False
             can_close = False
         elif not need_comma:
-            f.seek(-1,1)
+            f.seek(f.tell()-1)
             result.append(_read_element(f))
             need_comma = True
             can_close = True
@@ -1130,7 +1130,7 @@ def _read_rational(f):
     if s == '/':
         result = result + '/' + _read_positive_integer(f)
     else:
-        f.seek(-1,1)
+        f.seek(f.tell()-1)
     return QQ(result)
 
 def _read_integer(f):
@@ -1153,11 +1153,11 @@ def _read_integer(f):
     if s == '-':
         result = result + '-'
     else:
-        f.seek(-1,1)
+        f.seek(f.tell()-1)
     try:
         result = result + _read_zero(f)
     except ValueError:
-        f.seek(-1,1)
+        f.seek(f.tell()-1)
         result = result + _read_positive_integer(f)
     return result
 
@@ -1181,7 +1181,7 @@ def _read_positive_integer(f):
         while True:
             result = result + _read_digit(f)
     except ValueError:
-        f = f.seek(-1,1)
+        f.seek(f.tell()-1)
         return result
         
 def _read_digit(f):
