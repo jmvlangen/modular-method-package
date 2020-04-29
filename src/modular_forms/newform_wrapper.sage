@@ -51,8 +51,9 @@ Saving and reloading newforms::
 
     sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
     sage: eps = DirichletGroup(16).gens()[1]
-    sage: save_newforms(get_newforms(16, character=eps), 'tmp.nfs')
-    sage: nf = load_newforms('tmp.nfs')[0]; nf
+    sage: f = tmp_filename(ext='.nfs')
+    sage: save_newforms(get_newforms(16, character=eps), f)
+    sage: nf = load_newforms(f)[0]; nf
     q + (-a - 1)*q^2 + (a - 1)*q^3 + 2*a*q^4 + (-a - 1)*q^5 + 2*q^6 - 2*a*q^7 + (-2*a + 2)*q^8 + a*q^9 + 2*a*q^10 + (a + 1)*q^11 + (-2*a - 2)*q^12 + (a - 1)*q^13 + (2*a - 2)*q^14 + 2*q^15 - 4*q^16 - 2*q^17 + (-a + 1)*q^18 + (-3*a + 3)*q^19 + O(q^20)
     sage: nf.level()
     16
@@ -170,8 +171,9 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
     Getting newforms from a file::
 
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms
-        sage: save_newforms(get_newforms(26), 'tmp.nfs')
-        sage: get_newforms(26, algorithm='file', path='tmp.nfs')
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms(get_newforms(26), f)
+        sage: get_newforms(26, algorithm='file', path=f)
         [q - q^2 + q^3 + q^4 - 3*q^5 - q^6 - q^7 - q^8 - 2*q^9 + 3*q^10 + 6*q^11 + q^12 + q^13 + q^14 - 3*q^15 + q^16 - 3*q^17 + 2*q^18 + 2*q^19 + O(q^20),
          q + q^2 - 3*q^3 + q^4 - q^5 - 3*q^6 + q^7 + q^8 + 6*q^9 - q^10 - 2*q^11 - 3*q^12 - q^13 + q^14 + 3*q^15 + q^16 - 3*q^17 + 6*q^18 + 6*q^19 + O(q^20)]
 
@@ -351,8 +353,9 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(26); nfs
         [q - q^2 + q^3 + q^4 - 3*q^5 + O(q^6), q + q^2 - 3*q^3 + q^4 - q^5 + O(q^6)]
-        sage: save_newforms(nfs, 'tmp.nfs')
-        sage: load_newforms('tmp.nfs')
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms(nfs, f)
+        sage: load_newforms(f)
         [q - q^2 + q^3 + q^4 - 3*q^5 - q^6 - q^7 - q^8 - 2*q^9 + 3*q^10 + 6*q^11 + q^12 + q^13 + q^14 - 3*q^15 + q^16 - 3*q^17 + 2*q^18 + 2*q^19 + O(q^20),
          q + q^2 - 3*q^3 + q^4 - q^5 - 3*q^6 + q^7 + q^8 + 6*q^9 - q^10 - 2*q^11 - 3*q^12 - q^13 + q^14 + 3*q^15 + q^16 - 3*q^17 + 6*q^18 + 6*q^19 + O(q^20)]
 
@@ -364,8 +367,9 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
         sage: eps = DirichletGroup(16).gens()[1]
         sage: nfs2 = get_newforms(16, character=eps); nfs2
         [q + (-zeta4 - 1)*q^2 + (zeta4 - 1)*q^3 + 2*zeta4*q^4 + (-zeta4 - 1)*q^5 + O(q^6)]
-        sage: save_newforms([nfs1, nfs2], 'tmp.nfs')
-        sage: load_newforms('tmp.nfs')
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms([nfs1, nfs2], f)
+        sage: load_newforms(f)
         [[q - q^2 + q^3 + q^4 - 3*q^5 - q^6 - q^7 - q^8 - 2*q^9 + 3*q^10 + 6*q^11 + q^12 + q^13 + q^14 - 3*q^15 + q^16 - 3*q^17 + 2*q^18 + 2*q^19 + O(q^20),
           q + q^2 - 3*q^3 + q^4 - q^5 - 3*q^6 + q^7 + q^8 + 6*q^9 - q^10 - 2*q^11 - 3*q^12 - q^13 + q^14 + 3*q^15 + q^16 - 3*q^17 + 6*q^18 + 6*q^19 + O(q^20)],
          [q + (-a - 1)*q^2 + (a - 1)*q^3 + 2*a*q^4 + (-a - 1)*q^5 + 2*q^6 - 2*a*q^7 + (-2*a + 2)*q^8 + a*q^9 + 2*a*q^10 + (a + 1)*q^11 + (-2*a - 2)*q^12 + (a - 1)*q^13 + (2*a - 2)*q^14 + 2*q^15 - 4*q^16 - 2*q^17 + (-a + 1)*q^18 + (-3*a + 3)*q^19 + O(q^20)]]
@@ -375,18 +379,19 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(17); nfs
         [q - q^2 - q^4 - 2*q^5 + O(q^6)]
-        sage: save_newforms(nfs, 'tmp.nfs')
-        sage: load_newforms('tmp.nfs')[0].coefficient(79)
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms(nfs, f)
+        sage: load_newforms(f)[0].coefficient(79)
         Traceback (most recent call last):
         ...
         ValueError: The 79-th coefficient is not stored.
-        sage: save_newforms(nfs, 'tmp.nfs', coefficients=100)
-        sage: load_newforms('tmp.nfs')[0].coefficient(79)
+        sage: save_newforms(nfs, f, coefficients=100)
+        sage: load_newforms(f)[0].coefficient(79)
         12
-        sage: save_newforms(nfs, 'tmp.nfs', coefficients=[79])
-        sage: load_newforms('tmp.nfs')[0].coefficient(79)
+        sage: save_newforms(nfs, f, coefficients=[79])
+        sage: load_newforms(f)[0].coefficient(79)
         12
-        sage: load_newforms('tmp.nfs')[0].coefficient(78)
+        sage: load_newforms(f)[0].coefficient(78)
         Traceback (most recent call last):
         ...
         ValueError: The 78-th coefficient is not stored.
@@ -396,11 +401,12 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(19); nfs
         [q - 2*q^3 - 2*q^4 + 3*q^5 + O(q^6)]
-        sage: save_newforms(nfs, 'tmp.nfs')
-        sage: load_newforms('tmp.nfs')[0].has_cm()
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms(nfs, f)
+        sage: load_newforms(f)[0].has_cm()
         False
-        sage: save_newforms(nfs, 'tmp.nfs', save_cm=False)
-        sage: load_newforms('tmp.nfs')[0].has_cm()
+        sage: save_newforms(nfs, f, save_cm=False)
+        sage: load_newforms(f)[0].has_cm()
         Traceback (most recent call last):
         ...
         ValueError: Undetermined whether this newform has CM.
@@ -752,8 +758,9 @@ def load_newforms(file_name):
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(26); nfs
         [q - q^2 + q^3 + q^4 - 3*q^5 + O(q^6), q + q^2 - 3*q^3 + q^4 - q^5 + O(q^6)]
-        sage: save_newforms(nfs, 'tmp.nfs')
-        sage: load_newforms('tmp.nfs')
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms(nfs, f)
+        sage: load_newforms(f)
         [q - q^2 + q^3 + q^4 - 3*q^5 - q^6 - q^7 - q^8 - 2*q^9 + 3*q^10 + 6*q^11 + q^12 + q^13 + q^14 - 3*q^15 + q^16 - 3*q^17 + 2*q^18 + 2*q^19 + O(q^20),
          q + q^2 - 3*q^3 + q^4 - q^5 - 3*q^6 + q^7 + q^8 + 6*q^9 - q^10 - 2*q^11 - 3*q^12 - q^13 + q^14 + 3*q^15 + q^16 - 3*q^17 + 6*q^18 + 6*q^19 + O(q^20)]
 
@@ -765,8 +772,9 @@ def load_newforms(file_name):
         sage: eps = DirichletGroup(16).gens()[1]
         sage: nfs2 = get_newforms(16, character=eps); nfs2
         [q + (-zeta4 - 1)*q^2 + (zeta4 - 1)*q^3 + 2*zeta4*q^4 + (-zeta4 - 1)*q^5 + O(q^6)]
-        sage: save_newforms([nfs1, nfs2], 'tmp.nfs')
-        sage: load_newforms('tmp.nfs')
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms([nfs1, nfs2], f)
+        sage: load_newforms(f)
         [[q - q^2 + q^3 + q^4 - 3*q^5 - q^6 - q^7 - q^8 - 2*q^9 + 3*q^10 + 6*q^11 + q^12 + q^13 + q^14 - 3*q^15 + q^16 - 3*q^17 + 2*q^18 + 2*q^19 + O(q^20),
           q + q^2 - 3*q^3 + q^4 - q^5 - 3*q^6 + q^7 + q^8 + 6*q^9 - q^10 - 2*q^11 - 3*q^12 - q^13 + q^14 + 3*q^15 + q^16 - 3*q^17 + 6*q^18 + 6*q^19 + O(q^20)],
          [q + (-a - 1)*q^2 + (a - 1)*q^3 + 2*a*q^4 + (-a - 1)*q^5 + 2*q^6 - 2*a*q^7 + (-2*a + 2)*q^8 + a*q^9 + 2*a*q^10 + (a + 1)*q^11 + (-2*a - 2)*q^12 + (a - 1)*q^13 + (2*a - 2)*q^14 + 2*q^15 - 4*q^16 - 2*q^17 + (-a + 1)*q^18 + (-3*a + 3)*q^19 + O(q^20)]]
@@ -776,18 +784,19 @@ def load_newforms(file_name):
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(17); nfs
         [q - q^2 - q^4 - 2*q^5 + O(q^6)]
-        sage: save_newforms(nfs, 'tmp.nfs')
-        sage: load_newforms('tmp.nfs')[0].coefficient(79)
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms(nfs, f)
+        sage: load_newforms(f)[0].coefficient(79)
         Traceback (most recent call last):
         ...
         ValueError: The 79-th coefficient is not stored.
-        sage: save_newforms(nfs, 'tmp.nfs', coefficients=100)
-        sage: load_newforms('tmp.nfs')[0].coefficient(79)
+        sage: save_newforms(nfs, f, coefficients=100)
+        sage: load_newforms(f)[0].coefficient(79)
         12
-        sage: save_newforms(nfs, 'tmp.nfs', coefficients=[79])
-        sage: load_newforms('tmp.nfs')[0].coefficient(79)
+        sage: save_newforms(nfs, f, coefficients=[79])
+        sage: load_newforms(f)[0].coefficient(79)
         12
-        sage: load_newforms('tmp.nfs')[0].coefficient(78)
+        sage: load_newforms(f)[0].coefficient(78)
         Traceback (most recent call last):
         ...
         ValueError: The 78-th coefficient is not stored.
@@ -797,11 +806,12 @@ def load_newforms(file_name):
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs = get_newforms(19); nfs
         [q - 2*q^3 - 2*q^4 + 3*q^5 + O(q^6)]
-        sage: save_newforms(nfs, 'tmp.nfs')
-        sage: load_newforms('tmp.nfs')[0].has_cm()
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms(nfs, f)
+        sage: load_newforms(f)[0].has_cm()
         False
-        sage: save_newforms(nfs, 'tmp.nfs', save_cm=False)
-        sage: load_newforms('tmp.nfs')[0].has_cm()
+        sage: save_newforms(nfs, f, save_cm=False)
+        sage: load_newforms(f)[0].has_cm()
         Traceback (most recent call last):
         ...
         ValueError: Undetermined whether this newform has CM.
@@ -1316,8 +1326,9 @@ class WrappedNewform(SageObject):
 
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: eps = DirichletGroup(16).gens()[1]
-        sage: save_newforms(get_newforms(16, character=eps), 'tmp.nfs')
-        sage: nf = load_newforms('tmp.nfs')[0]; nf
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms(get_newforms(16, character=eps), f)
+        sage: nf = load_newforms(f)[0]; nf
         q + (-a - 1)*q^2 + (a - 1)*q^3 + 2*a*q^4 + (-a - 1)*q^5 + 2*q^6 - 2*a*q^7 + (-2*a + 2)*q^8 + a*q^9 + 2*a*q^10 + (a + 1)*q^11 + (-2*a - 2)*q^12 + (a - 1)*q^13 + (2*a - 2)*q^14 + 2*q^15 - 4*q^16 - 2*q^17 + (-a + 1)*q^18 + (-3*a + 3)*q^19 + O(q^20)
         sage: nf.level()
         16
@@ -2050,8 +2061,9 @@ class WrappedNewform_stored(WrappedNewform):
 
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: eps = DirichletGroup(16).gens()[1]
-        sage: save_newforms(get_newforms(16, character=eps), 'tmp.nfs')
-        sage: nf = load_newforms('tmp.nfs')[0]; nf
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms(get_newforms(16, character=eps), f)
+        sage: nf = load_newforms(f)[0]; nf
         q + (-a - 1)*q^2 + (a - 1)*q^3 + 2*a*q^4 + (-a - 1)*q^5 + 2*q^6 - 2*a*q^7 + (-2*a + 2)*q^8 + a*q^9 + 2*a*q^10 + (a + 1)*q^11 + (-2*a - 2)*q^12 + (a - 1)*q^13 + (2*a - 2)*q^14 + 2*q^15 - 4*q^16 - 2*q^17 + (-a + 1)*q^18 + (-3*a + 3)*q^19 + O(q^20)
         sage: nf.level()
         16

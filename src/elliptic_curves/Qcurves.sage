@@ -3154,8 +3154,8 @@ pp        """
             sage: E = E.decomposable_twist()
             sage: E.number_of_splitting_maps(count_conjugates=False)
             2
-            sage: E.newform_levels()
-            [(14400, 14400)]
+            sage: E.newform_levels() # Inconsistency in .unit_group()
+            [(7200, 7200)]
 
         The levels for each component might be distinct, in which case
         the list may contain multiple options of how the levels are

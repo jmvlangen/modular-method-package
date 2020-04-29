@@ -1594,13 +1594,14 @@ class FreyQcurve(FreyCurve, Qcurve):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E
-            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
             sage: sigma = K.galois_group().gens()[0]
             sage: E.galois_conjugate(sigma)
-            Elliptic Curve defined by y^2 = x^3 + 12*x^2 + (-18*t+18)*x over Number Field in t with defining polynomial x^2 - 3
+            Elliptic Curve defined by y^2 = x^3 + 12*x^2 + (-18*t+18)*x over Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
 
         """
         sigma = galois_field_change(sigma, self.definition_field())
@@ -1766,22 +1767,24 @@ class FreyQcurve(FreyCurve, Qcurve):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-1)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: G.<s> = K.galois_group()
             sage: E.isogeny_x_map(s)
-            (-1/2*x^2 - 6*x + (9/2*tlu^3 + 45/2*tlu - 9))/x
+            (-1/2*x^2 - 6*x - 9*t - 9)/x
             sage: E.isogeny_x_map(s^2)
             x
 
         TESTS::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(-1)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: G.<s> = K.galois_group()
             sage: F = E.isogeny_x_map(s)
             sage: F.parent()
-            Fraction Field of Univariate Polynomial Ring in x over Number Field in t with defining polynomial x^2 + 1
+            Fraction Field of Univariate Polynomial Ring in x over Number Field in t with defining polynomial x^2 + 1 with t = 1*I
             sage: F.parent().base_ring() == E.definition_field()
             True
 
@@ -1950,23 +1953,24 @@ class FreyQcurve(FreyCurve, Qcurve):
 
         EXAMPLE::
 
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
             sage: iota = K.embeddings(CyclotomicField(12))[0]
             sage: E2 = E.change_ring(iota)
             sage: E3 = E2.minimize_fields(names=["t", "s"])
             sage: E.definition_field()
-            Number Field in t with defining polynomial x^2 - 3
+            Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
             sage: E2.definition_field()
             Cyclotomic Field of order 12 and degree 4
             sage: E3.definition_field()
-            Number Field in t with defining polynomial x^2 - 3
+            Number Field in zeta120 with defining polynomial x^2 - 3 with zeta120 = 1.732050807568878?
             sage: E.complete_definition_field()
             Number Field in lu with defining polynomial x^4 - 2*x^2 + 25
             sage: E2.complete_definition_field()
             Number Field in zeta12lu with defining polynomial x^8 - 18*x^6 + 239*x^4 - 1638*x^2 + 6241
             sage: E3.complete_definition_field()
-            Number Field in s0 with defining polynomial x^4 - 38*x^2 + 1225
+            Number Field in s with defining polynomial x^4 - 38*x^2 + 1225
 
         """
         Kmin, Kphi, from_min, min_map, phi_map = self._minimize_fields(names=names)
