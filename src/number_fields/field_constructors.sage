@@ -144,6 +144,21 @@ def field_with_root(K, a, names='sqrt_a', give_embedding=False):
            Defn: zeta3 |--> 2/5*a^3 - 3/5*a^2 + 2*a - 7/5,
          2/5*a^3 - 3/5*a^2 + 3*a - 7/5)
 
+    TEST:
+
+    Bugfix for bug choosing the wrong embedding::
+
+        sage: from modular_method.number_fields.field_constructors import field_with_root
+        sage: K.<a> = QuadraticField(-4)
+        sage: b = -25425 + 30639/2*a
+        sage: field_with_root(K, b, give_embedding=True)
+        (Number Field in sqrt_a with defining polynomial x^4 - 50848*x^2 - 122556*x + 1585229797,
+         Ring morphism:
+           From: Number Field in a with defining polynomial x^2 + 4 with a = 2*I
+           To:   Number Field in sqrt_a with defining polynomial x^4 - 50848*x^2 - 122556*x + 1585229797
+           Defn: a |--> -4/938646617*sqrt_a^3 - 61278/938646617*sqrt_a^2 + 101688/938646617*sqrt_a + 1558299540/938646617,
+         30639/938646617*sqrt_a^3 + 50852/938646617*sqrt_a^2 - 778904658/938646617*sqrt_a - 4109106211/938646617)
+
     """
     a = K(a)
     if a.is_square():
@@ -155,7 +170,13 @@ def field_with_root(K, a, names='sqrt_a', give_embedding=False):
         R.<x> = K[]
         L = K.extension(x^2 - a, names=names).absolute_field(names=names)
         if give_embedding:
-            K_to_L = K.embeddings(L)[0]
+            for K_to_L in K.embeddings(L):
+                if K_to_L(a).is_square():
+                    break
+            else:
+                raise ValueError("No embedding from " + str(K) +
+                                 " to a field with a root of " + str(a) +
+                                 " maps " + str(a) + " to a square.")
             return L, K_to_L, sqrt(K_to_L(a))
         else:
             return L
