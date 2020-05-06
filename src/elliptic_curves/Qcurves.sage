@@ -64,7 +64,7 @@ from sage.arith.misc import hilbert_symbol, euler_phi, gcd, next_prime
 
 from sage.modular.dirichlet import DirichletGroup
 
-from modular_method.number_fields.galois_group import galois_field_change, galois_field_extend
+from modular_method.number_fields.galois_group import galois_field_change, galois_field_extend, galois_field_restrict
 from modular_method.number_fields.field_constructors import composite_field, _concat_maps, _write_as_im_gen_map, fixed_field, write_as_extension, field_with_root
 from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field, dirichlet_to_galois
 
@@ -1804,6 +1804,15 @@ class Qcurve(EllipticCurve_number_field):
         return Kdec
 
     @cached_method
+    def _over_Kdec(self):
+        "Return this Q-curve base changed to the decomposition field."
+        if self.definition_field() == self.decomposition_field():
+            return self
+        else:
+            iota = self._to_Kdec * self._to_Kphi
+            return self.change_ring(iota)
+
+    @cached_method
     def does_decompose(self):
         r"""Determine whether this Q-curve decomposes over its decomposition
         field.
@@ -3080,11 +3089,9 @@ pp        """
         K0 = self.definition_field()
         K = self.decomposition_field()
         if K0 != K:
-            iota = _concat_maps(self._to_Kphi, self._to_Kdec)
-            # Proposition 1 of Milne, On the arithmetic of Abelian varieties
-            return (self.change_ring(iota).conductor().absolute_norm() *
-                    K.discriminant()^2)
+            return self._over_Kdec().conductor_restriction_of_scalars()
         else:
+            # Proposition 1 of Milne, On the arithmetic of Abelian varieties
             return self.conductor().absolute_norm() * K.discriminant()^2
 
     def newform_levels(self, N=None):
@@ -3293,7 +3300,7 @@ pp        """
         power.
 
         The trace of the galois representation of this newform at a
-        frobenius element to the power $n$ can be computed from the
+        Frobenius element to the power $n$ can be computed from the
         trace and determinant at the frobenius element with this
         formula
 
@@ -3306,7 +3313,20 @@ pp        """
         return polynomial_to_symmetric(x^power + y^power)
 
     def trace_of_frobenius(self, prime, power=1, splitting_map=0):
-        r"""Compute the trace of a Frobenius element acting on this curve.
+        r"""Compute the trace of a Frobenius element under the Galois
+        representation associated with this curve.
+
+        This function computes an algebraic number that, when cast to
+        the appropriate field, is equal to the trace of (a power of) a
+        Frobenius element of the given prime number under the Galois
+        representation associated to the given splitting map. It can
+        only compute this number in case
+
+        - This curve has good reduction at the prime number and the
+          reduction of the isogeny associated to the Frobenius element
+          is separable
+
+        - This curve has multiplicative reduction at the prime number
 
         Given that this Q-curve decomposes over its decomposition
         field, one can associate to each splitting map $\beta$ a
@@ -3315,36 +3335,30 @@ pp        """
         prime $\lambda$ in the image field of $\beta$, this $A_\beta$
         defines a 2-dimensional $\lambda$-adic Galois representation
         of the absolute Galois group of $\QQ$ that extends the
-        $l$-adic Galois representation of this curve, where $l$ is the
-        prime number below $\lambda$.
+        $l$-adic Galois representation of this curve over the
+        decomposition field, where $l$ is the prime number below
+        $\lambda$.
 
-        Let $p$ be a prime number distinct from $l$ such that $p$ does
-        not ramify in the decomposition field of this curve; this
-        curve has good reduction at some prime $P$ above $p$ of the
-        decomposition field; and the reduction of the dual of $\phi$
-        to this good reduction is separable, where $\phi$ is the
-        isogeny of the conjugate of this curve by a $p$-Frobenius
-        element to this curve. In this case the corresponding
-        $\lambda$-adic representation is unramified at
-        $p$. Furthermore the trace of the Frobenius element at $p$ can
-        be explicitly computed and is an algebraic number that only
-        depends on $\beta$, the reduction at $P$ and the dual isogeny
-        of $\phi$.
+        .. NOTE::
 
-        This function computes the algebraic number that is the trace
-        of (a power of) a Frobenius element. It will first check that
-        the give prime number `prime` satisfies the mentioned
-        conditions and raise a ValueError if this is not the case.
+        This method does not check whether the associated Galois
+        representation is unramified. If it is not, but the conditions
+        mentioned before are satisfied, this method will produce an
+        answer corresponding to a Frobenius element. Note that the
+        trace of a Frobenius element is in that case not unique.
+
+        Since the Galois representations over the rationals extend the
+        Galois representations of this curve over the decomposition
+        field, each Galois representation is unramified at a prime p
+        if its corresponding restriction to the decomposition field is
+        unramified and p is unramified in the decomposition field.
 
         INPUT:
 
-        - ``prime`` -- A prime number such that `prime` does not
-          ramify in the decomposition field of this curve; this curve
-          has good reduction at some prime $P$ above `prime` in the
-          decomposition field; and the reduction of the dual $\phi$ to
-          this good reduction is separable, where $\phi$ is the
-          isogeny from the conjugate of this curve by a Frobenius
-          element of `prime` to this curve itself.
+        - ``prime`` -- A prime number for which the curve either has
+          good reduction and the reduction of the isogeny associated
+          to a frobenius element of this prime is separable, or for
+          which the curve has multiplicative reduction.
 
         - ``power`` -- A strictly positive integer (default: 1). If
           set to a value higher than 1 will compute the trace of the
@@ -3353,14 +3367,16 @@ pp        """
 
         - ``splitting_map`` -- A non-negative integer smaller than the
           number of splitting maps associated to this Q-curve
-          (default: 0). This indicates the splitting map for which the
-          trace of frobenius should be computed.
+          (default: 0). This indicates the splitting map associated to
+          the Galois representation for which the trace of Frobenius
+          should be computed.
 
         OUTPUT:
 
-        An algebraic number that is the trace of the Frobenius element
-        at `prime` to the power `power` under any $\lambda$-adic
-        Galois representation associated to the splitting map given by
+        An algebraic number that, when cast to the correct field, is
+        the trace of a Frobenius element at `prime` to the power
+        `power` under the $\lambda$-adic or mod $\lambda$ Galois
+        representation associated to the splitting map given by
         `splitting_map` for $\lambda$ not dividing `prime`.
 
         EXAMPLES::
@@ -3373,6 +3389,19 @@ pp        """
             a
             sage: E.trace_of_frobenius(11)
             2
+
+        Works in case the reduction is multiplicative at the given prime.
+
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+            sage: K.<t> = QuadraticField(-1)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t*79/3), 0], guessed_degrees=[2])
+            sage: E = E.decomposable_twist()
+            sage: K = E.definition_field()
+            sage: P = K.prime_above(5)
+            sage: E.has_multiplicative_reduction(P)
+            True
+            sage: E.trace_of_frobenius(5)
+            -6
 
         The trace depends on the splitting map used::
 
@@ -3436,36 +3465,50 @@ pp        """
             F = self._trace_power_formula(power)
             iota = self._splitting_field_map(splitting_map)
             return F(T, iota(D))
-        
+
+        if not self.does_decompose():
+            raise ValueError("This Q-curve must decompose for " +
+                             "the Galois representations over the " +
+                             "rationals to extend the Galois " +
+                             "representations over the decomposition " +
+                             "field.")
         K = self.decomposition_field()
         if self.definition_field() != K:
-            iota = self._to_Kdec * self._to_Kphi
-            E = self.change_ring(iota)
-        else:
-            E = self
+            return self._over_Kdec().trace_of_frobenius(prime, power=power,
+                                                        splitting_map=splitting_map)
         if prime.divides(K.absolute_discriminant()):
-            raise ValueError("The decomposition field is ramified " +
-                             "at " + str(prime))
+            print("Warning: The decomposition field is ramified " +
+                  "at " + str(prime) + " and the Galois " +
+                  "representations over the rationals are therefore " +
+                  "probably not unramified at " + str(prime))
+        beta = self.splitting_map(splitting_map)
         for P in K.primes_above(prime):
-            if E.has_good_reduction(P):
-                break
-        else:
-            raise ValueError("This curve does not have good " +
-                             "reduction at any prime above " +
-                             str(prime))
+            if self.has_good_reduction(P):
+                result = self._trace_of_frob_good(P, beta)
+                if result != None:
+                    return result
+            if self.has_multiplicative_reduction(P):
+                return self._trace_of_frob_mult(P, beta)
+        raise ValueError("This curve does not have the right " +
+                         "type of reduction at " + str(prime) +
+                         " or the reduction of the isogeny " +
+                         "is not separable.")
 
+    def _trace_of_frob_good(self, P, beta):
+        r"""Implementation of meth:`trace_of_frobenius` in case of good reduction"""
         # Setting up the isogeny between the right minimal models
-        Emin = E.local_data(P).minimal_model()
-        phi_min = Emin.isomorphism_to(E)
+        K = self.definition_field()
+        Emin = self.local_data(P).minimal_model()
+        phi_min = Emin.isomorphism_to(self)
         phi_min = _rational_maps_of_isomorphism(phi_min)
         G = K.galois_group()
         Frob = G.artin_symbol(P)
-        sE = E.galois_conjugate(Frob)
+        sE = self.galois_conjugate(Frob)
         sP = Frob(P)
         sEmin = sE.local_data(sP).minimal_model()
         sphi_min = sE.isomorphism_to(sEmin)
         sphi_min = _rational_maps_of_isomorphism(sphi_min)
-        phi = E._phi_x[Frob], E._phi_y[Frob]
+        phi = self._phi_x[Frob], self._phi_y[Frob]
         phi = phi[0](phi_min), phi[1](phi_min)
         phi = sphi_min[0](phi), sphi_min[1](phi)
 
@@ -3477,9 +3520,8 @@ pp        """
                 phi[0].denominator().change_ring(R))
         F = Rx(phi0(x, 0))
         if F.derivative(x) == 0:
-            raise ValueError("The reduction of the isogeny " +
-                             "at the Frobenius element is " +
-                             "separable.")
+            return None # This will cause the function above to try
+                        # other primes or fail
 
         # Defining variables needed for both p = 2 and p != 2
         phi1 = (phi[1].numerator().change_ring(R) /
@@ -3519,8 +3561,33 @@ pp        """
         apE = F.numerator().degree() + p - num
 
         # The final result
-        return self.splitting_map(splitting_map)(Frob)^(-1) * apE
+        return beta(Frob)^(-1) * apE
 
+    def _trace_of_frob_mult(self, P, beta):
+        r"""Implementation of :meth:`trace_of_frobenius` in case of multiplicative reduction"""
+        gamma = - self.c4() / self.c6()
+        K = self.definition_field()
+        L, iota, sqrtgamma = field_with_root(K, gamma,
+                                             names='sqrtgamma',
+                                             give_embedding=True)
+        if not L.is_galois():
+            L, iota2 = L.galois_closure(names='sqrtgamma', map=True)
+            iota = _concat_maps(iota, iota2)
+            sqrtgamma = iota2(sqrtgamma)
+        Q = L.prime_above(iota(P))
+        G = L.galois_group()
+        FrobQ = G.artin_symbol(Q)
+        FrobP = galois_field_restrict(FrobQ, K, embedding=iota)
+        phix = self._phi_x[FrobP].numerator()
+        phiy = self._phi_y[FrobP].numerator()
+        x, y = phiy.parent().gens()
+        u2 = phix.monomial_coefficient(x)
+        u3 = phiy.monomial_coefficient(y)
+        u = u3 / u2
+        apE = QQ(iota(u)^(-1) * sqrtgamma * (FrobQ(sqrtgamma))^(-1))
+        p = P.smallest_integer()
+        return beta(FrobP)^(-1) * apE * QQ(1 + p)
+        
     def determinant_of_frobenius(self, prime, power=1, splitting_map=0):
         r"""Compute the determinant of a Frobenius element acting on this
         curve.
