@@ -18,7 +18,94 @@ provides a way to work with Frey curves that are also $\Q$-curves.
 
 EXAMPLES:
 
-TODO
+The classical example, Fermat's Last Theorem that $x^n + y^n = z^n$
+has no non-trivial solutions for $n > 3$. In this example we use a
+Frey curve based on a solution $(a, b, c)$ with $a b c \ne 0$ for $n$
+a prime number $l > 2$. Without loss of generality we assume that $b
+\equiv 1$ modulo 4. In this example we use `al`, `bl`, and `cl` for
+$a^l$, $b^l$, and $c^l$ respectively::
+
+    sage: from modular_method.diophantine_equations.conditions import PowerCondition
+    sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+    sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+    sage: from modular_method.elliptic_curves.frey_curves import FreyCurve
+    sage: R.<al, bl> = QQ[]
+    sage: cl = al + bl
+    sage: C = (PowerCondition(al, 3) & PowerCondition(bl, 3) & PowerCondition(cl, 3) &
+    ....:      CongruenceCondition(bl - 1, 4) & CoprimeCondition([al, bl]))
+    sage: E = FreyCurve([0, bl - al, 0, -al*bl, 0], condition=C); E
+    Frey curve defined by y^2 = x^3 + (-al+bl)*x^2 + (-al*bl)*x over Rational Field with parameters (al, bl)
+    sage: E.minimal_model(2)
+    Frey curve defined by y^2 = x^3 + (-al+bl)*x^2 + (-al*bl)*x over Rational Field with parameters (al, bl)                                                                                                                                                      if ('al', 'bl') is 1 of 12 possibilities mod 16
+    Elliptic Curve defined by y^2 + x*y + (1/4*al-1/4*bl+1/4)*y = x^3 + (1/2*al-1/2*bl+1/2)*x^2 + (1/16*al^2-3/16*al*bl+1/16*bl^2+1/8*al-1/8*bl+1/16)*x + (-1/64*al^2*bl+1/64*al*bl^2-1/64*al*bl) over Multivariate Polynomial Ring in al, bl over Rational Field if ('al', 'bl') is 1 of 4 possibilities mod 16
+    sage: E.discriminant().factor()
+    (16) * bl^2 * al^2 * (al + bl)^2
+    sage: E.conductor()
+    Warning: Assuming that al and bl are coprime.
+    2^n0*Rad_P( (16) * bl^2 * al^2 * (al + bl)^2 )
+     where 
+    n0 = 4 if ('al', 'bl') == (3, 5), (7, 1) mod 8
+         3 if ('al', 'bl') is 1 of 4 possibilities mod 16
+         0 if ('al', 'bl') is 1 of 8 possibilities mod 32
+         1 if ('al', 'bl') is 1 of 8 possibilities mod 32
+    sage: E.newform_candidates()
+    Warning: The bad primes chosen by default only take into account primes of additive reduction.
+    []
+
+A more involved example for the equation $x^n + y^n = 2 z^n$ from the
+article "Winding quotients and some variants of Fermat's Last Theorem"
+by Henri Darmon and Loïc Merel (1997). We let $(a, b, c)$ be a
+solution of this equation for $n$ a prime number $p \ge 7$ with
+$\gcd(a, b, c) = 1$ and $|a b c| > 1$. We denote by `ap`, `bp`, and
+`cp` the values $a^p$, $b^p$ and $c^p$ respectively. As in the article
+we assume that $a \equiv -1$ modulo 4::
+
+    sage: from modular_method.diophantine_equations.conditions import PowerCondition
+    sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+    sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+    sage: from modular_method.elliptic_curves.frey_curves import FreyCurve
+    sage: R.<ap, cp> = QQ[]
+    sage: bp = 2*cp - ap
+    sage: C = (PowerCondition(ap, 7) & PowerCondition(bp, 7) & PowerCondition(cp, 7) &
+    ....:      CongruenceCondition(ap + 1, 4) & CoprimeCondition([ap, cp]))
+    sage: E = FreyCurve([0, -ap - 2*cp, 0, 2*ap*cp, 0], condition=C); E
+    Frey curve defined by y^2 = x^3 + (-ap-2*cp)*x^2 + 2*ap*cp*x over Rational Field with parameters (ap, cp)
+    sage: E.discriminant().factor()
+    (64) * cp^2 * ap^2 * (ap - 2*cp)^2
+    sage: E.conductor(additive_primes=[2])
+    2^n0*Rad_P( (64) * cp^2 * ap^2 * (ap - 2*cp)^2 )
+     where 
+    n0 = 5 if ('ap', 'cp') == (3, 1), (3, 3) mod 4
+         1 if ('ap', 'cp') is 1 of 32 possibilities mod 128
+    sage: E.newform_candidates(bad_primes=[2])
+    [q - 2*q^5 + O(q^6)] if ('ap', 'cp') == (3, 1), (3, 3) mod 4
+    []                   if ('ap', 'cp') is 1 of 32 possibilities mod 128
+
+We use the Frey curve for the equation $A^4 + B^2 = C^p$ from the
+article "Galois representations attached to Q-curves and the
+generalized Fermat equation $A^4 + B^2 = C^p$" by Jordan S. Ellenberg
+(2004) as an example of a Frey Q-curve. We will let $(A, B, C)$ be a
+solution to this equation for $p \ge 211$ prime with $ A B \ne 0 $ and
+$B \not\equiv 1$ modulo 4. We will use `Cp` to denote $C^p$::
+
+    sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+    sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+    sage: from modular_method.elliptic_curves.frey_curves import FreyQcurve
+    sage: R.<A, B> = QQ[]
+    sage: Cp = A^4 + B^2
+    sage: con = CoprimeCondition([A, B]) & ~CongruenceCondition(B - 1, 4)
+    sage: K.<i> = QuadraticField(-1)
+    sage: a_invariants = [0, 2*(1+i)*A, 0, B + i*A^2, 0]
+    sage: E = FreyQcurve(a_invariants, condition=con, guessed_degrees=[2])
+    sage: E.discriminant().factor()
+    ((-64*i)) * (A^2 + (i)*B) * (A^2 + (-i)*B)^2
+    sage: E.decomposition_field()
+    Number Field in i with defining polynomial x^2 + 1 with i = 1*I
+    sage: E.does_decompose()
+    True
+    sage: E.newform_candidates(bad_primes=K.primes_above(2))
+    [q - 2*q^3 + O(q^6), q - 4*q^5 + O(q^6), q + 4*q^5 + O(q^6), q + 2*q^3 + O(q^6), q - 1/2*a4*q^3 + O(q^6)] if ('A', 'B') is 1 of 6 possibilities mod 4
+    [q - 2*q^5 + O(q^6)]                                                                                      if ('A', 'B') == (0, 3), (2, 3) mod 4
 
 AUTHORS:
 
@@ -35,17 +122,40 @@ AUTHORS:
 # (at your option) any later version.
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
-from sage.schemes.elliptic_curves.ell_generic import EllipticCurve_generic
 from sage.rings.polynomial.polynomial_ring import is_PolynomialRing
 from sage.rings.polynomial.multi_polynomial_ring_base import is_MPolynomialRing
 from sage.rings.morphism import RingHomomorphism_from_base
 
+from sage.schemes.elliptic_curves.ell_generic import EllipticCurve_generic
 from sage.schemes.elliptic_curves.ell_local_data import EllipticCurveLocalData
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol_class
 from sage.schemes.elliptic_curves.weierstrass_morphism import WeierstrassIsomorphism
+from sage.schemes.elliptic_curves.constructor import EllipticCurve
 
 from sage.rings.number_field.number_field import is_NumberField
+
+from sage.all import ZZ, QQ, Integer
+from sage.misc.cachefunc import cached_method
+from sage.arith.functions import lcm
+
+from sage.misc.misc_c import prod as product
+
+from modular_method.elliptic_curves.Qcurves import Qcurve
+from modular_method.elliptic_curves.tates_algorithm import tates_algorithm
+
+from modular_method.padics.pAdic_base import pAdicBase
+from modular_method.padics.pAdic_tree import pAdicTree
+
+from modular_method.number_fields.field_constructors import _write_as_im_gen_map
+from modular_method.number_fields.field_constructors import _concat_maps
+from modular_method.number_fields.galois_group import galois_field_change
+
+from modular_method.diophantine_equations.conditions import ConditionalValue
+from modular_method.diophantine_equations.conditions import ConditionalExpression
+from modular_method.diophantine_equations.conditions import apply_to_conditional_value
+
+from modular_method.modular_forms.newform_wrapper import get_newforms
 
 class FreyCurve(EllipticCurve_generic):
     r"""A Frey-Hellegouarch curve.
@@ -69,7 +179,68 @@ class FreyCurve(EllipticCurve_generic):
 
     EXAMPLES:
 
-    TODO
+    The classical example, Fermat's Last Theorem that $x^n + y^n = z^n$
+    has no non-trivial solutions for $n > 3$. In this example we use a
+    Frey curve based on a solution $(a, b, c)$ with $a b c \ne 0$ for $n$
+    a prime number $l > 2$. Without loss of generality we assume that $b
+    \equiv 1$ modulo 4. In this example we use `al`, `bl`, and `cl` for
+    $a^l$, $b^l$, and $c^l$ respectively::
+
+        sage: from modular_method.diophantine_equations.conditions import PowerCondition
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+        sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+        sage: from modular_method.elliptic_curves.frey_curves import FreyCurve
+        sage: R.<al, bl> = QQ[]
+        sage: cl = al + bl
+        sage: C = (PowerCondition(al, 3) & PowerCondition(bl, 3) & PowerCondition(cl, 3) &
+        ....:      CongruenceCondition(bl - 1, 4) & CoprimeCondition([al, bl]))
+        sage: E = FreyCurve([0, bl - al, 0, -al*bl, 0], condition=C); E
+        Frey curve defined by y^2 = x^3 + (-al+bl)*x^2 + (-al*bl)*x over Rational Field with parameters (al, bl)
+        sage: E.minimal_model(2)
+        Frey curve defined by y^2 = x^3 + (-al+bl)*x^2 + (-al*bl)*x over Rational Field with parameters (al, bl)                                                                                                                                                      if ('al', 'bl') is 1 of 12 possibilities mod 16
+        Elliptic Curve defined by y^2 + x*y + (1/4*al-1/4*bl+1/4)*y = x^3 + (1/2*al-1/2*bl+1/2)*x^2 + (1/16*al^2-3/16*al*bl+1/16*bl^2+1/8*al-1/8*bl+1/16)*x + (-1/64*al^2*bl+1/64*al*bl^2-1/64*al*bl) over Multivariate Polynomial Ring in al, bl over Rational Field if ('al', 'bl') is 1 of 4 possibilities mod 16
+        sage: E.discriminant().factor()
+        (16) * bl^2 * al^2 * (al + bl)^2
+        sage: E.conductor()
+        Warning: Assuming that al and bl are coprime.
+        2^n0*Rad_P( (16) * bl^2 * al^2 * (al + bl)^2 )
+         where 
+        n0 = 4 if ('al', 'bl') == (3, 5), (7, 1) mod 8
+             3 if ('al', 'bl') is 1 of 4 possibilities mod 16
+             0 if ('al', 'bl') is 1 of 8 possibilities mod 32
+             1 if ('al', 'bl') is 1 of 8 possibilities mod 32
+        sage: E.newform_candidates()
+        Warning: The bad primes chosen by default only take into account primes of additive reduction.
+        []
+
+    A more involved example for the equation $x^n + y^n = 2 z^n$ from the
+    article "Winding quotients and some variants of Fermat's Last Theorem"
+    by Henri Darmon and Loïc Merel (1997). We let $(a, b, c)$ be a
+    solution of this equation for $n$ a prime number $p \ge 7$ with
+    $\gcd(a, b, c) = 1$ and $|a b c| > 1$. We denote by `ap`, `bp`, and
+    `cp` the values $a^p$, $b^p$ and $c^p$ respectively. As in the article
+    we assume that $a \equiv -1$ modulo 4::
+
+        sage: from modular_method.diophantine_equations.conditions import PowerCondition
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+        sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+        sage: from modular_method.elliptic_curves.frey_curves import FreyCurve
+        sage: R.<ap, cp> = QQ[]
+        sage: bp = 2*cp - ap
+        sage: C = (PowerCondition(ap, 7) & PowerCondition(bp, 7) & PowerCondition(cp, 7) &
+        ....:      CongruenceCondition(ap + 1, 4) & CoprimeCondition([ap, cp]))
+        sage: E = FreyCurve([0, -ap - 2*cp, 0, 2*ap*cp, 0], condition=C); E
+        Frey curve defined by y^2 = x^3 + (-ap-2*cp)*x^2 + 2*ap*cp*x over Rational Field with parameters (ap, cp)
+        sage: E.discriminant().factor()
+        (64) * cp^2 * ap^2 * (ap - 2*cp)^2
+        sage: E.conductor(additive_primes=[2])
+        2^n0*Rad_P( (64) * cp^2 * ap^2 * (ap - 2*cp)^2 )
+         where 
+        n0 = 5 if ('ap', 'cp') == (3, 1), (3, 3) mod 4
+             1 if ('ap', 'cp') is 1 of 32 possibilities mod 128
+        sage: E.newform_candidates(bad_primes=[2])
+        [q - 2*q^5 + O(q^6)] if ('ap', 'cp') == (3, 1), (3, 3) mod 4
+        []                   if ('ap', 'cp') is 1 of 32 possibilities mod 128
 
     """
     def __init__(self, curve, parameter_ring=ZZ, condition=None):
@@ -93,6 +264,75 @@ class FreyCurve(EllipticCurve_generic):
           (default: None) giving a condition which must hold for the
           values of the variables of $R$. If set to None will assume
           that all values for these variables are allowed.
+
+        EXAMPLES:
+
+        The classical example, Fermat's Last Theorem that $x^n + y^n = z^n$
+        has no non-trivial solutions for $n > 3$. In this example we use a
+        Frey curve based on a solution $(a, b, c)$ with $a b c \ne 0$ for $n$
+        a prime number $l > 2$. Without loss of generality we assume that $b
+        \equiv 1$ modulo 4. In this example we use `al`, `bl`, and `cl` for
+        $a^l$, $b^l$, and $c^l$ respectively::
+
+            sage: from modular_method.diophantine_equations.conditions import PowerCondition
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+            sage: from modular_method.elliptic_curves.frey_curves import FreyCurve
+            sage: R.<al, bl> = QQ[]
+            sage: cl = al + bl
+            sage: C = (PowerCondition(al, 3) & PowerCondition(bl, 3) & PowerCondition(cl, 3) &
+            ....:      CongruenceCondition(bl - 1, 4) & CoprimeCondition([al, bl]))
+            sage: FreyCurve([0, bl - al, 0, -al*bl, 0], condition=C)
+            Frey curve defined by y^2 = x^3 + (-al+bl)*x^2 + (-al*bl)*x over Rational Field with parameters (al, bl)
+
+        A more involved example for the equation $x^n + y^n = 2 z^n$ from the
+        article "Winding quotients and some variants of Fermat's Last Theorem"
+        by Henri Darmon and Loïc Merel (1997). We let $(a, b, c)$ be a
+        solution of this equation for $n$ a prime number $p \ge 7$ with
+        $\gcd(a, b, c) = 1$ and $|a b c| > 1$. We denote by `ap`, `bp`, and
+        `cp` the values $a^p$, $b^p$ and $c^p$ respectively. As in the article
+        we assume that $a \equiv -1$ modulo 4::
+
+            sage: from modular_method.diophantine_equations.conditions import PowerCondition
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+            sage: from modular_method.elliptic_curves.frey_curves import FreyCurve
+            sage: R.<ap, cp> = QQ[]
+            sage: bp = 2*cp - ap
+            sage: C = (PowerCondition(ap, 7) & PowerCondition(bp, 7) & PowerCondition(cp, 7) &
+            ....:      CongruenceCondition(ap + 1, 4) & CoprimeCondition([ap, cp]))
+            sage: FreyCurve([0, -ap - 2*cp, 0, 2*ap*cp, 0], condition=C)
+            Frey curve defined by y^2 = x^3 + (-ap-2*cp)*x^2 + 2*ap*cp*x over Rational Field with parameters (ap, cp)
+
+        It is not required to give a condition::
+
+            sage: from modular_method.elliptic_curves.frey_curves import FreyCurve
+            sage: R.<al, bl> = QQ[]
+            sage: cl = al + bl
+            sage: FreyCurve([0, bl - al, 0, -al*bl, 0])
+            Frey curve defined by y^2 = x^3 + (-al+bl)*x^2 + (-al*bl)*x over Rational Field with parameters (al, bl)
+
+        Note that the elliptic curve does not necessarily have to be
+        associated to a diophantine equation::
+
+            sage: from modular_method.elliptic_curves.frey_curves import FreyCurve
+            sage: R.<a, b> = QQ[]
+            sage: FreyCurve([a-1, b + 2, a^3 + a*b, b^2 + 4*b, b^3])
+            Frey curve defined by y^2 + (a-1)*x*y + (a^3+a*b)*y = x^3 + (b+2)*x^2 + (b^2+4*b)*x + b^3 over Rational Field with parameters (a, b)
+
+        You can construct Frey curves over any number field as long as
+        the parameter ring has a natural inclusion into that field::
+
+            sage: from modular_method.elliptic_curves.frey_curves import FreyCurve
+            sage: R.<A, B> = QQ[]
+            sage: Cp = A^4 + B^2
+            sage: con = CoprimeCondition([A, B]) & ~CongruenceCondition(B - 1, 4)
+            sage: K.<i> = QuadraticField(-1)
+            sage: a_invariants = [0, 2*(1+i)*A, 0, B + i*A^2, 0]
+            sage: FreyCurve(a_invariants, condition=con)
+            Frey curve defined by y^2 = x^3 + ((2*i+2)*A)*x^2 + ((i)*A^2+B)*x over Number Field in i with defining polynomial x^2 + 1 with i = 1*I with parameters (A, B)
+            sage: FreyCurve(a_invariants, parameter_ring=K.ring_of_integers(), condition=con)
+            Frey curve defined by y^2 = x^3 + ((2*i+2)*A)*x^2 + ((i)*A^2+B)*x over Number Field in i with defining polynomial x^2 + 1 with i = 1*I with parameters (A, B)
 
         """
         if not isinstance(curve, EllipticCurve_generic):
@@ -185,7 +425,8 @@ class FreyCurve(EllipticCurve_generic):
         - If the curve has one parameter, the list will contain all the
           primes dividing the resultant of $D$ and $c_4$
 
-        - If the curve has two parameters, the parameters will be
+        - If the curve has two parameters and $c4$ and $D$ are
+          homogeneous in the parameters, the parameters will be
           assumed to be coprime and the list will contain all the
           primes dividing the Macaulay resultant of $D$ and $c_4$.
         

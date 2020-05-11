@@ -28,10 +28,19 @@ from sage.structure.sage_object import SageObject
 
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol_class
+from sage.schemes.elliptic_curves.constructor import EllipticCurve
 
-from sage.all import Infinity
+from sage.all import ZZ, QQ, Integer, Infinity
+from sage.functions.other import ceil
+from sage.misc.functional import is_even, is_odd, norm
 
 from sage.schemes.elliptic_curves.ell_generic import EllipticCurve_generic
+
+from modular_method.padics.pAdic_base import pAdicBase
+from modular_method.padics.pAdic_tree import pAdicNode, pAdicTree
+from modular_method.padics.pAdic_solver import find_pAdic_roots
+
+from modular_method.diophantine_equations.conditions import TreeCondition, ConditionalValue
 
 def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     base_ring=None, prime=None, initial_values=None,
