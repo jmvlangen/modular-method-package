@@ -144,12 +144,27 @@ class Condition_base(SageObject):
             sage: CoprimeCondition([x,y]) & PolynomialCondition(x^2 + y^2 - 4)
             The condition that the variables ('x', 'y') are pairwise coprime and the condition that x^2 + y^2 - 4 == 0
 
+        If two conditions are the same, the 'and' of both of them is
+        just the first::
+
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+            sage: R.<x> = ZZ[]
+            sage: C1 = CongruenceCondition(x, 3); C1
+            The condition that x == 0 modulo 3
+            sage: C2 = CongruenceCondition(x, 3); C2
+            The condition that x == 0 modulo 3
+            sage: C1 & C2
+            The condition that x == 0 modulo 3
+
         .. SEEALSO ::
         
            :class:`AndCondition`
 
         """
-        return AndCondition(self, other)
+        if self == other:
+            return self
+        else:
+            return AndCondition(self, other)
 
     def __or__(self, other):
         r"""Create the condition that either condition holds.
@@ -171,12 +186,27 @@ class Condition_base(SageObject):
             sage: CoprimeCondition([x,y]) | PolynomialCondition(x^2 + y^2 - 4)
             The condition that the variables ('x', 'y') are pairwise coprime or the condition that x^2 + y^2 - 4 == 0
 
+        If two conditions are the same, the 'or' of both of them is
+        just the first::
+
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+            sage: R.<x> = ZZ[]
+            sage: C1 = CongruenceCondition(x, 3); C1
+            The condition that x == 0 modulo 3
+            sage: C2 = CongruenceCondition(x, 3); C2
+            The condition that x == 0 modulo 3
+            sage: C1 | C2
+            The condition that x == 0 modulo 3
+
         .. SEEALSO::
 
             :class:`OrCondition`
 
         """
-        return OrCondition(self, other)
+        if self == other:
+            return self
+        else:
+            return OrCondition(self, other)
 
     def __invert__(self):
         r"""Create the condition that this condition does not hold.
@@ -314,7 +344,7 @@ class Condition_base(SageObject):
 
         """
         raise NotImplementedError("The method 'pAdic_tree' is not " +
-                                  "implemented for the base condition class")
+                                  "implemented for this condition class")
 
     def __eq__(self, other):
         return (isinstance(other, self.__class__) and
@@ -2436,9 +2466,192 @@ class TreeCondition(Condition_base):
     def _cache_key(self):
         return 'TreeCondition', self._T
 
+    def __and__(self, other):
+        r"""Create the condition that both conditions hold.
+
+        INPUT:
+        
+        - ``other`` -- A Condition, i.e. an instance of
+          Condition_base.
+
+        OUTPUT:
+
+        A Condition object that holds on all values where both this
+        Condition object and the given Condition object hold.
+
+        EXAMPLE::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
+            sage: R.<x, y> = ZZ[]
+            sage: CoprimeCondition([x,y]) & PolynomialCondition(x^2 + y^2 - 4)
+            The condition that the variables ('x', 'y') are pairwise coprime and the condition that x^2 + y^2 - 4 == 0
+
+        If two conditions are the same, the 'and' of both of them is
+        just the first::
+
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+            sage: R.<x> = ZZ[]
+            sage: C1 = CongruenceCondition(x, 3); C1
+            The condition that x == 0 modulo 3
+            sage: C2 = CongruenceCondition(x, 3); C2
+            The condition that x == 0 modulo 3
+            sage: C1 & C2
+            The condition that x == 0 modulo 3
+
+        .. SEEALSO ::
+        
+           :class:`AndCondition`
+
+        """
+        if (isinstance(other, TreeCondition) and self._T.pAdics() == other._T.pAdics()):
+            return TreeCondition(self._T.intersection(other._T))
+        else:
+            return Condition_base.__and__(self, other)
+
+    def __or__(self, other):
+        r"""Create the condition that either condition holds.
+
+        INPUT:
+        
+        - ``other`` -- A Condition, i.e. an instance of
+          Condition_base.
+
+        OUTPUT:
+
+        A Condition object that holds on all values where either this
+        Condition object or the given Condition object holds.
+
+        EXAMPLE::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
+            sage: R.<x, y> = ZZ[]
+            sage: CoprimeCondition([x,y]) | PolynomialCondition(x^2 + y^2 - 4)
+            The condition that the variables ('x', 'y') are pairwise coprime or the condition that x^2 + y^2 - 4 == 0
+
+        If two conditions are the same, the 'or' of both of them is
+        just the first::
+
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+            sage: R.<x> = ZZ[]
+            sage: C1 = CongruenceCondition(x, 3); C1
+            The condition that x == 0 modulo 3
+            sage: C2 = CongruenceCondition(x, 3); C2
+            The condition that x == 0 modulo 3
+            sage: C1 | C2
+            The condition that x == 0 modulo 3
+
+        .. SEEALSO::
+
+            :class:`OrCondition`
+
+        """
+        if (isinstance(other, TreeCondition) and self._T.pAdics() == other._T.pAdics()):
+            return TreeCondition(self._T.union(other._T))
+        else:
+            return Condition_base.__or__(self, other)
+
+    def __invert__(self):
+        r"""Create the condition that this condition does not hold.
+
+        OUTPUT:
+
+        A Condition object that holds on all values where this
+        Condition does not hold.
+
+        EXAMPLES::
+        
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
+            sage: R.<x, y> = ZZ[]
+            sage: ~ PolynomialCondition(x^2 + y^2 - 4)
+            The condition that x^2 + y^2 - 4 ~= 0
+
+        Note that a double not simplifies in print, but gives a
+        different object::
+
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1); C
+            The condition that -x^3 + y^2 - 1 == 0
+            sage: ~~C
+            The condition that -x^3 + y^2 - 1 == 0
+            sage: C == ~~C
+            False
+
+        .. SEEALSO::
+
+            :class:`NotCondition`
+
+        """
+        return TreeCondition(self._T.complement())
+
     def __eq__(self, other):
         return (Condition_base.__eq__(self, other) and
                 self.pAdic_tree() == other.pAdic_tree())
+
+class TextCondition(Condition_base):
+    r"""A condition described by text.
+
+    EXAMPLES::
+
+        sage: from modular_method.diophantine_equations.conditions import TextCondition
+        sage: C = TextCondition("The condition that the ball is blue"); C
+        The condition that the ball is blue
+        sage: ~C
+        The condition that the ball is not blue
+        sage: C = TextCondition("The condition that n is a square", "n == 'square'"); C
+        The condition that n is a square
+        sage: C._repr_short()
+        "n == 'square'"
+
+    """
+
+    def __init__(self, text, short_text=None, variables=[]):
+        r"""Initialize a TextCondition
+
+        INPUT:
+
+        - ``text`` -- A string that is the string representation of
+          this condition.
+        
+        - ``short_text`` -- A string or `None` (default) that is the
+          short string representation of this condition. If set to
+          `None` it will be set to be the same as `text`.
+        
+        - ``variables`` -- A list or tuple of variables (default: [])
+          on which this condition applies. This is not necessary for
+          this condition, but is implemented for compatibility.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import TextCondition
+            sage: C = TextCondition("The condition that the ball is blue"); C
+            The condition that the ball is blue
+            sage: ~C
+            The condition that the ball is not blue
+            sage: C = TextCondition("The condition that n is a square", "n == 'square'"); C
+            The condition that n is a square
+            sage: C._repr_short()
+            "n == 'square'"
+
+        """
+        self._long = text
+        if short_text == None:
+            self._short = self._long
+        else:
+            self._short = short_text
+        Condition_base.__init__(self, variables)
+
+    def _repr_(self):
+        return self._long
+
+    def _repr_short(self):
+        return self._short
+
+    def __eq__(self, other):
+        return (isinstance(other, TextCondition) and
+                isinstance(self, other.__class__) and
+                self._long == other._long and
+                self._short == other._short)
 
 class ConditionalValue(SageObject):
     r"""Some value that depends on some condition.
@@ -3102,14 +3315,23 @@ def apply_to_conditional_value(function, value, singleton=False,
 
     OUTPUT:
 
-    The function evaluated on the given value. If the given value was
-    a ConditionalValue this means the function is evaluated on every
-    value in the ConditionalValue producing a new ConditionalValue of
-    possible outcomes.  Conditions which produce the same outcome will
-    be combined using an OrCondition. If the resulting
-    ConditionalValue would have only one possibility and singleton is
-    set to False, will return the value of that single possibility
-    instead of the whole ConditionalValue.
+    The function evaluated on the given value.
+
+    If the given value was a ConditionalValue this means the function
+    is evaluated on every value in the ConditionalValue producing a
+    new ConditionalValue of possible outcomes. Conditions which
+    produce the same outcome will be combined using an OrCondition.
+
+    If the resulting ConditionalValue would have only one possibility
+    and singleton is set to False, will return the value of that
+    single possibility instead of the whole ConditionalValue.
+
+    If the return value of the given function at any of the tried
+    values is itself a ConditionalValue `V`, the ConditionalValue
+    returned by this function will contain each the values in `V` as a
+    possible outcome rather than using `V` as an outcome. Note that
+    the conditions for each of these outcomes will be the same as
+    those in `V`.
 
     EXAMPLES::
 
@@ -3178,42 +3400,220 @@ def apply_to_conditional_value(function, value, singleton=False,
         ....:     return 6 + x
         ....: 
         sage: apply_to_conditional_value(g, 3, singleton=True)
-        9
+        Traceback (most recent call last):
+        ...
+        ValueError: None is not a condition
         sage: apply_to_conditional_value(g, 3, singleton=True, default_condition=C)
         9 if ('x', 'y') are pairwise coprime
+
+    If the outcome of the provided function is a conditional value,
+    the resulting conditional value will produce a single conditional
+    value that incorporates that outcome::
+
+        sage: from modular_method.diophantine_equations.conditions import CongruenceCondition, ConditionalValue, apply_to_conditional_value
+        sage: R.<a, b> = ZZ[]
+        sage: C1 = CongruenceCondition(a, 2)
+        sage: C2 = CongruenceCondition(b, 2)
+        sage: V1 = ConditionalValue([(1, C1), (2, ~C1)])
+        sage: V2 = ConditionalValue([(0, C2), (1, ~C2)])
+        sage: def f(x):
+        ....:     return (V1 if x == 0 else 3)
+        ....:
+        sage: apply_to_conditional_value(f, V2)
+        1 if a == 0 mod 2 
+        2 if a ~= 0 mod 2
+        3 if b ~= 0 mod 2
 
     .. SEEALSO::
 
         :class:`ConditionalValue`
 
     """
-    if isinstance(value, ConditionalValue):
-        values = []
-        conditions = []
-        for val, con in value:
-            if use_condition:
-                f_val = function(val, con)
-            else:
-                f_val = function(val)
+    if not isinstance(value, ConditionalValue):
+        value = [(value, default_condition)]
+    values = []
+    conditions = []
+    for val, con in value:
+        if use_condition:
+            result = function(val, con)
+        else:
+            result = function(val)
+        if not isinstance(result, ConditionalValue):
+            result = [(result, con)]
+        for f_val, f_con in result:
             try:
                 i = values.index(f_val)
-                conditions[i] = conditions[i] | con
+                conditions[i] = conditions[i] | f_con
             except ValueError:
                 values.append(f_val)
-                conditions.append(con)
-        if not singleton and len(values) == 1:
-            return values[0]
-        else:
-            return ConditionalValue(list(zip(values, conditions)))
+                conditions.append(f_con)
+    if not singleton and len(values) == 1:
+        return values[0]
     else:
-        if use_condition:
-            result = function(value, default_condition)
-        else:
-            result = function(value)
-        if singleton and default_condition != None:
-            return ConditionalValue([(result, default_condition)])
-        else:
-            return result
+        return ConditionalValue(list(zip(values, conditions)))
+
+def conditional_over_values(function, values, start_condition=None,
+                            singleton=False):
+    r"""Construct one conditional value by evaluating a function on given
+    values.
+
+    A function of which the outcome depends on some unknown parameters
+    might have cases for the parameters in which it does not work. In
+    such a case one might try to apply the function again to a
+    different value. Iterating this process over different values will
+    produce different return values for many different cases. This
+    function will do this and return all these values in a single
+    ConditionalValue with the corresponding cases.
+
+    INPUT:
+
+    - ``function`` -- A function with two inputs, a value and a
+      condition, which has a single return value. The return value
+      must be the possible return values of this function at a given
+      value if the given condition is satisfied. If the function would
+      give no return value, the return value `None` may be used. If
+      multiple return values are possible, all of them should be
+      combined in a ConditionalValue giving these values and
+      conditions when they occur.
+
+    - ``values`` -- An iterable object consisting of values. These may
+      not be ConditionalValues.
+
+    - ``start_condition`` -- A Condition or `None` (default) which
+      should be the condition passed to the given function when
+      evaluated on the first value of `values`. Note that this can
+      only be `None` if the given function accepts `None` as a
+      condition.
+
+    - ``singleton`` -- A boolean value (default: `False`) which
+      indicates whether a single value should still be returned as a
+      ConditionalValue. If set to False a ConditionalValue with only a
+      single value will just be returned as that single value.
+
+    OUTPUT:
+
+    A ConditionalValue consisting of values `V` with corresponding
+    conditions `C` such that `V` is the first return value that is not
+    `None` when `function` is applied to each value in `values` under
+    the condition `C`. A value `V` may only be `None` if `function`
+    returns `None` for each value in `values` under the condition
+    `C`.
+
+    EXAMPLE::
+
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+        sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
+        sage: from modular_method.diophantine_equations.conditions import ConditionalValue
+        sage: from modular_method.diophantine_equations.conditions import TreeCondition
+        sage: from modular_method.diophantine_equations.conditions import conditional_over_values
+        sage: R.<x> = ZZ[]
+        sage: C = PolynomialCondition(x^2 + 1)
+        sage: pAdics = pAdicBase(QQ, 5)
+        sage: def f(val, con):
+        ....:     Y, N = C.pAdic_tree(pAdic_tree=con.pAdic_tree(pAdics=pAdics),
+        ....:                         complement=True, precision=val)
+        ....:     success = "Solution for precision " + str(val)
+        ....:     return ConditionalValue([(success, TreeCondition(Y)),
+        ....:                              (None, TreeCondition(N))])
+        ....: 
+        sage: start = CoprimeCondition([x])
+        sage: conditional_over_values(f, [4, 3, 2, 1], start_condition=start)
+        Solution for precision 4 if x == 182, 443 mod 625
+        Solution for precision 3 if x is 1 of 8 possibilities mod 625
+        Solution for precision 2 if x is 1 of 8 possibilities mod 125
+        Solution for precision 1 if x == 2, 3, 8, 12, 13, 17, 22, 23 mod 25
+        None                     if x == 0, 1, 4 mod 5
+
+    Setting the start_condition to `None` only works if the given
+    function supports `None` as a condition argument::
+
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+        sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
+        sage: from modular_method.diophantine_equations.conditions import ConditionalValue
+        sage: from modular_method.diophantine_equations.conditions import TreeCondition
+        sage: from modular_method.diophantine_equations.conditions import conditional_over_values
+        sage: R.<x> = ZZ[]
+        sage: C = PolynomialCondition(x^2 + 1)
+        sage: pAdics = pAdicBase(QQ, 5)
+        sage: def f(val, con):
+        ....:     Y, N = C.pAdic_tree(pAdic_tree=con.pAdic_tree(pAdics=pAdics),
+        ....:                         complement=True, precision=val)
+        ....:     success = "Solution for precision " + str(val)
+        ....:     return ConditionalValue([(success, TreeCondition(Y)),
+        ....:                              (None, TreeCondition(N))])
+        ....: 
+        sage: def g(val, con):
+        ....:     con = (CoprimeCondition([x]) if con is None else con)
+        ....:     return f(val, con)
+        ....: 
+        sage: conditional_over_values(f, [4, 3, 2, 1])
+        Traceback (most recent call last):
+        ...
+        AttributeError: 'NoneType' object has no attribute 'pAdic_tree'
+        sage: conditional_over_values(g, [4, 3, 2, 1])
+        Solution for precision 4 if x == 182, 443 mod 625
+        Solution for precision 3 if x is 1 of 8 possibilities mod 625
+        Solution for precision 2 if x is 1 of 8 possibilities mod 125
+        Solution for precision 1 if x == 2, 3, 8, 12, 13, 17, 22, 23 mod 25
+        None                     if x == 0, 1, 4 mod 5
+    
+    The given function can have multiple answers which are combined into one::
+
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+        sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
+        sage: from modular_method.diophantine_equations.conditions import ConditionalValue
+        sage: from modular_method.diophantine_equations.conditions import TreeCondition
+        sage: from modular_method.diophantine_equations.conditions import conditional_over_values
+        sage: R.<x> = ZZ[]
+        sage: C1 = PolynomialCondition(x^4 + 4)
+        sage: C2 = PolynomialCondition(x^2 + 4)
+        sage: pAdics = pAdicBase(QQ, 13)
+        sage: def f(val, con):
+        ....:     Y1, N1 = C1.pAdic_tree(pAdic_tree=con.pAdic_tree(pAdics=pAdics),
+        ....:                            complement=True, precision=val)
+        ....:     success1 = "Solution for x^4 + 1 with precision " + str(val)
+        ....:     Y2, N2 = C2.pAdic_tree(pAdic_tree=N1, complement=True,
+        ....:                            precision=val)
+        ....:     success2 = "Solution for x^2 + 1 with precision " + str(val)
+        ....:     return ConditionalValue([(success1, TreeCondition(Y1)),
+        ....:                              (success2, TreeCondition(Y2)),
+        ....:                              (None, TreeCondition(N2))])
+        ....: 
+        sage: start = CoprimeCondition([x])
+        sage: conditional_over_values(f, [2, 1], start_condition=start)
+        Solution for x^4 + 1 with precision 2 if x == 69, 71, 98, 100 mod 169
+        Solution for x^2 + 1 with precision 2 if x == 29, 140 mod 169
+        Solution for x^4 + 1 with precision 1 if x is 1 of 48 possibilities mod 169
+        Solution for x^2 + 1 with precision 1 if x is 1 of 24 possibilities mod 169
+        None                                  if x == 0, 1, 2, 5, 8, 11, 12 mod 13
+
+    """
+    vals = [None]
+    cons = [start_condition]
+    values = iter(values)
+    for value in values:
+        if not (None in vals):
+            break
+        i = vals.index(None)
+        con = cons.pop(i)
+        vals.pop(i)
+        result = function(value, con)
+        if not isinstance(result, ConditionalValue):
+            result = [(result, con)]
+        for fval, fcon in result:
+            try:
+                i = vals.index(fval)
+                cons[i] = cons[i] | fcon
+            except ValueError:
+                vals.append(fval)
+                cons.append(fcon)
+    if not singleton and len(vals) == 1:
+        return values[0]
+    else:
+        return ConditionalValue(list(zip(vals, cons)))
         
 def conditional_product(*args):
     r"""Create a single ConditionalValue from multiple ConditionalValues.
