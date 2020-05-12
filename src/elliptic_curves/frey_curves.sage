@@ -104,7 +104,7 @@ $B \not\equiv 1$ modulo 4. We will use `Cp` to denote $C^p$::
     sage: E.does_decompose()
     True
     sage: E.newform_candidates(bad_primes=K.primes_above(2))
-    [q - 2*q^3 + O(q^6), q - 4*q^5 + O(q^6), q + 4*q^5 + O(q^6), q + 2*q^3 + O(q^6), q - 1/2*a4*q^3 + O(q^6)] if ('A', 'B') is 1 of 6 possibilities mod 4
+    [q - 2*q^3 + O(q^6), q - 4*q^5 + O(q^6), q + 4*q^5 + O(q^6), q + 2*q^3 + O(q^6), q + 1/2*a4*q^3 + O(q^6)] if ('A', 'B') is 1 of 6 possibilities mod 4
     [q - 2*q^5 + O(q^6)]                                                                                      if ('A', 'B') == (0, 3), (2, 3) mod 4
 
 AUTHORS:
@@ -151,6 +151,8 @@ from modular_method.number_fields.field_constructors import _write_as_im_gen_map
 from modular_method.number_fields.field_constructors import _concat_maps
 from modular_method.number_fields.galois_group import galois_field_change
 
+from modular_method.diophantine_equations.conditions import TextCondition
+from modular_method.diophantine_equations.conditions import TreeCondition
 from modular_method.diophantine_equations.conditions import ConditionalValue
 from modular_method.diophantine_equations.conditions import ConditionalExpression
 from modular_method.diophantine_equations.conditions import apply_to_conditional_value
@@ -1348,10 +1350,11 @@ class FreyCurve(EllipticCurve_generic):
 
         OUTPUT:
 
-        The the Frobenius element at the given prime to the given
-        power under the $l$-adic or mod $l$ reprentation assuming that
-        they are unramified. If this would depend on the parameters
-        will return a conditional value of possible values instead.
+        The algebraic number that is the Frobenius element at the
+        given prime to the given power under the $l$-adic or mod $l$
+        reprentation assuming that they are unramified. If this would
+        depend on the parameters will return a conditional value of
+        possible values instead.
 
         """
         pAdics = pAdicBase(self.definition_field(), prime)
@@ -2613,7 +2616,293 @@ class FreyQcurve(FreyCurve, Qcurve):
             done_levels.append((level, eps))
         return result
 
-    
+    def trace_of_frobenius(self, prime, power=1, splitting_map=0,
+                           condition=None, verbose=False, precision_cap=20):
+        r"""Compute the trace of a Frobenius element under the Galois
+        representation associated to this curve.
+
+        This function computes an algebraic number that, when cast to
+        the appropriate field, is equal to the trace of (a power of) a
+        Frobenius element of the given prime number under the Galois
+        representation associated to the given splitting map. It can
+        only compute this number in case
+
+        - This curve has good reduction at the prime number and the
+          reduction of the isogeny associated to the Frobenius element
+          is separable
+
+        - This curve has multiplicative reduction at the prime number
+          and the isogeny associated to the Frobenius element has
+          square free degree.
+
+        Given that this Q-curve decomposes over its decomposition
+        field, one can associate to each splitting map $\beta$ a
+        $\QQ$-simple abelian variety $A_\beta$ of $GL_2$-type which
+        has this Q-curve as a 1-dimensional quotient. For each finite
+        prime $\lambda$ in the image field of $\beta$, this $A_\beta$
+        defines a 2-dimensional $\lambda$-adic Galois representation
+        of the absolute Galois group of $\QQ$ that extends the
+        $l$-adic Galois representation of this curve over the
+        decomposition field, where $l$ is the prime number below
+        $\lambda$.
+
+        .. NOTE::
+
+        This method does not check whether the associated Galois
+        representation is unramified. If it is not, but the conditions
+        mentioned before are satisfied, this method will produce an
+        answer corresponding to a Frobenius element. Note that the
+        trace of a Frobenius element is in that case not unique.
+
+        Since the Galois representations over the rationals extend the
+        Galois representations of this curve over the decomposition
+        field, each Galois representation is unramified at a prime p
+        if its corresponding restriction to the decomposition field is
+        unramified and p is unramified in the decomposition field.
+
+        INPUT:
+
+        - ``prime`` -- A prime number for which the curve either has
+          good reduction and the reduction of the isogeny associated
+          to a frobenius element of this prime is separable, or for
+          which the curve has multiplicative reduction.
+
+        - ``power`` -- A strictly positive integer (default: 1). If
+          set to a value higher than 1 will compute the trace of the
+          Frobenius element to the given power instead of the
+          Frobenius element itself.
+
+        - ``splitting_map`` -- A non-negative integer smaller than the
+          number of splitting maps associated to this Q-curve
+          (default: 0). This indicates the splitting map associated to
+          the Galois representation for which the trace of Frobenius
+          should be computed.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
+
+        OUTPUT:
+
+        An algebraic number that, when cast to the correct field, is
+        the trace of a Frobenius element at `prime` to the power
+        `power` under the $\lambda$-adic or mod $\lambda$ Galois
+        representation associated to the splitting map given by
+        `splitting_map` for $\lambda$ not dividing `prime`. If this
+        would depend on the parameters will return a conditional value
+        of possible values instead.
+
+        """
+        if power > 1:
+            T = self.trace_of_frobenius(prime,
+                                        splitting_map=splitting_map,
+                                        condition=condition,
+                                        verbose=verbose,
+                                        precision_cap=precision_cap)
+            D = self.determinant_of_frobenius(prime,
+                                              splitting_map=splitting_map)
+            result = self._power_trace_formula(power)
+            return apply_to_conditional_value(lambda t: result(t, D), T)
+        
+        if condition is None:
+            condition = self._condition
+        if not self.does_decompose():
+            raise ValueError("This Q-curve must decompose for " +
+                             "the Galois representations over the " +
+                             "rationals to extend the Galois " +
+                             "representations over the decomposition " +
+                             "field.")
+        K = self.decomposition_field()
+        if self.decomposition_field() != K:
+            return self._over_Kdec().trace_of_frobenius(prime, power=power,
+                                                        splitting_map=splitting_map,
+                                                        condition=condition,
+                                                        verbose=verbose,
+                                                        precision_cap=precision_cap)
+        if prime.divides(K.absolute_discriminant()):
+            print("Warning: The decomposition field is ramified " +
+                  "at " + str(prime) + " and the Galois " +
+                  "representations over the rationals are therefore " +
+                  "probably not unramified at " + str(prime))
+        beta = self.splitting_map(splitting_map)
+
+        def compute_trace1(P, con1):
+            def compute_trace2(red_type, con2):
+                if red_type == None: # Good reduction
+                    return self._trace_of_frob_good(P, beta,
+                                                    condition,
+                                                    verbose,
+                                                    precision_cap)
+                elif red_type == 1 or red_type == -1: # Multiplicative reduction
+                    return self._trace_of_frob_mult(P, beta,
+                                                    condition,
+                                                    verbose,
+                                                    precision_cap)
+                else: # Additive reduction
+                    return None
+                
+            red_type = self.reduction_type(P, condition=con1,
+                                           verbose=verbose,
+                                           precision_cap=precision_cap)
+            return apply_to_conditional_value(compute_trace2, red_type,
+                                              use_condition=True,
+                                              default_condition=con1)
+        
+        result = conditional_over_values(compute_trace1,
+                                         K.primes_above(prime),
+                                         start_condition=condition)
+        for val, con in result:
+            if val == None:
+                raise ValueError("Trace of frobenius can not be " +
+                                 "computed in case " + str(con) +
+                                 " holds.")
+        return result
+
+    def _trace_of_frob_good(self, P, beta, condition, verbose,
+                            precision_cap):
+        r"""Implementation of meth:`trace_of_frobenius` in case of good reduction"""
+        # Setting up some stuff needed everywhere
+        K = self.definition_field()
+        G = K.galois_group()
+        Frob = G.artin_symbol(P)
+        sE = FreyCurve(self.galois_conjugate(Frob))
+        sP = Frob(P)
+        phi = self._phi_x[Frob], self._phi_y[Frob]
+        R = P.residue_field()
+        Rx.<x> = R[]
+        Rx = Rx.fraction_field()
+
+        # Setting up the isogeny between the right minimal
+        # models. Note that compute_trace1 and compute_trace2 will be
+        # called near the end once for each different value of Emin
+        # and sEmin respectively with the corresponding
+        # condition. They can be considered as loops here, but note
+        # that the final return value will be a combination of all
+        # return values in each iteration of these loops..
+        def compute_trace1(Emin, con1):
+            phi_min = Emin.isomorphism_to(self)
+            phi_min = _rational_maps_of_isomorphism(phi_min)
+            phi = phi[0](phi_min), phi[1](phi_min)
+            def compute_trace2(sEmin, con2):
+                sphi_min = sE.isomorphism_to(sEmin)
+                sphi_min = _rational_maps_of_isomorphism(sphi_min)
+                phi = sphi_min[0](phi), sphi_min[1](phi)
+
+                # Checking whether the reduction of the isogeny is
+                # separable
+                phi0 = (phi[0].numerator().change_ring(R) /
+                        phi[0].denominator().change_ring(R))
+                F = Rx(phi0(x, 0))
+                if F.derivative(x) == 0:
+                    return None # This will cause the function above
+                                # to try other primes or fail
+
+                # Defining variables needed for both p = 2 and p != 2
+                phi1 = (phi[1].numerator().change_ring(R) /
+                        phi[1].denominator().change_ring(R))
+                H = phi1(x, 0)
+                G = phi1(x, 1) - H
+                p = P.smallest_integer()
+                c1 = (F - x^p).numerator()
+
+                # Making a loop over the possible reductions of Emin
+                results = {}
+                T = con2.pAdic_tree(pAdics=pAdicBase(K, P).pAdics_below(self._R))
+                for node in T.nodes_at_level(1)[0]:
+                    a_invariants = [R(a(node.representative()))
+                                    for a in Emin.a_invariants()]
+                    Ered = EllipticCurve(a_invariants)
+                    
+                    # Computing number of points in the set
+                    # {P : phi P = Frob P}
+                    if p == 2:
+                        g = Ered.a1()*x + Ered.a3()
+                        h = (x^3 + Ered.a2()*x^2 + Ered.a4()*x +
+                             Ered.a6())
+                        c3 = (g*G*h + g*G*H + G^2*h + g^2*H + h^2 +
+                              H^2).numerator()
+                        c4 = (g - G).numerator()
+                        gc13 = gcd(c1, c3)
+                        gc134 = gcd(gc13, c4)
+                        gc134g = gcd(gc134, g)
+                        num = (1 + gc13.radical().degree() +
+                               gc134.radical().degree() -
+                               gc134g.radical().degree())
+                    else:
+                        R = (4*x^3 + Ered.b2()*x^2 + 2*Ered.b4()*x +
+                             Ered.b6())
+                        sEred = sEmin.reduction(sP)
+                        l = _scalar_of_rational_maps(phi0, phi1, Ered,
+                                                     sEred)
+                        c2 = (l * R^((p + 1)/2) -
+                              F.derivative(x) * R).numerator()
+                        num = (1 + 2 * gcd(c1, c2).radical().degree() -
+                               gcd(c1, R).radical().degree())
+
+                    # Computing a_p(E) and the final result
+                    apE = F.numerator().degree() + p - num
+                    result = beta(Frob)^(-1) * apE
+
+                    # Adding a result to the dictionary with its
+                    # corresponding tree
+                    if result in results:
+                        results[result] = results[result].merge(T)
+                    else:
+                        results[result] = T
+
+                # Turning the results dictionary into a value to
+                # return
+                return ConditionalValue([(r, TreeCondition(T))
+                                         for r, T in results.items()])
+
+            return apply_to_conditional_value(compute_trace2,
+                                              sE.minimal_model(P,
+                                                               condition=con1,
+                                                               verbose=verbose,
+                                                               precision_cap=precision_cap),
+                                              use_condition=True,
+                                              default_condition=con1)
+
+        return apply_to_conditional_value(compute_trace1,
+                                          self.minimal_model(P,
+                                                             condition=condition,
+                                                             verbose=verbose,
+                                                             precision_cap=precision_cap),
+                                          use_condition=True)
+
+    def _trace_of_frob_mult(self, P, beta, condition, verbose,
+                            precision_cap):
+        r"""Implementation of :meth:`trace_of_frobenius` in case of
+        multiplicative_reduction"""
+        K = self.definition_field()
+        G = K.galois_group()
+        Frob = G.artin_symbol(P)
+        if self.degree_map(Frob) != 1:
+            return None # The degree of the isogeny should be square
+                        # free, hence 1
+        p = P.smallest_integer()
+        long_text = "The condition that a" + str(p) + "E is "
+        short_text = "a" + str(p) + "E == "
+        result = beta(Frob)^(-1) * QQ(1 + p)
+        return ConditionalValue([(result, condition &
+                                  TextCondition(long_text + "+1",
+                                                short_text + "+1")),
+                                 (-result, condition &
+                                  TextCondition(long_text + "-1",
+                                                short_text + "-1"))])
             
     def _repr_(self):
         """Give a string representation of a Frey Q-curve.
