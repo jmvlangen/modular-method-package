@@ -3327,6 +3327,8 @@ pp        """
           is separable
 
         - This curve has multiplicative reduction at the prime number
+          and the isogeny associated to the Frobenius element has
+          square free degree.
 
         Given that this Q-curve decomposes over its decomposition
         field, one can associate to each splitting map $\beta$ a
@@ -3578,6 +3580,9 @@ pp        """
         G = L.galois_group()
         FrobQ = G.artin_symbol(Q)
         FrobP = galois_field_restrict(FrobQ, K, embedding=iota)
+        if self.degree_map(FrobP) != 1:
+            return None # The degree of the isogeny should be square
+                        # free, hence 1
         phix = self._phi_x[FrobP].numerator()
         phiy = self._phi_y[FrobP].numerator()
         x, y = phiy.parent().gens()
