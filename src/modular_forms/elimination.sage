@@ -65,6 +65,8 @@ AUTHORS:
 # ****************************************************************************
 import itertools
 
+from modular_method.elliptic_curves.Qcurves import Qcurve
+
 def _init_elimination_data(curves, newforms, condition):
     r"""Initialize the data used by the different elimination methods.
 
@@ -376,7 +378,8 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
         print("Comparing traces of frobenius at " + str(p) + " for " +
                str(len(newforms)) + " cases.")
     nE = len(curves)
-    fields = tuple(curve.definition_field() for curve in curves)
+    fields = tuple((QQ if isinstance(curve, Qcurve) else curve.definition_field())
+                   for curve in curves)
     primes = tuple((p if K == QQ else K.prime_above(p)) for K in fields)
     powers = tuple((1 if P in ZZ
                     else P.residue_class_degree() * P.ramification_index())
