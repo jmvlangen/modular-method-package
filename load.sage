@@ -1,18 +1,11 @@
-load("src/diophantine_equations/conditions.sage")
-load("src/diophantine_equations/prime_power.sage")
-load('src/elliptic_curves/Qcurves.sage')
-load('src/elliptic_curves/frey_curves.sage')
-load('src/elliptic_curves/twist.sage')
-load('src/elliptic_curves/tates_algorithm.sage')
-load("src/group_cohomology/calculations.sage")
-load("src/Lfunctions/Euler_factors.sage")
-load("src/linear_algebra/solver.sage")
-load('src/modular_forms/elimination.sage')
-load('src/modular_forms/newform_wrapper.sage')
-load('src/number_fields/dirichlet_characters.sage')
-load('src/number_fields/field_constructors.sage')
-load('src/number_fields/galois_group.sage')
-load('src/polynomial/symmetric_polynomials.sage')
-load('src/padics/pAdic_base.sage')
-load('src/padics/pAdic_solver.sage')
-load('src/padics/pAdic_tree.sage')
+from modular_method.diophantine_equations.conditions import CoprimeCondition
+from modular_method.diophantine_equations.conditions import CongruenceCondition
+from modular_method.diophantine_equations.conditions import PolynomialCondition
+from modular_method.diophantine_equations.conditions import PowerCondition
+from modular_method.diophantine_equations.conditions import OrderCondition
+from modular_method.elliptic_curves.Qcurves import Qcurve
+from modular_method.elliptic_curves.frey_curves import FreyCurve
+from modular_method.elliptic_curves.frey_curves import FreyQcurve
+from modular_method.modular_forms.elimination import eliminate_by_trace
+from modular_method.modular_forms.elimination import eliminate_by_traces
+from modular_method.modular_forms.elimination import kraus_method
