@@ -76,6 +76,16 @@ from modular_method.modular_forms.newform_wrapper import get_newforms
 
 from modular_method.polynomial.symmetric_polynomials import polynomial_to_symmetric
 
+def _rational_maps_of_urst(u, r, s, t):
+    r"""Give the rational maps corresponding to a change of Weierstrass
+    model"""
+    R = u.parent()
+    Rxy = PolynomialRing(R, names=["x", "y"]).fraction_field()
+    x, y = Rxy.gens()
+    F = x - r
+    G = y - s*F - t
+    return (F/u^2, G/u^3)
+
 def _rational_maps_of_isomorphism(phi):
     r"""Give the rational maps corresponding to an isomorphism of Elliptic
     curves
@@ -100,13 +110,8 @@ def _rational_maps_of_isomorphism(phi):
         (x + 1, x + y + 2)
 
     """
-    u, r, s, t = phi.tuple()
-    R = u.parent()
-    Rxy = PolynomialRing(R, names=["x", "y"]).fraction_field()
-    x, y = Rxy.gens()
-    F = x - r
-    G = y - s*F - t
-    return (F/u^2, G/u^3)
+    urst = phi.tuple()
+    return _rational_maps_of_urst(*urst)
 
 def _scalar_of_rational_maps(x_map, y_map, dom, codom):
     r"""Return the scalar associated to an isogeny given by rational maps
