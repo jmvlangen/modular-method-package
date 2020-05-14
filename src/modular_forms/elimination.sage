@@ -65,7 +65,23 @@ AUTHORS:
 # ****************************************************************************
 import itertools
 
+from sage.arith.functions import lcm
+from sage.arith.misc import gcd
+
+from sage.misc.misc_c import prod as product
+
+from modular_method.padics.pAdic_base import pAdicBase
+
 from modular_method.elliptic_curves.Qcurves import Qcurve
+from modular_method.elliptic_curves.frey_curves import FreyCurve
+
+from modular_method.diophantine_equations.conditions import CongruenceCondition
+from modular_method.diophantine_equations.conditions import TreeCondition
+from modular_method.diophantine_equations.conditions import ConditionalValue
+from modular_method.diophantine_equations.conditions import conditional_product
+from modular_method.diophantine_equations.conditions import apply_to_conditional_value
+
+from sage.all import ZZ, QQ, Integer, Integers
 
 def _init_elimination_data(curves, newforms, condition):
     r"""Initialize the data used by the different elimination methods.

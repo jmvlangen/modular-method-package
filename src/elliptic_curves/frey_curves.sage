@@ -122,7 +122,10 @@ AUTHORS:
 # (at your option) any later version.
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
+from copy import copy
+
 from sage.rings.polynomial.polynomial_ring import is_PolynomialRing
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.polynomial.multi_polynomial_ring_base import is_MPolynomialRing
 from sage.rings.morphism import RingHomomorphism_from_base
 
@@ -138,6 +141,7 @@ from sage.rings.number_field.number_field import is_NumberField
 from sage.all import ZZ, QQ, Integer
 from sage.misc.cachefunc import cached_method
 from sage.arith.functions import lcm
+from sage.arith.misc import gcd
 
 from sage.misc.misc_c import prod as product
 
@@ -149,6 +153,7 @@ from modular_method.padics.pAdic_tree import pAdicTree
 
 from modular_method.number_fields.field_constructors import _write_as_im_gen_map
 from modular_method.number_fields.field_constructors import _concat_maps
+from modular_method.number_fields.field_constructors import write_as_extension
 from modular_method.number_fields.galois_group import galois_field_change
 
 from modular_method.diophantine_equations.conditions import TextCondition
@@ -156,6 +161,7 @@ from modular_method.diophantine_equations.conditions import TreeCondition
 from modular_method.diophantine_equations.conditions import ConditionalValue
 from modular_method.diophantine_equations.conditions import ConditionalExpression
 from modular_method.diophantine_equations.conditions import apply_to_conditional_value
+from modular_method.diophantine_equations.conditions import conditional_over_values
 
 from modular_method.modular_forms.newform_wrapper import get_newforms
 
