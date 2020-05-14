@@ -136,8 +136,13 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
         - 'minimal_model' -> Only calculate the minimal model for this
           elliptic curve
 
+        - 'isomorphism' -> Only calculate the change in Weierstrass
+          model required to change the given curve into its minimal
+          model and the change in Weierstrass model to change the
+          minimal model into the given curve.
+
       By default the function computes all these quantities, but in
-      this way they can be selection. The function will skip over all
+      this way they can be selected The function will skip over all
       computations that are not required to determine those quantities
       so this might save time.
 
@@ -193,6 +198,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 1")
                     _tate_step1(case['E'], S, pAdics, case['T'], case['E0'],
+                                case['urst'], case['urst0'],
                                 variables=variables, result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
@@ -200,6 +206,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing the transformation for step 2"  )
                     _tate_step2_t(case['E'], S, pAdics, case['T'], case['E0'],
+                                  case['urst'], case['urst0'],
                                   variables=variables, result=newCases,
                                   verbose=(verbose-1 if verbose>0 else verbose),
                                   precision_cap=precision_cap)
@@ -207,6 +214,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 2")
                     _tate_step2(case['E'], S, pAdics, case['T'], case['E0'],
+                                case['urst'], case['urst0'],
                                 variables=variables, result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
@@ -214,6 +222,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 3")
                     _tate_step3(case['E'], S, pAdics, case['T'], case['E0'],
+                                case['urst'], case['urst0'],
                                 variables=variables, result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
@@ -221,6 +230,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 4")
                     _tate_step4(case['E'], S, pAdics, case['T'], case['E0'],
+                                case['urst'], case['urst0'],
                                 variables=variables, result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
@@ -228,6 +238,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 5")
                     _tate_step5(case['E'], S, pAdics, case['T'], case['E0'],
+                                case['urst0'],case['urst'],
                                 variables=variables, result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
@@ -235,6 +246,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing the transformation for step 6")
                     _tate_step6_t(case['E'], S, pAdics, case['T'], case['E0'],
+                                  case['urst'], case['urst0'],
                                   variables=variables, result=newCases,
                                   verbose=(verbose-1 if verbose>0 else verbose),
                                   precision_cap=precision_cap)
@@ -242,6 +254,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 6")
                     _tate_step6(case['E'], S, pAdics, case['T'], case['E0'],
+                                case['urst'],
                                 variables=variables, result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
@@ -249,6 +262,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 7")
                     _tate_step7(case['E'], S, pAdics, case['T'], case['E0'],
+                                case['urst'], case['urst0'],
                                 case, only_calculate, variables=variables,
                                 result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
@@ -258,8 +272,10 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if b == 0:
                         if verbose > 0:
                             print("Performing the transformation for step 7sub")
-                        _tate_step7sub_t(case['E'], S, pAdics, case['T'],
-                                         case['E0'], n, variables=variables,
+                        _tate_step7sub_t(case['E'], S, pAdics,
+                                         case['T'], case['E0'],
+                                         case['urst'], case['urst0'],
+                                         n, variables=variables,
                                          result=newCases,
                                          verbose=(verbose-1 if verbose>0
                                                   else verbose),
@@ -267,8 +283,10 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     else:
                         if verbose > 0:
                             print("Performing step 7sub")
-                        _tate_step7sub(case['E'], S, pAdics, case['T'],
-                                       case['E0'], n, only_calculate,
+                        _tate_step7sub(case['E'], S, pAdics,
+                                       case['T'], case['E0'],
+                                       case['urst'], case['urst0'], n,
+                                       only_calculate,
                                        variables=variables,
                                        result=newCases,
                                        verbose=(verbose-1 if verbose>0
@@ -278,6 +296,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing the transformation for step 8")
                     _tate_step8_t(case['E'], S, pAdics, case['T'], case['E0'],
+                                  case['urst'], case['urst0'],
                                   variables=variables, result=newCases,
                                   verbose=(verbose-1 if verbose>0 else verbose),
                                   precision_cap=precision_cap)
@@ -285,6 +304,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 8")
                     _tate_step8(case['E'], S, pAdics, case['T'], case['E0'],
+                                case['urst'], case['urst0'],
                                 variables=variables, result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
@@ -292,6 +312,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing the transformation for step 9")
                     _tate_step9_t(case['E'], S, pAdics, case['T'], case['E0'],
+                                  case['urst'], case['urst0'],
                                   variables=variables, result=newCases,
                                   verbose=(verbose-1 if verbose>0 else verbose),
                                   precision_cap=precision_cap)
@@ -299,6 +320,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 9")
                     _tate_step9(case['E'], S, pAdics, case['T'], case['E0'],
+                                case['urst'], case['urst0'],
                                 variables=variables, result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
@@ -306,6 +328,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 10")
                     _tate_step10(case['E'], S, pAdics, case['T'], case['E0'],
+                                 case['urst'], case['urst0'],
                                  variables=variables, result=newCases,
                                  verbose=(verbose-1 if verbose>0 else verbose),
                                  precision_cap=precision_cap)
@@ -313,6 +336,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 11")
                     _tate_step11(case['E'], S, pAdics, case['T'], case['E0'],
+                                 case['urst'], case['urst0'],
                                  variables=variables, result=newCases,
                                  verbose=(verbose-1 if verbose>0 else verbose),
                                  precision_cap=precision_cap)
@@ -613,7 +637,7 @@ def _get_number_of_roots_cases(poly_list, pAdics, T, name, general_case,
         result.append(case)
     return result
     
-def _tate_step1(E, S, pAdics, T, E0, **kwds):
+def _tate_step1(E, S, pAdics, T, E0, urst, urst0, **kwds):
     r"""Perform step 1 of Tate's algorithm.
 
     Stop if the valuation of the discriminant of the elliptic curve is
@@ -645,6 +669,12 @@ def _tate_step1(E, S, pAdics, T, E0, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
@@ -664,12 +694,14 @@ def _tate_step1(E, S, pAdics, T, E0, **kwds):
     would give such a case.
 
     """
-    case_big = dict(E=E, next_step=2, E0=E0)
-    case_small = dict(E=E, vDelta=0, m=1, f=0, c=1, KS="I0", E0=E0) 
+    case_big = dict(E=E, next_step=2, E0=E0, urst=urst, urst0=urst0)
+    case_small = dict(E=E, vDelta=0, m=1, f=0, c=1, KS="I0", E0=E0,
+                      urst=urst, urst0=urst0) 
     return _get_two_cases_invariant(S(E.discriminant()), pAdics, T, 1,
                                     case_big, case_small, **kwds)
     
-def _tate_step2_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
+def _tate_step2_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
+                  result=[], **kwds):
     r"""Perform the transformation necessary before step 2 of Tate's
     algorithm.
 
@@ -693,6 +725,12 @@ def _tate_step2_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
       of the variables of `S`
 
     - ``E0`` -- The current candidate of a minimal model for `E`
+
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
@@ -798,10 +836,12 @@ def _tate_step2_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
         xn = F.lift(point[0])
         yn = F.lift(point[1])
         En = E.rst_transform(xn,0,yn)
-        result.append(dict(next_step=2+1/2, T=Tn, E=En, E0=E0))            
+        result.append(dict(next_step=2+1/2, T=Tn, E=En, E0=E0,
+                           urst=_urst_combine(urst, (1, xn, 0, yn)),
+                           urst0=urst0))
     return result
     
-def _tate_step2(E, S, pAdics, T, E0, **kwds):
+def _tate_step2(E, S, pAdics, T, E0, urst, urst0, **kwds):
     r"""Perform step 2 of Tate's algorithm.
 
     Stop if the valuation of the invariant $b_2$ of the elliptic curve
@@ -825,6 +865,12 @@ def _tate_step2(E, S, pAdics, T, E0, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
@@ -844,12 +890,13 @@ def _tate_step2(E, S, pAdics, T, E0, **kwds):
     would give such a case.
 
     """
-    case_big = dict(E=E, next_step=3, E0=E0)
-    case_small = dict(E=E, f=1, KS="In", E0=E0) 
+    case_big = dict(E=E, next_step=3, E0=E0, urst=urst, urst0=urst0)
+    case_small = dict(E=E, f=1, KS="In", E0=E0, urst=urst,
+                      urst0=urst0) 
     return _get_two_cases_invariant(S(E.b2()), pAdics, T, 1, case_big,
                                     case_small, **kwds)
 
-def _tate_step3(E, S, pAdics, T, E0, **kwds):
+def _tate_step3(E, S, pAdics, T, urst, urst0, E0, **kwds):
     r"""Perform step 3 of Tate's algorithm.
 
     Stop if the valuation of the invariant $a_6$ of the elliptic curve
@@ -877,6 +924,12 @@ def _tate_step3(E, S, pAdics, T, E0, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
@@ -896,8 +949,9 @@ def _tate_step3(E, S, pAdics, T, E0, **kwds):
     would give such a case.
 
     """
-    case_big = dict(E=E, next_step=4, E0=E0)
-    case_small = dict(E=E, KS="II", m=1, c=1, E0=E0)
+    case_big = dict(E=E, next_step=4, E0=E0, urst=urst, urst0=urst0)
+    case_small = dict(E=E, KS="II", m=1, c=1, E0=E0, urst=urst,
+                      urst0=urst0)
     char = pAdics.characteristic()
     if char != 2 and char != 3:
         case_small['vDelta'] = 2
@@ -905,7 +959,7 @@ def _tate_step3(E, S, pAdics, T, E0, **kwds):
     return _get_two_cases_invariant(S(E.a6()), pAdics, T, 2, case_big,
                                     case_small, **kwds)
     
-def _tate_step4(E, S, pAdics, T, E0, **kwds):
+def _tate_step4(E, S, pAdics, T, E0, urst, urst0, **kwds):
     r"""Perform step 4 of Tate's algorithm.
 
     Stop if the valuation of the invariant $b_8$ of the elliptic curve
@@ -933,6 +987,12 @@ def _tate_step4(E, S, pAdics, T, E0, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
@@ -952,8 +1012,9 @@ def _tate_step4(E, S, pAdics, T, E0, **kwds):
     would give such a case.
 
     """
-    case_big = dict(E=E, next_step=5, E0=E0)
-    case_small = dict(E=E, KS="III", m=2, c=2, E0=E0)
+    case_big = dict(E=E, next_step=5, E0=E0, urst=urst, urst0=urst0)
+    case_small = dict(E=E, KS="III", m=2, c=2, E0=E0, urst=urst,
+                      urst0=urst0)
     char = pAdics.characteristic()
     if char != 2:
         case_small['vDelta'] = 3
@@ -961,7 +1022,7 @@ def _tate_step4(E, S, pAdics, T, E0, **kwds):
     return _get_two_cases_invariant(S(E.b8()), pAdics, T, 3, case_big,
                                     case_small, **kwds)
 
-def _tate_step5(E, S, pAdics, T, E0, **kwds):
+def _tate_step5(E, S, pAdics, T, E0, urst, urst0, **kwds):
     r"""Perform step 5 of Tate's algorithm.
 
     Stop if the valuation of the invariant $b_6$ of the elliptic curve
@@ -987,6 +1048,12 @@ def _tate_step5(E, S, pAdics, T, E0, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
@@ -1006,8 +1073,9 @@ def _tate_step5(E, S, pAdics, T, E0, **kwds):
     would give such a case.
 
     """
-    case_big = dict(E=E, next_step=6, E0=E0)
-    case_small = dict(E=E, KS="IV", m=3, E0=E0)
+    case_big = dict(E=E, next_step=6, E0=E0, urst=urst, urst0=urst0)
+    case_small = dict(E=E, KS="IV", m=3, E0=E0, urst=urst,
+                      urst0=urst0)
     char = pAdics.characteristic()
     if char != 3:
         case_small['vDelta'] = 4
@@ -1015,7 +1083,8 @@ def _tate_step5(E, S, pAdics, T, E0, **kwds):
     return _get_two_cases_invariant(S(E.b6()), pAdics, T, 3,
                                    case_big, case_small, **kwds)
 
-def _tate_step6_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
+def _tate_step6_t(E, S, pAdics, T, E0, urst, usrt0, verbose=False,
+                  result=[], **kwds):
     r"""Perform the transformation necessary before step 6 of Tate's
     algorithm.
 
@@ -1041,6 +1110,12 @@ def _tate_step6_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
       of the variables of `S`
 
     - ``E0`` -- The current candidate of a minimal model for `E`
+
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
@@ -1118,12 +1193,15 @@ def _tate_step6_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
     if verbose > 0:
         print("Performing %d transformations"%len(changeDict))
     for (alphaBetaPair, Tn) in changeDict.items():
-        En = E.rst_transform(0, F.lift(alphaBetaPair[0]),
-                             F.lift(alphaBetaPair[1])*pi)
-        result.append(dict(next_step=6+1/2, T=Tn, E=En, E0=E0))
+        s = F.lift(alphaBetaPair[0])
+        t = F.lift(alphaBetaPair[1]*pi)
+        En = E.rst_transform(0, s, t)
+        result.append(dict(next_step=6+1/2, T=Tn, E=En, E0=E0,
+                           urst=_urst_combine(1, 0, s, t),
+                           urst0=urst0))
     return result
 
-def _tate_step6(E, S, pAdics, T, E0, **kwds):
+def _tate_step6(E, S, pAdics, T, E0, urst, urst0, **kwds):
     r"""Perform step 6 of Tate's algorithm.
 
     Stop if the polynomial .. MATH::
@@ -1161,6 +1239,12 @@ def _tate_step6(E, S, pAdics, T, E0, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
@@ -1180,8 +1264,9 @@ def _tate_step6(E, S, pAdics, T, E0, **kwds):
     would give such a case.
 
     """
-    case_big = dict(E=E, next_step=7, E0=E0)
-    case_small = dict(E=E, KS="I0*", m=5, E0=E0)
+    case_big = dict(E=E, next_step=7, E0=E0, urst=urst, urst0=urst0)
+    case_small = dict(E=E, KS="I0*", m=5, E0=E0, urst=urst,
+                      urst0=urst0)
     char = pAdics.characteristic()
     if char != 2:
         case_small['vDelta'] = 6
@@ -1191,7 +1276,8 @@ def _tate_step6(E, S, pAdics, T, E0, **kwds):
     return _get_two_cases_invariant(D, pAdics, T, 7, case_big, case_small,
                                     **kwds)
         
-def _tate_step7(E, S, pAdics, T, E0, case, restrictions, **kwds):
+def _tate_step7(E, S, pAdics, T, E0, urst, urst0, case, restrictions,
+                **kwds):
     r"""Perform step 7 of Tate's algorithm.
 
     Stop if the polynomial .. MATH::
@@ -1230,6 +1316,12 @@ def _tate_step7(E, S, pAdics, T, E0, case, restrictions, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
@@ -1250,13 +1342,15 @@ def _tate_step7(E, S, pAdics, T, E0, case, restrictions, **kwds):
     such a case.
 
     """
-    case_big = dict(E=E, next_step=8, E0=E0)
+    case_big = dict(E=E, next_step=8, E0=E0, urst=urst, urst0=urst0)
     if pAdics.characteristic() == 2 or \
        'type' in restrictions or \
        _should_calculate_c(case, restrictions):
-        case_small = dict(E=E, next_step=7+_encode_quotient(1,0), E0=E0)
+        case_small = dict(E=E, next_step=7+_encode_quotient(1,0),
+                          E0=E0, urst=urst, urst0=urst0)
     else:
-        case_small = dict(E=E, KS="In*", f=2, E0=E0)
+        case_small = dict(E=E, KS="In*", f=2, E0=E0, urst=urst,
+                          urst0=urst0)
     return _get_two_cases_invariant(S(3*E.a4() - (E.a2())^2), pAdics, T, 3,
                                    case_big, case_small, **kwds)
 
@@ -1276,7 +1370,8 @@ def _decode_quotient(q):
         b = 1   
     return n , b
             
-def _tate_step7sub_t(E, S, pAdics, T, E0, n, verbose=False, result=[], **kwds):
+def _tate_step7sub_t(E, S, pAdics, T, E0, urst, urst0, n,
+                     verbose=False, result=[], **kwds):
     r"""Perform the transformation necessary before a step in the
     subalgorithm of step 7 of Tate's algorithm.
 
@@ -1302,6 +1397,12 @@ def _tate_step7sub_t(E, S, pAdics, T, E0, n, verbose=False, result=[], **kwds):
       of the variables of `S`
 
     - ``E0`` -- The current candidate of a minimal model for `E`
+
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
 
     - ``n`` -- The number of the step in the subalgorithm that will be
       performed after this transformation.
@@ -1419,17 +1520,22 @@ def _tate_step7sub_t(E, S, pAdics, T, E0, n, verbose=False, result=[], **kwds):
         print("Performing %d transformations."%len(changeDict))
     for (change, Tn) in changeDict.items():
         if n==1:
-            En = E.rst_transform(pi * F.lift(change), 0, 0)
+            r = pi * F.lift(change)
+            t = 0
         elif is_odd(n):
-            En = E.rst_transform(pi^k * F.lift(change), 0, 0)
+            r = pi^k * F.lift(change)
+            t = 0
         else:
-            En = E.rst_transform(0, 0, pi^k * F.lift(change))
-        result.append(dict(next_step=7 + _encode_quotient(n ,1), T=Tn, E=En,
-                           E0=E0))
+            r = 0
+            t = pi^k * F.lift(change)
+        En = E.rst_transform(r, 0, t)
+        result.append(dict(next_step=7 + _encode_quotient(n ,1), T=Tn,
+                           E=En, E0=E0, urst0=urst0,
+                           urst=_urst_combine(urst, (1, r, 0, t))))
         
     return result
         
-def _tate_step7sub(E, S, pAdics, T, E0, n, restrictions, **kwds):
+def _tate_step7sub(E, S, pAdics, T, E0, urst, urst0, n, restrictions, **kwds):
     r"""Perform a step in the subalgorithm of step 7 of Tate's algorithm.
 
     In step $n$ of this subalgorithm we have different stopping
@@ -1477,6 +1583,12 @@ def _tate_step7sub(E, S, pAdics, T, E0, n, restrictions, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``n`` -- The number of the step of the subalgorithm that will be
       performed
 
@@ -1504,8 +1616,10 @@ def _tate_step7sub(E, S, pAdics, T, E0, n, restrictions, **kwds):
         case = dict(E=E, KS="In*", E0=E0)
         return _get_cases_invariant(S(E.c4()), pAdics, T, 'f', case,
                                     **kwds)
-    case_big = dict(E=E, next_step=7+_encode_quotient(n+1,0), E0=E0)
-    case_small = dict(E=E, KS="I"+str(n)+"*", m=5+n, E0=E0)
+    case_big = dict(E=E, next_step=7+_encode_quotient(n+1,0), E0=E0,
+                    urst=urst, urst0=urst0)
+    case_small = dict(E=E, KS="I"+str(n)+"*", m=5+n, E0=E0, urst=urst,
+                      urst0=urst0)
     if is_odd(n):
         return _get_two_cases_invariant(S(E.a3()^2 + 4*E.a6()), pAdics, T,
                                         n + 4, case_big, case_small, **kwds)
@@ -1513,7 +1627,8 @@ def _tate_step7sub(E, S, pAdics, T, E0, n, restrictions, **kwds):
         return _get_two_cases_invariant(S(E.a4()^2 - 4*E.a2()*E.a6()), pAdics,
                                         T, n + 5, case_big, case_small, **kwds)
      
-def _tate_step8_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
+def _tate_step8_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
+                  result=[], **kwds):
     r"""Perform the transformation necessary before step 8 of Tate's
     algorithm.
 
@@ -1538,6 +1653,12 @@ def _tate_step8_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
       of the variables of `S`
 
     - ``E0`` -- The current candidate of a minimal model for `E`
+
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
@@ -1566,8 +1687,11 @@ def _tate_step8_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
     if F.characteristic() != 3:
         # If the characteristic is not 3,
         # the transformation is always the same
-        result.append(dict(next_step=8+1/2, T=T, E0=E0, 
-                           E=E.rst_transform(-E.a2()*F.lift(F(3)^(-1)), 0, 0)))
+        r = -E.a2() * F.lift(F(3)^(-1))
+        result.append(dict(next_step=8+1/2, T=T, E0=E0,
+                           E=E.rst_transform(r, 0, 0),
+                           urst=_urst_combine(urst, (1, r, 0, 0)),
+                           urst0=urst0))
     else:
         # In characteristic 3
         # Find the integer s such that a^s is the cube root of a
@@ -1597,12 +1721,15 @@ def _tate_step8_t(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
         if verbose > 0:
             print("Performing %d transformations."%len(changeDict))
         for (change, Tn) in changeDict.items():
-            En = E.rst_transform(-pi * F.lift(change), 0, 0)
-            result.append(dict(next_step=8+1/2, T=Tn, E=En, E0=E0))
+            r = -pi * F.lift(change)
+            En = E.rst_transform(r, 0, 0)
+            result.append(dict(next_step=8+1/2, T=Tn, E=En, E0=E0,
+                               urst=_urst_combine(urst, (1, r, 0, 0)),
+                               urst0=urst0))
         
     return result
             
-def _tate_step8(E, S, pAdics, T, E0, **kwds):
+def _tate_step8(E, S, pAdics, T, E0, urst, urst0, **kwds):
     r"""Perform step 8 of Tate's algorithm.
 
     Stop if the polynomial .. MATH::
@@ -1635,6 +1762,12 @@ def _tate_step8(E, S, pAdics, T, E0, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
@@ -1654,8 +1787,9 @@ def _tate_step8(E, S, pAdics, T, E0, **kwds):
     would give such a case.
 
     """
-    case_big = dict(E=E, next_step=9, E0=E0)
-    case_small = dict(E=E, KS="IV*", m=7, E0=E0)
+    case_big = dict(E=E, next_step=9, E0=E0, urst=urst, urst0=urst0)
+    case_small = dict(E=E, KS="IV*", m=7, E0=E0, urst=urst,
+                      urst0=urst0)
     char = pAdics.characteristic()
     if char != 3:
         case_small['vDelta'] = 8
@@ -1663,8 +1797,8 @@ def _tate_step8(E, S, pAdics, T, E0, **kwds):
     return _get_two_cases_invariant(S( ( E.a3() )^2 + 4 * E.a6() ), pAdics, T,
                                    5, case_big, case_small, **kwds)
         
-def _tate_step9_t(E, S, pAdics, T, E0, verbose=False, result=[],
-                                **kwds):
+def _tate_step9_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
+                  result=[], **kwds):
     r"""Perform the transformation necessary before step 9 of Tate's
     algorithm.
 
@@ -1689,6 +1823,12 @@ def _tate_step9_t(E, S, pAdics, T, E0, verbose=False, result=[],
       of the variables of `S`
 
     - ``E0`` -- The current candidate of a minimal model for `E`
+
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
@@ -1717,8 +1857,11 @@ def _tate_step9_t(E, S, pAdics, T, E0, verbose=False, result=[],
     if F.characteristic() != 2:
         # If the characteristic is not 2
         # the transformation is always the same
+        t = -E.a3() * F.lift(F(2)^(-1))
         result.append(dict(next_step=9+1/2, T=T, E0=E0,
-                           E=E.rst_transform(0, 0, -E.a3()*F.lift(F(2)^(-1)))))
+                           E=E.rst_transform(0, 0, t),
+                           urst=_urst_combine(urst, (1, 0, 0, t)),
+                           urst0=urst0))
     else:
         # In characteristic 2
         # Determine the integers s such that a^s is the square root of a
@@ -1750,12 +1893,15 @@ def _tate_step9_t(E, S, pAdics, T, E0, verbose=False, result=[],
         if verbose > 0:
             print("Performing %d transformations."%len(changeDict))
         for (change, Tn) in changeDict.items():
-            En = E.rst_transform(0, 0, -pi^2 * F.lift(change))
-            result.append(dict(next_step=9+1/2, T=Tn, E=En, E0=E0))
+            t = -pi^2 * F.lift(change)
+            En = E.rst_transform(0, 0, t)
+            result.append(dict(next_step=9+1/2, T=Tn, E=En, E0=E0,
+                               urst=_urst_combine(urst, (1, 0, 0, t)),
+                               urst0=urst0))
         
     return result
             
-def _tate_step9(E, S, pAdics, T, E0, **kwds):
+def _tate_step9(E, S, pAdics, T, E0, urst, urst0, **kwds):
     r"""Perform step 9 of Tate's algorithm.
 
     Stop if the valuation of the invariant $a_4$ of the elliptic curve
@@ -1783,6 +1929,12 @@ def _tate_step9(E, S, pAdics, T, E0, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
@@ -1802,8 +1954,9 @@ def _tate_step9(E, S, pAdics, T, E0, **kwds):
     would give such a case.
 
     """
-    case_big = dict(E=E, next_step=10, E0=E0)
-    case_small = dict(E=E, KS="III*", m=8, c=2, E0=E0)
+    case_big = dict(E=E, next_step=10, E0=E0, urst=urst, urst0=urst0)
+    case_small = dict(E=E, KS="III*", m=8, c=2, E0=E0, urst=urst,
+                      urst0=urst0)
     char = pAdics.characteristic()
     if char != 2:
         case_small['vDelta'] = 9
@@ -1811,7 +1964,7 @@ def _tate_step9(E, S, pAdics, T, E0, **kwds):
     return _get_two_cases_invariant(S( E.a4() ), pAdics, T, 4, case_big,
                                     case_small, **kwds)
             
-def _tate_step10(E, S, pAdics, T, E0, **kwds):
+def _tate_step10(E, S, pAdics, T, E0, urst, urst0, **kwds):
     r"""Perform step 10 of Tate's algorithm.
 
     Stop if the valuation of the invariant $a_6$ of the elliptic curve
@@ -1839,6 +1992,12 @@ def _tate_step10(E, S, pAdics, T, E0, **kwds):
 
     - ``E0`` -- The current candidate of a minimal model for `E`
 
+    - ``urst`` -- The change in Weierstrass model to get from the
+      original curve to `E`
+    
+    - ``urst0`` -- The change in Weierstrass model to get from the
+      original curve to `E0`
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
@@ -1858,8 +2017,9 @@ def _tate_step10(E, S, pAdics, T, E0, **kwds):
     would give such a case.
 
     """
-    case_big = dict(E=E, next_step=11, E0=E0)
-    case_small = dict(E=E, KS="II*", m=9, c=1, E0=E0)
+    case_big = dict(E=E, next_step=11, E0=E0, urst=urst, urst0=urst0)
+    case_small = dict(E=E, KS="II*", m=9, c=1, E0=E0, urst=urst,
+                      urst0=urst0)
     char = pAdics.characteristic()
     if char != 2 and char != 3:
         case_small['vDelta'] = 10
@@ -1867,7 +2027,8 @@ def _tate_step10(E, S, pAdics, T, E0, **kwds):
     return _get_two_cases_invariant(S(E.a6()), pAdics, T, 6,
                                    case_big, case_small, **kwds)
                                
-def _tate_step11(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
+def _tate_step11(E, S, pAdics, T, E0, urst=urst, urst0=urst0,
+                 verbose=False, result=[], **kwds):
     r"""Perform step 1 of Tate's algorithm.
 
     Rescale the curve and start over at step 1.
@@ -1913,7 +2074,9 @@ def _tate_step11(E, S, pAdics, T, E0, verbose=False, result=[], **kwds):
     a4 = S(E.a4()/(pi^4))
     a6 = S(E.a6()/(pi^6))
     E = EllipticCurve([a1,a2,a3,a4,a6])
-    result.append(dict(next_step=1, T=T, E=E, E0=E))
+    urst=_urst_combine(urst, (pi, 0, 0, 0))
+    result.append(dict(next_step=1, T=T, E=E, E0=E, urst=urst,
+                       urst0=urst))
     return result
     
 def _should_calculate_vDelta(case, restrictions):
@@ -2410,11 +2573,15 @@ def _tate_finish(case, restrictions, result=[], variables=None, **kwds):
                 red_type = -1
         else:
             red_type = 0
+        R = case['E0'].base_ring()
+        urst = tuple(R(x) for x in case['urst0'])
+        urst_inv = tuple(R(x) for x in _urst_invert(case['urst0']))
         myresult = FreyCurveLocalData(case['E0'],
-                                      case['T'].pAdics().prime_ideal(), f,
-                                      case['vDelta'],
-                                      KodairaSymbol(case['KS']), case['c'],
-                                      red_type)
+                                      case['T'].pAdics().prime_ideal(),
+                                      f, case['vDelta'],
+                                      KodairaSymbol(case['KS']),
+                                      case['c'], red_type, urst,
+                                      urst_inv(case['urst0']))
     else:
         myresult = []
         for r in restrictions:
@@ -2437,6 +2604,12 @@ def _tate_finish(case, restrictions, result=[], variables=None, **kwds):
                 myresult.append(KodairaSymbol(case['KS']))
             if r == 'minimal_model':
                 myresult.append(case['E0'])
+            if r == 'isomorphism':
+                R = case['E0'].base_ring()
+                urst = tuple(R(x) for x in case['urst0'])
+                urst_inv = tuple(R(x) for x in
+                                 _urst_invert(case['urst0']))
+                myresult.append((urst, urst_inv))
     result.append((myresult, tree))
     return result
            
@@ -2525,7 +2698,8 @@ def _init_initial_values(initial_values, pAdics, variables):
     return initial_values
     
 def _init_cases(T, E):
-    firstCase = dict(next_step=1, T=T.root(), E=E, E0=E)
+    firstCase = dict(next_step=1, T=T.root(), E=E, E0=E,
+                     urst=(1, 0, 0, 0), urst0=(1, 0, 0, 0))
     return [firstCase], []
     
 def _init_str_list(str_list):
@@ -2535,3 +2709,43 @@ def _init_str_list(str_list):
         if not isinstance(s, str):
             raise ValueError("%s is not a string."%(s,))
     return str_list
+
+def _urst_combine(urst1, urst2):
+    r"""Combine two changes of a Weierstrass model into one
+
+    INPUT:
+
+    - ``urst1`` -- A tuple describing the first change in Weierstrass
+      model
+    
+    - ``urst2`` -- A tuple describing the second change in Weierstrass
+      model
+
+    OUTPUT:
+
+    A tuple describing a single change in Weierstrass model that has
+    the same result as first doing the change described by `urst1` and
+    then the change described by `urst2`.
+
+    """
+    u1, r1, s1, t1 = urst1
+    u2, r2, s2, t2 = urst2
+    return (u1*u2, u1^2*r2 + r1, u1*s2 + s1, u1^2*r2*s1 + u1^3*t2 + t1)
+
+def _urst_invert(urst):
+    r"""Invert the change of Weierstrass model
+
+    INPUT:
+
+    - ``urst`` -- A tuple describing a change in Weierstrass model
+      from an elliptic curve `E1` to an elliptic curve `E2`
+
+    OUTPUT:
+
+    A tuple describing a change in Weierstrass model from `E2` to `E1`
+    that is the inverse of `urst`.
+
+    """
+    u, r, s, t = urst
+    uinv = u^(-1)
+    return (uinv, -uinv^2 * r, -uinv * s, uinv^3*(r*s - t))

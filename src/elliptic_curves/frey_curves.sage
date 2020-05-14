@@ -578,10 +578,10 @@ class FreyCurve(EllipticCurve_generic):
         else:
             return result
 
-    @cached_method(key=(lambda self, p, c, v, pc:
-                        (p, (self._condition if c is None else c), pc)))
-    def minimal_model(self, prime, condition=None, verbose=False,
-                      precision_cap=20):
+    @cached_method(key=(lambda self, p, iso, c, v, pc:
+                        (p, iso (self._condition if c is None else c), pc)))
+    def minimal_model(self, prime, isomorphism=False, condition=None,
+                      verbose=False, precision_cap=20):
         r"""Give a minimal model of this curve at a given prime.
 
         INPUT:
@@ -590,6 +590,12 @@ class FreyCurve(EllipticCurve_generic):
           curve. This should be a prime number if the definition field
           is $\QQ$ or a maximal ideal of the ring of integers
           otherwise.
+
+        - ``isomorphism`` -- A boolean value (default: False). If set
+          to True this method will also return the change of
+          weierstrass model necessary to change this curve into its
+          minimal model and the change needed to change the minimal
+          model into this curve.
 
         - ``condition`` -- A Condition or None (default: None) giving
           the condition that the parameters of this Frey curve should
@@ -611,9 +617,22 @@ class FreyCurve(EllipticCurve_generic):
         OUTPUT:
         
         An elliptic curve that is a minimal model of this curve at the
-        given prime under the given condition on the parameters. This
-        could be a conditional value as the minimal model might depend
-        on the value of the parameters in this Frey curve.
+        given prime under the given condition on the parameters.
+
+        If `isomorphism` is set to True then the return value will be
+        a tuple containing such a minimal model as a first value. The
+        second value will be a tuple consisting of two changes of
+        weierstrass models, the first changing this curve into the
+        minimal model and the second changing the minimal model back
+        into this curve. Each of these change of variables is given as
+        a tuple (u, r, s, t), where u, r, s, and t are the values that
+        need to be passed to :meth:`change_weierstrass_model` to enact
+        the correct change.
+
+        If the return value might differ depending on several
+        sub conditions of the given condition, then this method will
+        return a ConditionalValue consisting of the corresponding
+        output for each of these conditions.
 
         .. SEEALSO::
 
@@ -624,19 +643,31 @@ class FreyCurve(EllipticCurve_generic):
                                        precision_cap):
             local_data = self.local_data(prime, condition, verbose,
                                          precision_cap)
-            return apply_to_conditional_value(lambda x: x.minimal_model(),
-                                              local_data)
+            if isomorphism:
+                return apply_to_conditional_value(lambda x:
+                                                  (x.minimal_model(),
+                                                   x._urst,
+                                                   x._urst_inv),
+                                                  local_data)
+            else:
+                return apply_to_conditional_value(lambda x: x.minimal_model(),
+                                                  local_data)
         pAdics = pAdicBase(self.definition_field(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R), condition,
                                 verbose=(verbose-1 if verbose>0 else verbose))
+        calc = ['minimal_model']
+        if isomorphism:
+            calc.append('isomorphism')
         result = tates_algorithm(self, initial_values=Tp,
                                  coefficient_ring=self.base(), pAdics=pAdics,
                                  verbose=verbose, precision_cap=precision_cap,
-                                 only_calculate=['minimal_model'])
-        if len(result) == 1:
-            return result[0][0][0]
+                                 only_calculate=calc)
+        if isomorphism:
+            return apply_to_conditional_value(lambda x: tuple(x),
+                                              result)
         else:
-            return ConditionalValue([(val[0], con) for val, con in result])
+            return apply_to_conditional_value(lambda x: x[0],
+                                              result)
 
     @cached_method(key=(lambda self, p, c, v, pc:
                         (p, (self._condition if c is None else c), pc)))
@@ -1649,8 +1680,9 @@ class FreyCurveLocalData(EllipticCurveLocalData):
     r"""The class for the local reduction data of a Frey curve.
 
     """
-    def __init__(self, E, P, conductor_valuation, discriminant_valuation,
-                 kodaira_symbol, tamagawa_number, reduction_type):
+    def __init__(self, E, P, conductor_valuation,
+                 discriminant_valuation, kodaira_symbol,
+                 tamagawa_number, reduction_type, urst, urst_inv):
         r"""Initialize the reduction data for the Frey curve `E` at the
         prime `P`.
 
@@ -1679,6 +1711,13 @@ class FreyCurveLocalData(EllipticCurveLocalData):
           for split multiplicative reduction, -1 for non-split
           multiplicative reduction, and 0 for additive reduction.
 
+        - ``urst`` -- The change in Weierstrass model to get from the
+          original curve to the minimal model stored in this object.
+
+        - ``urst_inv`` -- The change in Weierstrass model to get from
+          the minimal model stored in this object to the original
+          curve.
+
         """
         self._set_elliptic_curve(E)
         self._prime=P
@@ -1690,6 +1729,8 @@ class FreyCurveLocalData(EllipticCurveLocalData):
             self._KS = KodairaSymbol(kodaira_symbol)
         self._cp = tamagawa_number
         self._reduction_type = reduction_type
+        self._urst = urst
+        self._urst_inv = urst_inv
         
     def _set_elliptic_curve(self, elliptic_curve):
         self._Emin = elliptic_curve
@@ -2798,13 +2839,13 @@ class FreyQcurve(FreyCurve, Qcurve):
         # condition. They can be considered as loops here, but note
         # that the final return value will be a combination of all
         # return values in each iteration of these loops..
-        def compute_trace1(Emin, con1):
-            phi_min = Emin.isomorphism_to(self)
-            phi_min = _rational_maps_of_isomorphism(phi_min)
+        def compute_trace1(min_data, con1):
+            Emin = min_data[0]
+            phi_min = _rational_maps_of_urst(min_data[1][1])
             phi = phi[0](phi_min), phi[1](phi_min)
-            def compute_trace2(sEmin, con2):
-                sphi_min = sE.isomorphism_to(sEmin)
-                sphi_min = _rational_maps_of_isomorphism(sphi_min)
+            def compute_trace2(smin_data, con2):
+                sEmin = smin_data[0]
+                sphi_min = _rational_maps_of_urst(smin_data[1][0])
                 phi = sphi_min[0](phi), sphi_min[1](phi)
 
                 # Checking whether the reduction of the isogeny is
@@ -2876,6 +2917,7 @@ class FreyQcurve(FreyCurve, Qcurve):
 
             return apply_to_conditional_value(compute_trace2,
                                               sE.minimal_model(P,
+                                                               isomorphism=True
                                                                condition=con1,
                                                                verbose=verbose,
                                                                precision_cap=precision_cap),
@@ -2884,6 +2926,7 @@ class FreyQcurve(FreyCurve, Qcurve):
 
         return apply_to_conditional_value(compute_trace1,
                                           self.minimal_model(P,
+                                                             isomorphism=True
                                                              condition=condition,
                                                              verbose=verbose,
                                                              precision_cap=precision_cap),
