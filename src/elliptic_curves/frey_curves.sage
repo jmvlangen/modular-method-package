@@ -579,7 +579,7 @@ class FreyCurve(EllipticCurve_generic):
             return result
 
     @cached_method(key=(lambda self, p, iso, c, v, pc:
-                        (p, iso (self._condition if c is None else c), pc)))
+                        (p, iso, (self._condition if c is None else c), pc)))
     def minimal_model(self, prime, isomorphism=False, condition=None,
                       verbose=False, precision_cap=20):
         r"""Give a minimal model of this curve at a given prime.
@@ -2917,7 +2917,7 @@ class FreyQcurve(FreyCurve, Qcurve):
 
             return apply_to_conditional_value(compute_trace2,
                                               sE.minimal_model(P,
-                                                               isomorphism=True
+                                                               isomorphism=True,
                                                                condition=con1,
                                                                verbose=verbose,
                                                                precision_cap=precision_cap),
@@ -2926,7 +2926,7 @@ class FreyQcurve(FreyCurve, Qcurve):
 
         return apply_to_conditional_value(compute_trace1,
                                           self.minimal_model(P,
-                                                             isomorphism=True
+                                                             isomorphism=True,
                                                              condition=condition,
                                                              verbose=verbose,
                                                              precision_cap=precision_cap),

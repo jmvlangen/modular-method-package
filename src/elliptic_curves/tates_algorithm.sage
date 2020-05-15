@@ -238,7 +238,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 5")
                     _tate_step5(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst0'],case['urst'],
+                                case['urst'], case['urst0'],
                                 variables=variables, result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
@@ -254,7 +254,7 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     if verbose > 0:
                         print("Performing step 6")
                     _tate_step6(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst'],
+                                case['urst'], case['urst0'],
                                 variables=variables, result=newCases,
                                 verbose=(verbose-1 if verbose>0 else verbose),
                                 precision_cap=precision_cap)
@@ -896,7 +896,7 @@ def _tate_step2(E, S, pAdics, T, E0, urst, urst0, **kwds):
     return _get_two_cases_invariant(S(E.b2()), pAdics, T, 1, case_big,
                                     case_small, **kwds)
 
-def _tate_step3(E, S, pAdics, T, urst, urst0, E0, **kwds):
+def _tate_step3(E, S, pAdics, T, E0, urst, urst0, **kwds):
     r"""Perform step 3 of Tate's algorithm.
 
     Stop if the valuation of the invariant $a_6$ of the elliptic curve
@@ -1083,7 +1083,7 @@ def _tate_step5(E, S, pAdics, T, E0, urst, urst0, **kwds):
     return _get_two_cases_invariant(S(E.b6()), pAdics, T, 3,
                                    case_big, case_small, **kwds)
 
-def _tate_step6_t(E, S, pAdics, T, E0, urst, usrt0, verbose=False,
+def _tate_step6_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
                   result=[], **kwds):
     r"""Perform the transformation necessary before step 6 of Tate's
     algorithm.
@@ -1197,7 +1197,7 @@ def _tate_step6_t(E, S, pAdics, T, E0, urst, usrt0, verbose=False,
         t = F.lift(alphaBetaPair[1]*pi)
         En = E.rst_transform(0, s, t)
         result.append(dict(next_step=6+1/2, T=Tn, E=En, E0=E0,
-                           urst=_urst_combine(1, 0, s, t),
+                           urst=_urst_combine(urst, (1, 0, s, t)),
                            urst0=urst0))
     return result
 
@@ -2027,7 +2027,7 @@ def _tate_step10(E, S, pAdics, T, E0, urst, urst0, **kwds):
     return _get_two_cases_invariant(S(E.a6()), pAdics, T, 6,
                                    case_big, case_small, **kwds)
                                
-def _tate_step11(E, S, pAdics, T, E0, urst=urst, urst0=urst0,
+def _tate_step11(E, S, pAdics, T, E0, urst, urst0,
                  verbose=False, result=[], **kwds):
     r"""Perform step 1 of Tate's algorithm.
 
