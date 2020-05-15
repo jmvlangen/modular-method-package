@@ -42,6 +42,8 @@ from modular_method.padics.pAdic_solver import find_pAdic_roots
 
 from modular_method.diophantine_equations.conditions import TreeCondition, ConditionalValue
 
+from modular_method.elliptic_curves.local_data import FreyCurveLocalData
+
 def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
                     base_ring=None, prime=None, initial_values=None,
                     only_calculate=[], precision_cap=20, verbose=False):
@@ -1194,7 +1196,7 @@ def _tate_step6_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
         print("Performing %d transformations"%len(changeDict))
     for (alphaBetaPair, Tn) in changeDict.items():
         s = F.lift(alphaBetaPair[0])
-        t = F.lift(alphaBetaPair[1]*pi)
+        t = F.lift(alphaBetaPair[1])*pi
         En = E.rst_transform(0, s, t)
         result.append(dict(next_step=6+1/2, T=Tn, E=En, E0=E0,
                            urst=_urst_combine(urst, (1, 0, s, t)),
