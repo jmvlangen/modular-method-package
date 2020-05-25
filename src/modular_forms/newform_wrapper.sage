@@ -1337,6 +1337,10 @@ class WrappedNewform(SageObject):
 
     """
 
+    def __init__(self):
+        r""" Initialize this object"""
+        self._embeddings = {}
+
     def level(self):
         r"""Give the level of this newform.
         
@@ -1428,6 +1432,105 @@ class WrappedNewform(SageObject):
 
         """
         raise NotImplementedError()
+
+    def set_embedding(self, field, embedding=None):
+        r"""Set the embedding of the coefficient field into a given field
+
+        Sets the embedding returned by :meth:`embedding` for a given
+        field to a given embedding. If no embedding is given it will
+        just set it to a embedding. If no embedding exists, will raise
+        a ValueError.
+
+        INPUT:
+
+        - ``field`` -- A number field
+
+        - ``embedding`` -- An embedding of the coefficient field of
+          this newform into the given field `field` or None
+          (default). If set to None, will use the method embedding to
+          find an embedding of the coefficient field into the given
+          field or raise a ValueError if none exist.
+
+        EXAMPLES::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: f = get_newforms(2^3*3^4)[4]
+            sage: K = f.coefficient_field(); K
+            Number Field in a4 with defining polynomial x^2 + 8*x + 4
+            sage: L = CyclotomicField(12)
+            sage: f.embedding(L)
+            Ring morphism:
+              From: Number Field in a4 with defining polynomial x^2 + 8*x + 4
+              To:   Cyclotomic Field of order 12 and degree 4
+              Defn: a4 |--> 2*zeta12^3 - 4*zeta12 - 4
+            sage: f.set_embedding(L, K.embeddings(L)[1])
+            sage: f.embedding(L)
+            Ring morphism:
+              From: Number Field in a4 with defining polynomial x^2 + 8*x + 4
+              To:   Cyclotomic Field of order 12 and degree 4
+              Defn: a4 |--> -2*zeta12^3 + 4*zeta12 - 4
+            sage: f.set_embedding(QuadraticField(5))
+            Traceback (most recent call last):
+            ...
+            ValueError: No embedding from Number Field in a4 with defining polynomial x^2 + 8*x + 4 to Number Field in a with defining polynomial x^2 - 5 with a = 2.236067977499790? exists
+
+        """
+        if embedding is None:
+            embeddings = self.coefficient_field().embeddings(field)
+            if len(embeddings) == 0:
+                raise ValueError("No embedding from " +
+                                 str(self.coefficient_field()) +
+                                 " to " + str(field) + " exists")
+            embedding = embeddings[0]
+        self._embeddings[field] = embedding
+
+    def embedding(self, field):
+        r"""Give an embedding of the coefficient field into the given field
+        
+        The given embedding is always the same and can be set using
+        the method :meth:`set_embedding`.
+
+        INPUT:
+
+        - ``field`` -- A number field.
+
+        OUTPUT:
+
+        An embedding of the coefficient field of this newform into the
+        given field. Raises a ValueError if no such embedding exists.
+
+        .. SEEALSO:
+        
+            :meth:`set_embedding`
+            :meth:`coefficient_field`
+
+        EXAMPLES::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: f = get_newforms(2^3*3^4)[4]
+            sage: K = f.coefficient_field(); K
+            Number Field in a4 with defining polynomial x^2 + 8*x + 4
+            sage: L = CyclotomicField(12)
+            sage: f.embedding(L)
+            Ring morphism:
+              From: Number Field in a4 with defining polynomial x^2 + 8*x + 4
+              To:   Cyclotomic Field of order 12 and degree 4
+              Defn: a4 |--> 2*zeta12^3 - 4*zeta12 - 4
+            sage: f.set_embedding(L, K.embeddings(L)[1])
+            sage: f.embedding(L)
+            Ring morphism:
+              From: Number Field in a4 with defining polynomial x^2 + 8*x + 4
+              To:   Cyclotomic Field of order 12 and degree 4
+              Defn: a4 |--> -2*zeta12^3 + 4*zeta12 - 4
+            sage: f.embedding(QuadraticField(5))
+            Traceback (most recent call last):
+            ...
+            ValueError: No embedding from Number Field in a4 with defining polynomial x^2 + 8*x + 4 to Number Field in a with defining polynomial x^2 - 5 with a = 2.236067977499790? exists
+
+        """
+        if not (field in self._embeddings):
+            self.set_embedding(field)
+        return self._embeddings[field]
 
     def q_expansion(self, prec=20):
         """Give the q-expansion of this newform.
@@ -1671,7 +1774,22 @@ class WrappedNewform(SageObject):
     
     qexp = q_expansion
 
+    def copy(self):
+        r"""Create a copy of this newform
+
+        The copy saves on memory as much as possible, but is not
+        completely shallow as the embeddings list is initialized
+        again.
+
+        OUTPUT:
+
+        A copy of this newform.
+
+        """
+        return WrappedNewform()
+
     def _repr_(self):
+
         """Give a string representation of this newform"""
         return str(self.q_expansion())
 
@@ -1713,6 +1831,7 @@ class WrappedNewform_sage(WrappedNewform):
 
         """
         self._f = newform
+        WrappedNewform.__init__(self)
 
     def level(self):
         r"""Give the level of this newform.
@@ -1864,6 +1983,20 @@ class WrappedNewform_sage(WrappedNewform):
 
         """
         return self._f.has_cm()
+    
+    def copy(self):
+        r"""Create a copy of this newform
+
+        The copy saves on memory as much as possible, but is not
+        completely shallow as the embeddings list is initialized
+        again.
+
+        OUTPUT:
+
+        A copy of this newform.
+
+        """
+        return WrappedNewform_sage(self._f)
 
     def _repr_(self):
         """Give a string representation of this newform."""
@@ -1910,6 +2043,7 @@ class WrappedNewform_magma(WrappedNewform):
 
         """
         self._f = newform
+        WrappedNewform.__init__(self)
 
     def level(self):
         r"""Give the level of this newform.
@@ -2045,6 +2179,20 @@ class WrappedNewform_magma(WrappedNewform):
         """Give a latex representation of this newform."""
         return latex(self._f)
 
+    def copy(self):
+        r"""Create a copy of this newform
+
+        The copy saves on memory as much as possible, but is not
+        completely shallow as the embeddings list is initialized
+        again.
+
+        OUTPUT:
+
+        A copy of this newform.
+
+        """
+        return WrappedNewform_magma(self._f)
+
 class WrappedNewform_stored(WrappedNewform):
     r"""A wrapper class around a newform of weight 2 defined by stored
     data.
@@ -2106,6 +2254,7 @@ class WrappedNewform_stored(WrappedNewform):
         self._K = coefficient_field
         self._coeffs = coefficients
         self._cm = cm
+        WrappedNewform.__init__(self)
 
     def level(self):
         r"""Give the level of this newform.
@@ -2229,6 +2378,21 @@ class WrappedNewform_stored(WrappedNewform):
             raise ValueError("Undetermined whether this newform has CM.")
         return self._cm
 
+    def copy(self):
+        r"""Create a copy of this newform
+
+        The copy saves on memory as much as possible, but is not
+        completely shallow as the embeddings list is initialized
+        again.
+
+        OUTPUT:
+
+        A copy of this newform.
+
+        """
+        return WrappedNewform_stored(self._level, self._eps, self._K,
+                                     self._coeffs, self._cm)
+    
     def _repr_(self):
         """Give a string representation of this newform"""
         try:

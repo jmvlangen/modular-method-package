@@ -104,8 +104,8 @@ $B \not\equiv 1$ modulo 4. We will use `Cp` to denote $C^p$::
     sage: E.does_decompose()
     True
     sage: E.newform_candidates(bad_primes=K.primes_above(2))
-    [q - 2*q^3 + O(q^6), q - 4*q^5 + O(q^6), q + 4*q^5 + O(q^6), q + 2*q^3 + O(q^6), q + 1/2*a4*q^3 + O(q^6)] if ('A', 'B') is 1 of 6 possibilities mod 4
-    [q - 2*q^5 + O(q^6)]                                                                                      if ('A', 'B') == (0, 3), (2, 3) mod 4
+    [q - 2*q^3 + O(q^6), q - 4*q^5 + O(q^6), q + 4*q^5 + O(q^6), q + 2*q^3 + O(q^6), q + 1/2*a4*q^3 + O(q^6), q + 1/2*a4*q^3 + O(q^6)] if ('A', 'B') is 1 of 6 possibilities mod 4
+    [q - 2*q^5 + O(q^6)]                                                                                                               if ('A', 'B') == (0, 3), (2, 3) mod 4
 
 AUTHORS:
 
@@ -2545,6 +2545,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         done_levels = []
         characters = [(eps^(-1)).primitive_character()
                       for eps in self.splitting_character('conjugacy')]
+        KE = self.splitting_image_field()
         for levelsi in levels:
             level, eps = min(zip(levelsi, characters),
                              key=lambda x: x[0])
@@ -2552,8 +2553,15 @@ class FreyQcurve(FreyCurve, Qcurve):
                 continue # Already computed, continue on with the next
             if verbose > 0:
                 print("Computing newforms of level %s and character %s"%(level, eps))
-            result.extend(get_newforms(level, character=eps,
-                                       algorithm=algorithm, path=path))
+            for f in get_newforms(level, character=eps,
+                                  algorithm=algorithm, path=path):
+                Kf = f.coefficient_field()
+                K = composite_field(KE, Kf)
+                K = K.galois_closure(names=K._names)
+                for phi in Kf.embeddings(K):
+                    f_phi = f.copy()
+                    f_phi.set_embedding(K, phi)
+                    result.append(f_phi)
             done_levels.append((level, eps))
         return result
 
@@ -2701,7 +2709,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             return apply_to_conditional_value(compute_trace2, red_type,
                                               use_condition=True,
                                               default_condition=con1)
-        
+
         result = conditional_over_values(compute_trace1,
                                          K.primes_above(prime),
                                          start_condition=condition)
@@ -2719,12 +2727,15 @@ class FreyQcurve(FreyCurve, Qcurve):
         K = self.definition_field()
         G = K.galois_group()
         Frob = G.artin_symbol(P)
-        sE = FreyCurve(self.galois_conjugate(Frob))
+        sE = FreyCurve(self.galois_conjugate(Frob),
+                       condition=E3._condition)
         sP = Frob(P)
-        phi = self._phi_x[Frob], self._phi_y[Frob]
+        psi = self._phi_x[Frob], self._phi_y[Frob]
         R = P.residue_field()
         Rx.<x> = R[]
         Rx = Rx.fraction_field()
+        pAdicsK = pAdicBase(K, P)
+        pAdics = pAdicsK.pAdics_below(self._R)
 
         # Setting up the isogeny between the right minimal
         # models. Note that compute_trace1 and compute_trace2 will be
@@ -2735,79 +2746,99 @@ class FreyQcurve(FreyCurve, Qcurve):
         # return values in each iteration of these loops..
         def compute_trace1(min_data, con1):
             Emin = min_data[0]
-            phi_min = _rational_maps_of_urst(min_data[1][1])
-            phi = phi[0](phi_min), phi[1](phi_min)
+            phi_min = _rational_maps_of_urst(*min_data[1][1])
+            psi1 = psi[0](phi_min), psi[1](phi_min)
             def compute_trace2(smin_data, con2):
                 sEmin = smin_data[0]
-                sphi_min = _rational_maps_of_urst(smin_data[1][0])
-                phi = sphi_min[0](phi), sphi_min[1](phi)
-
-                # Checking whether the reduction of the isogeny is
-                # separable
-                phi0 = (phi[0].numerator().change_ring(R) /
-                        phi[0].denominator().change_ring(R))
-                F = Rx(phi0(x, 0))
-                if F.derivative(x) == 0:
-                    return None # This will cause the function above
-                                # to try other primes or fail
-
-                # Defining variables needed for both p = 2 and p != 2
-                phi1 = (phi[1].numerator().change_ring(R) /
-                        phi[1].denominator().change_ring(R))
-                H = phi1(x, 0)
-                G = phi1(x, 1) - H
-                p = P.smallest_integer()
-                c1 = (F - x^p).numerator()
+                sphi_min = _rational_maps_of_urst(*smin_data[1][0])
+                phi = sphi_min[0](psi1), sphi_min[1](psi1)
 
                 # Making a loop over the possible reductions of Emin
                 results = {}
-                T = con2.pAdic_tree(pAdics=pAdicBase(K, P).pAdics_below(self._R))
+                T = con2.pAdic_tree(pAdics=pAdics)
                 for node in T.nodes_at_level(1)[0]:
-                    a_invariants = [R(a(node.representative()))
-                                    for a in Emin.a_invariants()]
-                    Ered = EllipticCurve(a_invariants)
+                    fill = Emin.base_ring().hom([K(xi) for xi in
+                                                 node.representative()])
+                    Ered = EllipticCurve([R(fill(a)) for a in Emin.a_invariants()])
+                    sEred = EllipticCurve([sP.residue_field()(fill(a))
+                                           for a in sEmin.a_invariants()])
                     
-                    # Computing number of points in the set
-                    # {P : phi P = Frob P}
-                    if p == 2:
-                        g = Ered.a1()*x + Ered.a3()
-                        h = (x^3 + Ered.a2()*x^2 + Ered.a4()*x +
-                             Ered.a6())
-                        c3 = (g*G*h + g*G*H + G^2*h + g^2*H + h^2 +
-                              H^2).numerator()
-                        c4 = (g - G).numerator()
-                        gc13 = gcd(c1, c3)
-                        gc134 = gcd(gc13, c4)
-                        gc134g = gcd(gc134, g)
-                        num = (1 + gc13.radical().degree() +
-                               gc134.radical().degree() -
-                               gc134g.radical().degree())
+                    # Checking whether the reduction of the isogeny is
+                    # separable
+                    phi0num = phi[0].numerator().change_ring(fill)
+                    phi0den = phi[0].denominator().change_ring(fill)
+                    vphi0num = min(pAdicsK.valuation(cf) for cf in
+                                   phi0num.coefficients())
+                    vphi0den = min(pAdicsK.valuation(cf) for cf in
+                                   phi0den.coefficients())
+                    phi0mul = pAdicsK.uniformizer()^(-min(vphi0num, vphi0den))
+                    phi0num = phi0num * phi0mul
+                    phi0den = phi0den * phi0mul
+                    phi0 = (phi0num.change_ring(R) /
+                            phi0den.change_ring(R))
+                    F = Rx(phi0(x, 0))
+                    if F.derivative(x) == 0:
+                        result = None # This will cause the function above
+                                      # to try other primes or fail
                     else:
-                        R = (4*x^3 + Ered.b2()*x^2 + 2*Ered.b4()*x +
-                             Ered.b6())
-                        sEred = sEmin.reduction(sP)
-                        l = _scalar_of_rational_maps(phi0, phi1, Ered,
-                                                     sEred)
-                        c2 = (l * R^((p + 1)/2) -
-                              F.derivative(x) * R).numerator()
-                        num = (1 + 2 * gcd(c1, c2).radical().degree() -
-                               gcd(c1, R).radical().degree())
+                        # Defining variables needed for both p = 2 and p != 2
+                        phi1num = phi[1].numerator().change_ring(fill)
+                        phi1den = phi[1].denominator().change_ring(fill)
+                        vphi1num = min(pAdicsK.valuation(cf) for cf in
+                                       phi1num.coefficients())
+                        vphi1den = min(pAdicsK.valuation(cf) for cf in
+                                       phi1den.coefficients())
+                        phi1mul = pAdicsK.uniformizer()^(-min(vphi1num, vphi1den))
+                        phi1num = phi1num * phi1mul
+                        phi1den = phi1den * phi1mul
+                        phi1 = (phi1num.change_ring(R) /
+                                phi1den.change_ring(R))
+                        H = phi1(x, 0)
+                        G = phi1(x, 1) - H
+                        p = P.smallest_integer()
+                        c1 = (F - x^p).numerator()
 
-                    # Computing a_p(E) and the final result
-                    apE = F.numerator().degree() + p - num
-                    result = beta(Frob)^(-1) * apE
+                        # Computing number of points in the set
+                        # {P : phi P = Frob P}
+                        if p == 2:
+                            g = Ered.a1()*x + Ered.a3()
+                            h = (x^3 + Ered.a2()*x^2 + Ered.a4()*x +
+                                 Ered.a6())
+                            c3 = (g*G*h + g*G*H + G^2*h + g^2*H + h^2 +
+                                  H^2).numerator()
+                            c4 = (g - G).numerator()
+                            gc13 = gcd(c1, c3)
+                            gc134 = gcd(gc13, c4)
+                            gc134g = gcd(gc134, g)
+                            num = (1 + gc13.radical().degree() +
+                                   gc134.radical().degree() -
+                                   gc134g.radical().degree())
+                        else:
+                            R3 = (4*x^3 + Ered.b2()*x^2 + 2*Ered.b4()*x +
+                                  Ered.b6())
+                            l = _scalar_of_rational_maps(phi0, phi1, Ered,
+                                                         sEred)
+                            c2 = (l * R3^((p + 1)/2) -
+                                  F.derivative(x) * R3).numerator()
+                            num = (1 + 2 * gcd(c1, c2).radical().degree() -
+                                   gcd(c1, R3).radical().degree())
+
+                        # Computing a_p(E) and the final result
+                        apE = F.numerator().degree() + p - num
+                        result = beta(Frob)^(-1) * apE
 
                     # Adding a result to the dictionary with its
                     # corresponding tree
-                    if result in results:
-                        results[result] = results[result].merge(T)
-                    else:
-                        results[result] = T
+                    if not (result in results):
+                        results[result] = pAdicNode(pAdics=node.pAdics(),
+                                                    width=node.width)
+                    results[result].merge(node)
 
                 # Turning the results dictionary into a value to
                 # return
-                return ConditionalValue([(r, TreeCondition(T))
-                                         for r, T in results.items()])
+                Tls = [(r, pAdicTree(variables=self.parameters(), root=T))
+                       for r, T in results.items()]
+                return ConditionalValue([(r, TreeCondition(T)) for r, T in Tls])
 
             return apply_to_conditional_value(compute_trace2,
                                               sE.minimal_model(P,
@@ -2824,7 +2855,8 @@ class FreyQcurve(FreyCurve, Qcurve):
                                                              condition=condition,
                                                              verbose=verbose,
                                                              precision_cap=precision_cap),
-                                          use_condition=True)
+                                          use_condition=True,
+                                          default_condition=condition)
 
     def _trace_of_frob_mult(self, P, beta, condition, verbose,
                             precision_cap):

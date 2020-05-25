@@ -163,8 +163,8 @@ def _init_traces(curves, condition, primes, precision_cap, verbose):
                                            verbose=(verbose - 1 if verbose > 0
                                                     else verbose))
               for i in range(len(curves))]
-    pAdics = pAdicBase(curves[0].definition_field(),
-                       primes[0]).pAdics_below(curves[0]._R)
+    field = (QQ if isinstance(curves[0], Qcurve) else curves[0].definition_field())
+    pAdics = pAdicBase(QQ, primes[0]).pAdics_below(curves[0]._R)
     default_tree = condition.pAdic_tree(pAdics=pAdics,
                                         verbose=(max(0, verbose - 3)
                                                  if verbose > 0 else verbose),
@@ -398,6 +398,9 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
     nE = len(curves)
     fields = tuple((QQ if isinstance(curve, Qcurve) else curve.definition_field())
                    for curve in curves)
+    fields2 = tuple((curve.splitting_image_field() if
+                     isinstance(curve, Qcurve) else
+                     curve.definition_field()) for curve in curves)
     primes = tuple((p if K == QQ else K.prime_above(p)) for K in fields)
     powers = tuple((1 if P in ZZ
                     else P.residue_class_degree() * P.ramification_index())
@@ -415,8 +418,16 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
             all(not p.divides(nfs[i].level()) for i in range(nE))):
             apf = [nfs[i].trace_of_frobenius(p, power=powers[i])
                    for i in range(nE)]
-            Bnew = ZZ(p * lcm(gcd([(QQ(apE[i] - apf[i]) if apf[i] in QQ
-                                    else (apE[i] - apf[i]).absolute_norm())
+            comp_fields = [composite_field(fields[i],
+                                           nfs[i].coefficient_field())
+                           for i in range(nE)]
+            comp_fields = [(K if K == QQ else
+                            K.galois_closure(names=K._names))
+                           for K in comp_fields]
+            phiE = [fields2[i].embeddings(comp_fields[i])[0]
+                    for i in range(nE)]
+            phif = [nfs[i].embedding(comp_fields[i]) for i in range(nE)]
+            Bnew = ZZ(p * lcm(gcd([(phiE[i](apE[i]) - phif[i](apf[i])).absolute_norm()
                                    for i in range(nE)]) for apE in apE_ls))
             Bnew = gcd(Bold, Bnew)
             if B != 0:
