@@ -2583,7 +2583,7 @@ def _tate_finish(case, restrictions, result=[], variables=None, **kwds):
                                       f, case['vDelta'],
                                       KodairaSymbol(case['KS']),
                                       case['c'], red_type, urst,
-                                      urst_inv(case['urst0']))
+                                      urst_inv)
     else:
         myresult = []
         for r in restrictions:

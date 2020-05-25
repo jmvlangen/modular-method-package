@@ -17,6 +17,7 @@ AUTHORS:
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
+from sage.schemes.elliptic_curves.ell_local_data import EllipticCurveLocalData
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol
 from sage.schemes.elliptic_curves.kodaira_symbol import KodairaSymbol_class
 
