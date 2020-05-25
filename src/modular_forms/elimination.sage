@@ -72,6 +72,8 @@ from sage.misc.misc_c import prod as product
 
 from modular_method.padics.pAdic_base import pAdicBase
 
+from modular_method.number_fields.field_constructors import composite_field
+
 from modular_method.elliptic_curves.Qcurves import Qcurve
 from modular_method.elliptic_curves.frey_curves import FreyCurve
 

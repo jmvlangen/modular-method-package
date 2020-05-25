@@ -130,7 +130,6 @@ from sage.rings.polynomial.multi_polynomial_ring_base import is_MPolynomialRing
 from sage.rings.morphism import RingHomomorphism_from_base
 
 from sage.schemes.elliptic_curves.ell_generic import EllipticCurve_generic
-from sage.schemes.elliptic_curves.ell_local_data import EllipticCurveLocalData
 from sage.schemes.elliptic_curves.weierstrass_morphism import WeierstrassIsomorphism
 from sage.schemes.elliptic_curves.constructor import EllipticCurve
 
@@ -144,14 +143,17 @@ from sage.arith.misc import gcd
 from sage.misc.misc_c import prod as product
 
 from modular_method.elliptic_curves.Qcurves import Qcurve
+from modular_method.elliptic_curves.Qcurves import _rational_maps_of_urst
+from modular_method.elliptic_curves.Qcurves import _scalar_of_rational_maps
 from modular_method.elliptic_curves.tates_algorithm import tates_algorithm
 
 from modular_method.padics.pAdic_base import pAdicBase
-from modular_method.padics.pAdic_tree import pAdicTree
+from modular_method.padics.pAdic_tree import pAdicTree, pAdicNode
 
 from modular_method.number_fields.field_constructors import _write_as_im_gen_map
 from modular_method.number_fields.field_constructors import _concat_maps
 from modular_method.number_fields.field_constructors import write_as_extension
+from modular_method.number_fields.field_constructors import composite_field
 from modular_method.number_fields.galois_group import galois_field_change
 
 from modular_method.diophantine_equations.conditions import TextCondition
