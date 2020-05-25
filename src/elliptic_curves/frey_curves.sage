@@ -739,11 +739,13 @@ class FreyCurve(EllipticCurve_generic):
                                               use_condition=True,
                                               default_condition=condition)
         pAdics = pAdicBase(self.definition_field(), prime)
-        T = C.pAdic_tree(pAdics=pAdics.pAdics.pAdics_below(self._R),
+        pAdicsR = pAdics.pAdics_below(self._R)
+        T = C.pAdic_tree(pAdics=pAdicsR,
                          verbose=(verbose if verbose <= 0 else verbose - 1),
                          precision_cap=precision_cap).root()
-        E_val = min(pAdics.valuation(cf) for a in model.a_invariants()
-                    for cf in a.coefficients())
+        ext = pAdics.extension_multiplicity(pAdicsR)
+        E_val = ZZ(min(pAdics.valuation(cf) for a in model.a_invariants()
+                       for cf in a.coefficients())) // ext
         T_val = T.minimum_full_level()
         val = max(1, min(1 - E_val, T_val, precision_cap))
         F = pAdics.residue_field()
@@ -2827,6 +2829,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         Rx = Rx.fraction_field()
         pAdicsK = pAdicBase(K, P)
         pAdics = pAdicsK.pAdics_below(self._R)
+        ext = pAdicsK.extension_multiplicity(pAdics)
 
         # Setting up the isogeny between the right minimal
         # models. Note that compute_trace1 and compute_trace2 will be
@@ -2846,8 +2849,17 @@ class FreyQcurve(FreyCurve, Qcurve):
 
                 # Making a loop over the possible reductions of Emin
                 results = {}
-                T = con2.pAdic_tree(pAdics=pAdics)
-                for node in T.nodes_at_level(1)[0]:
+                T = con2.pAdic_tree(pAdics=pAdics).root()
+                E_val = ZZ(min(pAdics.valuation(cf)
+                               for a in Emin.a_invariants()
+                               for cf in a.coefficients())) // ext
+                sE_val = ZZ(min(pAdics.valuation(cf)
+                                for a in sEmin.a_invariants()
+                                for cf in a.coefficients())) // ext
+                T_val = T.minimum_full_level()
+                val = max(1, min(1 - E_val, 1 - sE_val, T_val,
+                                 precision_cap))
+                for node in T.children_at_level(val):
                     fill = Emin.base_ring().hom([K(xi) for xi in
                                                  node.representative()])
                     Ered = EllipticCurve([R(fill(a)) for a in Emin.a_invariants()])
