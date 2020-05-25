@@ -669,6 +669,97 @@ class FreyCurve(EllipticCurve_generic):
             return apply_to_conditional_value(lambda x: x[0],
                                               result)
 
+    def reduction(self, prime, model=None, condition=None,
+                  verbose=False, precision_cap=20):
+        r"""Give the reduction of this curve at a given prime.
+
+        INPUT:
+
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``model`` -- A Weierstrass model of this elliptic curve or
+          None (default) giving the model of which the reduction
+          should be computed. If set to None will use a minimal model
+          of this curve at the given prime instead.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
+
+        OUTPUT:
+        
+        An elliptic curve that is the reduction of the given model of
+        this curve at a given prime.
+
+        If the return value depends on the specific value of the
+        parameters, will instead return a ConditionalValue containing
+        the different reductions with the corresponding conditions on
+        the parameters for which they are the right reduction.
+
+        If any value of the parameters satisfying the given condition
+        would not give an elliptic curve as a reduction, this function
+        will produce an error.
+
+        .. SEEALSO::
+
+            :meth:`minimal_model`,
+
+        """
+        if condition == None:
+            condititon = self._condition
+        if model == None:
+            model = self.minimal_model(prime, condition=condition,
+                                       verbose=(verbose
+                                                if verbose <= 0
+                                                else verbose - 1),
+                                       precision_cap=precision_cap)
+        if isinstance(model, ConditionalValue):
+            return apply_to_conditional_value(lambda E, C:
+                                              self.reduction(prime,
+                                                             model=E, condition=C,
+                                                             verbose=verbose,
+                                                             precision_cap=precision_cap),
+                                              model,
+                                              use_condition=True,
+                                              default_condition=condition)
+        pAdics = pAdicBase(self.definition_field(), prime)
+        T = C.pAdic_tree(pAdics=pAdics.pAdics.pAdics_below(self._R),
+                         verbose=(verbose if verbose <= 0 else verbose - 1),
+                         precision_cap=precision_cap).root()
+        E_val = min(pAdics.valuation(cf) for a in model.a_invariants()
+                    for cf in a.coefficients())
+        T_val = T.minimum_full_level()
+        val = max(1, min(1 - E_val, T_val, precision_cap))
+        F = pAdics.residue_field()
+        result = {}
+        for N in T.children_at_level(val):
+            vals = N.representative()
+            E = EllipticCurve([F(a(vals))
+                               for a in model.a_invariants()])
+            if not (E in result):
+                result[E] = pAdicNode(pAdics=T.pAdics(), width=T.width)
+            result[E].merge(N)
+        result = [(val, pAdicTree(self.parameters(), root=T))
+                  for T, val in result.items()]
+        return ConditionalValue([(val, TreeCondition(T))
+                                 for val, T in result])
+
     @cached_method(key=(lambda self, p, c, v, pc:
                         (p, (self._condition if c is None else c), pc)))
     def kodaira_symbol(self, prime, condition=None, verbose=False,
