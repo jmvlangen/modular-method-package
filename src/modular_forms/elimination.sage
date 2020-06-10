@@ -175,7 +175,12 @@ def _init_traces(curves, condition, primes, precision_cap, verbose):
     result = []
     for case in itertools.product(*traces):
         values, conditions = zip(*case)
-        trees = [con.pAdic_tree() for con in conditions]
+        trees = [con.pAdic_tree(pAdics=pAdics,
+                                verbose=(max(0, verbose - 3)
+                                         if verbose > 0
+                                         else verbose),
+                                precision_cap=precision_cap)
+                 for con in conditions]
         tree = trees[0]
         for i in range(1, len(trees)):
             tree = tree.intersection(trees[i])

@@ -58,7 +58,7 @@ factor has real multiplication by :math:`\sqrt{2}`.
    sage: E.does_decompose()
    True
    sage: E.splitting_image_field('conjugacy')
-   (Number Field in a with defining polynomial x^2 - 2,)
+   (Number Field in a with defining polynomial x^2 - 2 with a = 1.414213562373095?,)
 
 As claimed in proposition 4.5 in the article the level of an
 associated newform is indeed 32 or 256. Here we use that the only

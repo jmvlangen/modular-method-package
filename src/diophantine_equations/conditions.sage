@@ -124,8 +124,123 @@ class Condition_base(SageObject):
         """
         return self._vars
 
+    def never(self):
+        r"""Tell if this condition never holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may not hold, as complex conditions might not be able to
+        determine whether they never hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition can
+        not hold on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.never()
+            True
+            sage: C2.never()
+            False
+
+        Note that when combining conditions, a condition that never
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that never holds
+            sage: C1 | C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+
+        This method is not able to know of every combination of
+        conditions whether it never holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 & C2).never()
+            False
+
+        """
+        return False
+
+    def always(self):
+        r"""Tell if this condition always holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may have cases in which it does not hold, as complex
+        conditions might not be able to determine whether they never
+        hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition
+        holds on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.always()
+            True
+            sage: C2.always()
+            False
+
+        Note that when combining conditions, a condition that always
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 | C2
+            The condition that always holds
+
+        This method is not able to know of every combination of
+        conditions whether it always holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 | C2).always()
+            False
+
+        """
+        return False
+        
     def __and__(self, other):
-        r"""Create the condition that both conditions hold.
+        r
+
+        """Create the condition that both conditions hold.
 
         INPUT:
         
@@ -161,8 +276,10 @@ class Condition_base(SageObject):
            :class:`AndCondition`
 
         """
-        if self == other:
+        if self == other or self.never() or other.always():
             return self
+        elif other.never() or self.always():
+            return other
         else:
             return AndCondition(self, other)
 
@@ -203,8 +320,10 @@ class Condition_base(SageObject):
             :class:`OrCondition`
 
         """
-        if self == other:
+        if self == other or self.always() or other.never():
             return self
+        elif self.never() or other.always():
+            return other
         else:
             return OrCondition(self, other)
 
@@ -391,6 +510,119 @@ class PolynomialCondition(Condition_base):
                              " is not a polynomial.")
         self._f = polynomial
         Condition_base.__init__(self, self._f.variables())
+
+    def never(self):
+        r"""Tell if this condition never holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may not hold, as complex conditions might not be able to
+        determine whether they never hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition can
+        not hold on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.never()
+            True
+            sage: C2.never()
+            False
+
+        Note that when combining conditions, a condition that never
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that never holds
+            sage: C1 | C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+
+        This method is not able to know of every combination of
+        conditions whether it never holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 & C2).never()
+            False
+
+        """
+        return (self._f.is_constant() and self._f != 0)
+
+    def always(self):
+        r"""Tell if this condition always holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may have cases in which it does not hold, as complex
+        conditions might not be able to determine whether they never
+        hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition
+        holds on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.always()
+            True
+            sage: C2.always()
+            False
+
+        Note that when combining conditions, a condition that always
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 | C2
+            The condition that always holds
+
+        This method is not able to know of every combination of
+        conditions whether it always holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 | C2).always()
+            False
+
+        """
+        return self._f == 0
 
     def polynomial(self):
         r"""Give the polynomial associated to this condition.
@@ -662,8 +894,8 @@ class CongruenceCondition(PolynomialCondition):
         """
         return self._mod
         
-    def pAdic_tree(self, pAdic_tree=None, pAdics=None, complement=False,
-                   verbose=False, **kwds):
+    def pAdic_tree(self, pAdic_tree=None, pAdics=None,
+                   complement=False, verbose=False, **kwds):
         r"""Give this condition as a pAdicTree.
         
         Given a p-adic tree, returns the subtree of those values for
@@ -790,6 +1022,121 @@ class CongruenceCondition(PolynomialCondition):
             return result[0], result[0]
         else:
             return result
+
+    def never(self):
+        r"""Tell if this condition never holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may not hold, as complex conditions might not be able to
+        determine whether they never hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition can
+        not hold on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.never()
+            True
+            sage: C2.never()
+            False
+
+        Note that when combining conditions, a condition that never
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that never holds
+            sage: C1 | C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+
+        This method is not able to know of every combination of
+        conditions whether it never holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 & C2).never()
+            False
+
+        """
+        return all((self._mod.divides(self._f.monomial_coefficient(m))) != (m == 1)
+                   for m in self._f.monomials())
+
+    def always(self):
+        r"""Tell if this condition always holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may have cases in which it does not hold, as complex
+        conditions might not be able to determine whether they never
+        hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition
+        holds on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.always()
+            True
+            sage: C2.always()
+            False
+
+        Note that when combining conditions, a condition that always
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 | C2
+            The condition that always holds
+
+        This method is not able to know of every combination of
+        conditions whether it always holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 | C2).always()
+            False
+
+        """
+        return all(self._mod.divides(cf) for cf in
+                   self._f.coefficients())
     
     def _repr_(self):
         mod = self.modulus()
@@ -994,7 +1341,7 @@ class PowerCondition(PolynomialCondition):
             return T, pAdic_tree
         else:
             return T
-
+    
     @cached_method
     def _x_str(self):
         i = 0
@@ -1594,6 +1941,63 @@ class CoprimeCondition(Condition_base):
         else:
             return pAdicTree(variables=pAdic_tree.variables(), root=T)
 
+    def always(self):
+        r"""Tell if this condition always holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may have cases in which it does not hold, as complex
+        conditions might not be able to determine whether they never
+        hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition
+        holds on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.always()
+            True
+            sage: C2.always()
+            False
+
+        Note that when combining conditions, a condition that always
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 | C2
+            The condition that always holds
+
+        This method is not able to know of every combination of
+        conditions whether it always holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 | C2).always()
+            False
+
+        """
+        return self._n == 0
+
     def _repr_(self):
         if self._n == 0:
             return "The condition that always holds"
@@ -1787,6 +2191,119 @@ class NotCondition(Condition_base):
             return TN, TY
         else:
             return TN
+
+        def never(self):
+        r"""Tell if this condition never holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may not hold, as complex conditions might not be able to
+        determine whether they never hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition can
+        not hold on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.never()
+            True
+            sage: C2.never()
+            False
+
+        Note that when combining conditions, a condition that never
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that never holds
+            sage: C1 | C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+
+        This method is not able to know of every combination of
+        conditions whether it never holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 & C2).never()
+            False
+
+        """
+        return self._other.always()
+
+    def always(self):
+        r"""Tell if this condition always holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may have cases in which it does not hold, as complex
+        conditions might not be able to determine whether they never
+        hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition
+        holds on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.always()
+            True
+            sage: C2.always()
+            False
+
+        Note that when combining conditions, a condition that always
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 | C2
+            The condition that always holds
+
+        This method is not able to know of every combination of
+        conditions whether it always holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 | C2).always()
+            False
+
+        """
+        return self._other.never()
 
     def _repr_(self):
         s = self._other._repr_()
@@ -2013,6 +2530,119 @@ class AndCondition(Condition_base):
         else:
             return T1.intersection(T2)
 
+    def never(self):
+        r"""Tell if this condition never holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may not hold, as complex conditions might not be able to
+        determine whether they never hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition can
+        not hold on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.never()
+            True
+            sage: C2.never()
+            False
+
+        Note that when combining conditions, a condition that never
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that never holds
+            sage: C1 | C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+
+        This method is not able to know of every combination of
+        conditions whether it never holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 & C2).never()
+            False
+
+        """
+        return (self._left.never() or self._right.never())
+
+    def always(self):
+        r"""Tell if this condition always holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may have cases in which it does not hold, as complex
+        conditions might not be able to determine whether they never
+        hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition
+        holds on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.always()
+            True
+            sage: C2.always()
+            False
+
+        Note that when combining conditions, a condition that always
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 | C2
+            The condition that always holds
+
+        This method is not able to know of every combination of
+        conditions whether it always holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 | C2).always()
+            False
+
+        """
+        return (self._left.always() and self._right.always())
+        
     def _repr_(self):
         right_str = self._right._repr_()
         right_str = right_str[0].lower() + right_str[1:]
@@ -2206,6 +2836,119 @@ class OrCondition(Condition_base):
         else:
             return T1.union(T2)
 
+    def never(self):
+        r"""Tell if this condition never holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may not hold, as complex conditions might not be able to
+        determine whether they never hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition can
+        not hold on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.never()
+            True
+            sage: C2.never()
+            False
+
+        Note that when combining conditions, a condition that never
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that never holds
+            sage: C1 | C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+
+        This method is not able to know of every combination of
+        conditions whether it never holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 & C2).never()
+            False
+
+        """
+        return (self._left.never() and self._right.never())
+
+    def always(self):
+        r"""Tell if this condition always holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may have cases in which it does not hold, as complex
+        conditions might not be able to determine whether they never
+        hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition
+        holds on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.always()
+            True
+            sage: C2.always()
+            False
+
+        Note that when combining conditions, a condition that always
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 | C2
+            The condition that always holds
+
+        This method is not able to know of every combination of
+        conditions whether it always holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 | C2).always()
+            False
+
+        """
+        return (self._left.always() or self._right.always())
+        
     def _repr_(self):
         right_str = self._right._repr_()
         right_str = right_str[0].lower() + right_str[1:]
@@ -2391,6 +3134,119 @@ class TreeCondition(Condition_base):
             return pAdic_tree, pAdic_tree
         else:
             return pAdic_tree
+
+    def never(self):
+        r"""Tell if this condition never holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may not hold, as complex conditions might not be able to
+        determine whether they never hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition can
+        not hold on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.never()
+            True
+            sage: C2.never()
+            False
+
+        Note that when combining conditions, a condition that never
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that never holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that never holds
+            sage: C1 | C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+
+        This method is not able to know of every combination of
+        conditions whether it never holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 & C2).never()
+            False
+
+        """
+        return self._T.is_empty()
+
+    def always(self):
+        r"""Tell if this condition always holds
+
+        .. NOTE::
+
+        This function returning False does not imply this condition
+        may have cases in which it does not hold, as complex
+        conditions might not be able to determine whether they never
+        hold or not.
+
+        OUTPUT:
+
+        True or False. If the return value is True this condition
+        holds on any value for the variables.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1.always()
+            True
+            sage: C2.always()
+            False
+
+        Note that when combining conditions, a condition that always
+        holds might make resulting expressions simpler::
+
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+            sage: R.<a, b> = QQ[]
+            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            The condition that always holds
+            sage: C2 = CoprimeCondition([a, b]); C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 & C2
+            The condition that the variables ('a', 'b') are pairwise coprime.
+            sage: C1 | C2
+            The condition that always holds
+
+        This method is not able to know of every combination of
+        conditions whether it always holds::
+
+            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C1 = CongruenceCondition(x, 2); C1
+            The condition that x == 0 modulo 2
+            sage: C2 = CongruenceCondition(x - 1, 2); C2
+            The condition taht x - 1 == 0 modulo 2
+            sage: (C1 | C2).always()
+            False
+
+        """
+        return self._T.is_full()
 
     def _repr_len(self, max_item=50, max_char=1000):
         r"""Give a string representation of this Condition of at most a given
@@ -2640,6 +3496,123 @@ class TextCondition(Condition_base):
         else:
             self._short = short_text
         Condition_base.__init__(self, variables)
+
+    def pAdic_tree(self, pAdic_tree=None, pAdics=None, complement=False, **kwds):
+        r"""Give this condition as a pAdicTree.
+
+        INPUT:
+        
+        - ``pAdic_tree`` -- A pAdicTree object (default:None) on which
+          this condition should be applied. If set to None will be
+          initiated as the full tree with the given pAdics.
+
+        - ``pAdics`` -- A pAdicBase object (default: None) determining
+          the pAdics that should be used. If set to None will use the
+          pAdics of the given pAdicTree instead. If that is also set
+          to None, will use the pAdics of the tree stored in this
+          Condition instead.
+
+        - ``complement`` -- A boolean (default: False) determining
+          whether the complement of the result should be returned.
+
+        OUTPUT:
+
+        If no pAdicTree was given and no pAdics were given, returns
+        the pAdicTree that defines this Condition. If complement was
+        set to True will return that pAdicTree and its complement.
+
+        If the given pAdicTree has no common pAdics with the pAdicTree
+        stored in this Condition will return the given pAdicTree. If
+        complement was set to True will return that pAdicTree twice.
+
+        If the given pAdicTree has common pAdics with the pAdicTree
+        stored in this Condition will return a pAdicTree containing
+        all values of the given pAdicTree that agree with a value in
+        the pAdicTree that defines this condition. Here two values of
+        two pAdicTrees agree if the variables with the same name are
+        assigned the same value.
+
+        In the last case, if complement is set to True, will given the
+        afore mentioned as the first return value and will give as the
+        second return value a pAdicTree containing all values of the
+        given pAdicTree that agree with a value of the complement of
+        the pAdicTree that defines this condition.
+
+        EXAMPLES::
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which the
+        condition is satisfied and one for which it is not::
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only in case
+        it is obvious which tree should be returned::
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
+
+        """
+        # Only implemented for compatibility in elimination functions
+        # Will return the entire given tree as result and as complement
+        if pAdic_tree is None:
+            pAdic_tree = pAdicTree(variables=self.variables(),
+                                   pAdics=pAdics, full=True)
+        if complement:
+            return pAdic_tree, pAdic_tree
+        else:
+            return pAdic_tree
+
 
     def _repr_(self):
         return self._long
@@ -3441,12 +4414,13 @@ def apply_to_conditional_value(function, value, singleton=False,
         if not isinstance(result, ConditionalValue):
             result = [(result, con)]
         for f_val, f_con in result:
-            try:
-                i = values.index(f_val)
-                conditions[i] = conditions[i] | f_con
-            except ValueError:
-                values.append(f_val)
-                conditions.append(f_con)
+            if not f_con.never():
+                try:
+                    i = values.index(f_val)
+                    conditions[i] = conditions[i] | f_con
+                except ValueError:
+                    values.append(f_val)
+                    conditions.append(f_con)
     if not singleton and len(values) == 1:
         return values[0]
     else:
@@ -3604,14 +4578,15 @@ def conditional_over_values(function, values, start_condition=None,
         if not isinstance(result, ConditionalValue):
             result = [(result, con)]
         for fval, fcon in result:
-            try:
-                i = vals.index(fval)
-                cons[i] = cons[i] | fcon
-            except ValueError:
-                vals.append(fval)
-                cons.append(fcon)
+            if not fcon.never():
+                try:
+                    i = vals.index(fval)
+                    cons[i] = cons[i] | fcon
+                except ValueError:
+                    vals.append(fval)
+                    cons.append(fcon)
     if not singleton and len(vals) == 1:
-        return values[0]
+        return vals[0]
     else:
         return ConditionalValue(list(zip(vals, cons)))
         

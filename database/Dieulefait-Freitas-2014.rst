@@ -138,8 +138,8 @@ product of two non-isogenous abelian surfaces of GL_2-type.
    sage: Ec.number_of_splitting_maps(count_conjugates=False)
    2
    sage: Ec.splitting_image_field('conjugacy')
-   (Number Field in zeta80 with defining polynomial x^2 + 2*x + 2,
-    Number Field in zeta80 with defining polynomial x^2 + 2*x + 2)
+   (Number Field in zeta80 with defining polynomial x^2 + 2*x + 2 with zeta80 = -1 - 1*I,
+    Number Field in zeta80 with defining polynomial x^2 + 2*x + 2 with zeta80 = -1 - 1*I)
 
 Now we again check that ``Ec`` has the invariants as mentioned in
 section 3.1 of the article. Note that the invariant :math:`c_4` as
@@ -148,7 +148,7 @@ printed in the article is wrong, as the second - should be a +.
 ::
 
    sage: iota = K.embeddings(Ke)[0]
-   sage: iso = Ec.definition_field().embeddings(Ke)[0]
+   sage: iso = Ec.definition_field().embeddings(Ke)[1]
    sage: bar = K.galois_group().gen()
    sage: Ec.discriminant().change_ring(iso) == gamma^6 * 2^6 * (bar(w) * phi1^2 * phi2).change_ring(iota)
    True
@@ -179,26 +179,26 @@ proposition 3.5.
    sage: Ec.conductor_exponent(B2)
    8 if ('a', 'b') is 1 of 6 possibilities mod 4
    6 if ('a', 'b') is 1 of 4 possibilities mod 4
-   4 if ('a', 'b') is 1 of 4 possibilities mod 8
    0 if ('a', 'b') is 1 of 4 possibilities mod 8
+   4 if ('a', 'b') is 1 of 4 possibilities mod 8
    sage: Ec.conductor_exponent(B2)[0][1]
    The condition that ('a', 'b') == (1, 1), (1, 2), (2, 1), (2, 3), (3, 2), (3, 3) mod 4
    sage: Ec.conductor_exponent(B2)[1][1]
    The condition that ('a', 'b') == (0, 1), (0, 3), (1, 0), (3, 0) mod 4
    sage: Ec.conductor_exponent(B2)[2][1]
-   The condition that ('a', 'b') == (1, 7), (3, 5), (5, 3), (7, 1) mod 8
-   sage: Ec.conductor_exponent(B2)[3][1]
    The condition that ('a', 'b') == (1, 3), (3, 1), (5, 7), (7, 5) mod 8
+   sage: Ec.conductor_exponent(B2)[3][1]
+   The condition that ('a', 'b') == (1, 7), (3, 5), (5, 3), (7, 1) mod 8
 
 We also show that the result presented in proposition 3.6 is correct.
 
 ::
 
-   sage: Ec2 = Ec.twist(2)
+   sage: Ec2 = Ec.twist(QQ(2))
    sage: C2 = C & CongruenceCondition(a + b, 2) & ~CongruenceCondition(a + b, 4)
-   sage: Ec2.conductor_exponent(B2, condition=C2)
-   4 if ('a', 'b') is 1 of 4 possibilities mod 8
+   sage: Ec2.conductor_exponent(Ec2.definition_field().prime_above(2), condition=C2)
    0 if ('a', 'b') is 1 of 4 possibilities mod 8
+   4 if ('a', 'b') is 1 of 4 possibilities mod 8
 
 We compute the conductor of the restriction of scalars as is done in
 proposion 4.1 and proposition 4.2.
@@ -207,14 +207,14 @@ proposion 4.1 and proposition 4.2.
 
    sage: Pbad = Ec.decomposition_field().primes_above(2*5)
    sage: Ec.conductor_restriction_of_scalars(additive_primes=Pbad)
-   2^(2*n0+8)*5^(n1+6)*Norm(Rad_P( ((49280*zeta0^3 - 130240*zeta0^2 - 41600*zeta0 + 211200)) * (a^2 + (-zeta0^2 + 2)*a*b + b^2) * (a^2 + (zeta0^2 - 3)*a*b + b^2)^2 ))
+   5^(n0+6)*2^(2*n1+8)*Norm(Rad_P( ((-6160*lutheta0^3 - 106480*lutheta0^2 - 535360*lutheta0 - 620800)) * (a^2 + (-1/4*lutheta0^2 - 2*lutheta0 - 2)*a*b + b^2) * (a^2 + (1/4*lutheta0^2 + 2*lutheta0 + 1)*a*b + b^2)^2 ))
     where 
-   n0 =  8 if ('a', 'b') is 1 of 6 possibilities mod 4
-         6 if ('a', 'b') is 1 of 4 possibilities mod 4
-         4 if ('a', 'b') is 1 of 4 possibilities mod 8
-         0 if ('a', 'b') is 1 of 4 possibilities mod 8
-   n1 =  2 if ('a', 'b') is 1 of 20 possibilities mod 5
+   n0 =  2 if ('a', 'b') is 1 of 20 possibilities mod 5
          0 if ('a', 'b') is 1 of 4 possibilities mod 5
+   n1 =  8 if ('a', 'b') is 1 of 6 possibilities mod 4
+         6 if ('a', 'b') is 1 of 4 possibilities mod 4
+         0 if ('a', 'b') is 1 of 4 possibilities mod 8
+         4 if ('a', 'b') is 1 of 4 possibilities mod 8
 
 The levels of the newforms is as mentioned at the end of section 4 one
 of 100, 4000, 800 or 1600. Note that our computation also allows other
@@ -223,14 +223,14 @@ of 100, 4000, 800 or 1600. Note that our computation also allows other
 ::
 
    sage: Ec.newform_levels(bad_primes=Pbad)
-   [(1600, 1600)]             if ('a', 'b') is 1 of 6 possibilities mod 4 and ('a', 'b') is 1 of 20 possibilities mod 5
-   [(320, 1600), (1600, 320)] if ('a', 'b') is 1 of 6 possibilities mod 4 and ('a', 'b') is 1 of 4 possibilities mod 5
-   [(800, 800)]               if ('a', 'b') is 1 of 4 possibilities mod 4 and ('a', 'b') is 1 of 20 possibilities mod 5
-   [(160, 800), (800, 160)]   if ('a', 'b') is 1 of 4 possibilities mod 4 and ('a', 'b') is 1 of 4 possibilities mod 5
-   [(400, 400)]               if ('a', 'b') is 1 of 4 possibilities mod 8 and ('a', 'b') is 1 of 20 possibilities mod 5
-   [(80, 400), (400, 80)]     if ('a', 'b') is 1 of 4 possibilities mod 8 and ('a', 'b') is 1 of 4 possibilities mod 5
-   [(100, 100)]               if ('a', 'b') is 1 of 4 possibilities mod 8 and ('a', 'b') is 1 of 20 possibilities mod 5
-   [(20, 100), (100, 20)]     if ('a', 'b') is 1 of 4 possibilities mod 8 and ('a', 'b') is 1 of 4 possibilities mod 5
+   [(1600, 1600)]             if ('a', 'b') is 1 of 20 possibilities mod 5 and ('a', 'b') is 1 of 6 possibilities mod 4
+   [(800, 800)]               if ('a', 'b') is 1 of 20 possibilities mod 5 and ('a', 'b') is 1 of 4 possibilities mod 4
+   [(100, 100)]               if ('a', 'b') is 1 of 20 possibilities mod 5 and ('a', 'b') is 1 of 4 possibilities mod 8
+   [(400, 400)]               if ('a', 'b') is 1 of 20 possibilities mod 5 and ('a', 'b') is 1 of 4 possibilities mod 8
+   [(320, 1600), (1600, 320)] if ('a', 'b') is 1 of 4 possibilities mod 5 and ('a', 'b') is 1 of 6 possibilities mod 4
+   [(160, 800), (800, 160)]   if ('a', 'b') is 1 of 4 possibilities mod 5 and ('a', 'b') is 1 of 4 possibilities mod 4
+   [(20, 100), (100, 20)]     if ('a', 'b') is 1 of 4 possibilities mod 5 and ('a', 'b') is 1 of 4 possibilities mod 8
+   [(80, 400), (400, 80)]     if ('a', 'b') is 1 of 4 possibilities mod 5 and ('a', 'b') is 1 of 4 possibilities mod 8
 
 We circumvent the code choosing the lower levels instead of the levels
 we want by explicitly computing the spaces of newforms as in the
@@ -238,10 +238,11 @@ article.
 
 ::
 
+   sage: from modular_method.diophantine_equations.conditions import apply_to_conditional_value
    sage: level = apply_to_conditional_value(lambda ls: ls[0][1], Ec.newform_levels(bad_primes=Pbad))
    sage: char = Ec.splitting_character('conjugacy')[1]^(-1)
    sage: nfs = apply_to_conditional_value(lambda lvl: get_newforms(lvl, character=char,
-   ....: algorithm='sage'), level)
+   ....:                                                           algorithm='sage'), level)
 
 As in the article we divide these spaces into three different
 categories ``S1``, ``S2`` and ``S3``, respectively the newforms with
@@ -270,7 +271,7 @@ have complex multiplication by :math:`\QQ(\sqrt{5})`.
    sage: len(S1[0][0] + S1[2][0] + S1[3][0])
    10
    sage: [nf._f.cm_discriminant() for nf in S1[0][0] + S1[2][0] + S1[3][0]]
-   [-20, -4, -4, -20, -20, -4, -20, -20, -20, -4]
+   [-20, -4, -4, -20, -20, -20, -4, -20, -4, -20]
 
 These newforms are eliminated for all primes :math:`p > 13` for which
 :math:`p \equiv 1` modulo 4 or :math:`p \equiv \pm 1` modulo 5.
@@ -280,7 +281,7 @@ The article now claims there are 12 newforms in ``S2``.
 ::
 
    sage: len(S2[0][0] + S2[1][0] + S2[2][0])
-   13
+   12
 
 Furthermore it eliminates all these newforms by the fact that none of
 them have a third coefficient of the form :math:`t - i t` with
@@ -309,6 +310,7 @@ check.
 
 ::
 
+   sage: from modular_method.number_fields.dirichlet_characters import character_for_root
    sage: chi = character_for_root(2)
    sage: all(any(all(nf.coefficient(i) * chi(i) == ng.coefficient(i) for i in range(sturm_bound(800)+1))
    ....: for ng in S3[1][0]) for nf in S3[0][0])
@@ -346,10 +348,11 @@ polynomial to verify this.
 
 ::
 
+   sage: nf = S2[1][0][0]
    sage: i = nf.coefficient_field().base_field().gen()
    sage: lcm(ZZ(nf.coefficient(3).minpoly()(t - t*i).norm()) for nf in S2[1][0]
    ....: for t in range(-2, 3)).prime_factors()
-   []
+   [3, 5]
 
 The newforms of level 800 in ``S3`` are eliminated by comparing traces
 of frobenius which we verify. We verify that only for primes above 2,
@@ -359,7 +362,7 @@ of frobenius which we verify. We verify that only for primes above 2,
 
    sage: result = eliminate_by_trace(Ec, S3[1][0], 3, condition=C & CongruenceCondition(a + b, 3))
    sage: lcm(nf[1] for nf in result).prime_factors()
-   [2, 3, 5]
+   [2, 3]
 
 Next, the article turns to the newforms of level 1600 in the case when
 :math:`a + b` is odd. For those in ``S1`` the article notes that those
@@ -438,7 +441,6 @@ omit the newform_candidates method.
 ::
 
    sage: levels2 = apply_to_conditional_value(lambda ls: ls[0][1], Fc.newform_levels())
-   Warning: Assuming that a and b are coprime.
    sage: char2 = Fc.splitting_character('conjugacy')[1]^(-1)
    sage: nfs2 = apply_to_conditional_value(lambda lvl: get_newforms(lvl, character=char,
    ....: algorithm='sage'), levels2)
@@ -456,6 +458,9 @@ comparison of traces at 3, 7, 13 and 17.
    ....: if nf.coefficient_field().absolute_degree() == 2], nfs2)
    sage: S12 = apply_to_conditional_value(lambda ls: [nf for nf in ls
    ....: if nf.coefficient_field().absolute_degree() == 2], S1)
+   sage: from modular_method.diophantine_equations.conditions import conditional_product
+   sage: from modular_method.diophantine_equations.conditions import ConditionalValue
+   sage: from modular_method.padics.pAdic_base import pAdicBase
    sage: nfs_big = conditional_product(S1, nfs22)
    sage: nfs_big = ConditionalValue([(val, con) for val, con in nfs_big
    ....: if not con.pAdic_tree(pAdics=pAdicBase(QQ, 2)).is_empty()])
@@ -468,20 +473,6 @@ we remove all cases in which only a prime :math:`p \le 13` would work.
 
    sage: nfs_big = eliminate_primes((Ec, Fc), nfs_big, product(prime_range(14)))
    sage: sum(len(nfs_big[i][0]) for i in range(len(nfs_big)))
-   19
+   0
 
-We however find there is more newforms remaining than only CM forms,
-but removing the case :math:`p = 17` we are indeed in the case as
-described that all pairs :math:`(f, g)` have CM with different
-discriminants.
-
-::
-
-   sage: nfs_big = eliminate_primes((Ec, Fc), nfs_big, 17)
-   sage: sum(len(nfs_big[i][0]) for i in range(len(nfs_big)))
-   15
-   sage: all(fg[0]._f.cm_discriminant() != fg[1]._f.cm_discriminant()
-   ....:     for fg in nfs_big[0][0] + nfs_big[1][0] + nfs_big[2][0] + nfs_big[3][0])
-   True
-
-There are however more newforms as expressed in the article.
+We however find there is no newforms remaining at all.

@@ -129,6 +129,7 @@ there is only one of each
 
 ::
 
+   sage: Kb = Eb.definition_field()
    sage: q2 = Kb.prime_above(2)
    sage: q3 = Kb.prime_above(3)
    sage: Kb.primes_above(2*3) == [q2, q3]
@@ -139,7 +140,7 @@ The conductor of ``Eb`` can be computed and agrees with the article.
 ::
 
    sage: N = Eb.conductor(additive_primes=[q2, q3]); N
-   (4)*(1/8*lu^3 + 5/4*lu + 3/2)^n0*Rad_P( (-186624) * (b^3 + (1/4*lu^3 + 3/2*lu)*a) * (b^3 + (-1/4*lu^3 - 3/2*lu)*a)^3 )
+   (4)*(1/8*lu0^3 + 5/4*lu0 + 3/2)^n0*Rad_P( (-186624) * (b^3 + (1/4*lu0^3 + 3/2*lu0)*a) * (b^3 + (-1/4*lu0^3 - 3/2*lu0)*a)^3 )
     where 
    n0 = 0 if ('a', 'b') is 1 of 24 possibilities mod 9
         4 if ('a', 'b') is 1 of 48 possibilities mod 9
@@ -157,7 +158,7 @@ article.
 ::
 
    sage: NR = Eb.conductor_restriction_of_scalars(additive_primes=[q2, q3]); NR
-   65536*3^(2*n0+4)*Norm(Rad_P( (-186624) * (b^3 + (1/4*lu^3 + 3/2*lu)*a) * (b^3 + (-1/4*lu^3 - 3/2*lu)*a)^3 ))
+   65536*3^(2*n0+4)*Norm(Rad_P( (-186624) * (b^3 + (1/4*lu0^3 + 3/2*lu0)*a) * (b^3 + (-1/4*lu0^3 - 3/2*lu0)*a)^3 ))
     where 
    n0 = 0 if ('a', 'b') is 1 of 24 possibilities mod 9
         4 if ('a', 'b') is 1 of 48 possibilities mod 9
@@ -178,13 +179,27 @@ Furthermore we can associate to it newforms of level 48 or 432.
    [(48,)]  if ('a', 'b') is 1 of 24 possibilities mod 9
    [(432,)] if ('a', 'b') is 1 of 48 possibilities mod 9
 
-We get a list of newform candidates as presented in the article.
+We get a list of newform candidates as presented in the article. Note
+that the method newform_candidates produces multiple copies of the
+same newform to act as Galois conjugates of one another.
 
 ::
 
-   sage: nfs = Eb.newform_candidates(bad_primes=[q2, q3], algorithm='magma')
-   sage: F, = nfs[0][0]
-   sage: G1, G2, G3 = nfs[1][0]
+   sage: nfs = Eb.newform_candidates(bad_primes=[q2, q3], algorithm='sage')
+   sage: F, F1 = nfs[0][0]
+   sage: F1.q_expansion(50) == F.q_expansion(50)
+   True
+   sage: G1, G11, G2, G21, G3, G31, G32, G33 = nfs[1][0]
+   sage: G11.q_expansion(50) == G1.q_expansion(50)
+   True
+   sage: G21.q_expansion(50) == G2.q_expansion(50)
+   True
+   sage: G31.q_expansion(50) == G3.q_expansion(50)
+   True
+   sage: G32.q_expansion(50) == G3.q_expansion(50)
+   True
+   sage: G33.q_expansion(50) == G3.q_expansion(50)
+   True
    sage: F.has_cm() and G1.has_cm() and G2.has_cm() and not G3.has_cm()
    True
 
@@ -196,7 +211,7 @@ multiplication which we can do using a function
    sage: nfs = eliminate_cm_forms(Eb, nfs)
    sage: nfs[0][0] == []
    True
-   sage: nfs[1][0] == [(G3, 0)]
+   sage: nfs[1][0] == [(G3, 0), (G31, 0), (G32, 0), (G33, 0)]
    True
 
 A second Frey curve

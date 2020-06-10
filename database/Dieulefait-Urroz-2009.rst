@@ -70,7 +70,7 @@ the article.
    sage: E.does_decompose()
    True
    sage: E.splitting_image_field('conjugacy')
-   (Number Field in a with defining polynomial x^2 - 2,)
+   (Number Field in a with defining polynomial x^2 - 2 with a = 1.414213562373095?,)
 
 We verify that the conductor exponent at the prime dividing 2 is
 indeed 12 or 10. Furthermore the conductor of the restriction of
@@ -94,27 +94,27 @@ in the article.
 
 We compute the newforms at these levels and verify that there are
 indeed 22 of them as the article states. Here we count all galois
-conjugates hence for each conjugacy class we take the degree of the
-corresponding coefficient field as the number of newforms in that
-class.
+conjugates.
 
 ::
 
    sage: nfs = E.newform_candidates()
-   sage: sum(nf.coefficient_field().degree() for nf in nfs[0][0] + nfs[1][0])
+   sage: len(nfs[0][0] + nfs[1][0])
    22
 
 The article first eliminates all newforms with complex multiplication
 under the assumption that :math:`p > 349`. As mentioned later on there
-are only five remaining newforms up to conjugation all of level 512.
+are only five remaining newforms up to conjugation all of
+level 512. To count newforms up to conjugation we count each newform 1
+over the degree of its coefficient field times.
 
 ::
 
    sage: nfs = eliminate_cm_forms(E, nfs)
-   sage: len(nfs[0][0]) + len(nfs[1][0])
+   sage: sum(1 / nf[0].coefficient_field().degree() for nf in nfs[0][0] + nfs[1][0])
    5
-   sage: [nf[0].level() for nf in nfs[0][0] + nfs[1][0]]
-   [512, 512, 512, 512, 512]
+   sage: all(nf[0].level() == 512 for nf in nfs[0][0] + nfs[1][0])
+   True
 
 These newforms are now eliminated by noting that their third
 coefficient should be congruent to some integer :math:`a_3` modulo a
@@ -133,7 +133,8 @@ the norm of the third coefficient of each newform minus each possible
 ------------------------
 
 In this case only the way to determine whether the corresponding
-galois representation is different. We thus get the same newforms.
+galois representation can be eliminated is different. We thus get the
+same newforms.
 
 ::
 
@@ -187,6 +188,7 @@ suggested in the article, the quadratic character of
 
    sage: gamma = 2 + QuadraticField(6).gen()
    sage: Ec = E.twist(gamma)
+   sage: from modular_method.number_fields.dirichlet_characters import character_for_root
    sage: Ec._eps = {0 : [character_for_root(6)]}
    sage: Ec.does_decompose()
    True
@@ -194,8 +196,8 @@ suggested in the article, the quadratic character of
    [4]
 
 After some computations and verifying modularity, the article states
-that the possible levels of newforms corresponding to this curve 24,
-96, 192 and 384 which we verify. We use the fact that the only bad
+that the possible levels of newforms corresponding to this curve are
+24, 96, 192 and 384 which we verify. We use the fact that the only bad
 primes can be above 2 and 3.
 
 ::
@@ -211,17 +213,16 @@ primes can be above 2 and 3.
 As in the article we compute all newforms of these levels and first
 eliminate all those newforms that have complex multiplication. We
 check that the only newforms remaining are those of level 192 with
-fifth coefficient squared equalt to 12 and those of level 384 with
+fifth coefficient squared equal to 12 and those of level 384 with
 seventh coefficient squared equal to -24 or -8.
 
 ::
 
    sage: nfs = Ec.newform_candidates(bad_primes=Pbad)
    sage: nfs = eliminate_cm_forms(Ec, nfs)
-   sage: [nf[0].level() for nfsi in nfs for nf in nfsi[0]]
-   [384, 384]
-   sage: [nf[0].coefficient(7)^2 for nfsi in nfs for nf in nfsi[0]]
-   [-8, -8]
+   sage: all(nf[0].level() == 384 and nf[0].coefficient(7)^2 == -8
+   ....:     for nfsi in nfs for nf in nfsi[0])
+   True
 
 We check as stated in the article that for each newform of level 384
 the seventh coefficient is not congruent to :math:`z i` modulo primes

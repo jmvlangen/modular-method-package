@@ -57,14 +57,17 @@ For equation 2 the article introduces 2 different Frey curves, one for
 the case that :math:`a b` is even and one for the case it is odd. In
 the first case the article assume without loss of generality that
 :maht:`a` is even and :math:`c \equiv 1` modulo 4. In the second case
-the article assumes :math:`a \equiv -1` modulo 4.
+the article assumes :math:`a \equiv -1` modulo 4. For the curve `E21`
+we will remove a power of 2 from `ap` to reduce on computation time
+for the conductor.
 
 ::
 
    sage: S2 = QQ[ap, c]
-   sage: C21 = (CoprimeCondition([ap, c]) & CongruenceCondition(ap, 2) & CongruenceCondition(c - 1, 4) &
-   ....:        PowerCondition(ap, 7) & PowerCondition(c^2 - ap, 7))
-   sage: E21 = FreyCurve([1, S2((c - 1)/4), 0, S2(ap/2^6), 0], condition=C21)
+   sage: ap_ = 2^6 * ap
+   sage: C21 = (CoprimeCondition([ap_, c]) & CongruenceCondition(c - 1, 4) &
+   ....:        PowerCondition(ap_, 7) & PowerCondition(c^2 - ap_, 7))
+   sage: E21 = FreyCurve([1, S2((c - 1)/4), 0, S2(ap), 0], condition=C21)
    sage: C22 = (CoprimeCondition([ap, c]) & ~CongruenceCondition(ap*(c^2 - ap), 2) &
    ....:        CongruenceCondition(ap + 1, 4) & PowerCondition(ap, 7) &
    ....:        PowerCondition(c^2 - ap, 7))
@@ -94,7 +97,7 @@ We check that the discriminants are indeed as listed in the article.
 
    sage: E1.discriminant() == 2^6*(ap*(2*cp - ap)*cp)^2
    True
-   sage: E21.discriminant() == 2^(-12)*ap^2*(c^2 - ap)
+   sage: E21.discriminant() == ap^2*(c^2 - 2^6*ap)
    True
    sage: E22.discriminant() == 2^6*ap^2*(c^2 - ap)
    True
@@ -118,7 +121,7 @@ Papadopoulus to exist in case 3 divides :math:`b` or the property
    n0 = 5 if ('ap', 'cp') == (3, 1), (3, 3) mod 4
         1 if ('ap', 'cp') is 1 of 32 possibilities mod 128
    sage: E21.conductor(additive_primes=[2])
-   2*Rad_P( (1/4096) * ap^2 * (c^2 - ap) )
+   2*Rad_P( ap^2 * (c^2 - 64*ap) )
    sage: E22.conductor(additive_primes=[2])
    32*Rad_P( (64) * ap^2 * (c^2 - ap) )
    sage: E31.conductor(additive_primes=[3])
@@ -147,10 +150,10 @@ different curves.
    sage: nfs22 = E22.newform_candidates(bad_primes=[2]); nfs22
    [q - 2*q^5 + O(q^6)]
    sage: nfs31 = E31.newform_candidates(bad_primes=[3]); nfs31
-   []                   if ('bp', 'c0') is 1 of 710046 possibilities mod 2187 or ('bp', 'c0') is 1 of 1458 possibilities mod 2187
+   []                   if ('bp', 'c0') is 1 of 711504 possibilities mod 2187
    [q - 2*q^4 + O(q^6)] if ('bp', 'c0') is 1 of 24 possibilities mod 9
    sage: nfs32 = E32.newform_candidates(bad_primes=[3]); nfs32
-   []                   if ('bp', 'c') is 1 of 710046 possibilities mod 2187 or ('bp', 'c') is 1 of 1458 possibilities mod 2187
+   []                   if ('bp', 'c') is 1 of 711504 possibilities mod 2187
    [q - 2*q^4 + O(q^6)] if ('bp', 'c') is 1 of 24 possibilities mod 9
 
 The last thing we check is that the remaining newforms have complex

@@ -146,6 +146,7 @@ from modular_method.elliptic_curves.Qcurves import Qcurve
 from modular_method.elliptic_curves.Qcurves import _rational_maps_of_urst
 from modular_method.elliptic_curves.Qcurves import _scalar_of_rational_maps
 from modular_method.elliptic_curves.tates_algorithm import tates_algorithm
+from modular_method.elliptic_curves.twist import is_twist
 
 from modular_method.padics.pAdic_base import pAdicBase
 from modular_method.padics.pAdic_tree import pAdicTree, pAdicNode
@@ -2785,12 +2786,12 @@ class FreyQcurve(FreyCurve, Qcurve):
             def compute_trace2(red_type, con2):
                 if red_type == None: # Good reduction
                     return self._trace_of_frob_good(P, beta,
-                                                    condition,
+                                                    con2,
                                                     verbose,
                                                     precision_cap)
                 elif red_type == 1 or red_type == -1: # Multiplicative reduction
                     return self._trace_of_frob_mult(P, beta,
-                                                    condition,
+                                                    con2,
                                                     verbose,
                                                     precision_cap)
                 else: # Additive reduction
@@ -2806,11 +2807,16 @@ class FreyQcurve(FreyCurve, Qcurve):
         result = conditional_over_values(compute_trace1,
                                          K.primes_above(prime),
                                          start_condition=condition)
-        for val, con in result:
-            if val == None:
-                raise ValueError("Trace of frobenius can not be " +
-                                 "computed in case " + str(con) +
-                                 " holds.")
+        if isinstance(result, ConditionalValue):
+            for val, con in result:
+                if val == None:
+                    raise ValueError("Trace of frobenius can not be " +
+                                     "computed in case " + str(con) +
+                                     " holds.")
+        elif result == None:
+            raise ValueError("Trace of frobenius can not be " +
+                             "computed in case " + str(con) +
+                             " holds.")
         return result
 
     def _trace_of_frob_good(self, P, beta, condition, verbose,
@@ -2821,7 +2827,7 @@ class FreyQcurve(FreyCurve, Qcurve):
         G = K.galois_group()
         Frob = G.artin_symbol(P)
         sE = FreyCurve(self.galois_conjugate(Frob),
-                       condition=E3._condition)
+                       condition=self._condition)
         sP = Frob(P)
         psi = self._phi_x[Frob], self._phi_y[Frob]
         R = P.residue_field()
@@ -2850,10 +2856,10 @@ class FreyQcurve(FreyCurve, Qcurve):
                 # Making a loop over the possible reductions of Emin
                 results = {}
                 T = con2.pAdic_tree(pAdics=pAdics).root()
-                E_val = ZZ(min(pAdics.valuation(cf)
+                E_val = ZZ(min(pAdicsK.valuation(cf)
                                for a in Emin.a_invariants()
                                for cf in a.coefficients())) // ext
-                sE_val = ZZ(min(pAdics.valuation(cf)
+                sE_val = ZZ(min(pAdicsK.valuation(cf)
                                 for a in sEmin.a_invariants()
                                 for cf in a.coefficients())) // ext
                 T_val = T.minimum_full_level()

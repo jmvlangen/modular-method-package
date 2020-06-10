@@ -511,6 +511,18 @@ def composite_field(K1, K2, give_maps=False, names=None):
            To:   Number Field in a1 with defining polynomial x^4 - 10*x^2 + 1
            Defn: a |--> -1/2*a1^3 + 11/2*a1)
 
+    TESTS:
+
+    Works if one of the fields is a degree 1 extension and the other
+    is QQ::
+
+        sage: from modular_method.number_fields.field_constructors import composite_field
+        sage: K = CyclotomicField(1)
+        sage: composite_field(QQ, K)
+        Cyclotomic Field of order 1 and degree 1
+        sage: composite_field(K, QQ)
+        Rational Field
+
     """
     to_K1 = None; to_K2 = None
     K1or = K1; K2or = K2
@@ -524,6 +536,10 @@ def composite_field(K1, K2, give_maps=False, names=None):
         K2 = write_as_extension(K2, give_map=give_maps)
         if give_maps:
             K2, to_K2 = K2
+    if not K1.is_field():
+        raise ValueError(str(K1) + "is not a field")
+    if not K2.is_field():
+        raise ValueError(str(K2) + "is not a field")
     if give_maps and to_K1 is None:
         to_K1 = K1.hom(K1)
     if give_maps and to_K2 is None:
@@ -540,7 +556,7 @@ def composite_field(K1, K2, give_maps=False, names=None):
     K01 = K1
     K02 = K2
     while K01 != K02:
-        if K01.absolute_degree() < K02.absolute_degree():
+        if K01.absolute_degree() < K02.absolute_degree() or K01 == QQ:
             K02 = K02.base_ring()
         else:
             K01 = K01.base_ring()
