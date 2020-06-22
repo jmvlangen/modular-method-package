@@ -168,12 +168,12 @@ class Condition_base(SageObject):
         This method is not able to know of every combination of
         conditions whether it never holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 & C2).never()
             False
 
@@ -213,7 +213,7 @@ class Condition_base(SageObject):
 
             sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<a, b> = QQ[]
-            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
             The condition that always holds
             sage: C2 = CoprimeCondition([a, b]); C2
             The condition that the variables ('a', 'b') are pairwise coprime.
@@ -225,12 +225,12 @@ class Condition_base(SageObject):
         This method is not able to know of every combination of
         conditions whether it always holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 | C2).always()
             False
 
@@ -555,12 +555,12 @@ class PolynomialCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it never holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 & C2).never()
             False
 
@@ -600,7 +600,7 @@ class PolynomialCondition(Condition_base):
 
             sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<a, b> = QQ[]
-            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
             The condition that always holds
             sage: C2 = CoprimeCondition([a, b]); C2
             The condition that the variables ('a', 'b') are pairwise coprime.
@@ -612,12 +612,12 @@ class PolynomialCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it always holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 | C2).always()
             False
 
@@ -1067,12 +1067,12 @@ class CongruenceCondition(PolynomialCondition):
         This method is not able to know of every combination of
         conditions whether it never holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 & C2).never()
             False
 
@@ -1113,7 +1113,7 @@ class CongruenceCondition(PolynomialCondition):
 
             sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<a, b> = QQ[]
-            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
             The condition that always holds
             sage: C2 = CoprimeCondition([a, b]); C2
             The condition that the variables ('a', 'b') are pairwise coprime.
@@ -1125,12 +1125,12 @@ class CongruenceCondition(PolynomialCondition):
         This method is not able to know of every combination of
         conditions whether it always holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 | C2).always()
             False
 
@@ -1974,7 +1974,7 @@ class CoprimeCondition(Condition_base):
 
             sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<a, b> = QQ[]
-            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
             The condition that always holds
             sage: C2 = CoprimeCondition([a, b]); C2
             The condition that the variables ('a', 'b') are pairwise coprime.
@@ -1986,12 +1986,12 @@ class CoprimeCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it always holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 | C2).always()
             False
 
@@ -2236,12 +2236,12 @@ class NotCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it never holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 & C2).never()
             False
 
@@ -2281,7 +2281,7 @@ class NotCondition(Condition_base):
 
             sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<a, b> = QQ[]
-            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
             The condition that always holds
             sage: C2 = CoprimeCondition([a, b]); C2
             The condition that the variables ('a', 'b') are pairwise coprime.
@@ -2293,12 +2293,12 @@ class NotCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it always holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 | C2).always()
             False
 
@@ -2574,12 +2574,12 @@ class AndCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it never holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 & C2).never()
             False
 
@@ -2619,7 +2619,7 @@ class AndCondition(Condition_base):
 
             sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<a, b> = QQ[]
-            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
             The condition that always holds
             sage: C2 = CoprimeCondition([a, b]); C2
             The condition that the variables ('a', 'b') are pairwise coprime.
@@ -2631,12 +2631,12 @@ class AndCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it always holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 | C2).always()
             False
 
@@ -2880,12 +2880,12 @@ class OrCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it never holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 & C2).never()
             False
 
@@ -2925,7 +2925,7 @@ class OrCondition(Condition_base):
 
             sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<a, b> = QQ[]
-            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
             The condition that always holds
             sage: C2 = CoprimeCondition([a, b]); C2
             The condition that the variables ('a', 'b') are pairwise coprime.
@@ -2937,12 +2937,12 @@ class OrCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it always holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 | C2).always()
             False
 
@@ -3179,12 +3179,12 @@ class TreeCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it never holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 & C2).never()
             False
 
@@ -3224,7 +3224,7 @@ class TreeCondition(Condition_base):
 
             sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
             sage: R.<a, b> = QQ[]
-            sage: C1 = ~CoprimeCondition([a, b], n=0); C1
+            sage: C1 = CoprimeCondition([a, b], n=0); C1
             The condition that always holds
             sage: C2 = CoprimeCondition([a, b]); C2
             The condition that the variables ('a', 'b') are pairwise coprime.
@@ -3236,12 +3236,12 @@ class TreeCondition(Condition_base):
         This method is not able to know of every combination of
         conditions whether it always holds::
 
-            sage: from modular_method.diophantine_equation.conditions import CongruenceCondition
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
             sage: R.<x> = QQ[]
             sage: C1 = CongruenceCondition(x, 2); C1
             The condition that x == 0 modulo 2
             sage: C2 = CongruenceCondition(x - 1, 2); C2
-            The condition taht x - 1 == 0 modulo 2
+            The condition that x - 1 == 0 modulo 2
             sage: (C1 | C2).always()
             False
 

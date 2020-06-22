@@ -42,6 +42,7 @@ AUTHORS:
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
+from sage.schemes.elliptic_curves.ell_generic import EllipticCurve_generic
 from sage.schemes.elliptic_curves.ell_number_field import EllipticCurve_number_field
 from sage.schemes.elliptic_curves.constructor import EllipticCurve
 
@@ -230,8 +231,8 @@ def _scalar_of_isogeny(phi):
     return _scalar_of_rational_maps(Fx, Fy, phi.domain(),
                                     phi.codomain())
 
-class Qcurve(EllipticCurve_number_field):
-    r"""A Q-curve over some number field
+class Qcurve_base(EllipticCurve_generic):
+    r"""A base class for Q-curves
 
     A Q-curve is an elliptic curve defined over some number field,
     such that all its galois conjugates are isogeneous to the curve
@@ -243,6 +244,9 @@ class Qcurve(EllipticCurve_number_field):
     an isogeny from E to s(E), the conjugate of E by s.
 
     .. NOTE::
+
+    This class is only intended as a parent class to provide
+    functionality. Do not use this class directly.
 
     This class is intended for Q-curves without complex
     multiplication. Although Q-curves with complex multiplication
@@ -429,28 +433,20 @@ class Qcurve(EllipticCurve_number_field):
             Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
 
         """
-        return self.base_ring()
-    
+        raise NotImplementedError("Method 'definition_field' not " +
+                                  "implemented for 'Qcurve_base'")
+
     def _init_curve(self, curve):
         r"""Initialize the underlying elliptic curve.
 
         """
-        if not isinstance(curve, EllipticCurve_number_field):
-            curve = EllipticCurve(curve)
-        if not isinstance(curve, EllipticCurve_number_field):
-            raise ValueError("%s can not be a Q-curve"%curve)
-        K = curve.base_ring()
-        if not K.is_galois():
-            raise ValueError("The curve should be defined over a Galois number field")
-        else:
-            EllipticCurve_number_field.__init__(self, K, curve.a_invariants())
+        raise NotImplementedError("Method '_init_curve' not " +
+                                  "implemented for 'Qcurve_base'")
 
     def _galois_cache_key(self, sigma):
         r"""Give a cache key for an element of a galois group"""
         return str(sigma), sigma.parent().number_field()
-        
-    @cached_method(key=lambda self, sigma, change :
-                   (self._galois_cache_key(sigma), change))
+
     def galois_conjugate(self, sigma, change_ring=None):
         r"""Give the Galois conjugate of this curve.
 
@@ -483,11 +479,8 @@ class Qcurve(EllipticCurve_number_field):
             Elliptic Curve defined by y^2 = x^3 + 12*x^2 + (-18*t+18)*x over Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
 
         """
-        sigma = galois_field_change(sigma, self.definition_field())
-        change = sigma.as_hom()
-        if change_ring != None:
-            change = _concat_maps(change, change_ring)
-        return EllipticCurve(self.a_invariants()).change_ring(change)
+        raise NotImplementedError("Method 'galois_conjugate' not " +
+                                  "implemented for 'Qcurve_base'")
 
     # Isogeny related stuff
     def _init_isogenies(self):
@@ -575,42 +568,6 @@ class Qcurve(EllipticCurve_number_field):
                 sigma in self._phi_y and
                 self._phi_y[sigma] != None)
 
-    def _get_isogeny_field(self, sigma):
-        r"""Get the field over which an isogeny is defined"""
-        return self._phi_x[sigma].base_ring()
-
-    def _get_isogeny(self, sigma, change=None):
-        r"""Give the x and y rational maps of an isogeny
-
-        INPUT:
-
-        - ``sigma`` -- A galois homomorphism of the definition field
-          of this curve.
-
-        - ``change`` -- A field homomorphism or None (default). If not
-          None, should be a field homomorphism from the field over
-          which the isogeny is currently defined.
-
-        OUTPUT:
-
-        A tuple consisting of the x-map and the y-map of the isogeny
-        from this curve to the `sigma` conjugate. If change was set to
-        a field homomorphism, these maps will be defined over the
-        codomain of this map.
-
-        """
-        phi_x = self._phi_x[sigma]
-        phi_y = self._phi_y[sigma]
-        if change != None:
-            change = _write_as_im_gen_map(change)
-            Rxy = phi_y.parent().base()
-            Sxy = Rxy.change_ring(change.codomain()).fraction_field()
-            phi_x = (Sxy(phi_x.numerator().change_ring(change)) /
-                     Sxy(phi_x.denominator().change_ring(change)))
-            phi_y = (Sxy(phi_y.numerator().change_ring(change)) /
-                     Sxy(phi_y.denominator().change_ring(change)))
-        return phi_x, phi_y
-
     def _update_isogeny(self, sigma, change):
         r"""Update the field of one specific isogeny"""
         phi_x, phi_y = self._get_isogeny(sigma, change=change)
@@ -676,43 +633,38 @@ class Qcurve(EllipticCurve_number_field):
                     self._phi_y[s*t] = phi_y
         return all(self._has_isogeny(s) for s in G)
 
-    def _add_isogenies_of_degree(self, degree, verbose=False):
-        r"""Attempt to find isogenies of a given degree.
+    def _get_isogeny_field(self, sigma):
+        r"""Get the field over which an isogeny is defined"""
+        raise NotImplementedError("Method '_get_isogeny_field' not " +
+                                  "implemented for 'Qcurve_base'")
+
+    def _get_isogeny(self, sigma, change=None):
+        r"""Give the x and y rational maps of an isogeny
+
+        INPUT:
+
+        - ``sigma`` -- A galois homomorphism of the definition field
+          of this curve.
+
+        - ``change`` -- A field homomorphism or None (default). If not
+          None, should be a field homomorphism from the field over
+          which the isogeny is currently defined.
+
+        OUTPUT:
+
+        A tuple consisting of the x-map and the y-map of the isogeny
+        from this curve to the `sigma` conjugate. If change was set to
+        a field homomorphism, these maps will be defined over the
+        codomain of this map.
 
         """
-        G = self.definition_field().galois_group()
-        fd = self.torsion_polynomial(degree)
-        for g,e in fd.factor():
-            Kd.<l> = self.definition_field().extension(g)        
-            Ed = EllipticCurve_number_field.base_extend(self, Kd)
-            S.<x> = Kd[]
-            psi = Ed.isogeny(x - l)
-            E_t = psi.codomain()
-            j_t = E_t.j_invariant()
-            for s in G:
-                if Kd(self.galois_conjugate(s).j_invariant()) == j_t:
-                    if verbose > 0:
-                        print("Degree %s isogeny found for"%degree, s)
-                    E_s = self.galois_conjugate(s).change_ring(Kd)
-                    # Making sure the isomorphism is defined over Kd,
-                    # extending Kd if necessary
-                    c4s, c6s = E_s.c_invariants()
-                    c4t, c6t = E_t.c_invariants()
-                    if j_t == 0:
-                        m, um = 6, c6t/c6s
-                    elif j_t == 1728:
-                        m, um = 4, c4t/c4s
-                    else:
-                        m, um = 2, (c6t*c4s)/(c6s*c4t)
-                    f_iso = (x^m - um).factor()[0][0]
-                    if f_iso.degree() > 1:
-                        K_iso.<lu> = Kd.extension(f_iso)
-                        Ed = Ed.change_ring(K_iso)
-                        E_s = E_s.change_ring(K_iso)
-                        psi = Ed.isogeny((x - l).change_ring(K_iso))
-                        E_t = psi.codomain()
-                    psi.set_post_isomorphism(E_t.isomorphism_to(E_s))
-                    self._add_isogeny(s, psi)
+        raise NotImplementedError("Method '_get_isogeny' not " +
+                                  "implemented for 'Qcurve_base'")
+
+    def _add_isogenies_of_degree(self, degree, verbose=False):
+        r"""Attempt to find isogenies of a given degree"""
+        raise NotImplementedError("Method '_add_isogenies_of_degree' not " +
+                                  "implemented for 'Qcurve_base'")
 
     @cached_method(key=_galois_cache_key)
     def isogeny_scalar(self, sigma):
@@ -755,8 +707,6 @@ class Qcurve(EllipticCurve_number_field):
                                         self._phi_y[sigma], dom,
                                         codom)
 
-    @cached_method(key=lambda self, sigma, change :
-                   (self._galois_cache_key(sigma), change))
     def isogeny_x_map(self, sigma, change_ring=None):
         r"""Return the x-coordinate rational map of the isogeny from this curve
         to a Galois conjugate.
@@ -812,24 +762,8 @@ class Qcurve(EllipticCurve_number_field):
             :meth:`definition_field`
 
         """
-        sigma = galois_field_change(sigma, self.definition_field())
-        R = self.definition_field()
-        Rx.<x> = PolynomialRing(R)
-        Fx = Rx.fraction_field()
-        phi_x = self._phi_x[sigma]
-        num = phi_x.numerator()
-        den = phi_x.denominator()
-        _, iota = write_as_extension(self._to_Kphi, give_map=True)
-        result = (Fx(sum(iota(num.coefficient(e)).list()[0] * x^e[0]
-                         for e in num.exponents())) /
-                  Fx(sum(iota(den.coefficient(e)).list()[0] * x^e[0]
-                         for e in den.exponents())))
-        if change_ring == None:
-            return result
-        Rx2 = Rx.change_ring(change_ring.codomain())
-        Fx2 = Rx2.fraction_field()
-        change_ring = Fx.Hom(Fx2)(Rx.Hom(Rx2)(change_ring))
-        return change_ring(result)
+        raise NotImplementedError("Method 'isogeny_x_map' not " +
+                                  "implemented for 'Qcurve_base'")
 
     def complete_definition_field(self):
         r"""Give the field over which the Q-curve is completely defined.
@@ -2472,7 +2406,7 @@ class Qcurve(EllipticCurve_number_field):
 
     def _isogeny_data(self, iota):
         r"""Give the isogeny data of this curve over a given field.
-
+            
         INPUT:
 
         - ``iota`` -- A field homomorphism from the definition field
@@ -2488,41 +2422,8 @@ class Qcurve(EllipticCurve_number_field):
         induced scalar multiplication on the differentials.
 
         """
-        G = iota.codomain().galois_group()
-        F = self.isogeny_x_map
-        l = self.isogeny_scalar
-        Kphi = self.complete_definition_field()
-        _, to_L, from_Kphi = composite_field(iota, self._to_Kphi,
-                                             give_maps=True)
-        iota = _concat_maps(iota, to_L)
-        L, to_L = write_as_extension(to_L, give_map=True)
-        from_Kphi = _concat_maps(from_Kphi, to_L)
-        iota = _concat_maps(iota, to_L)
-        Rx = PolynomialRing(L, names=["x"]).fraction_field()
-        x = Rx.gens()[0]
-        return {s : (Rx(F(s).numerator().change_ring(iota) /
-                        F(s).denominator().change_ring(iota)),
-                     from_Kphi(l(s)))
-                for s in G}
-
-    def base_extend(self, R):
-        result = EllipticCurve_number_field.base_extend(self, R)
-        if isinstance(result, EllipticCurve_number_field):
-            K = self.definition_field()
-            L = result.base_ring()
-            if (hasattr(R, "codomain") and
-                R.domain() == K and
-                R.codomain() == L):
-                K_to_L = R
-            else:
-                K_to_L = K.embeddings(L)
-                if len(K_to_L) > 0:
-                    K_to_L = K_to_L[0]
-                else:
-                    K_to_L = None
-            if K_to_L != None:
-                return Qcurve(result, isogenies=self._isogeny_data(K_to_L))
-        return result
+        raise NotImplementedError("Method '_isogeny_data' not " +
+                                  "implemented for 'Qcurve_base'")
 
     @cached_method
     def minimal_definition_field(self, give_map=False, names=None):
@@ -2659,9 +2560,9 @@ class Qcurve(EllipticCurve_number_field):
           the definition field.
 
         """
-        _, iota = write_as_extension(from_min, give_map=True)
-        return [iota(a).list()[0] for a in self.a_invariants()]
-        
+        raise NotImplementedError("Method '_minimal_a_invariants' not " +
+                                  "implemented for 'Qcurve_base'")
+
     def _minimal_isogeny_x_maps(self, Kmin, from_min, min_map):
         r"""Give the x-coordinate maps of isogenies for :meth:minimize_fields
 
@@ -2676,24 +2577,9 @@ class Qcurve(EllipticCurve_number_field):
           the minimal complete definition field.
 
         """
-        result = {}
-        G = Kmin.galois_group()
-        _, iota = write_as_extension(from_min, give_map=True)
-        for s in G:
-            Fs = self.isogeny_x_map(s)
-            Fsnum = Fs.numerator()
-            Fsden = Fs.denominator()
-            R = Fsnum.parent().change_ring(Kmin)
-            Fsnum = sum(iota(Fsnum.monomial_coefficient(m)).list()[0] *
-                        R(m) for m in Fsnum.monomials())
-            Fsden = sum(iota(Fsden.monomial_coefficient(m)).list()[0] *
-                        R(m) for m in Fsden.monomials())
-            Fsnum = Fsnum.change_ring(min_map)
-            Fsden = Fsden.change_ring(min_map)
-            S = R.change_ring(min_map.codomain()).fraction_field()
-            result[s] = S(Fsnum / Fsden)
-        return result
-
+        raise NotImplementedError("Method '_minimal_isogeny_x_maps' not " +
+                                  "implemented for 'Qcurve_base'")
+    
     def _minimal_isogeny_scalars(self, Kmin, phi_map):
         r"""Give the scalars of isogenies for :meth:minimize_fields
 
@@ -2774,12 +2660,8 @@ class Qcurve(EllipticCurve_number_field):
             Number Field in s with defining polynomial x^4 - 38*x^2 + 1225
 
         """
-        Kmin, Kphi, from_min, min_map, phi_map = self._minimize_fields(names=names)
-        ainvs = self._minimal_a_invariants(from_min)
-        F = self._minimal_isogeny_x_maps(Kmin, from_min, min_map)
-        l = self._minimal_isogeny_scalars(Kmin, phi_map)
-        isogenies = {s : (F[s], l[s]) for s in Kmin.galois_group()}
-        return Qcurve(ainvs, isogenies=isogenies)
+        raise NotImplementedError("Method 'minimize_fields' not " +
+                                  "implemented for 'Qcurve_base'")
 
     def _twist(self, gamma):
         r"""Helper function for :meth:twist"""
@@ -2816,7 +2698,7 @@ class Qcurve(EllipticCurve_number_field):
             ls = agamma * ls
             isogenies[s] = (Fs, ls)
         return ainvs, isogenies
-    
+
     def twist(self, gamma):
         r"""Give the twist of this Q-curve by a given element gamma.
 
@@ -2851,8 +2733,8 @@ class Qcurve(EllipticCurve_number_field):
             Number Field in agamma00 with defining polynomial x^4 - 16*x^3 - 8*x^2 + 576*x - 1264
 
         """
-        ainvs, isogenies = self._twist(gamma)
-        return Qcurve(ainvs, isogenies=isogenies).minimize_fields()
+        raise NotImplementedError("Method 'twist' not " +
+                                  "implemented for 'Qcurve_base'")
 
     def _decomposable_twist_set(self):
         r"""Give the set of ideals required to compute the decomposable twist
@@ -3069,7 +2951,6 @@ class Qcurve(EllipticCurve_number_field):
 
         return self.twist(gamma)
 
-    @cached_method
     def conductor_restriction_of_scalars(self):
         r"""Give the conductor of the restriction of scalars of this Q-curve.
 
@@ -3090,14 +2971,9 @@ class Qcurve(EllipticCurve_number_field):
 
             :meth:`decomposition_field`
 
-pp        """
-        K0 = self.definition_field()
-        K = self.decomposition_field()
-        if K0 != K:
-            return self._over_Kdec().conductor_restriction_of_scalars()
-        else:
-            # Proposition 1 of Milne, On the arithmetic of Abelian varieties
-            return self.conductor().absolute_norm() * K.discriminant()^2
+        """
+        raise NotImplementedError("Method 'conductor_restriction_of_scalars' not " +
+                                  "implemented for 'Qcurve_base'")
 
     def newform_levels(self, N=None):
         r"""Compute the levels of newforms that could be associated to this
@@ -3221,7 +3097,7 @@ pp        """
                       for j in range(len(d))) # over all newforms
                 # over all possible tuples of exponents
                 for x in mrange([len(level_dict[p]) for p in primes])]
-        
+    
     def _newform_levels(self, N, prime, alpha, beta, gamma, d):
         r"""Implementation of :meth:`newform_levels`.
 
@@ -3317,6 +3193,476 @@ pp        """
         R.<x,y> = QQ[]
         return polynomial_to_symmetric(x^power + y^power)
 
+class Qcurve(Qcurve_base, EllipticCurve_number_field):
+    r"""A Q-curve over some number field
+
+    A Q-curve is an elliptic curve defined over some number field,
+    such that all its galois conjugates are isogeneous to the curve
+    itself.
+
+    In this class a Q-curve is represented as an elliptic curve E
+    defined over a galois number field K, together with for each
+    element s of the galois group of K the x- and y-coordinate maps of
+    an isogeny from E to s(E), the conjugate of E by s.
+
+    .. NOTE::
+
+    This class is intended for Q-curves without complex
+    multiplication. Although Q-curves with complex multiplication
+    might work, the theory behind many of the methods in this class
+    was only intended for Q-curves without complex multiplication.
+
+    EXAMPLE::
+
+        sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+        sage: K.<t> = QuadraticField(-2)
+        sage: R.<x> = K[]
+        sage: G.<s> = K.galois_group()
+        sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((-x^2 - 12*x - 18*(t + 1))/(2*x), t)})
+        Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2 with t = 1.414213562373095?*I
+
+    """
+    def definition_field(self):
+        r"""Give the field over which this Q-curve is defined.
+
+
+        .. NOTE::
+
+        This number field is always Galois.
+
+        OUTPUT:
+
+        The number field over which this Q-curve is defined.
+
+        EXAMPLE::
+
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E.definition_field()
+            Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
+
+        """
+        return self.base_ring()
+    
+    def _init_curve(self, curve):
+        r"""Initialize the underlying elliptic curve.
+
+        """
+        if not isinstance(curve, EllipticCurve_number_field):
+            curve = EllipticCurve(curve)
+        if not isinstance(curve, EllipticCurve_number_field):
+            raise ValueError("%s can not be a Q-curve"%curve)
+        K = curve.base_ring()
+        if not K.is_galois():
+            raise ValueError("The curve should be defined over a Galois number field")
+        else:
+            EllipticCurve_number_field.__init__(self, K, curve.a_invariants())
+
+    @cached_method(key=lambda self, sigma, change :
+                   (self._galois_cache_key(sigma), change))
+    def galois_conjugate(self, sigma, change_ring=None):
+        r"""Give the Galois conjugate of this curve.
+
+        INPUT:
+
+        - ``sigma`` -- A Galois homomorphism of some number field
+
+        - ``change_ring`` -- A field homomorphism from the definition
+          field of this curve to another field or None (default). If
+          set to a value other than None, this function will return
+          the Galois conjugate over the field that is the codomain of
+          this homomorphism.
+
+        OUTPUT:
+        
+        The galois conjugate of this curve by the galois homomorphism
+        which extends to a common galois homomorphism over the
+        algebraic closure of Q as sigma. This will be an elliptic
+        curve and not a Q-curve
+
+        EXAMPLE::
+
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: E
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
+            sage: sigma = K.galois_group().gens()[0]
+            sage: E.galois_conjugate(sigma)
+            Elliptic Curve defined by y^2 = x^3 + 12*x^2 + (-18*t+18)*x over Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
+
+        """
+        sigma = galois_field_change(sigma, self.definition_field())
+        change = sigma.as_hom()
+        if change_ring != None:
+            change = _concat_maps(change, change_ring)
+        return EllipticCurve(self.a_invariants()).change_ring(change)
+
+    # Isogeny related stuff
+    def _get_isogeny_field(self, sigma):
+        r"""Get the field over which an isogeny is defined"""
+        return self._phi_x[sigma].base_ring()
+
+    def _get_isogeny(self, sigma, change=None):
+        r"""Give the x and y rational maps of an isogeny
+
+        INPUT:
+
+        - ``sigma`` -- A galois homomorphism of the definition field
+          of this curve.
+
+        - ``change`` -- A field homomorphism or None (default). If not
+          None, should be a field homomorphism from the field over
+          which the isogeny is currently defined.
+
+        OUTPUT:
+
+        A tuple consisting of the x-map and the y-map of the isogeny
+        from this curve to the `sigma` conjugate. If change was set to
+        a field homomorphism, these maps will be defined over the
+        codomain of this map.
+
+        """
+        phi_x = self._phi_x[sigma]
+        phi_y = self._phi_y[sigma]
+        if change != None:
+            change = _write_as_im_gen_map(change)
+            Rxy = phi_y.parent().base()
+            Sxy = Rxy.change_ring(change.codomain()).fraction_field()
+            phi_x = (Sxy(phi_x.numerator().change_ring(change)) /
+                     Sxy(phi_x.denominator().change_ring(change)))
+            phi_y = (Sxy(phi_y.numerator().change_ring(change)) /
+                     Sxy(phi_y.denominator().change_ring(change)))
+        return phi_x, phi_y
+
+    def _add_isogenies_of_degree(self, degree, verbose=False):
+        r"""Attempt to find isogenies of a given degree.
+
+        """
+        G = self.definition_field().galois_group()
+        fd = self.torsion_polynomial(degree)
+        for g,e in fd.factor():
+            Kd.<l> = self.definition_field().extension(g)        
+            Ed = EllipticCurve_number_field.base_extend(self, Kd)
+            S.<x> = Kd[]
+            psi = Ed.isogeny(x - l)
+            E_t = psi.codomain()
+            j_t = E_t.j_invariant()
+            for s in G:
+                if Kd(self.galois_conjugate(s).j_invariant()) == j_t:
+                    if verbose > 0:
+                        print("Degree %s isogeny found for"%degree, s)
+                    E_s = self.galois_conjugate(s).change_ring(Kd)
+                    # Making sure the isomorphism is defined over Kd,
+                    # extending Kd if necessary
+                    c4s, c6s = E_s.c_invariants()
+                    c4t, c6t = E_t.c_invariants()
+                    if j_t == 0:
+                        m, um = 6, c6t/c6s
+                    elif j_t == 1728:
+                        m, um = 4, c4t/c4s
+                    else:
+                        m, um = 2, (c6t*c4s)/(c6s*c4t)
+                    f_iso = (x^m - um).factor()[0][0]
+                    if f_iso.degree() > 1:
+                        K_iso.<lu> = Kd.extension(f_iso)
+                        Ed = Ed.change_ring(K_iso)
+                        E_s = E_s.change_ring(K_iso)
+                        psi = Ed.isogeny((x - l).change_ring(K_iso))
+                        E_t = psi.codomain()
+                    psi.set_post_isomorphism(E_t.isomorphism_to(E_s))
+                    self._add_isogeny(s, psi)
+
+    @cached_method(key=lambda self, sigma, change :
+                   (self._galois_cache_key(sigma), change))
+    def isogeny_x_map(self, sigma, change_ring=None):
+        r"""Return the x-coordinate rational map of the isogeny from this curve
+        to a Galois conjugate.
+
+        The x-coordinate of the image of a point under an isogeny can
+        be described as a rational function of the x-coordinate of the
+        corresponding point in the domain.
+
+        INPUT:
+        
+        - ``sigma`` -- A Galois homomorphism of a number field
+
+        - ``change_ring`` -- A field homomorphism from the definition
+          field of this Q-curve or None (default). If set to a value
+          other than None, the base field of the returned rational map
+          will be changed by this homomorphism.
+
+        OUTPUT:
+
+        A rational function in $x$ over the definition field of this
+        Q-curve that gives the $x$-coordinate of an image point of the
+        isogeny as a rational function in the $x$ coordinate of the
+        origin point. The isogeny is the registered isogeny from this
+        curve to the `sigma` Galois conjugate of this curve. If
+        `change_ring` was set to None, the returned rational function
+        will be defined over the codomain of `change_ring`.
+
+        EXAMPLE::
+
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+            sage: K.<t> = QuadraticField(-1)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: G.<s> = K.galois_group()
+            sage: E.isogeny_x_map(s)
+            (-1/2*x^2 - 6*x - 9*t - 9)/x
+            sage: E.isogeny_x_map(s^2)
+            x
+
+        TESTS::
+
+            sage: K.<t> = QuadraticField(-1)
+            sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
+            sage: G.<s> = K.galois_group()
+            sage: F = E.isogeny_x_map(s)
+            sage: F.parent()
+            Fraction Field of Univariate Polynomial Ring in x over Number Field in t with defining polynomial x^2 + 1 with t = 1*I
+            sage: F.parent().base_ring() == E.definition_field()
+            True
+
+        .. SEEALSO::
+
+            :meth:`isogeny_scalar`,
+            :meth:`definition_field`
+
+        """
+        sigma = galois_field_change(sigma, self.definition_field())
+        R = self.definition_field()
+        Rx.<x> = PolynomialRing(R)
+        Fx = Rx.fraction_field()
+        phi_x = self._phi_x[sigma]
+        num = phi_x.numerator()
+        den = phi_x.denominator()
+        _, iota = write_as_extension(self._to_Kphi, give_map=True)
+        result = (Fx(sum(iota(num.coefficient(e)).list()[0] * x^e[0]
+                         for e in num.exponents())) /
+                  Fx(sum(iota(den.coefficient(e)).list()[0] * x^e[0]
+                         for e in den.exponents())))
+        if change_ring == None:
+            return result
+        Rx2 = Rx.change_ring(change_ring.codomain())
+        Fx2 = Rx2.fraction_field()
+        change_ring = Fx.Hom(Fx2)(Rx.Hom(Rx2)(change_ring))
+        return change_ring(result)
+
+    def _isogeny_data(self, iota):
+        r"""Give the isogeny data of this curve over a given field.
+
+        INPUT:
+
+        - ``iota`` -- A field homomorphism from the definition field
+          of this Q-curve to another Galois number field $K$. 
+
+        OUTPUT:
+
+        A dictionary of which the keys are the elements of the Galois
+        group of $K$, and the value for each element sigma is a tuple
+        of a rational function in $x$ and an algebraic number, that
+        are respectively the $x$-coordinate map of the isogeny from
+        the sigma conjugate of this curve to this curve and the
+        induced scalar multiplication on the differentials.
+
+        """
+        G = iota.codomain().galois_group()
+        F = self.isogeny_x_map
+        l = self.isogeny_scalar
+        Kphi = self.complete_definition_field()
+        _, to_L, from_Kphi = composite_field(iota, self._to_Kphi,
+                                             give_maps=True)
+        iota = _concat_maps(iota, to_L)
+        L, to_L = write_as_extension(to_L, give_map=True)
+        from_Kphi = _concat_maps(from_Kphi, to_L)
+        iota = _concat_maps(iota, to_L)
+        Rx = PolynomialRing(L, names=["x"]).fraction_field()
+        x = Rx.gens()[0]
+        return {s : (Rx(F(s).numerator().change_ring(iota) /
+                        F(s).denominator().change_ring(iota)),
+                     from_Kphi(l(s)))
+                for s in G}
+
+    def base_extend(self, R):
+        result = EllipticCurve_number_field.base_extend(self, R)
+        if isinstance(result, EllipticCurve_number_field):
+            K = self.definition_field()
+            L = result.base_ring()
+            if (hasattr(R, "codomain") and
+                R.domain() == K and
+                R.codomain() == L):
+                K_to_L = R
+            else:
+                K_to_L = K.embeddings(L)
+                if len(K_to_L) > 0:
+                    K_to_L = K_to_L[0]
+                else:
+                    K_to_L = None
+            if K_to_L != None:
+                return Qcurve(result, isogenies=self._isogeny_data(K_to_L))
+        return result
+
+    def _minimal_a_invariants(self, from_min):
+        r"""Give the a_invariants over the minimal definition_field
+
+        INPUT:
+
+        - ``from_min`` -- The map from the minimal definition field to
+          the definition field.
+
+        """
+        _, iota = write_as_extension(from_min, give_map=True)
+        return [iota(a).list()[0] for a in self.a_invariants()]
+        
+    def _minimal_isogeny_x_maps(self, Kmin, from_min, min_map):
+        r"""Give the x-coordinate maps of isogenies for :meth:minimize_fields
+
+        INPUT:
+
+        - ``Kmin`` -- The minimal definition field
+        
+        - ``from_min`` -- The map from the minimal definition field to
+          the definition field.
+
+        - ``min_map`` -- The map from the minimal definition field to
+          the minimal complete definition field.
+
+        """
+        result = {}
+        G = Kmin.galois_group()
+        _, iota = write_as_extension(from_min, give_map=True)
+        for s in G:
+            Fs = self.isogeny_x_map(s)
+            Fsnum = Fs.numerator()
+            Fsden = Fs.denominator()
+            R = Fsnum.parent().change_ring(Kmin)
+            Fsnum = sum(iota(Fsnum.monomial_coefficient(m)).list()[0] *
+                        R(m) for m in Fsnum.monomials())
+            Fsden = sum(iota(Fsden.monomial_coefficient(m)).list()[0] *
+                        R(m) for m in Fsden.monomials())
+            Fsnum = Fsnum.change_ring(min_map)
+            Fsden = Fsden.change_ring(min_map)
+            S = R.change_ring(min_map.codomain()).fraction_field()
+            result[s] = S(Fsnum / Fsden)
+        return result
+        
+    def minimize_fields(self, names=None):
+        r"""Attempt to minimize the fields associated to this curve.
+
+        INPUT:
+
+        - ``names`` -- A tuple or list of two strings or None
+          (default). These two strings will be respectively the name
+          of the variable of the definition field and the complete
+          definition field of the returned Q-curve. If set to None
+          will be initialized as the names of the definition field and
+          complete definition field of this curve.
+
+        OUTPUT:
+
+        A Q-curve isomorphic to this Q-curve, but with a definition
+        field, complete definition field and decomposition field that
+        are as small as possible. The isomorphism is given by
+        compatible embeddings of the mentioned fields.
+
+        EXAMPLE::
+
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: iota = K.embeddings(CyclotomicField(12))[0]
+            sage: E2 = E.change_ring(iota)
+            sage: E3 = E2.minimize_fields(names=["t", "s"])
+            sage: E.definition_field()
+            Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
+            sage: E2.definition_field()
+            Cyclotomic Field of order 12 and degree 4
+            sage: E3.definition_field()
+            Number Field in zeta120 with defining polynomial x^2 - 3 with zeta120 = 1.732050807568878?
+            sage: E.complete_definition_field()
+            Number Field in lu with defining polynomial x^4 - 2*x^2 + 25
+            sage: E2.complete_definition_field()
+            Number Field in zeta12lu with defining polynomial x^8 - 18*x^6 + 239*x^4 - 1638*x^2 + 6241
+            sage: E3.complete_definition_field()
+            Number Field in s with defining polynomial x^4 - 38*x^2 + 1225
+
+        """
+        Kmin, Kphi, from_min, min_map, phi_map = self._minimize_fields(names=names)
+        ainvs = self._minimal_a_invariants(from_min)
+        F = self._minimal_isogeny_x_maps(Kmin, from_min, min_map)
+        l = self._minimal_isogeny_scalars(Kmin, phi_map)
+        isogenies = {s : (F[s], l[s]) for s in Kmin.galois_group()}
+        return Qcurve(ainvs, isogenies=isogenies)
+    
+    def twist(self, gamma):
+        r"""Give the twist of this Q-curve by a given element gamma.
+
+        If this Q-curve was given by .. MATH::
+
+            E : y^2 = x^3 + a_2 x^2 + a_4 x + a_6
+
+        the twisted Q-curve is given by .. MATH::
+        
+            E : y^2 = x^3 + \gamma a_2 x^2 + \gamma^2 a_4 x
+                      + \gamma^3 a_6
+
+        INPUT:
+
+        - ``gamma`` -- An element of a number field.
+
+        OUTPUT:
+        
+        A Q-curve which is the twist of this Q-curve by gamma. This
+        curve will be defined over the smallest possible field over
+        which it is completely defined.
+
+        EXAMPLE::
+
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+            sage: K.<t> = QuadraticField(5)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2]); E
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 5 with t = 2.236067977499790?
+            sage: E2 = E.twist(t); E2
+            Q-curve defined by y^2 = x^3 + (-6*lu0)*x^2 + (-45*lu0+90)*x over Number Field in lu0 with defining polynomial x^2 - 20 with lu0 = -1/7*lu^3 + 13/7*lu
+            sage: E2.complete_definition_field()
+            Number Field in agamma00 with defining polynomial x^4 - 16*x^3 - 8*x^2 + 576*x - 1264
+
+        """
+        ainvs, isogenies = self._twist(gamma)
+        return Qcurve(ainvs, isogenies=isogenies).minimize_fields()
+
+    @cached_method
+    def conductor_restriction_of_scalars(self):
+        r"""Give the conductor of the restriction of scalars of this Q-curve.
+
+        OUTPUT:
+
+        The conductor of the restriction of scalars of this curve over
+        the decomposition field.
+
+        EXAMPLE::
+
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2])
+            sage: E.conductor_restriction_of_scalars()
+            5566277615616
+
+        .. SEE_ALSO::
+
+            :meth:`decomposition_field`
+
+        """
+        K0 = self.definition_field()
+        K = self.decomposition_field()
+        if K0 != K:
+            return self._over_Kdec().conductor_restriction_of_scalars()
+        else:
+            # Proposition 1 of Milne, On the arithmetic of Abelian varieties
+            return self.conductor().absolute_norm() * K.discriminant()^2
+    
     def trace_of_frobenius(self, prime, power=1, splitting_map=0):
         r"""Compute the trace of a Frobenius element under the Galois
         representation associated with this curve.

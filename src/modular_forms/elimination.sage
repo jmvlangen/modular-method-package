@@ -74,7 +74,7 @@ from modular_method.padics.pAdic_base import pAdicBase
 
 from modular_method.number_fields.field_constructors import composite_field
 
-from modular_method.elliptic_curves.Qcurves import Qcurve
+from modular_method.elliptic_curves.Qcurves import Qcurve_base as Qcurve
 from modular_method.elliptic_curves.frey_curves import FreyCurve
 
 from modular_method.diophantine_equations.conditions import CongruenceCondition

@@ -142,7 +142,7 @@ from sage.arith.misc import gcd
 
 from sage.misc.misc_c import prod as product
 
-from modular_method.elliptic_curves.Qcurves import Qcurve
+from modular_method.elliptic_curves.Qcurves import Qcurve_base as Qcurve
 from modular_method.elliptic_curves.Qcurves import _rational_maps_of_urst
 from modular_method.elliptic_curves.Qcurves import _scalar_of_rational_maps
 from modular_method.elliptic_curves.tates_algorithm import tates_algorithm
@@ -1845,10 +1845,6 @@ class FreyQcurve(FreyCurve, Qcurve):
         if not is_NumberField(K) or not K.is_galois():
             raise ValueError("The ring " + str(K) +
                              " is not a Galois number field.")
-
-    def _galois_cache_key(self, sigma):
-        r"""Give a cache key for an element of a galois group"""
-        return str(sigma), sigma.parent().number_field()
 
     @cached_method(key=lambda self, sigma, change : (self._galois_cache_key(sigma), change))
     def galois_conjugate(self, sigma, change_ring=None):
