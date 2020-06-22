@@ -238,9 +238,7 @@ class Condition_base(SageObject):
         return False
         
     def __and__(self, other):
-        r
-
-        """Create the condition that both conditions hold.
+        r"""Create the condition that both conditions hold.
 
         INPUT:
         
@@ -276,7 +274,8 @@ class Condition_base(SageObject):
            :class:`AndCondition`
 
         """
-        if self == other or self.never() or other.always():
+        if (self == other or self.never() or other == None or
+            other.always()):
             return self
         elif other.never() or self.always():
             return other
@@ -320,7 +319,8 @@ class Condition_base(SageObject):
             :class:`OrCondition`
 
         """
-        if self == other or self.always() or other.never():
+        if (self == other or self.always() or other == None or
+            other.never()):
             return self
         elif self.never() or other.always():
             return other
@@ -2192,7 +2192,7 @@ class NotCondition(Condition_base):
         else:
             return TN
 
-        def never(self):
+    def never(self):
         r"""Tell if this condition never holds
 
         .. NOTE::
@@ -4414,7 +4414,7 @@ def apply_to_conditional_value(function, value, singleton=False,
         if not isinstance(result, ConditionalValue):
             result = [(result, con)]
         for f_val, f_con in result:
-            if not f_con.never():
+            if (f_con is None or  not f_con.never()):
                 try:
                     i = values.index(f_val)
                     conditions[i] = conditions[i] | f_con

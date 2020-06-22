@@ -423,7 +423,7 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
             all(not p.divides(nfs[i].level()) for i in range(nE))):
             apf = [nfs[i].trace_of_frobenius(p, power=powers[i])
                    for i in range(nE)]
-            comp_fields = [composite_field(fields[i],
+            comp_fields = [composite_field(fields2[i],
                                            nfs[i].coefficient_field())
                            for i in range(nE)]
             comp_fields = [(K if K == QQ else
