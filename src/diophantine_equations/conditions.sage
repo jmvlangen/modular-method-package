@@ -1076,9 +1076,25 @@ class CongruenceCondition(PolynomialCondition):
             sage: (C1 & C2).never()
             False
 
+        TESTS:
+
+        Check that the bug where congruence conditions with
+        polynomials without a non-constant term were both always and
+        never is fixed::
+
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+            sage: R.<x> = QQ[]
+            sage: C = CongruenceCondition(3*x, 3)
+            sage: C.always()
+            True
+            sage: C.never()
+            False
+
         """
-        return all((self._mod.divides(self._f.monomial_coefficient(m))) != (m == 1)
-                   for m in self._f.monomials())
+        m1 = self._f.parent()(1)
+        return (not self._mod.divides(self._f.monomial_coefficient(m1)) and
+                all(self._mod.divides(self._f.monomial_coefficient(m))
+                    for m in self._f.monomials() if m != m1))
 
     def always(self):
         r"""Tell if this condition always holds
