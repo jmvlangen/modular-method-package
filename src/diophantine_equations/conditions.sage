@@ -487,13 +487,17 @@ class PolynomialCondition(Condition_base):
 
     """
 
-    def __init__(self, polynomial):
+    def __init__(self, polynomial, precision=20):
         r"""Initialize a PolynomialCondition.
 
         INPUT:
 
         - ``polynomial`` -- A polynomial in one or more variables
           which should be zero
+
+        - ``precision`` -- A strictly positive integer (default 20)
+          which determines the default p-adic precision used when
+          computing p-adic trees.
 
         EXAMPLE::
 
@@ -509,6 +513,7 @@ class PolynomialCondition(Condition_base):
             raise ValueError("The given argument " + str(polynomial) +
                              " is not a polynomial.")
         self._f = polynomial
+        self._prec = precision
         Condition_base.__init__(self, self._f.variables())
 
     def never(self):
@@ -642,7 +647,7 @@ class PolynomialCondition(Condition_base):
         return self._f
 
     def pAdic_tree(self, pAdic_tree=None, pAdics=None, complement=False,
-                   precision=20, verbose=False, **kwds):
+                   precision=None, verbose=False, **kwds):
         r"""Give this condition as a pAdicTree.
         
         Given a p-adic tree, returns the subtree of those values for
@@ -662,9 +667,10 @@ class PolynomialCondition(Condition_base):
         - ``complement`` -- A boolean (default: False) determining
           whether the complement of the result should be returned.
 
-        - ``precision`` -- A strictly positive integer (default: 20)
-          giving up to what precision the resulting tree should be
-          found.
+        - ``precision`` -- A strictly positive integer giving up to
+          what precision the resulting tree should be found. If
+          unspecified will be set to the precision given upon
+          initialization of this object.
 
         - ``verbose`` -- A boolean value or an integer (default:
           False). When set to True or any value larger then zero will
@@ -676,7 +682,7 @@ class PolynomialCondition(Condition_base):
 
         OUTPUT:
 
-        A pAdicTree object that contatns that part of the given
+        A pAdicTree object that contains that part of the given
         pAdicTree which satisfies the polynomial of this condition
         being equal to zero modulo P^n, where P is the prime defined
         by the given pAdics and n is the given precision. If
@@ -753,6 +759,8 @@ class PolynomialCondition(Condition_base):
             :class:`pAdicTree`
 
         """
+        if precision == None:
+            precision = self._prec
         if "precision_cap" in kwds and precision > kwds["precision_cap"]:
             if verbose >= 0:
                 print("Warning: A p-Adic tree for " + str(self) +
@@ -802,6 +810,313 @@ class PolynomialCondition(Condition_base):
 
     def _cache_key(self):
         return 'TreeCondition', self.polynomial()
+
+    def __eq__(self, other):
+        return (Condition_base.__eq__(self, other) and
+                self.polynomial() == other.polynomial())
+
+class ExistsCondition(PolynomialCondition):
+    r"""The condition that some additional variables satisfying a
+    polynomial relation exist
+
+    EXAMPLE::
+
+        sage: from modular_method.diophantine_equations.conditions import ExistsCondition
+        sage: R.<x, y> = ZZ[]
+        sage: ExistsCondition(x^3 - y^2, [x])
+        The condition that x^3 - y^2 == 0 for some y
+
+    An ExistsCondition could be used to assert that some variable is a
+    square::
+
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.diophantine_equations.conditions import ExistsCondition
+        sage: from modular_method.diophantine_equations.conditions import TreeCondition
+        sage: R.<x, y> = QQ[]
+        sage: C = ExistsCondition(x - y^2, [x], precision=4); C
+        The condition that -y^2 + x == 0 for some y
+        sage: TreeCondition(C.pAdic_tree(pAdics=pAdicBase(QQ, 2)))
+        The condition that x == 0, 1, 4, 9 mod 16
+        sage: TreeCondition(C.pAdic_tree(pAdics=pAdicBase(QQ, 3)))
+        The condition that x == 0, 1, 4, 7, 9, 10, 13, 16, 19, 22, 25, 28, 31, 34, 36, 37, 40, 43, 46, 49, 52, 55, 58, 61, 63, 64, 67, 70, 73, 76, 79 mod 81
+
+    """
+
+    def __init__(self, polynomial, variables, precision=20):
+        r"""Initialize a ExistsCondition
+
+        INPUT:
+
+        - ``polynomial`` -- A polynomial that should be satisfied
+
+        - ``variables`` -- The variables of this condition. All other
+          variables will be considered as bound variables bound by an
+          existential quantifier.
+
+        - ``precision`` -- A strictly positive integer (default: 20)
+          which will be the default p-adic precision used when
+          computing p-adic trees for this condition.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import ExistsCondition
+            sage: R.<x, y, z> = ZZ[]
+            sage: ExistsCondition(x^2 + y^2 + z^2, [x])
+            The condition that x^2 + y^2 + z^2 == 0 for some y, and z
+            sage: ExistsCondition(x^2 + y^2 + z^2, [x, y])
+            The condition that x^2 + y^2 + z^2 == 0 for some z
+
+        """
+        PolynomialCondition.__init__(self, polynomial, precision=precision)
+        allvars = list(self._vars)
+        self._vars = tuple(str(var) for var in variables)
+        for var in self._vars:
+            try:
+                allvars.remove(var)
+            except ValueError:
+                raise ValueError("Variable '" + var + "' is not among " +
+                                 "the variables in the polynomial or is " +
+                                 "a duplicate")
+        self._bound_vars = tuple(allvars)
+
+    def bound_variables(self):
+        r"""Give the bound variables of this condition
+
+        OUTPUT:
+
+        A tuple of bound variables in this Condition. Each variable is
+        represented as a string.
+
+        EXAMPLES::
+
+            sage: from modular_method.diophantine_equations.conditions import ExistsCondition
+            sage: R.<a, b, c> = ZZ[]
+            sage: C = ExistsCondition((a - b)^2 + c^3, [a, b])
+            sage: C.bound_variables()
+            ('c',)
+            sage: C = ExistsCondition((a - b)^2 + c^3, [c])
+            sage: C.bound_variables()
+            ('a', 'b')
+
+        Note that only variables appearing in the polynomial of this
+        condition can be bound::
+
+            sage: from modular_method.diophantine_equations.conditions import ExistsCondition
+            sage: R.<x, y, z> = ZZ[]
+            sage: C = ExistsCondition(x^2 - y^3, [x])
+            sage: C.bound_variables()
+            ('y',)
+
+        .. SEE_ALSO::
+        
+            :meth:`variables`
+            :meth:`polynomial`
+
+        """
+        return self._bound_vars
+
+    def pAdic_tree(self, pAdic_tree=None, pAdics=None,
+                   complement=False, precision=None, verbose=False,
+                   **kwds):
+        r"""Give this condition as a pAdicTree
+
+        Given a p-adic tree, returns the subtree of those values for
+        the variables for which there exist values for the bound
+        variables such that the polynomial of this condition is
+        satisfied.
+
+        INPUT:
+
+        - ``pAdic_tree`` -- A pAdicTree object (default: None) on
+          which this condition should be applied. If set to None will
+          be initiated as the full tree with the given pAdics.
+
+        - ``pAdics`` -- A pAdicBase object (default: None) determining
+          the pAdics that should be used. If set to None will use the
+          pAdics of the given pAdicTree instead.
+
+        - ``complement`` -- A boolean (default: False) determining
+          whether the complement of the result should also be returned.
+
+        - ``precision`` -- A strictly positive integer giving up to
+          what precision the resulting tree should be found. If
+          unspecified will be set to the precision given upon
+          initialization of this object.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger than zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such
+          comments. If set to any negative value will also prevent the
+          printing of any warnings. A larger value will lead to more
+          information being printed.
+
+        OUTPUT:
+
+        A pAdicTree object that contains that part of the given
+        pAdicTree for which values of the bound variables exists such
+        that the polynomial of this condition is zero modulo P^n. Here
+        P is the prime defined by the given pAdics and n is the given
+        precision.
+
+        If complement was set to True will return a tuple with the
+        afore mentioned as its first entry and the complement of that
+        tree within the given pAdicTree as its second argument.
+
+        EXAMPLES::
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y]) & PolynomialCondition(x^2 + y^2 - 4)
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 3), precision=3)
+            sage: T.get_values_at_level(1)
+            [(0, 1), (0, 2), (1, 0), (2, 0)]
+
+        The complement can be used to get two sets, one for which the
+        condition is satisfied and one for which it is not::
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import PolynomialCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(y^2 - x^3 - 1)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True, precision=3)
+            sage: Ty.get_values_at_level(1)
+            [(0, 1), (1, 0)]
+            sage: Tn.get_values_at_level(1)
+            [(0, 0), (1, 0), (1, 1)]
+
+        One can use custom trees to limit the values on which a
+        condition should be applied::
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, PolynomialCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = PolynomialCondition(x^2 + y^2 - 4)
+            sage: C.pAdic_tree(pAdics=pAdicBase(QQ, 2), precision=2).get_values_at_level(1)
+            [(0, 0)]
+            sage: T = CoprimeCondition([x, y]).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+            sage: C.pAdic_tree(pAdic_tree=T, precision=2).get_values_at_level(1)
+            []
+
+        Some Condition objects accept that both the pAdic_tree
+        argument and pAdics argument are set to None, but only in case
+        it is obvious which tree should be returned::
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CoprimeCondition, TreeCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = CoprimeCondition([x, y])
+            sage: T = C.pAdic_tree(pAdics=pAdicBase(QQ, 5))
+            sage: C2 = TreeCondition(T)
+            sage: C2.pAdic_tree()
+            p-adic tree for the variables ('x', 'y') with respect to p-adics given by Rational Field and (5)
+            sage: C.pAdic_tree()
+            Traceback (most recent call last):
+            ...
+            ValueError: At least the argument prime must be set
+
+        The complement returned might not in all cases be disjoint
+        from the first tree::
+
+            sage: from modular_method.padics.pAdic_base import pAdicBase
+            sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+            sage: R.<x, y> = ZZ[]
+            sage: C = CongruenceCondition(x^2 + 2*y^2, 3)
+            sage: Ty, Tn = C.pAdic_tree(pAdics=pAdicBase(QQ, 2), complement=True)
+            sage: Ty == Tn
+            True
+
+        .. SEEALSO::
+
+            :class:`pAdicTree`
+
+        """
+        if precision == None:
+            precision = self._prec
+        if "precision_cap" in kwds and precision > kwds["precision_cap"]:
+            if verbose >= 0:
+                print("Warning: A p-Adic tree for " + str(self) +
+                       " is computed with a lower precision than the given " +
+                       "precision " + str(precision) + ", due to a given " +
+                       "precision_cap " + str(kwds["precision_cap"]) + "!")
+            precision = kwds["precision_cap"]
+        if pAdic_tree is None:
+            pAdic_tree = pAdicTree(variables=self.variables(),
+                                   pAdics=pAdics, full=True)
+        if pAdics is None:
+            pAdics = pAdic_tree.pAdics()
+        for var in self._vars:
+            if not (var in pAdic_tree.variables()):
+                raise ValueError("Variable '" + var + "' not part of " +
+                                 "the given p-adic tree.")
+        for var in self._bound_vars:
+            if var in pAdic_tree.variables():
+                raise ValueError("Bound variable '" + var + "' part of " +
+                                 "the given p-adic tree.")
+        big_tree = pAdic_tree.add_variable(*self._bound_vars)
+        K = pAdics.number_field()
+        K0 = self.polynomial().parent().base()
+        if K0.is_subring(QQ):
+            iota = K0.hom(K)
+        else:
+            iota = K0.hom([a.minpoly().change_ring(K).roots()[0][0] for a in K0.gens()], K)
+        S = PolynomialRing(K, big_tree.variables())
+        Tyes, Tno = find_pAdic_roots(S(self.polynomial().change_ring(iota)),
+                                     pAdics=pAdics,
+                                     variables=[S(v) for v in big_tree.variables()],
+                                     value_tree=big_tree.root(),
+                                     precision=precision,
+                                     verbose=verbose)
+        Tyes = pAdicTree(variables=big_tree.variables(), root=Tyes)
+        Tyes = Tyes.change_variables_to(pAdic_tree.variables())
+        if complement:
+            Tno = pAdic_tree.difference(Tyes)
+            return Tyes, Tno
+        else:
+            return Tyes
+
+    def _repr_(self):
+        result = PolynomialCondition._repr_(self)
+        n = len(self._bound_vars)
+        if n > 0:
+            result += " for some "
+            for i in range(n):
+                if i > 0 and i == n - 1:
+                    result += "and "
+                result += self._bound_vars[i]
+                if i < n - 1:
+                    result += ", "
+        return result
+
+    def _repr_short(self):
+        result = PolynomialCondition._repr_short(self)
+        n = len(self._bound_vars)
+        if n > 0:
+            result += " for some "
+            for i in range(n):
+                if i > 0 and i == n - 1:
+                    result += "and "
+                result += self._bound_vars[i]
+                if i < n - 1:
+                    result += ", "
+        return result
+
+    def _latex_(self):
+        result = ""
+        n = len(self._bound_vars)
+        if n > 0:
+            result += "\\exists "
+            for i in range(n):
+                result += self._bound_vars[i]
+                if i < n - 1:
+                    result += ", "
+            result += " : "
+        result += PolynomialCondition._latex_(self)
+        return result
+
+    def _cache_key(self):
+        return 'ExistsCondition', self.polynomial(), self.variables()
 
     def __eq__(self, other):
         return (Condition_base.__eq__(self, other) and
