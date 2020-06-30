@@ -570,7 +570,8 @@ class FreyCurve(EllipticCurve_generic):
         pAdics = pAdicBase(self.definition_field(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R),
                                 condition=condition,
-                                verbose=(verbose-1 if verbose>0 else verbose))
+                                verbose=(verbose-1 if verbose>0 else verbose),
+                                precision_cap=precision_cap)
         result = tates_algorithm(self, initial_values=Tp,
                                  coefficient_ring=self.base(), pAdics=pAdics,
                                  verbose=verbose, precision_cap=precision_cap)
@@ -655,7 +656,8 @@ class FreyCurve(EllipticCurve_generic):
                                                   local_data)
         pAdics = pAdicBase(self.definition_field(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R), condition,
-                                verbose=(verbose-1 if verbose>0 else verbose))
+                                verbose=(verbose-1 if verbose>0 else verbose),
+                                precision_cap=precision_cap)
         calc = ['minimal_model']
         if isomorphism:
             calc.append('isomorphism')
@@ -815,7 +817,8 @@ class FreyCurve(EllipticCurve_generic):
         pAdics = pAdicBase(self.definition_field(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R),
                                 condition=condition,
-                                verbose=(verbose-1 if verbose>0 else verbose))
+                                verbose=(verbose-1 if verbose>0 else verbose),
+                                precision_cap=precision_cap)
         result = tates_algorithm(self, initial_values=Tp,
                                  coefficient_ring=self.base(), pAdics=pAdics,
                                  verbose=verbose, precision_cap=precision_cap,
@@ -879,7 +882,8 @@ class FreyCurve(EllipticCurve_generic):
         pAdics = pAdicBase(self.definition_field(), prime)
         Tp = self._initial_tree(pAdics.prime_below(self._R),
                                 condition=condition,
-                                verbose=(verbose-1 if verbose>0 else verbose))
+                                verbose=(verbose-1 if verbose>0 else verbose),
+                                precision_cap=precision_cap)
         result = tates_algorithm(self, initial_values=Tp,
                                  coefficient_ring=self.base(), pAdics=pAdics,
                                  verbose=verbose, precision_cap=precision_cap,
