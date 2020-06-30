@@ -1,6 +1,7 @@
 from modular_method.diophantine_equations.conditions import CoprimeCondition
 from modular_method.diophantine_equations.conditions import CongruenceCondition
 from modular_method.diophantine_equations.conditions import PolynomialCondition
+from modular_method.diophantine_equations.conditions import ExistsCondition
 from modular_method.diophantine_equations.conditions import PowerCondition
 from modular_method.diophantine_equations.conditions import OrderCondition
 from modular_method.elliptic_curves.Qcurves import Qcurve
