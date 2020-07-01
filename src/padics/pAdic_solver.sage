@@ -509,6 +509,40 @@ def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
          p-adic node represented by (0, 2) with 4 children,
          p-adic node represented by (2, 2) with 4 children]
 
+    TESTS:
+    
+    In case the multiplicity of the prime in the coefficient ring over
+    the underlying prime for the variables is larger than 1, the
+    correct answer is now returned for the option give_list::
+
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.padics.pAdic_tree import pAdicNode
+        sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
+        sage: R.<x, y> = QQ[]
+        sage: K.<i> = QuadraticField(-1)
+        sage: pAdicsQ = pAdicBase(QQ, 2)
+        sage: pAdicsK = pAdicBase(K, K.prime_above(2))
+        sage: pAdicsK.extension_multiplicity(pAdicsQ)
+        2
+        sage: T = pAdicNode(pAdics=pAdicsQ, width=2, full=True)
+        sage: f = x + i*y
+        sage: Tls, v_min = find_pAdic_roots(f, pAdics=pAdicsK, value_tree=T,
+        ....:                               give_list=True, precision=4)
+        sage: v_min
+        0
+        sage: Tls[0].children_at_level(1)
+        [p-adic node represented by (1, 0) with 4 children,
+         p-adic node represented by (0, 1) with 4 children]
+        sage: Tls[1].children_at_level(1)
+        [p-adic node represented by (1, 1) with 4 children]
+        sage: Tls[2].children_at_level(2)
+        [p-adic node represented by (2, 0) with 4 children,
+         p-adic node represented by (0, 2) with 4 children]
+        sage: Tls[3].children_at_level(2)
+        [p-adic node represented by (2, 2) with 4 children]
+        sage: Tls[4].children_at_level(2)
+        [p-adic node represented by (0, 0) with 4 children]
+
     """
     _check_polynomial(polynomial)
     variables = _init_variables(variables, polynomial)
@@ -746,24 +780,43 @@ def _find_pAdic_roots(f, fder, T, prec, var_prec, m, pAdics, verbose=False,
     else:
         Tno = pAdicNode(pAdics=T.pAdics(), width=T.width)
     if prec > 0:
-        for level in range(1,var_prec+1):
-            if T.is_empty():
-                if quit_on_empty or not give_list:
-                    if give_list:
+        if give_list: # In this case we want the precision on the root
+                      # to go up by 1 each time so we loop over the
+                      # precision
+            for myprec in range(1, prec+1):
+                if T.is_empty():
+                    if quit_on_empty:
                         return Tno
-                    else:
-                        return T, Tno
-                level_result = (T,T)
-            else:
-                step_size = min(m, prec-m*(level-1))
-                level_result = _pAdic_level_check(f, fder, T, level, step_size,
-                                                  pAdics, verbose=verbose)
-            T = level_result[0]
-            if len(level_result) > 1:
-                if give_list:
-                    Tno.append(level_result[1])
+                    level_result = (T, T)
                 else:
-                    Tno.merge(level_result[1])
+                    level = ceil(myprec / m)
+                    step_size = myprec - m *(level - 1)
+                    level_result = _pAdic_level_check(f, fder, T,
+                                                      level,
+                                                      step_size,
+                                                      pAdics,
+                                                      verbose=verbose)
+                T = level_result[0]
+                if len(level_result) > 1:
+                    Tno.append(level_result[1])
+        else: # In this case we can maximize step_size so we can loop
+              # over the precision of the variables
+            for level in range(1,var_prec+1):
+                if T.is_empty():
+                    return T, Tno
+                else:
+                    step_size = min(m, prec-m*(level-1))
+                    level_result = _pAdic_level_check(f, fder, T,
+                                                      level,
+                                                      step_size,
+                                                      pAdics,
+                                                      verbose=verbose)
+                T = level_result[0]
+                if len(level_result) > 1:
+                    if give_list:
+                        Tno.append(level_result[1])
+                    else:
+                        Tno.merge(level_result[1])
     if give_list:
         Tno.append(T)
         return Tno
