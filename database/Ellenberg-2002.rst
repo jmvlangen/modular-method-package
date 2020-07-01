@@ -30,7 +30,8 @@ congruent to 1 modulo 4.
 
 ::
 
-   sage: con = CoprimeCondition([A, B]) & ~CongruenceCondition(B-1, 4)
+   sage: con = (CoprimeCondition([A, B]) & ~CongruenceCondition(B-1, 4) &
+   ....:        PowerCondition(Cp, 3))
    sage: K.<i> = QuadraticField(-1)
    sage: a_invariants = [0, 2*(1+i)*A, 0, B + i*A^2, 0]
    sage: E = FreyQcurve(a_invariants, condition=con, guessed_degrees=[2])
@@ -67,7 +68,7 @@ possible bad prime is the prime above 2.
 ::
 
    sage: E.newform_levels(bad_primes=K.primes_above(2))
-   [(256,)] if ('A', 'B') is 1 of 6 possibilities mod 4
+   [(256,)] if ('A', 'B') == (1, 0) mod 2
    [(32,)]  if ('A', 'B') == (0, 3), (2, 3) mod 4
 
 The article now proves that none of these newforms could be associated

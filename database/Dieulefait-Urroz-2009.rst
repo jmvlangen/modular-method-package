@@ -30,7 +30,8 @@ denote ``Cp`` for the quantity :math:`C^p`.
    sage: load('load.sage')
    sage: R.<A, B> = QQ[]
    sage: Cp = A^4 + 2*B^2
-   sage: con = CoprimeCondition([A, B]) & ~CongruenceCondition(A, 2)
+   sage: con = (CoprimeCondition([A, B]) & ~CongruenceCondition(A, 2) &
+   ....:        PowerCondition(Cp, 3))
    sage: K.<r> = QQ[sqrt(-2)]
    sage: a_invariants = [0, 4*A, 0, 2*(A^2 + r*B), 0]
    sage: E = FreyQcurve(a_invariants, condition=con, guessed_degrees=[2])
@@ -164,7 +165,8 @@ C)` we must assume that :math:`A` and :math:`B` are coprime and that
 ::
 
    sage: Cp = A^4 + 3*B^2
-   sage: con = CoprimeCondition([A, B]) & ~CongruenceCondition(A, 3)
+   sage: con = (CoprimeCondition([A, B]) & ~CongruenceCondition(A, 3) &
+   ....:        PowerCondition(Cp, 3))
    sage: K.<r> = QuadraticField(-3)
    sage: a_invariants = [0, 4*A, 0, 2*(A^2 + r*B), 0]
    sage: E = FreyQcurve(a_invariants, condition=con, guessed_degrees=[2])
@@ -208,7 +210,6 @@ primes can be above 2 and 3.
    [(192,)] if ('A', 'B') == (1, 2), (3, 2) mod 4
    [(24,)]  if ('A', 'B') is 1 of 4 possibilities mod 8
    [(96,)]  if ('A', 'B') is 1 of 4 possibilities mod 8
-   []       if ('A', 'B') == (1, 1) mod 2
 
 As in the article we compute all newforms of these levels and first
 eliminate all those newforms that have complex multiplication. We
