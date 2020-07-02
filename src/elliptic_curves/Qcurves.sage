@@ -3221,6 +3221,17 @@ class Qcurve(Qcurve_base, EllipticCurve_number_field):
         sage: Qcurve([0, 12, 0, 18*(t + 1), 0], isogenies={s : ((-x^2 - 12*x - 18*(t + 1))/(2*x), t)})
         Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 + 2 with t = 1.414213562373095?*I
 
+    TESTS:
+
+    Check that given degrees work correctly if there are two galois
+    conjugates that are twists of one another::
+
+        sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+        sage: R.<x> = QQ[]
+        sage: K.<t> = NumberField(x^4 - 10*x^2 + 1)
+        sage: Qcurve([0, -12*t, 0, 6*t^3 + 18*t^2 + 6*t, 0], guessed_degrees=[2])
+        Q-curve defined by y^2 = x^3 + (-12*t)*x^2 + (6*t^3+18*t^2+6*t)*x over Number Field in t with defining polynomial x^4 - 10*x^2 + 1
+
     """
     def definition_field(self):
         r"""Give the field over which this Q-curve is defined.
@@ -3365,11 +3376,13 @@ class Qcurve(Qcurve_base, EllipticCurve_number_field):
                     else:
                         m, um = 2, (c6t*c4s)/(c6s*c4t)
                     f_iso = (x^m - um).factor()[0][0]
+                    psi = Ed.isogeny(x - l)
+                    E_t = psi.codomain()
                     if f_iso.degree() > 1:
                         K_iso.<lu> = Kd.extension(f_iso)
-                        Ed = Ed.change_ring(K_iso)
+                        Ed_iso = Ed.change_ring(K_iso)
                         E_s = E_s.change_ring(K_iso)
-                        psi = Ed.isogeny((x - l).change_ring(K_iso))
+                        psi = Ed_iso.isogeny((x - l).change_ring(K_iso))
                         E_t = psi.codomain()
                     psi.set_post_isomorphism(E_t.isomorphism_to(E_s))
                     self._add_isogeny(s, psi)
