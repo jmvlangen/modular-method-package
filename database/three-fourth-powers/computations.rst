@@ -149,7 +149,7 @@ described in the article and name the generators accordingly.
 ::
 
    sage: K.unit_group()
-   Unit group with structure C2 x Z of Number Field in w with defining polynomial x^2 - 30
+   Unit group with structure C2 x Z of Number Field in w with defining polynomial x^2 - 30 with w = -1/94932*vg^6 + 2/879*vg^4 - 91/586*vg^2 + 2664/293
    sage: u0, u1 = K.unit_group().gens_values()
 
 Next we check that the ideal in K above 3 has an integral basis given
@@ -171,6 +171,7 @@ choice of :math:`j` and check they match the given description.
    sage: gamma = sum(3 * cf * Rgen for cf, Rgen in zip(g1.coefficients(), R2.gens()))
    sage: vals = [1/9 * u1^j * gamma^3 for j in range(3)]
    sage: B = g1.coefficients()
+   sage: from modular_method.diophantine_equations.prime_power import polynomial_split_on_basis
    sage: valsB = [polynomial_split_on_basis(poly, B) for poly in vals]
    sage: F, G = zip(*valsB)
    sage: [(Fj.degree(), Fj.is_homogeneous()) for Fj in F]
@@ -545,6 +546,7 @@ get the same curves as mentioned in the article.
 
 ::
 
+   sage: from modular_method.elliptic_curves.twist import twist_elliptic_curve
    sage: E1 = FreyCurve(twist_elliptic_curve(E1__, 30), condition=con)
    sage: E2 = FreyCurve(twist_elliptic_curve(E2_, 20), condition=con)
    sage: E1.a_invariants() == (0, 60*a, 0, 30*((15 + 3*w)*a^2 + w*b^2), 0)
@@ -746,11 +748,8 @@ We turn our two curves into :math:`\QQ` curves.
    
 ::
 
-   sage: Qm2.<sqrtm2> = QuadraticField(-2)
-   sage: G.<sigma> = K.galois_group()
-   sage: isogenies = {sigma^0: (QQ(1), 1), sigma^1: (sqrtm2, 2)}
-   sage: E1 = FreyQcurve(E1, isogenies=isogenies, condition=con)
-   sage: E2 = FreyQcurve(E2, isogenies=isogenies, condition=con)
+   sage: E1 = FreyQcurve(E1, condition=con, guessed_degrees=[2])
+   sage: E2 = FreyQcurve(E2, condition=con, guessed_degrees=[2])
 
 Basic invariants
 ----------------
@@ -824,6 +823,7 @@ Lastly a splitting character and the corresponding fields.
    True
    sage: Keps.degree()
    4
+   sage: from modular_method.number_fields.field_constructors import composite_field
    sage: Kbeta = composite_field(K, Keps)
    sage: E1.splitting_field().is_isomorphic(Kbeta)
    True
@@ -861,8 +861,8 @@ First we compute that the class number of ``Kdec`` is indeed 1.
 
 Using the code we can directly compute a twist for which the
 restriction of scalars decomposes. We compute that the twist factor of
-these curves both differs differ by a square from the :math:`\gamma`
-given in the article.
+these curves both differs differ by minus a square from the
+:math:`\gamma` given in the article.
 
 ::
 
@@ -871,11 +871,11 @@ given in the article.
    sage: iota = K.embeddings(E1.decomposition_field())[0]
    sage: E1t = E1.decomposable_twist()
    sage: ((E1t.a2() / E1.a2().change_ring(iota)).numerator().constant_coefficient()
-   ....:   / Kdec.embeddings(E1.decomposition_field())[0](gamma)).is_square()
+   ....:   / (-1)*Kdec.embeddings(E1.decomposition_field())[0](gamma)).is_square()
    True
    sage: E2t = E2.decomposable_twist()
    sage: ((E2t.a2() / E2.a2().change_ring(iota)).numerator().constant_coefficient()
-   ....:   / Kdec.embeddings(E2.decomposition_field())[0](gamma)).is_square()
+   ....:   / (-1)*Kdec.embeddings(E2.decomposition_field())[0](gamma)).is_square()
    True
 
 Since we work with the twists by :math:`\gamma` we define those twists
@@ -955,13 +955,13 @@ mentioned in the proof.
 
    sage: N1 = E1c.conductor_restriction_of_scalars(); N1
    Warning: Assuming that a and b are coprime.
-   2^(4*n0+24)*43046721*244140625*Norm(Rad_P( ((23782266551879220937500/59141881469*azeta1500^7 + 1126822572008348510812500/59141881469*azeta1500^6 + 13988031177932864349750000/59141881469*azeta1500^5 - 59265495307535319274500000/59141881469*azeta1500^4 - 1775371096351391663808000000/59141881469*azeta1500^3 - 1236605090022138111120000000/59141881469*azeta1500^2 + 58326576546407013852786000000/59141881469*azeta1500 + 6699553759806124820472000000/59141881469)) * (a^2 + (1/1001088*azeta1500^7 + 1/111232*azeta1500^6 - 21/27808*azeta1500^5 - 1163/125136*azeta1500^4 + 249/3476*azeta1500^3 + 578/869*azeta1500^2 - 111719/31284*azeta1500 + 8884/2607)*b^2) * (a^2 + (-1/1001088*azeta1500^7 - 1/111232*azeta1500^6 + 21/27808*azeta1500^5 + 1163/125136*azeta1500^4 - 249/3476*azeta1500^3 - 578/869*azeta1500^2 + 111719/31284*azeta1500 + 1544/2607)*b^2)^2 ))
+   2^(4*n0+24)*43046721*244140625*Norm(Rad_P( ((59147594108875733062500/59141881469*azeta1500^7 + 1884210069956178248437500/59141881469*azeta1500^6 + 2433328407297454259250000/59141881469*azeta1500^5 - 294536077032536472793500000/59141881469*azeta1500^4 - 340187369712118847532000000/59141881469*azeta1500^3 + 15980248427601910834656000000/59141881469*azeta1500^2 - 38618401710748510309338000000/59141881469*azeta1500 - 4637330504302734305640000000/59141881469)) * (a^2 + (-1/1001088*azeta1500^7 - 1/111232*azeta1500^6 + 21/27808*azeta1500^5 + 1163/125136*azeta1500^4 - 249/3476*azeta1500^3 - 578/869*azeta1500^2 + 111719/31284*azeta1500 + 1544/2607)*b^2) * (a^2 + (1/1001088*azeta1500^7 + 1/111232*azeta1500^6 - 21/27808*azeta1500^5 - 1163/125136*azeta1500^4 + 249/3476*azeta1500^3 + 578/869*azeta1500^2 - 111719/31284*azeta1500 + 8884/2607)*b^2)^2 ))
     where 
    n0 = 12 if ('a', 'b') == (1, 0) mod 2
         10 if ('a', 'b') == (1, 1) mod 2
    sage: N2 = E2c.conductor_restriction_of_scalars(); N2
    Warning: Assuming that a and b are coprime.
-   1936465405881733890441216000000000000*Norm(Rad_P( ((17973045129994189000000/59141881469*azeta1500^7 + 851560867877408703000000/59141881469*azeta1500^6 + 10570632468562506924000000/59141881469*azeta1500^5 - 44792083812043020808000000/59141881469*azeta1500^4 - 1341640897948993214880000000/59141881469*azeta1500^3 - 934184557863352113984000000/59141881469*azeta1500^2 + 44076529752976112634848000000/59141881469*azeta1500 + 5062815140007181381632000000/59141881469)) * (a^2 + (-1/1001088*azeta1500^7 - 1/111232*azeta1500^6 + 21/27808*azeta1500^5 + 1163/125136*azeta1500^4 - 249/3476*azeta1500^3 - 578/869*azeta1500^2 + 111719/31284*azeta1500 + 1544/2607)*b^2) * (a^2 + (1/1001088*azeta1500^7 + 1/111232*azeta1500^6 - 21/27808*azeta1500^5 - 1163/125136*azeta1500^4 + 249/3476*azeta1500^3 + 578/869*azeta1500^2 - 111719/31284*azeta1500 + 8884/2607)*b^2)^2 ))
+   1936465405881733890441216000000000000*Norm(Rad_P( ((44698303687939139000000/59141881469*azeta1500^7 + 1423918818418416273000000/59141881469*azeta1500^6 + 1839106906899769044000000/59141881469*azeta1500^5 - 222582279024493161848000000/59141881469*azeta1500^4 - 257110099679430707040000000/59141881469*azeta1500^3 + 12076274070960888949056000000/59141881469*azeta1500^2 - 29182994669013966651872000000/59141881469*azeta1500 - 3504323932587416153088000000/59141881469)) * (a^2 + (1/1001088*azeta1500^7 + 1/111232*azeta1500^6 - 21/27808*azeta1500^5 - 1163/125136*azeta1500^4 + 249/3476*azeta1500^3 + 578/869*azeta1500^2 - 111719/31284*azeta1500 + 8884/2607)*b^2) * (a^2 + (-1/1001088*azeta1500^7 - 1/111232*azeta1500^6 + 21/27808*azeta1500^5 + 1163/125136*azeta1500^4 - 249/3476*azeta1500^3 - 578/869*azeta1500^2 + 111719/31284*azeta1500 + 1544/2607)*b^2)^2 ))
 
 We check that this is indeed the same as the expression given in the
 proof of Proposition 4.9. For the left side this is an easy check.
@@ -1000,16 +1000,16 @@ divisible by primes dividing 30.
 
 ::
 
-   sage: iota = K.embeddings(E1c.decomposition_field())[0]
+   sage: iota = K.embeddings(E1c.decomposition_field())[1]
    sage: cf = E1c.discriminant() / (g1.change_ring(iota) * g2.change_ring(iota)^2); cf
-   (23782266551879220937500/59141881469*azeta1500^7 + 1126822572008348510812500/59141881469*azeta1500^6 + 13988031177932864349750000/59141881469*azeta1500^5 - 59265495307535319274500000/59141881469*azeta1500^4 - 1775371096351391663808000000/59141881469*azeta1500^3 - 1236605090022138111120000000/59141881469*azeta1500^2 + 58326576546407013852786000000/59141881469*azeta1500 + 6699553759806124820472000000/59141881469)
+   (59147594108875733062500/59141881469*azeta1500^7 + 1884210069956178248437500/59141881469*azeta1500^6 + 2433328407297454259250000/59141881469*azeta1500^5 - 294536077032536472793500000/59141881469*azeta1500^4 - 340187369712118847532000000/59141881469*azeta1500^3 + 15980248427601910834656000000/59141881469*azeta1500^2 - 38618401710748510309338000000/59141881469*azeta1500 - 4637330504302734305640000000/59141881469)
    sage: cf = cf.numerator().constant_coefficient()
    sage: cf.is_integral()
    True
    sage: cf.norm().factor()
    2^72 * 3^48 * 5^48
    sage: cf = E2c.discriminant() / (g1.change_ring(iota)^2 * g2.change_ring(iota)); cf
-   (17973045129994189000000/59141881469*azeta1500^7 + 851560867877408703000000/59141881469*azeta1500^6 + 10570632468562506924000000/59141881469*azeta1500^5 - 44792083812043020808000000/59141881469*azeta1500^4 - 1341640897948993214880000000/59141881469*azeta1500^3 - 934184557863352113984000000/59141881469*azeta1500^2 + 44076529752976112634848000000/59141881469*azeta1500 + 5062815140007181381632000000/59141881469)
+   (44698303687939139000000/59141881469*azeta1500^7 + 1423918818418416273000000/59141881469*azeta1500^6 + 1839106906899769044000000/59141881469*azeta1500^5 - 222582279024493161848000000/59141881469*azeta1500^4 - 257110099679430707040000000/59141881469*azeta1500^3 + 12076274070960888949056000000/59141881469*azeta1500^2 - 29182994669013966651872000000/59141881469*azeta1500 - 3504323932587416153088000000/59141881469)
    sage: cf = cf.numerator().constant_coefficient()
    sage: cf.is_integral()
    True
@@ -1038,11 +1038,11 @@ splitting map computed first.
 ::
 
    sage: E1c.twist_character('conjugacy')
-   (Dirichlet character modulo 120 of conductor 1 mapping 31 |--> 1, 61 |--> 1, 41 |--> 1, 97 |--> 1,
-    Dirichlet character modulo 120 of conductor 40 mapping 31 |--> -1, 61 |--> -1, 41 |--> 1, 97 |--> zeta4)
+   (Dirichlet character modulo 1 of conductor 1,
+    Dirichlet character modulo 40 of conductor 40 mapping 31 |--> -1, 21 |--> -1, 17 |--> zeta4)
    sage: E2c.twist_character('conjugacy')
-   (Dirichlet character modulo 120 of conductor 1 mapping 31 |--> 1, 61 |--> 1, 41 |--> 1, 97 |--> 1,
-    Dirichlet character modulo 120 of conductor 40 mapping 31 |--> -1, 61 |--> -1, 41 |--> 1, 97 |--> zeta4)
+   (Dirichlet character modulo 1 of conductor 1,
+    Dirichlet character modulo 40 of conductor 40 mapping 31 |--> -1, 21 |--> -1, 17 |--> zeta4)
 
 We verify that the inverse of the second character in each case is
 indeed :math:`\varepsilon_8 \varepsilon_5`, implying the remainder of
@@ -1053,7 +1053,7 @@ the proof to be valid.
    sage: chi = E1c.twist_character('conjugacy')[1]^(-1)
    sage: eps8 = [eps for eps in DirichletGroup(8) if eps.conductor() == 8 and eps(-1) == -1][0]
    sage: eps5 = [eps for eps in DirichletGroup(5) if eps.order() == 4][1]
-   sage: chi == eps8.extend(120) * eps5.extend(120)
+   sage: chi == eps8.extend(40) * eps5.extend(40)
    True
 
 Level lowering

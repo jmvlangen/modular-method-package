@@ -29,6 +29,13 @@ AUTHORS:
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 from sage.combinat.combination import Combinations
+from sage.structure.sage_object import SageObject
+from sage.misc.cachefunc import cached_method
+
+from sage.matrix.constructor import matrix
+from sage.modules.free_module_element import vector
+
+from sage.all import ZZ, QQ, Integer
 
 class power_analyzer(SageObject):
     r"""A class used to analyze diophantine equations containing a prime
