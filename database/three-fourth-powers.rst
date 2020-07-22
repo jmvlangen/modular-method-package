@@ -1276,33 +1276,33 @@ both curves separately.
 
 ::
    
-   sage: nfs1 = eliminate_by_traces(E1c, nfs1, condition=coprime, primes=prime_range(7, 40))
-   sage: nfs2 = eliminate_by_traces(E2c, nfs2, condition=coprime, primes=prime_range(7, 40))
+   sage: nfs1 = eliminate_by_traces(E1c, nfs1, condition=coprime, primes=prime_range(7, 40)) # todo: fix for new framework setup
+   sage: nfs2 = eliminate_by_traces(E2c, nfs2, condition=coprime, primes=prime_range(7, 40)) # todo: fix for new framework setup
 
 Next we eliminate for each newform :math:`g` the prime factors 2, 3,
 and 5 from the number :math:`M_g` described in the article.
 
 ::
 
-   sage: nfs1 = eliminate_primes(E1c, nfs1, 2*3*5)
-   sage: nfs2 = eliminate_primes(E2c, nfs2, 2*3*5)
+   sage: nfs1 = eliminate_primes(E1c, nfs1, 2*3*5) # todo: fix for new framework setup
+   sage: nfs2 = eliminate_primes(E2c, nfs2, 2*3*5) # todo: fix for new framework setup
 
 We check that the number of newforms now remaining matches the claim
 in the article.
 
 ::
 
-   sage: nfs1[1][0][0][0].level()
+   sage: nfs1[1][0][0][0].level() # todo: fix for new framework setup
    11520
-   sage: len(nfs1[1][0])
+   sage: len(nfs1[1][0]) # todo: fix for new framework setup
    14
-   sage: nfs1[0][0][0][0].level()
+   sage: nfs1[0][0][0][0].level() # todo: fix for new framework setup
    23040
-   sage: len(nfs1[0][0])
+   sage: len(nfs1[0][0]) # todo: fix for new framework setup
    12
-   sage: nfs2[0][0].level()
+   sage: nfs2[0][0].level() # todo: fix for new framework setup
    15360
-   sage: len(nfs2)
+   sage: len(nfs2) # todo: fix for new framework setup
    7
 
 Lastly we combine all remaining newforms and perform the multi-Frey
@@ -1310,7 +1310,7 @@ elimination resulting in no newforms remaining.
 
 ::
 
-   sage: nfs = combine_newforms(nfs1, nfs2)
-   sage: nfs = eliminate_by_traces((E1c, E2c), nfs, condition=coprime, primes=prime_range(7, 50))
-   sage: nfs
+   sage: nfs = combine_newforms(nfs1, nfs2) # todo: fix for new framework setup
+   sage: nfs = eliminate_by_traces((E1c, E2c), nfs, condition=coprime, primes=prime_range(7, 50)) # todo: fix for new framework setup
+   sage: nfs # todo: fix for new framework setup
    []
