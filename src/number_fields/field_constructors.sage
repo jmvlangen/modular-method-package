@@ -547,12 +547,13 @@ def composite_field(K1, K2, give_maps=False, names=None):
     if K2.absolute_degree() < K1.absolute_degree():
         if give_maps:
             K, K2_to_K, K1_to_K = composite_field(K2, K1,
-                                                  give_maps=True)
+                                                  give_maps=True,
+                                                  names=names)
             return (K,
                     _concat_maps(to_K1, K1_to_K),
                     _concat_maps(to_K2, K2_to_K))
         else:
-            return composite_field(K2, K1)
+            return composite_field(K2, K1, names=names)
     K01 = K1
     K02 = K2
     while K01 != K02:
@@ -567,18 +568,34 @@ def composite_field(K1, K2, give_maps=False, names=None):
         K1 = K1[0]
         to_K2 = _concat_maps(to_K2, K2[1])
         K2 = K2[0]
+    name1 = K1.variable_name(); name2 = K2.variable_name()
+    if names is None:
+        names = name1 + (name2 if name2 != name1 else "")
+    if names == name1:
+        for n in range(len(names)):
+            if names[n:].isdigit():
+                names = names[:n] + str(Integer(names[n:]) + 1)
+                break
+        else:
+            names = names + "1"
+    return _composite_field(K01, K1, K2, K1or, K2or, to_K1, to_K2,
+                            give_maps, names)
+
+def _composite_field(K0, K1, K2, K1or, K2or, to_K1, to_K2, give_maps,
+                     names):
+    r""" Helper function for :func:composite_field"""
     f = K2.relative_polynomial()
     g = f.change_ring(K1).factor()[0][0]
     if g.degree() * K1.absolute_degree() == K2.absolute_degree():
         if give_maps:
-            if K01 == QQ:
+            if K0 == QQ:
                 a0 = 1
-                i1 = K01.hom(K1or)
-                i2 = K01.hom(K2or)
+                i1 = K0.hom(K1or)
+                i2 = K0.hom(K2or)
             else:
-                a0 = K01.absolute_generator()
-                i1 = [i for i in K01.embeddings(K1or) if to_K1(i(a0)) == a0][0]
-                i2 = [i for i in K01.embeddings(K2or) if to_K2(i(a0)) == a0][0]
+                a0 = K0.absolute_generator()
+                i1 = [i for i in K0.embeddings(K1or) if to_K1(i(a0)) == a0][0]
+                i2 = [i for i in K0.embeddings(K2or) if to_K2(i(a0)) == a0][0]
             iota = [i for i in K1or.embeddings(K2or) if i(i1(a0)) == i2(a0)][0]
             if K2or.is_absolute():
                 return K2or, iota, K2or.hom(K2or)
@@ -592,16 +609,6 @@ def composite_field(K1, K2, give_maps=False, names=None):
                 return K2or
             else:
                 return K2or.absolute_field(names=K2or.variable_name())
-    name1 = K1.variable_name(); name2 = K2.variable_name()
-    if names is None:
-        names = name1 + (name2 if name2 != name1 else "")
-    if names == name1:
-        for n in range(len(names)):
-            if names[n:].isdigit():
-                names = names[:n] + str(Integer(names[n:]) + 1)
-                break
-        else:
-            names = names + "1"
     K = K1.extension(g, names=names)
     if give_maps:
         K1_to_K = _write_as_im_gen_map(K1.hom(K))
@@ -618,6 +625,193 @@ def composite_field(K1, K2, give_maps=False, names=None):
             return K
         else:
             return K.absolute_field(names=K.variable_name())
+
+@cached_function
+def common_embedding_field(K1, K2, give_maps=False, names=None):
+    r"""Give the smallest field containing every pair of embeddings of two
+    fields.
+
+    INPUT:
+
+    - ``K1`` -- A number field, which may be the rationals. It may
+      also be the extension of some number field $K_0$ of which `K2`
+      is also an extension. This extension may also be given as an
+      embedding of $K_0$ into `K1`.
+
+    - ``K2`` -- A number field, which may be the rationals. It may
+      also be the extension of some number field $K_0$ of which `K1`
+      is also an extension. This extension may also be given as an
+      embedding of $K_0$ into `K2`.
+
+    - ``give_maps`` -- A boolean (default=False) indicating whether
+      the embeddings into the composite field should be returned.
+
+    - ``names`` -- A string, tuple thereof or None (default:
+      `None`). If not `None` this will be used as the variable names
+      in the composite field.
+
+    OUTPUT:
+
+    A number field $K$ such that every pair of embeddings from `K1`
+    and `K2` into an algebraic closure can be written as a pair of
+    embeddings into $K$ combined with an embedding of $K$ into the
+    algebraic closure. If `K1` and `K2` are given as extensions of a
+    common field $K_0$, these embeddings will be assumed to respect
+    the embedding of $K_0$ into `K1` and `K2`.
+
+    If `K1` or `K2` is absolute and isomorphic to the returned field
+    $K$, the field $K$ will always be that field. If both `K1` and
+    `K2` satisfy this condition, then $K$ will be `K2`.
+
+    EXAMPLES:
+
+    We combine two non-Galois fields, of which the result is Galois
+    hence contains all possible pairs of embeddings::
+
+        sage: from modular_method.number_fields.field_constructors import common_embedding_field
+        sage: R.<x> = QQ[]
+        sage: K.<a> = NumberField(x^3 - 2)
+        sage: L.<b> = NumberField(x^3 - 3)
+        sage: M.<c> = common_embedding_field(K, L); M
+        Number Field in c with defining polynomial x^18 + 18*x^15 + 459*x^12 - 48060*x^9 + 447363*x^6 + 1663578*x^3 + 1601613
+        sage: M.is_galois()
+        True
+
+    Note that the output of this function can differ from that of
+    :func:`composite_field` in some cases::
+
+        sage: from modular_method.number_fields.field_constructors import common_embedding_field
+        sage: from modular_method.number_fields.field_constructors import composite_field
+        sage: R.<x> = QQ[]
+        sage: K1.<a1> = NumberField(x^2 - 2)
+        sage: K2.<a2> = NumberField(x^2 - 2)
+        sage: L1.<b1> = NumberField(x^3 - 2)
+        sage: L2.<b2> = NumberField(x^3 - 2)
+        sage: composite_field(K1, K2)
+        Number Field in a2 with defining polynomial x^2 - 2
+        sage: common_embedding_field(K1, K2)
+        Number Field in a2 with defining polynomial x^2 - 2
+        sage: composite_field(L1, L2)
+        Number Field in b2 with defining polynomial x^3 - 2
+        sage: common_embedding_field(L1, L2)
+        Number Field in b1b2 with defining polynomial x^6 + 108
+
+    When the two fields have a common subfield, the result may be
+    smaller::
+
+        sage: from modular_method.number_fields.field_constructors import common_embedding_field
+        sage: R.<x> = QQ[]
+        sage: K.<a> = NumberField(x^2 - 2)
+        sage: S.<y> = K[]
+        sage: L1.<b1> = K.extension(y^2 - (a + 1))
+        sage: L2.<b2> = K.extension(y^2 - (3*a + 5))
+        sage: common_embedding_field(L1, L2)
+        Number Field in b1b2 with defining polynomial x^8 - 24*x^6 + 64*x^4 - 64*x^2 + 64
+        sage: common_embedding_field(L1.absolute_field('c1'), L2.absolute_field('c2'))
+        Number Field in c1c2 with defining polynomial x^16 - 80*x^14 + 1888*x^12 - 10240*x^10 + 43776*x^8 + 163840*x^6 + 483328*x^4 + 327680*x^2 + 65536
+
+    It is possible to get some maps to start with::
+
+        sage: from modular_method.number_fields.field_constructors import common_embedding_field
+        sage: R.<x> = QQ[]
+        sage: K.<a> = NumberField(x^3 - 3)
+        sage: L.<b> = NumberField(x^3 - 7)
+        sage: common_embedding_field(K, L, give_maps=True)
+        (Number Field in ab with defining polynomial x^18 + 42*x^15 + 1464*x^12 - 248290*x^9 + 5249823*x^6 + 12399072*x^3 + 24897088,
+         Ring morphism:
+           From: Number Field in b with defining polynomial x^3 - 7
+           To:   Number Field in ab with defining polynomial x^18 + 42*x^15 + 1464*x^12 - 248290*x^9 + 5249823*x^6 + 12399072*x^3 + 24897088
+           Defn: b |--> 637/4487257440*ab^16 + 3241/560907180*ab^13 + 438893/2243628720*ab^10 - 5020483/140226795*ab^7 + 3482961209/4487257440*ab^4 + 636045437/560907180*ab,
+         Ring morphism:
+           From: Number Field in a with defining polynomial x^3 - 3
+           To:   Number Field in ab with defining polynomial x^18 + 42*x^15 + 1464*x^12 - 248290*x^9 + 5249823*x^6 + 12399072*x^3 + 24897088
+           Defn: a |--> -1/15326496*ab^16 - 49/19158120*ab^13 - 3463/38316240*ab^10 + 62111/3831624*ab^7 - 30561037/76632480*ab^4 + 3980543/9579060*ab)
+
+    """
+    to_K1 = None; to_K2 = None
+    K1or = K1; K2or = K2
+    if hasattr(K1, "codomain"):
+        K1or = K1.codomain()
+        K1 = write_as_extension(K1, give_map=give_maps)
+        if give_maps:
+            K1, to_K1 = K1
+    if hasattr(K2, "codomain"):
+        K2or = K2.codomain()
+        K2 = write_as_extension(K2, give_map=give_maps)
+        if give_maps:
+            K2, to_K2 = K2
+    if not K1.is_field():
+        raise ValueError(str(K1) + "is not a field")
+    if not K2.is_field():
+        raise ValueError(str(K2) + "is not a field")
+    if give_maps and to_K1 is None:
+        to_K1 = K1.hom(K1)
+    if give_maps and to_K2 is None:
+        to_K2 = K2.hom(K2)
+    if K2.absolute_degree() < K1.absolute_degree():
+        if give_maps:
+            K, K2_to_K, K1_to_K = common_embedding_field(K2, K1,
+                                                         give_maps=True,
+                                                         names=names)
+            return (K,
+                    _concat_maps(to_K1, K1_to_K),
+                    _concat_maps(to_K2, K2_to_K))
+        else:
+            return common_embedding_field(K2, K1, names=names)
+    K01 = K1
+    K02 = K2
+    while K01 != K02:
+        if K01.absolute_degree() < K02.absolute_degree() or K01 == QQ:
+            K02 = K02.base_ring()
+        else:
+            K01 = K01.base_ring()
+    K1 = write_as_extension(K01.hom(K1), give_map=give_maps)
+    K2 = write_as_extension(K02.hom(K2), give_map=give_maps)
+    if give_maps:
+        to_K1 = _concat_maps(to_K1, K1[1])
+        K1 = K1[0]
+        to_K2 = _concat_maps(to_K2, K2[1])
+        K2 = K2[0]
+    name1 = K1.variable_name(); name2 = K2.variable_name()
+    if names is None:
+        names = name1 + (name2 if name2 != name1 else "")
+    if names == name1:
+        for n in range(len(names)):
+            if names[n:].isdigit():
+                names = names[:n] + str(Integer(names[n:]) + 1)
+                break
+        else:
+            names = names + "1"
+    if ((K1.is_galois_relative() if hasattr(K1, "is_galois_relative")
+         else K1.is_galois()) or
+        (K2.is_galois_relative() if hasattr(K2, "is_galois_relative")
+         else K2.is_galois())):
+        return _composite_field(K01, K1, K2, K1or, K2or, to_K1, to_K2,
+                                give_maps, names)
+    K1gal = K1.galois_closure(names=K1._names)
+    K1_to_gal = _write_as_im_gen_map(K1.embeddings(K1gal)[0])
+    if K01 != QQ:
+        f = K1.relative_polynomial()
+        K0_to_gal = _concat_maps(K01.hom(K1), K1_to_gal)
+        invs = [K0_to_gal(a) for a in K01.gens()]
+        invs.extend(list(f.change_ring(K0_to_gal).roots()))
+        H = [sigma for sigma in K1gal.galois_group()
+             if all(sigma(a) == a for a in invs)]
+        K1gal, from_K1gal = fixed_field(H, map=True)
+        K1_to_gal = [phi for phi in K1.embeddings(K1gal) if
+                     all(from_K1gal(phi(a)) == K1_to_gal(a) for a in K1.gens())][0]
+        K1_to_gal = _write_as_im_gen_map(K1_to_gal)
+        K1gal = write_as_extension(_concat_maps(K01.hom(K1), K1_to_gal), give_map=True)
+        K1gal, K1_to_gal = K1gal
+    to_gal = (_concat_maps(to_K1, K1_to_gal) if give_maps else None)
+    K1or = (K1or if K1gal.absolute_degree() == K1.absolute_degree()
+            else K1gal.absolute_field(names=names))
+    if K1gal.absolute_degree() > K2.absolute_degree():
+        return _composite_field(K01, K2, K1gal, K2or, K1or, to_K2,
+                                to_gal, give_maps, names)
+    else:
+        return _composite_field(K01, K1gal, K2, K1or, K2or, to_gal,
+                                to_K1, give_maps, names)
 
 @cached_function
 def intersection_field(K1, K2, L=None, give_maps=False, names=None):
