@@ -64,9 +64,12 @@ AUTHORS:
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 import itertools
+from functools import reduce
 
 from sage.arith.functions import lcm
 from sage.arith.misc import gcd
+from sage.rings.finite_rings.integer_mod import mod
+from sage.rings.fast_arith import prime_range
 
 from sage.misc.misc_c import prod as product
 
