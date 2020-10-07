@@ -75,7 +75,7 @@ from sage.misc.misc_c import prod as product
 
 from modular_method.padics.pAdic_base import pAdicBase
 
-from modular_method.number_fields.field_constructors import composite_field
+from modular_method.number_fields.field_constructors import common_embedding_field
 
 from modular_method.elliptic_curves.Qcurves import Qcurve_base as Qcurve
 from modular_method.elliptic_curves.frey_curves import FreyCurve
@@ -426,12 +426,9 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
             all(not p.divides(nfs[i].level()) for i in range(nE))):
             apf = [nfs[i].trace_of_frobenius(p, power=powers[i])
                    for i in range(nE)]
-            comp_fields = [composite_field(fields2[i],
-                                           nfs[i].coefficient_field())
+            comp_fields = [common_embedding_field(fields2[i],
+                                                  nfs[i].coefficient_field())
                            for i in range(nE)]
-            comp_fields = [(K if K == QQ else
-                            K.galois_closure(names=K._names))
-                           for K in comp_fields]
             phiE = [fields2[i].embeddings(comp_fields[i])[0]
                     for i in range(nE)]
             phif = [nfs[i].embedding(comp_fields[i]) for i in range(nE)]

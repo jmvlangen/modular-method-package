@@ -157,6 +157,7 @@ from modular_method.number_fields.field_constructors import _write_as_im_gen_map
 from modular_method.number_fields.field_constructors import _concat_maps
 from modular_method.number_fields.field_constructors import write_as_extension
 from modular_method.number_fields.field_constructors import composite_field
+from modular_method.number_fields.field_constructors import common_embedding_field
 from modular_method.number_fields.galois_group import galois_field_change
 
 from modular_method.diophantine_equations.conditions import TextCondition
@@ -2652,8 +2653,7 @@ class FreyQcurve(FreyCurve, Qcurve):
             for f in get_newforms(level, character=eps,
                                   algorithm=algorithm, path=path):
                 Kf = f.coefficient_field()
-                K = composite_field(KE, Kf)
-                K = K.galois_closure(names=K._names)
+                K = common_embedding_field(KE, Kf)
                 for phi in Kf.embeddings(K):
                     f_phi = f.copy()
                     f_phi.set_embedding(K, phi)
