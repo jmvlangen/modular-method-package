@@ -5,6 +5,9 @@ AUTHORS:
 - Joey van Langen (2020-12-12): initial version
 
 """
+from sage.all import Integer
+from sage.rings.ideal import Ideal
+
 from modular_method.padics.pAdic_base import pAdicBase
 from modular_method.padics.pAdic_tree import pAdicTree
 from modular_method.padics.pAdic_solver import find_pAdic_roots
