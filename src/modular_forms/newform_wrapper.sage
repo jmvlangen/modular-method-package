@@ -97,6 +97,7 @@ from sage.misc.cachefunc import cached_method
 from sage.interfaces.magma import magma
 
 from sage.rings.number_field.number_field import is_NumberField, NumberField
+from sage.rings.ideal import is_Ideal
 from sage.rings.polynomial.polynomial_element import is_Polynomial
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 
@@ -108,14 +109,16 @@ from modular_method.number_fields.field_constructors import composite_field
 
 from modular_method.polynomial.symmetric_polynomials import polynomial_to_symmetric
 
-def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
+def get_newforms(level, character=None, algorithm='sage', base_field=QQ,
                  names='a', path=None):
     r"""Compute the newforms of weight 2 of a given level and character.
 
     INPUT:
 
-    - ``level`` -- A strictly positive integer which is the level of
-      the newforms.
+    - ``level`` -- A non-zero ideal of the ring of integers of the
+      number field given as ``base_field`` which is the level of the
+      newforms. If ``base_field`` is the rationals then this may also
+      be given as a strictly positive integer.
 
     - ``character`` -- A dirichlet character of which the conductor
       divides the given level.
@@ -125,9 +128,15 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
       'magma' if magma should be used to compute the newforms; or
       'file' if the newforms should be loaded from a file.
 
-    - ``minimal_coeffs`` -- A number field or the rationals (default:
-      QQ) that should be contained in the coefficient field of each
-      newform computed.
+    - ``base_field`` -- A number field or the rationals (default: QQ)
+      over which we want to compute newforms. This determines what
+      kind of modular forms are computed. The possibilities are:
+
+       * classical modular forms for base field the rationals
+       * Hilbert modular forms for totally real base fields (not
+         supported by a sage algorithm)
+       * Bianchi modular forms for complex quadratic fields (not
+         supported by a sage algorithm)
 
     - ``names`` -- An argument required by the sage implementation of
       newforms to be used as the names for the generator of
@@ -140,10 +149,9 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
     OUTPUT:
     
     A list of instances of WrappedNewform that contains exactly one
-    newform in each galois orbit of newforms in $S_2(\Gamma_1(N),
-    \varepsilon)$, wher $N$ is the given level and $\varepsilon$ is
-    the given character. Furthermore the coefficient field of each of
-    these newforms extends the given field minimal_coeffs.
+    newform in each galois orbit of newforms of level `level`,
+    (parallel) weight 2, base field `base_field`, and character
+    `character`.
 
     EXAMPLES:
 
@@ -179,6 +187,9 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
 
     """
     if algorithm == 'sage':
+        if base_field != QQ:
+            raise NotImplementedError("Sage algorithm not implemented for " +
+                                      "base field " + str(base_field))
         if character is None:
             nfs = Newforms(level, names=names)
         else:
@@ -186,27 +197,41 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
             nfs = Newforms(eps, names=names)
         result = [WrappedNewform_sage(f) for f in nfs]
     elif algorithm == 'magma':
-        if character is None:
-            cfs = magma.CuspForms(level)
-            nfs = magma.Newforms(cfs)
-        else:
-            eps = character.primitive_character()
-            gens = eps.parent().unit_gens()
-            Dm = magma.DirichletGroup(eps.modulus(), magma(eps.base_ring()))
-            candidate = False
-            for eps_m in Dm.Elements():
-                candidate = all(eps_m(n) == eps(n) for n in gens)
-                if candidate:
-                    break
-            if candidate: # We found a matching character
-                eps_m = magma.DirichletGroup(level,
-                                             magma(eps.base_ring()))(eps_m)
-                cfs = magma.CuspForms(eps_m)
+        if base_field == QQ:
+            if character is None:
+                cfs = magma.CuspForms(level)
                 nfs = magma.Newforms(cfs)
             else:
-                raise ValueError("There is no dirichlet character in magma " +
-                                 "matching %s"%(eps,))
-        result = [WrappedNewform_magma(orbit[1]) for orbit in nfs]
+                eps = character.primitive_character()
+                gens = eps.parent().unit_gens()
+                Dm = magma.DirichletGroup(eps.modulus(), magma(eps.base_ring()))
+                candidate = False
+                for eps_m in Dm.Elements():
+                    candidate = all(eps_m(n) == eps(n) for n in gens)
+                    if candidate:
+                        break
+                if candidate: # We found a matching character
+                    eps_m = magma.DirichletGroup(level,
+                                                 magma(eps.base_ring()))(eps_m)
+                    cfs = magma.CuspForms(eps_m)
+                    nfs = magma.Newforms(cfs)
+                else:
+                    raise ValueError("There is no dirichlet character in magma " +
+                                     "matching %s"%(eps,))
+            result = [WrappedNewform_magma(orbit[1]) for orbit in nfs]
+        elif base_field.is_totally_real():
+            if character != None:
+                raise NotImplementedError("Magma algorithm not implemented for " +
+                                          "Hilbert modular forms with character")
+            K = magma(base_field)
+            N = magma(level)
+            cuspspace = K.HilbertCuspForms(N)
+            newspace = NewSubspace(cuspspace)
+            newdecomp = NewformDecomposition(newspace)
+            result = [WrappedNewform_magma_hilbert(newspace) for space in newdecomp]
+        else:
+            raise NotImplementedError("Magma algorithm not implemented for " +
+                                      "base field " + str(base_field))
     elif algorithm == 'file':
         if character is None:
             character = DirichletGroup(1)[0]
@@ -223,19 +248,17 @@ def get_newforms(level, character=None, algorithm='sage', minimal_coeffs=QQ,
                 if isinstance(element, list):
                     to_do.extend(element)
                 elif (isinstance(element, WrappedNewform) and
-                      element.level() == level and
+                      ((element.base_field() == QQ and base_field == QQ) or
+                      (element.base_field().absolute_degree() == base_field.absolute_degree() and
+                       element.base_field().absolute_polynomial() == base_field.absolute_polynomial()))
+                      and element.level() == level and
                       element.character().primitive_character() == character):
                     result.append(element)
                 else:
                     pass # Not a right newform, skip!
     else:
         raise ValueError("%s is not a valid algorithm."%(algorithm,))
-    if minimal_coeffs == QQ:
-        return result
-    else:
-        poly = minimal_coeffs.gen().minpoly()
-        return [f for f in result
-                if len(minimal_coeffs.embeddings(f.coefficient_field())) > 0]
+    return result
 
 class LabeledElement:
     r"""A helper class that stores an element and a label."""
@@ -291,6 +314,10 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
       preceded by the identifier 'field'. The polynomial is the
       defining polynomial of the number field.
 
+    - A (fractional) ideal of a number field is represented by a list
+      containing the elements of the number field that generate the
+      ideal, preceded by the identifier 'ideal'
+
     - A list of values of a function is represented by a list
       containing lists of exactly two elements, all preceded by the
       identifier 'values'. The function maps the first element of a
@@ -305,16 +332,24 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
       is the relevant $n$-th root of unity a pair $(k, e)$ appears in
       this list if the character takes the value $zeta^e$ at $k$.
 
-    - A newform is represented by a list containing an integer
-      preceded by the identifier 'level', a boolean preceded by the
-      identifier 'cm', a character, a number field and a list of
-      values, all preceded by the identifier 'newform'. The first
-      entry will be the level of the newform, the second a boolean
-      indicating whether or not this newform has complex multiplication,
-      the third the corresponding character, the fourth the coefficient
-      field of the newform and the last the coefficients of the newform
-      (at some) indices. The entry with label 'cm' may be left out
-      or set to -1 to indicate that this information is not known.
+    - A newform is represented by a list containing an integer or an
+      ideal preceded by the identifier 'level', a boolean preceded by
+      the identifier 'cm', a character, a number field preceded by the
+      identifier 'basefield', a number field preceded by the
+      identifier 'coefficientfield' and a list of values preceded by
+      the identifier 'value', all preceded by the identifier
+      'newform'. The first entry will be the level of the newform, the
+      second a boolean indicating whether or not this newform has
+      complex multiplication, the third the corresponding character,
+      the fourth the base field of the newform, the fifth the
+      coefficient field of the newform and the last the coefficients
+      of the newform at (some) indices and the traces of frobenius at
+      some prime ideals. For backwards compatibility the label
+      basefield may be left out (in which case it is interpreted to be
+      the rationals) and the label 'coefficientfield' may be replaced
+      with an entry that is just a number field. The entry with label
+      'cm' may be left out or set to -1 to indicate that this
+      information is not known.
 
     - A list of things is represented as a list of the corresponding
       representations.
@@ -331,21 +366,26 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
 
     - ``coefficients`` -- An iterable object of non-negative integers
       or a non-negative integer (default: 50). This determines the
-      coefficients of the newform that will be saved. If it is an
-      iterable object, will save all the coefficients with the indices
-      given in that object. If it is a single non-negative integer
-      will make this to be the list of all non-negative integers up to
-      the given integer (excluding the integer itself).
+      coefficients and traces of frobenius of the newform that will be
+      saved. If it is an iterable object and the newform is a
+      classical newform, will save all the coefficients with the
+      indices given in that object. If it is a single non-negative
+      integer will make this to be the list of all non-negative
+      integers up to the given integer (excluding the integer
+      itself). If the newform is not a classical newform, will instead
+      save the traces of frobenius of every prime ideal above a prime
+      number in this list.
 
     - ``repr_coefficients`` -- A boolean value (default: True).  If
-      set to true, will always save the first 20 coeficients of this
-      newform. This is recommmended as otherwise the string
-      representation of the newforms will break if loaded back in.
+      set to true, will always save the first 20 coeficients of each
+      classical newform. This is recommmended to have a string
+      representation of the newform as a q-expansion.
 
     - ``save_cm`` -- A boolean value (default: True) indicating
       whether for each newform saved the information whether or not it
       has complex multiplication should also be computed and saved. If
-      set to False, this will not be done and the field 'cm' of a
+      set to False or whether or not the newform has CM can not be
+      determined, this will not be done and the field 'cm' of a
       newform will be set to -1.
 
     EXAMPLES::
@@ -482,7 +522,9 @@ def _write_element(element, f, coefficients, save_cm, indent=0):
         _write_newform(element, f, coefficients, save_cm, indent=indent)
     elif is_DirichletCharacter(element):
         _write_character(element, f, coefficients, save_cm, indent=indent)
-    elif is_NumberField(element):
+    elif is_Ideal(element):
+        _write_ideal(element, f, coefficients, save_cm, indent=indent)
+    elif is_NumberField(element) or element == QQ:
         _write_field(element, f, coefficients, save_cm, indent=indent)
     elif isinstance(element, LabeledElement):
         _write_labeled_element(element, f, coefficients, save_cm,
@@ -523,15 +565,27 @@ def _write_newform(nf, f, coefficients, save_cm, indent=0):
     else:
         cm = LabeledElement('cm', ZZ(-1))
     character = nf.character()
-    field = nf.coefficient_field()
-    if not field.is_absolute():
-        field = field.absolute_field(names='a')
-    values = [(n, (QQ(nf.coefficient(n)) if nf.coefficient(n) in QQ
-                   else LabeledElement('element',
-                                       field(nf.coefficient(n)).list())))
-              for n in coefficients]
+    basefield = nf.base_field()
+    if not basefield.is_absolute():
+        basefield = basefield.absolute_field(names='a')
+    coefficientfield = nf.coefficient_field()
+    if not coefficientfield.is_absolute():
+        coefficientfield = coefficientfield.absolute_field(names='a')
+    if basefield == QQ:
+        values = [(n, (QQ(nf.coefficient(n)) if nf.coefficient(n) in QQ
+                       else LabeledElement('element',
+                                           coefficientfield(nf.coefficient(n)).list())))
+                  for n in coefficients]
+    else:
+        primes = [ZZ(p) for p in coefficients if ZZ(p).is_prime()]
+        values = [(P, LabeledElement('element',
+                                     coefficientfield(nf.trace_of_frobenius(P)).list()))
+                  for p in primes for P in basefield.primes_above(p)]
+    basefield = LabeledElement('basefield', basefield)
+    coefficientfield = LabeledElement('coefficientfield', coefficientfield)
     values = LabeledElement('values', values)
-    element = LabeledElement('newform', [level, cm, character, field, values])
+    element = LabeledElement('newform', [level, cm, character, basefield,
+                                         coefficientfield, values])
     _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
 def _write_character(eps, f, coefficients, save_cm, indent=0):
@@ -560,6 +614,30 @@ def _write_character(eps, f, coefficients, save_cm, indent=0):
     ls_values = zip(eps.parent().unit_gens(), eps.element())
     values = LabeledElement('values', ls_values)
     element = LabeledElement('character', [conductor, values])
+    _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
+
+def _write_ideal(ideal, f, coefficients, save_cm, indent=0):
+    r"""Write a fractional ideal to a file.
+
+    Uses the rules specified in :func:`save_newforms` to write a field
+    to a file.
+
+    INPUT:
+
+    - ``ideal`` -- The fractional ideal to be written
+
+    - ``f`` -- The file to be written to
+
+    - ``coefficients`` -- The indices of coefficients of newforms to
+      be saved
+
+    - ``save_cm`` -- A boolean indicating whether information about
+      newforms having CM should be saved
+
+    - ``indent`` -- An integer indicating the level of indentation to be used
+
+    """
+    element = LabeledElement('ideal', list(ideal.gens()))
     _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
 def _write_field(field, f, coefficients, save_cm, indent=0):
@@ -715,6 +793,10 @@ def load_newforms(file_name):
       preceded by the identifier 'field'. The polynomial is the
       defining polynomial of the number field.
 
+    - A (fractional) ideal of a number field is represented by a list
+      containing the elements of the number field that generate the
+      ideal, preceded by the identifier 'ideal'
+
     - A list of values of a function is represented by a list
       containing lists of exactly two elements, all preceded by the
       identifier 'values'. The function maps the first element of a
@@ -729,16 +811,24 @@ def load_newforms(file_name):
       is the relevant $n$-th root of unity a pair $(k, e)$ appears in
       this list if the character takes the value $zeta^e$ at $k$.
 
-    - A newform is represented by a list containing an integer
-      preceded by the identifier 'level', a boolean preceded by the
-      identifier 'cm', a character, a number field and a list of
-      values, all preceded by the identifier 'newform'. The first
-      entry will be the level of the newform, the second a boolean
-      indicating whether or not this newform has complex multiplication,
-      the third the corresponding character, the fourth the coefficient
-      field of the newform and the last the coefficients of the newform
-      (at some) indices. The entry with label 'cm' may be left out
-      or set to -1 to indicate that this information is not known.
+    - A newform is represented by a list containing an integer or an
+      ideal preceded by the identifier 'level', a boolean preceded by
+      the identifier 'cm', a character, a number field preceded by the
+      identifier 'basefield', a number field preceded by the
+      identifier 'coefficientfield' and a list of values preceded by
+      the identifier 'value', all preceded by the identifier
+      'newform'. The first entry will be the level of the newform, the
+      second a boolean indicating whether or not this newform has
+      complex multiplication, the third the corresponding character,
+      the fourth the base field of the newform, the fifth the
+      coefficient field of the newform and the last the coefficients
+      of the newform at (some) indices and the traces of frobenius at
+      some prime ideals. For backwards compatibility the label
+      basefield may be left out (in which case it is interpreted to be
+      the rationals) and the label 'coefficientfield' may be replaced
+      with an entry that is just a number field. The entry with label
+      'cm' may be left out or set to -1 to indicate that this
+      information is not known.
 
     - A list of things is represented as a list of the corresponding
       representations.
@@ -818,9 +908,9 @@ def load_newforms(file_name):
 
     """
     with open(file_name, 'r') as f:
-        return _read_element(f)
+        return _interpret_element(_read_element(f))
 
-def _interpret_element(element):
+def _interpret_element(element, field=None):
     r"""Recover a data structure from its file representation.
 
     The way data is represented can be found in the description of
@@ -829,6 +919,33 @@ def _interpret_element(element):
     INPUT:
 
     - `element` -- A labeled element
+
+    - `field` -- A number field relevant to interpreting this element.
+
+    OUTPUT:
+
+    The data structure that the given element represents.
+
+    """
+    if isinstance(element, LabeledElement):
+        return _interpret_labeled_element(element, field=field)
+    elif isinstance(element, list):
+        return [_interpret_element(subelement, field=field)
+                for subelement in element]
+    else:
+        return element
+    
+def _interpret_labeled_element(element, field=None):
+    r"""Recover a data structure from its file representation.
+
+    The way data is represented can be found in the description of
+    :func:`load_newforms`.
+
+    INPUT:
+
+    - `element` -- A labeled element
+
+    - `field` -- A number field relevant to interpreting this element.
 
     OUTPUT:
 
@@ -839,6 +956,10 @@ def _interpret_element(element):
         return _interpret_newform(element.element)
     elif element.label == 'character':
         return _interpret_character(element.element)
+    elif element.label == 'element':
+        return _interpret_field_element(element.element, field=field)
+    elif element.label == 'ideal':
+        return _interpret_ideal(element.element, field=field)
     elif element.label == 'field':
         return _interpret_field(element.element)
     elif element.label == 'polynomial':
@@ -884,12 +1005,61 @@ def _interpret_field(element):
         raise ValueError("%s is not a list."%(element,))
     if len(element) != 1:
         raise ValueError("%s does not have length 1."%(element,))
-    polynomial = element[0]
+    polynomial = _interpret_element(element[0])
     if not is_Polynomial(polynomial):
         raise ValueError("%s is not a polynomial."%(polynomial,))
     if polynomial.degree() == 1:
         return QQ
     return NumberField(polynomial, names='a')
+
+def _interpret_ideal(element, field=None):
+    r"""Recover a fractional ideal from its file representation.
+
+    The way fractional ideals are represented can be found in the
+    description of :func:`load_newforms`.
+
+    INPUT:
+
+    - `element` -- An element
+
+    - `field` -- A number field in which this ideal would reside
+
+    OUTPUT:
+
+    The fractional ideal that the given labeled element represents.
+
+    """
+    if not isinstance(element, list):
+        raise ValueError("%s is not a list."%(element,))
+    if field is None:
+        raise ValueError("Should specify a field to " +
+                         "interpret the ideal %s."%(element,))
+    gens = [_interpret_element(gen, field=field) for gen in element]
+    return field.ideal(gens)
+
+def _interpret_field_element(element, field=None):
+    r"""Recover a field element from its file representation.
+
+    The way field elements are represented can be found in the
+    description of :func:`load_newforms`.
+
+    INPUT:
+
+    - `element` -- An element
+
+    - `field` -- A number field in which this ideal would reside
+
+    OUTPUT:
+
+    The field element that the given labeled element represents.
+
+    """
+    if not isinstance(element, list) or not all(a in QQ for a in element):
+        raise ValueError("%s is not a list of rationals."%(element,))
+    if field is None:
+        raise ValueError("Should specify a field to " +
+                         "interpret the field element %s."%(element,))
+    return field(element)
 
 def _interpret_character(element):
     r"""Recover a character from its file representation.
@@ -964,33 +1134,24 @@ def _interpret_newform(element):
     level=None
     cm=None
     character=None
-    field=None
-    coefficients=None
+    basefield=None
+    coefficientfield=None
+    values=None
     for part in element:
-        if is_DirichletCharacter(part) and character is None:
-            character=part
-        elif is_NumberField(part) and field is None:
-            field=part
-        elif isinstance(part, LabeledElement):
-            if (part.label.lower() == 'level' and level is None and
-                part.element in ZZ):
-                level = ZZ(part.element)
+        if isinstance(part, LabeledElement):
+            if (part.label.lower() == 'character' and character is None):
+                character = _interpret_character(part.element)
+            elif (part.label.lower() == 'field' and coefficientfield is None):
+                coefficientfield = _interpret_field(part.element)
+            elif (part.label.lower() == 'coefficientfield' and coefficientfield is None):
+                coefficientfield = _interpret_element(part.element)
+            elif (part.label.lower() == 'basefield' and basefield is None):
+                basefield = _interpret_element(part.element)
+            elif (part.label.lower() == 'level' and level is None):
+                level = part.element
             elif (part.label.lower() == 'values' and coefficients is None and
                   isinstance(part.element, list)):
-                coefficients=dict()
-                for pair in part.element:
-                    if (not isinstance(pair, list) or len(pair) != 2 or
-                        pair[0] not in ZZ):
-                        raise ValueError("Expected a pair for newform " +
-                                         "coefficients, but got " + str(pair))
-                    if pair[1] in QQ:
-                        coefficients[ZZ(pair[0])] = QQ(pair[1])
-                    elif (isinstance(pair[1], LabeledElement) and
-                          pair[1].label.lower() == 'element'):
-                        coefficients[ZZ(pair[0])] = pair[1].element
-                    else:
-                        raise ValueError("Expected a pair for newform " +
-                                         "coefficients, but got " + str(pair))
+                values = part.element
             elif (part.label.lower() == 'cm' and cm is None and
                   part.element in ZZ):
                 if part.element != -1: # -1 means cm is undefined
@@ -1001,12 +1162,32 @@ def _interpret_newform(element):
                                  " for newform.")
         else:
             raise ValueError("Unexpected element %s for newform."%(part,))
-    if (level is None or character is None or field is None or
-        coefficients is None):
+    if (level is None or character is None or basefield is None or coefficientfield is None):
         raise ValueError("Not enough arguments to make a newform.")
-    for key in coefficients:
-        coefficients[key] = field(coefficients[key])
-    return WrappedNewform_stored(level, character, field, coefficients, cm)
+    if basefield != QQ:
+        level = _interpret_element(level, field=basefield)
+    if not (level in ZZ or (is_Ideal(level) and level in basefield.ideal_monoid())):
+        raise ValueError("%s can not be the level of a newform"%(level,))
+    coefficients = {}
+    traces = {}
+    for pair in values:
+        if (not isinstance(pair, list) or len(pair) != 2):
+            raise ValueError("Expected a pair for newform " +
+                             "coefficients, but got " + str(pair))
+        arg = _interpret_element(pair[0], field=basefield)
+        val = _interpret_element(pair[1], field=coefficientfield)
+        if not val in coefficientfield:
+            raise ValueError("Expectend an element of %s"%(coefficientfield,)
+                             + ", but got %s instead"%(val,))
+        if arg in ZZ:
+            coefficients[ZZ(arg)] = val
+        elif is_Ideal(arg) and arg in basefield.ideal_monoid():
+            traces[arg] = val
+        else:
+            raise ValueError("Expected an integer or an element of " +
+                             str(basefield) + ", but got %s instead"%(arg))
+    return WrappedNewform_stored(basefield, level, character,
+                                 coefficientfield, coefficients, traces, cm)
 
 def _read_element(f):
     r"""Read an element from a file.
@@ -1051,8 +1232,7 @@ def _read_element(f):
     if label is None:
         return element
     else:
-        element = LabeledElement(label, element)
-        return _interpret_element(element)
+        return LabeledElement(label, element)
 
 def _read_colon_equals(f):
     r"""Read ':=' from a file.
@@ -1376,9 +1556,32 @@ class WrappedNewform(SageObject):
 
         """
         raise NotImplementedError()
+
+    def base_field(self):
+        r"""Give the base field for this newform.
+
+        For classical newforms this is always the rationals. For
+        Hilbert modular forms this is the totally real field for which
+        this is a Hilbert modular form. For Bianchi modular forms it
+        is the complex field for which this is a Bianchi modular form.
+
+        OUTPUT:
+
+        The rational field if this newform is a classical modular form.
+
+        The totally real field for which this newform is a Hilbert
+        modular form if it is a Hilbert modular form.
+
+        The complex field for which this newform is a Bianchi modular
+        form if it is a Bianchi modular form.
+
+        """
+        return QQ
         
     def coefficient(self, n):
-        r"""Give the n-th coefficient of this newform.
+        r
+
+        """Give the n-th coefficient of this newform.
 
         INPUT:
         
@@ -1412,8 +1615,8 @@ class WrappedNewform(SageObject):
 
         OUTPUT:
 
-        The field over which the coefficients of the q-expansion of
-        this newform at infinity are defined.
+        The field over which the eigenvalues of the Hecke operators on
+        this newform are defined.
 
         EXAMPLE::
 
@@ -1594,8 +1797,10 @@ class WrappedNewform(SageObject):
         
         INPUT:
 
-        - ``prime`` -- A prime number indicating the frobenius element
-          to be used.
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
 
         - ``power`` -- A non-negative number (default: 1). If set to
           any value larger than 1, will compute the trace of the
@@ -1652,8 +1857,10 @@ class WrappedNewform(SageObject):
         
         INPUT:
 
-        - ``prime`` -- A prime number indicating the frobenius element
-          to be used.
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
 
         - ``power`` -- A non-negative number (default: 1). If set to
           any value larger than 1, will compute the trace of the
@@ -1705,8 +1912,10 @@ class WrappedNewform(SageObject):
         
         INPUT:
 
-        - ``prime`` -- A prime number indicating the frobenius element
-          to be used.
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
 
         - ``power`` -- A non-negative number (default: 1). If set to
           any value larger than 1, will compute the trace of the
@@ -2194,16 +2403,19 @@ class WrappedNewform_magma(WrappedNewform):
         return WrappedNewform_magma(self._f)
 
 class WrappedNewform_stored(WrappedNewform):
-    r"""A wrapper class around a newform of weight 2 defined by stored
-    data.
+    r"""A wrapper class around a newform of (parallel) weight 2 defined by
+    stored data.
 
     This acts as a common interface to work with a newform,
     independent of its internal representation.
 
     The data that has to be provided in order to construct such a
-    newform is the level, the character, the coefficient field and
-    some coefficients of the q-expansion. Optionally whether or not
-    the newform has complex multiplication can also be provided.
+    newform is the base field, the level, the character, the
+    coefficient field. For functionality one should also provide some
+    coefficients of the q-expansion for classical modular forms or
+    some values for traces of Frobenius at specific primes. Optionally
+    whether or not the newform has complex multiplication can also be
+    provided.
 
     EXAMPLE::
 
@@ -2220,10 +2432,17 @@ class WrappedNewform_stored(WrappedNewform):
 
     """
 
-    def __init__(self, level, character, coefficient_field, coefficients, cm):
+    def __init__(self, base_field, level, character,
+                 coefficient_field, coefficients={}, traces={},
+                 cm=None):
         r"""Initialize a wrapped newform
 
         INPUT:
+
+        - ``base_field`` -- The number field over which this is a
+          newform. This would be the rationals for a classical modular
+          form, a totally real field for a Hilbert modular
+          form, or a complex field for a Bianchi modular form.
 
         - ``level`` -- A non-negative integer which is the level of
           the newform.
@@ -2236,7 +2455,17 @@ class WrappedNewform_stored(WrappedNewform):
 
         - ``coefficients`` -- A dictionary indexed by non-negative
           integers and with as values the corresponding fourier
-          coefficients of the q-expansion of this newform at infinity.
+          coefficients of the q-expansion of this newform at
+          infinity. By default this is the empty dictionary.
+
+        - ``traces`` -- A dictionary indexed by prime ideals of the
+          base field and with as values the corresponding traces of
+          Frobenius at those primes. By default this is the empty
+          dictionary.
+
+        - ``cm`` -- A boolean value or 'None' (default) indicating
+          whether this newform has complex multiplication or whether
+          this is unknown ('None').
 
         EXAMPLE::
 
@@ -2249,10 +2478,12 @@ class WrappedNewform_stored(WrappedNewform):
             q + (-zeta4 - 1)*q^2 + (zeta4 - 1)*q^3 + 2*zeta4*q^4 + (-zeta4 - 1)*q^5 + 2*q^6 - 2*zeta4*q^7 + (-2*zeta4 + 2)*q^8 + zeta4*q^9 + 2*zeta4*q^10 + (zeta4 + 1)*q^11 + (-2*zeta4 - 2)*q^12 + (zeta4 - 1)*q^13 + (2*zeta4 - 2)*q^14 + 2*q^15 - 4*q^16 - 2*q^17 + (-zeta4 + 1)*q^18 + (-3*zeta4 + 3)*q^19 + O(q^20)
 
         """
+        self._base = base_field
         self._level = level
         self._eps = character
         self._K = coefficient_field
         self._coeffs = coefficients
+        self._traces = traces
         self._cm = cm
         WrappedNewform.__init__(self)
 
@@ -2292,6 +2523,27 @@ class WrappedNewform_stored(WrappedNewform):
 
         """
         return self._eps
+
+    def base_field(self):
+        r"""Give the base field for this newform.
+
+        For classical newforms this is always the rationals. For
+        Hilbert modular forms this is the totally real field for which
+        this is a Hilbert modular form. For Bianchi modular forms it
+        is the complex field for which this is a Bianchi modular form.
+
+        OUTPUT:
+
+        The rational field if this newform is a classical modular form.
+
+        The totally real field for which this newform is a Hilbert
+        modular form if it is a Hilbert modular form.
+
+        The complex field for which this newform is a Bianchi modular
+        form if it is a Bianchi modular form.
+
+        """
+        return self._base
         
     def coefficient(self, n):
         r"""Give the n-th coefficient of this newform.
@@ -2352,6 +2604,132 @@ class WrappedNewform_stored(WrappedNewform):
         """
         return self._K
 
+    def trace_of_frobenius(self, prime, power=1):
+        """Give the trace of frobenius under the galois representation
+        associated to this newform.
+
+        Will give a ValueError if the given prime divides the level of
+        this newform, since in that case all mentioned galois
+        representations are ramified.
+        
+        INPUT:
+
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
+
+        - ``power`` -- A non-negative number (default: 1). If set to
+          any value larger than 1, will compute the trace of the
+          frobenius element to the given power instead.
+
+        OUTPUT:
+
+        The trace of $\rho(F_p^n)$, where $\rho$ is the mod $l$ or
+        l-adic galois representation associated to this newform, $F_p$
+        is the frobenius element at the given prime, and $n$ is the
+        given argument `power`.
+
+        Since the result does not depend on the choice of $l$, this
+        result will be an element of the coefficient field of the
+        newform. The only condition is that $l$ and $p$ must be
+        coprime.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.trace_of_frobenius(2)
+            0
+            sage: nf.trace_of_frobenius(7)
+            -1
+            sage: nf.trace_of_frobenius(7, power=2)
+            -13
+
+        .. SEE_ALSO::
+
+            :meth:`determinant_of_frobenius`,
+            :meth:`characteristic_polynomial`
+
+        """
+        F = self.base_field()
+        if F != QQ and not is_Ideal(prime):
+            prime = F.ideal(prime)
+        if not(prime in ZZ or prime in F.ideal_monoid()) or not prime.is_prime():
+            raise ValueError("%s is not a valid prime."%(prime,))
+        if prime.divides(self.level()):
+            raise ValueError("%s divides the level: %s."%(prime, self.level()))
+        if power == 1:
+            if F == QQ:
+                return self.coefficient(prime)
+            else:
+                try:
+                    return self._traces[prime]
+                except KeyError:
+                    raise ValueError("The trace of Frobenius at %s is not stored."%(prime,))
+        T = self.trace_of_frobenius(prime)
+        D = self.determinant_of_frobenius(prime)
+        K, T_map, D_map = composite_field(T.parent(), D.parent(),
+                                          give_maps=True)
+        return self._trace_power_formula(power)(T_map(T), D_map(D))
+
+    def determinant_of_frobenius(self, prime, power=1):
+        """Give the determinant of frobenius under the galois representation
+        associated to this newform.
+
+        Will give a ValueError if the given prime divides the level of
+        this newform, since in that case all mentioned galois
+        representations are ramified.
+        
+        INPUT:
+
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
+
+        - ``power`` -- A non-negative number (default: 1). If set to
+          any value larger than 1, will compute the trace of the
+          frobenius element to the given power instead.
+
+        OUTPUT:
+
+        The determinant of $\rho(F_p^n)$, where $\rho$ is the mod $l$
+        or $l$-adic galois representation associated to this newform,
+        $F_p$ is the frobenius element at the given prime, and $n$ is
+        the given argument `power`.
+
+        Since the result does not depend on the choice of $l$, this
+        result will be an element of the coefficient field of the
+        newform. The only condition is that $l$ and $p$ must be
+        coprime.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.determinant_of_frobenius(5)
+            5
+            sage: nf.determinant_of_frobenius(7)
+            7
+            sage: nf.determinant_of_frobenius(7, power=2)
+            49
+
+        .. SEE_ALSO::
+
+            :meth:`trace_of_frobenius`,
+            :meth:`characteristic_polynomial`
+
+        """
+        if self.base_field() == QQ:
+            if prime not in ZZ or not prime.is_prime():
+                raise ValueError("%s is not a prime number."%(prime,))
+            if prime.divides(self.level()):
+                raise ValueError("%s divides the level: %s."%(prime, self.level()))
+            D = self.character()(prime) * prime
+            return D^power
+        raise NotImplementedError()
+
     def has_cm(self, proof=True):
         """Determine if this newform has complex multiplication.
 
@@ -2406,3 +2784,316 @@ class WrappedNewform_stored(WrappedNewform):
             return latex(self.q_expansion())
         except ValueError:
             return "\\text{Loaded newform with limited coefficients}"
+
+class WrappedNewform_magma_hilbert(WrappedNewform):
+    r"""A wrapper class around a magma Hilbert modular newform of parallel
+    weight 2.
+
+    This acts as a common interface to work with a newform,
+    independent of its internal representation.
+
+    EXAMPLE::
+
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+        sage: eps = DirichletGroup(16).gens()[1]
+        sage: nf = get_newforms(16, character=eps, algorithm='magma')[0]; nf
+        q + (-a - 1)*q^2 + (a - 1)*q^3 + 2*a*q^4 + (-a - 1)*q^5 + 2*q^6 - 2*a*q^7 + (-2*a + 2)*q^8 + a*q^9 + 2*a*q^10 + (a + 1)*q^11 + O(q^12)
+        sage: nf.level()
+        16
+        sage: nf.character()
+        Dirichlet character modulo 16 of conductor 16 mapping 15 |--> 1, 5 |--> zeta4
+
+    """
+
+    def __init__(self, space):
+        r"""Initialize a wrapped newform
+
+        INPUT:
+
+        - ``newform`` -- A Hilbert modular newform as a magma object
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import WrappedNewform_magma
+            sage: cfs = magma.CuspForms(19)
+            sage: WrappedNewform_magma(magma.Newforms(cfs)[1][1])
+            q - 2*q^3 - 2*q^4 + 3*q^5 - q^7 + q^9 + 3*q^11 + O(q^12)
+
+        """
+        self._f = space.Eigenform()
+        self._M = space
+        WrappedNewform.__init__(self)
+
+    def level(self):
+        r"""Give the level of this newform.
+        
+        OUTPUT:
+
+        An ideal of the totally real number field associated to this
+        Hilbert modular form that describes the level of this newform.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.level()
+            19
+
+        """
+        return self._M.Level().sage()
+
+    @cached_method
+    def character(self):
+        r"""Give the character associated to this newform.
+
+        OUTPUT:
+
+        The dirichlet character associated to this newform as a
+        primitive character.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: eps = DirichletGroup(16).gens()[1]
+            sage: nf = get_newforms(16, character=eps)[0]
+            sage: nf.character()
+            Dirichlet character modulo 16 of conductor 16 mapping 15 |--> 1, 5 |--> zeta4
+
+        """
+        return DirichletGroup(1).gen()
+        
+    def coefficient(self, n):
+        r"""Give the n-th coefficient of this newform.
+
+        INPUT:
+        
+        - ``n`` -- A non-negative integer.
+
+        OUTPUT:
+        
+        The n-th coefficient of the q-expansion of this newform at
+        infinity.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.coefficient(19)
+            1
+            sage: nf.coefficient(27)
+            4
+
+        .. SEE_ALSO::
+
+            :meth:`coefficient_field`,
+            :meth:`q_expansion`
+
+        """
+        raise NotImplementedError();
+
+    def base_field(self):
+        r"""Give the base field for this newform.
+
+        For classical newforms this is always the rationals. For
+        Hilbert modular forms this is the totally real field for which
+        this is a Hilbert modular form. For Bianchi modular forms it
+        is the complex field for which this is a Bianchi modular form.
+
+        OUTPUT:
+
+        The rational field if this newform is a classical modular form.
+
+        The totally real field for which this newform is a Hilbert
+        modular form if it is a Hilbert modular form.
+
+        The complex field for which this newform is a Bianchi modular
+        form if it is a Bianchi modular form.
+
+        """
+        return self._M.BaseField().sage()
+
+    def coefficient_field(self):
+        r"""Give the field over which the coefficients of this newform are
+        defined.
+
+        OUTPUT:
+
+        The field over which the coefficients of the q-expansion of
+        this newform at infinity are defined.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.coefficient_field()
+            Rational Field
+            sage: nf = get_newforms(31)[0]
+            sage: nf.coefficient_field()
+            Number Field in a0 with defining polynomial x^2 - x - 1
+
+        .. SEE_ALSO::
+
+            :meth:`coefficient`,
+            :meth:`q_expansion`
+
+        """
+        return self._M.HeckEigenvalueField().sage()
+
+    def has_cm(self, proof=True):
+        """Determine if this newform has complex multiplication.
+
+        INPUT:
+
+        - ``proof`` -- A boolean (default: True). If set to True the
+          answer will have been proven correct. If set to False may
+          use bounds that have not been proved.
+
+        OUTPUT:
+
+        True if the abelian variety corresponding to this newform has
+        complex multiplication. False in any other case.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.has_cm()
+            False
+
+        """
+        raise NotImplementedError()
+
+    def trace_of_frobenius(self, prime, power=1):
+        """Give the trace of frobenius under the galois representation
+        associated to this newform.
+
+        Will give a ValueError if the given prime divides the level of
+        this newform, since in that case all mentioned galois
+        representations are ramified.
+        
+        INPUT:
+
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
+
+        - ``power`` -- A non-negative number (default: 1). If set to
+          any value larger than 1, will compute the trace of the
+          frobenius element to the given power instead.
+
+        OUTPUT:
+
+        The trace of $\rho(F_p^n)$, where $\rho$ is the mod $l$ or
+        l-adic galois representation associated to this newform, $F_p$
+        is the frobenius element at the given prime, and $n$ is the
+        given argument `power`.
+
+        Since the result does not depend on the choice of $l$, this
+        result will be an element of the coefficient field of the
+        newform. The only condition is that $l$ and $p$ must be
+        coprime.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.trace_of_frobenius(2)
+            0
+            sage: nf.trace_of_frobenius(7)
+            -1
+            sage: nf.trace_of_frobenius(7, power=2)
+            -13
+
+        .. SEE_ALSO::
+
+            :meth:`determinant_of_frobenius`,
+            :meth:`characteristic_polynomial`
+
+        """
+        F = self.base_field()
+        if not is_Ideal(prime):
+            prime = F.ideal(prime)
+        if not (prime in F.ideal_monoid()) or not prime.is_prime():
+            raise ValueError("%s is not a prime ideal."%(prime,))
+        if prime.divides(self.level()):
+            raise ValueError("%s divides the level: %s."%(prime, self.level()))
+        if power == 1:
+            return self._f.HeckeEigenvalue(prime)
+        T = self.trace_of_frobenius(prime)
+        D = self.determinant_of_frobenius(prime)
+        K, T_map, D_map = composite_field(T.parent(), D.parent(),
+                                          give_maps=True)
+        return self._trace_power_formula(power)(T_map(T), D_map(D))
+
+    def determinant_of_frobenius(self, prime, power=1):
+        """Give the determinant of frobenius under the galois representation
+        associated to this newform.
+
+        Will give a ValueError if the given prime divides the level of
+        this newform, since in that case all mentioned galois
+        representations are ramified.
+        
+        INPUT:
+
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
+
+        - ``power`` -- A non-negative number (default: 1). If set to
+          any value larger than 1, will compute the trace of the
+          frobenius element to the given power instead.
+
+        OUTPUT:
+
+        The determinant of $\rho(F_p^n)$, where $\rho$ is the mod $l$
+        or $l$-adic galois representation associated to this newform,
+        $F_p$ is the frobenius element at the given prime, and $n$ is
+        the given argument `power`.
+
+        Since the result does not depend on the choice of $l$, this
+        result will be an element of the coefficient field of the
+        newform. The only condition is that $l$ and $p$ must be
+        coprime.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.determinant_of_frobenius(5)
+            5
+            sage: nf.determinant_of_frobenius(7)
+            7
+            sage: nf.determinant_of_frobenius(7, power=2)
+            49
+
+        .. SEE_ALSO::
+
+            :meth:`trace_of_frobenius`,
+            :meth:`characteristic_polynomial`
+
+        """
+        raise NotImplementedError()
+
+    def _repr_(self):
+        """Give a string representation of this newform"""
+        return str(self._f)
+
+    def _latex_(self):
+        """Give a latex representation of this newform."""
+        return latex(self._f)
+
+    def copy(self):
+        r"""Create a copy of this newform
+
+        The copy saves on memory as much as possible, but is not
+        completely shallow as the embeddings list is initialized
+        again.
+
+        OUTPUT:
+
+        A copy of this newform.
+
+        """
+        return WrappedNewform_magma_hilbert(self._M)
