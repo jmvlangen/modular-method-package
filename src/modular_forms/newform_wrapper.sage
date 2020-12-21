@@ -226,9 +226,9 @@ def get_newforms(level, character=None, algorithm='sage', base_field=QQ,
             K = magma(base_field)
             N = magma(level)
             cuspspace = K.HilbertCuspForms(N)
-            newspace = NewSubspace(cuspspace)
-            newdecomp = NewformDecomposition(newspace)
-            result = [WrappedNewform_magma_hilbert(newspace) for space in newdecomp]
+            newspace = cuspspace.NewSubspace()
+            newdecomp = newspace.NewformDecomposition()
+            result = [WrappedNewform_magma_hilbert(newspace) for newspace in newdecomp]
         else:
             raise NotImplementedError("Magma algorithm not implemented for " +
                                       "base field " + str(base_field))
@@ -559,7 +559,6 @@ def _write_newform(nf, f, coefficients, save_cm, indent=0):
     - ``indent`` -- An integer indicating the level of indentation to be used
 
     """
-    level = LabeledElement('level', nf.level())
     if save_cm:
         cm = LabeledElement('cm', ZZ(nf.has_cm()))
     else:
@@ -568,6 +567,7 @@ def _write_newform(nf, f, coefficients, save_cm, indent=0):
     basefield = nf.base_field()
     if not basefield.is_absolute():
         basefield = basefield.absolute_field(names='a')
+    level = LabeledElement('level', ZZ(nf.level()) if basefield == QQ else [nf.level()])
     coefficientfield = nf.coefficient_field()
     if not coefficientfield.is_absolute():
         coefficientfield = coefficientfield.absolute_field(names='a')
@@ -581,8 +581,8 @@ def _write_newform(nf, f, coefficients, save_cm, indent=0):
         values = [(P, LabeledElement('element',
                                      coefficientfield(nf.trace_of_frobenius(P)).list()))
                   for p in primes for P in basefield.primes_above(p)]
-    basefield = LabeledElement('basefield', basefield)
-    coefficientfield = LabeledElement('coefficientfield', coefficientfield)
+    basefield = LabeledElement('basefield', [basefield])
+    coefficientfield = LabeledElement('coefficientfield', [coefficientfield])
     values = LabeledElement('values', values)
     element = LabeledElement('newform', [level, cm, character, basefield,
                                          coefficientfield, values])
@@ -1143,13 +1143,15 @@ def _interpret_newform(element):
                 character = _interpret_character(part.element)
             elif (part.label.lower() == 'field' and coefficientfield is None):
                 coefficientfield = _interpret_field(part.element)
-            elif (part.label.lower() == 'coefficientfield' and coefficientfield is None):
-                coefficientfield = _interpret_element(part.element)
-            elif (part.label.lower() == 'basefield' and basefield is None):
-                basefield = _interpret_element(part.element)
+            elif (part.label.lower() == 'coefficientfield' and coefficientfield is None
+                  and isinstance(part.element, list) and len(part.element) == 1):
+                coefficientfield = _interpret_element(part.element[0])
+            elif (part.label.lower() == 'basefield' and basefield is None
+                  and isinstance(part.element, list) and len(part.element) == 1):
+                basefield = _interpret_element(part.element[0])
             elif (part.label.lower() == 'level' and level is None):
                 level = part.element
-            elif (part.label.lower() == 'values' and coefficients is None and
+            elif (part.label.lower() == 'values' and values is None and
                   isinstance(part.element, list)):
                 values = part.element
             elif (part.label.lower() == 'cm' and cm is None and
@@ -1165,7 +1167,7 @@ def _interpret_newform(element):
     if (level is None or character is None or basefield is None or coefficientfield is None):
         raise ValueError("Not enough arguments to make a newform.")
     if basefield != QQ:
-        level = _interpret_element(level, field=basefield)
+        level = _interpret_element(level[0], field=basefield)
     if not (level in ZZ or (is_Ideal(level) and level in basefield.ideal_monoid())):
         raise ValueError("%s can not be the level of a newform"%(level,))
     coefficients = {}
@@ -2474,7 +2476,7 @@ class WrappedNewform_stored(WrappedNewform):
             sage: nf = get_newforms(16, character=eps)[0]
             sage: K = nf.coefficient_field()
             sage: c = {n : nf.coefficient(n) for n in range(50)}
-            sage: WrappedNewform_stored(16, eps, K, c, nf.has_cm())
+            sage: WrappedNewform_stored(QQ, 16, eps, K, coefficients=c, cm=nf.has_cm())
             q + (-zeta4 - 1)*q^2 + (zeta4 - 1)*q^3 + 2*zeta4*q^4 + (-zeta4 - 1)*q^5 + 2*q^6 - 2*zeta4*q^7 + (-2*zeta4 + 2)*q^8 + zeta4*q^9 + 2*zeta4*q^10 + (zeta4 + 1)*q^11 + (-2*zeta4 - 2)*q^12 + (zeta4 - 1)*q^13 + (2*zeta4 - 2)*q^14 + 2*q^15 - 4*q^16 - 2*q^17 + (-zeta4 + 1)*q^18 + (-3*zeta4 + 3)*q^19 + O(q^20)
 
         """
@@ -2860,7 +2862,7 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
             Dirichlet character modulo 16 of conductor 16 mapping 15 |--> 1, 5 |--> zeta4
 
         """
-        return DirichletGroup(1).gen()
+        return DirichletGroup(1)[0]
         
     def coefficient(self, n):
         r"""Give the n-th coefficient of this newform.
@@ -3019,6 +3021,16 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
         if prime.divides(self.level()):
             raise ValueError("%s divides the level: %s."%(prime, self.level()))
         if power == 1:
+            F = self._M.BaseField()
+            OF = F.IntegerRing()
+            gens = [F(g.list()) for g in prime.gens()]
+            prime = None
+            for g in gens:
+                if prime is None:
+                    prime = g*OF
+                else:
+                    prime += g*OF
+            prime = prime.Support().Random()
             return self._f.HeckeEigenvalue(prime)
         T = self.trace_of_frobenius(prime)
         D = self.determinant_of_frobenius(prime)
