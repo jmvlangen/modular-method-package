@@ -451,6 +451,23 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
         ...
         ValueError: Undetermined whether this newform has CM.
 
+    Storing newforms also works for non-classical newforms::
+
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
+        sage: K = QuadraticField(3)
+        sage: nfs = get_newforms(K.ideal(11), base_field=K, algorithm='magma')
+        sage: f = tmp_filename(ext='.nfs')
+        sage: save_newforms(nfs, f, coefficients=15, save_cm=False)
+        sage: nfs_copy = load_newforms(f)
+        sage: nfs[0].base_field()
+        Number Field in a with defining polynomial x^2 - 3
+        sage: nfs_copy[0].base_field()
+        Number Field in a with defining polynomial x^2 - 3
+        sage: [nf.trace_of_frobenius(nf.base_field().prime_above(3)) for nf in nfs]
+        [2, 1, -1, -2, -K1^2 + 5, K1^2 - 5]
+        sage: [nf.trace_of_frobenius(nf.base_field().prime_above(3)) for nf in nfs_copy]
+        [2, 1, -1, -2, -a^2 + 5, a^2 - 5]
+
     """
     if coefficients in ZZ and coefficients > 0:
         coefficients = list(range(coefficients))
@@ -580,7 +597,8 @@ def _write_newform(nf, f, coefficients, save_cm, indent=0):
         primes = [ZZ(p) for p in coefficients if ZZ(p).is_prime()]
         values = [(P, LabeledElement('element',
                                      coefficientfield(nf.trace_of_frobenius(P)).list()))
-                  for p in primes for P in basefield.primes_above(p)]
+                  for p in primes for P in basefield.primes_above(p)
+                  if not P.divides(nf.level())]
     basefield = LabeledElement('basefield', [basefield])
     coefficientfield = LabeledElement('coefficientfield', [coefficientfield])
     values = LabeledElement('values', values)
@@ -637,7 +655,8 @@ def _write_ideal(ideal, f, coefficients, save_cm, indent=0):
     - ``indent`` -- An integer indicating the level of indentation to be used
 
     """
-    element = LabeledElement('ideal', list(ideal.gens()))
+    element = LabeledElement('ideal', [LabeledElement('element', g.list())
+                                       for g in ideal.gens()])
     _write_labeled_element(element, f, coefficients, save_cm, indent=indent)
 
 def _write_field(field, f, coefficients, save_cm, indent=0):
@@ -3035,7 +3054,7 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
                 else:
                     prime += g*OF
             prime = prime.Support().Random()
-            return self._f.HeckeEigenvalue(prime)
+            return self._f.HeckeEigenvalue(prime).sage()
         T = self.trace_of_frobenius(prime)
         D = self.determinant_of_frobenius(prime)
         K, T_map, D_map = composite_field(T.parent(), D.parent(),
