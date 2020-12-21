@@ -2797,13 +2797,13 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
     EXAMPLE::
 
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms
-        sage: eps = DirichletGroup(16).gens()[1]
-        sage: nf = get_newforms(16, character=eps, algorithm='magma')[0]; nf
-        q + (-a - 1)*q^2 + (a - 1)*q^3 + 2*a*q^4 + (-a - 1)*q^5 + 2*q^6 - 2*a*q^7 + (-2*a + 2)*q^8 + a*q^9 + 2*a*q^10 + (a + 1)*q^11 + O(q^12)
+        sage: K = QuadraticField(2)
+        sage: nf = get_newforms(K.ideal(11), base_field=K, algorithm='magma')[0]; nf
+        Element of Cuspidal newform space of Hilbert modular forms
         sage: nf.level()
-        16
-        sage: nf.character()
-        Dirichlet character modulo 16 of conductor 16 mapping 15 |--> 1, 5 |--> zeta4
+        Fractional ideal (11)
+        sage: nf.base_field()
+        Number Field in a with defining polynomial x^2 - 2
 
     """
 
@@ -2816,10 +2816,12 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
 
         EXAMPLE::
 
-            sage: from modular_method.modular_forms.newform_wrapper import WrappedNewform_magma
-            sage: cfs = magma.CuspForms(19)
-            sage: WrappedNewform_magma(magma.Newforms(cfs)[1][1])
-            q - 2*q^3 - 2*q^4 + 3*q^5 - q^7 + q^9 + 3*q^11 + O(q^12)
+            sage: from modular_method.modular_forms.newform_wrapper import WrappedNewform_magma_hilbert
+            sage: K = QuadraticField(2)
+            sage: cfs = magma.HilbertCuspForms(K, K.ideal(9))
+            sage: nfs = cfs.NewSubspace()
+            sage: WrappedNewform_magma_hilbert(nfs.NewformDecomposition()[1])
+            Element of Cuspidal newform space of Hilbert modular forms
 
         """
         self._f = space.Eigenform()
@@ -2926,12 +2928,10 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
         EXAMPLE::
 
             sage: from modular_method.modular_forms.newform_wrapper import get_newforms
-            sage: nf = get_newforms(19)[0]
+            sage: K = QuadraticField(2)
+            sage: nf = get_newforms(K.ideal(5), base_field=K, algorithm='magma')[0]
             sage: nf.coefficient_field()
-            Rational Field
-            sage: nf = get_newforms(31)[0]
-            sage: nf.coefficient_field()
-            Number Field in a0 with defining polynomial x^2 - x - 1
+            Number Field in K1 with defining polynomial x^2 + 2*x - 2
 
         .. SEE_ALSO::
 
@@ -2939,7 +2939,7 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
             :meth:`q_expansion`
 
         """
-        return self._M.HeckEigenvalueField().sage()
+        return self._M.HeckeEigenvalueField().sage()
 
     def has_cm(self, proof=True):
         """Determine if this newform has complex multiplication.
@@ -2999,13 +2999,17 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
         EXAMPLE::
 
             sage: from modular_method.modular_forms.newform_wrapper import get_newforms
-            sage: nf = get_newforms(19)[0]
-            sage: nf.trace_of_frobenius(2)
-            0
-            sage: nf.trace_of_frobenius(7)
+            sage: K = QuadraticField(2)
+            sage: nf = get_newforms(K.ideal(11), base_field=K, algorithm='magma')[0]
+            sage: Kf = nf.base_field()
+            sage: nf.trace_of_frobenius(Kf.prime_above(7))
+            -2
+            sage: nf.trace_of_frobenius(Kf.prime_above(17))
+            -2
+            sage: nf.trace_of_frobenius(Kf.prime_above(23))
             -1
-            sage: nf.trace_of_frobenius(7, power=2)
-            -13
+            sage: nf.trace_of_frobenius(Kf.prime_above(31))
+            7
 
         .. SEE_ALSO::
 
