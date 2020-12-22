@@ -70,6 +70,7 @@ from sage.arith.functions import lcm
 from sage.arith.misc import gcd
 from sage.rings.finite_rings.integer_mod import mod
 from sage.rings.fast_arith import prime_range
+from sage.rings.ideal import is_Ideal
 
 from sage.misc.misc_c import prod as product
 
@@ -133,7 +134,8 @@ def _init_elimination_data(curves, newforms, condition):
         condition = curves[0]._condition
     return curves, newforms, condition
 
-def _init_traces(curves, condition, primes, precision_cap, verbose):
+@cached_function
+def _init_traces(curves, condition, primes, powers, precision_cap, verbose):
     r"""Initialize the traces of Frobenius of some Frey curves.
 
     INPUT:
@@ -146,6 +148,9 @@ def _init_traces(curves, condition, primes, precision_cap, verbose):
     - ``primes`` -- A tuple of finite primes, one for each Frey curve,
       at which the traces should be determined.
 
+    - ``powers`` -- A tuple of positive integers, one for each Frey
+      curve, the powers of the frobenius elements to be considered.
+
     - ``precision_cap`` -- The maximal precision to be used on the variables.
 
     - ``verbose`` -- Verbosity argument
@@ -157,39 +162,23 @@ def _init_traces(curves, condition, primes, precision_cap, verbose):
     curves. Each i-th entry in such a tuple is a possible trace of
     Frobenius at the i-th prime for the i-th Frey curve.
 
+    NOTE:
+
+    This function is cached as higher level functions might request
+    the same value of this function multiple times. If they do they
+    should clear the cache after it is certain no similar calls to
+    this function will be made.
+
     """
-    eP = [(1 if prime in ZZ else prime.ramification_index())
-          for prime in primes]
-    traces = [curves[i].trace_of_frobenius(primes[i], power=eP[i],
+    traces = [curves[i].trace_of_frobenius(primes[i], power=powers[i],
                                            condition=condition,
                                            precision_cap=precision_cap,
                                            verbose=(verbose - 1 if verbose > 0
                                                     else verbose))
               for i in range(len(curves))]
-    field = (QQ if isinstance(curves[0], Qcurve) else curves[0].definition_field())
-    pAdics = pAdicBase(QQ, primes[0]).pAdics_below(curves[0]._R)
-    default_tree = condition.pAdic_tree(pAdics=pAdics,
-                                        verbose=(max(0, verbose - 3)
-                                                 if verbose > 0 else verbose),
-                                        precision_cap=precision_cap)
-    traces = [(trace if isinstance(trace, ConditionalValue)
-               else [(trace, TreeCondition(default_tree))])
-              for trace in traces]
-    result = []
-    for case in itertools.product(*traces):
-        values, conditions = zip(*case)
-        trees = [con.pAdic_tree(pAdics=pAdics,
-                                verbose=(max(0, verbose - 3)
-                                         if verbose > 0
-                                         else verbose),
-                                precision_cap=precision_cap)
-                 for con in conditions]
-        tree = trees[0]
-        for i in range(1, len(trees)):
-            tree = tree.intersection(trees[i])
-        if not tree.is_empty():
-            result.append(values)
-    return result
+    traces = conditional_product(*traces)
+    traces = ConditionalValue([(val, con) for val, con in traces
+                               if not con.never()])
                                        
 def _init_newform_list(newforms, curves):
     """Initialize a list of newforms associated to given Frey curves
@@ -255,9 +244,9 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
 
     Let $E$ be a Frey curve, $f$ be a newform of which the mod $l$
     galois representations might agree with the mod $l$ galois
-    representation of $E$ and $F$ be a frobenius element of the common
-    domain of the afore mentioned representations. By comparing the
-    traces of these representations at $F$ we can check if the
+    representation of $E$, and $F$ be a frobenius element of the
+    common domain of the afore mentioned representations. By comparing
+    the traces of these representations at $F$ we can check if the
     representations are indeed the same. If not we eliminate the
     newform for mod $l$ representations. This method will perform this
     elimination for a single Frobenius element.
@@ -307,12 +296,15 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
       that both the given condition and the condition at which that
       value is attained hold.
 
-    - ``prime`` -- A prime number underlying the Frobenius element for
-      which the traces of the galois representations at that element
-      should be compared. If the Frobenius element should be chosen in
-      the absolute galois group of a number field, it will be chosen
-      as the Frobenius element associated to a prime above this prime
-      number.
+    - ``prime`` -- A finite prime of the field in which the parameters
+      of the Frey curves live. This will be the prime underlying the
+      Frobenius element for which the traces of the galois
+      representations at that element should be compared. It should be
+      give as a prime number if the field of the parameters is the
+      rationals and a prime ideal otherwise. Note that the Frobenius
+      elements might be chosen for primes lying above these primes if
+      the base fields of the Galois representations considered are
+      larger than the field of the parameters.
 
     - ``B`` -- A non-negative integer (default: 0). Will only
       eliminate newforms based on their mod $l$ representation if $l$
@@ -360,8 +352,10 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
     """
     curves, newforms, condition = _init_elimination_data(curves, newforms,
                                                          condition)
-    if not (prime in ZZ and prime > 0 and prime.is_prime()):
-        raise ValueError("Argument %s is not a prime number."%(prime,))
+    K = curves[0]._R.fraction_field()
+    if not ((K == QQ and prime in ZZ and prime > 0 and prime.is_prime()) or
+            (is_Ideal(prime) and prime in K.ideal_monoid() and prime.is_prime())):
+        raise ValueError("Argument %s is not a valid prime."%(prime,))
     if not (B in ZZ and B >= 0):
         raise ValueError("Argument %s is not a non-negative integer."%(B,))
     if B != 0:
@@ -369,7 +363,99 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
     return _eliminate_by_trace(curves, newforms, prime, B, condition,
                                precision_cap, verbose)
 
-def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
+def _single_elimination(E, KE, LE, nfs, p, prime, pE, B, Bprod, C,
+                        prec_cap, verbose):
+    r"""Perform the elimination for a single tuple of newforms
+
+    INPUT:
+
+    - ``E`` -- The Frey curves
+
+    - ``KE`` -- The base fields of the Galois representations
+      associated to the Frey curves
+
+    - ``LE`` -- The coefficient fields of the Galois representations
+      associated to the Frey curves
+
+    - ``nfs`` -- A tuple of newforms, one for each Frey curve, and an
+      integer
+
+    - ``p`` -- The prime number below `prime`
+
+    - ``prime`` -- The base prime over which to do elimination
+
+    - ``pE`` -- A tuple of primes above `prime`, one for each Frey
+      curve in the respective base field of the Galois representation
+
+    - ``B`` -- Zero or a list of prime numbers, the primes to be
+      eliminated.
+
+    - ``Bprod`` -- The product of the elements of `B`
+
+    - ``C`` -- The condition to be used
+
+    - ``prec_cap`` -- The precision cap on the variables
+
+    - ``verbose`` -- Verbosity argument
+
+    """
+    nE = len(E)
+    Bold = nfs[-1]
+    if (gcd(Bprod, Bold) == 1 or (B == 0 or Bold != 0)):
+        # Nothing to do
+        return Bold
+    apf = [nfs[i].trace_of_frobenius(p, power=powers[i])
+           for i in range(nE)]
+    Kf = [nfs[i].base_field() for i in range(nE)]
+    Kcom = [common_embedding_field(KE[i], Kf[i], give_maps=True)
+            for i in range(nE)]
+    KphiE = [Kcom[i][1] for i in range(nE)]
+    Kphif = [Kcom[i][2] for i in range(nE)]
+    Kcom = [Kcom[i][0] for i in range(nE)]
+    pcom = [(QQ(pE[i]) if Kcom[i] == QQ
+             else Kcom[i].prime_above(KphiE[i](pE[i])))
+            for i in range(nE)]
+    pf = [(p if Kf[i] == QQ
+           else next(P for P in Kf[i].primes_above(pf[i])
+                     if Kcom[i].prime_above(Kphif[i](P)) == pcom[i]))
+           for i in range(nE)]
+    if any(pf[i].divides(nfs[i].level()) for i in range(nE)):
+        # Can not do this prime, so skip
+        return Bold
+    ramdegE = [(1 if Kcom[i] == QQ else KphiE[i](pE[i]).valuation(pcom[i]))
+               for i in range(nE)]
+    ramdegf = [(1 if Kcom[i] == QQ else Kphif[i](pf[i]).valuation(pcom[i]))
+               for i in range(nE)]
+    resdegE = [(1 if Kcom[i] == QQ else
+                (pcom[i].residue_class_degree() if KE[i] == QQ else
+                 pcom[i].residue_class_degree() / pE[i].residue_class_degree()))
+               for i in range(nE)]
+    resdegf = [(1 if Kcom[i] == QQ else
+                (pcom[i].residue_class_degree() if Kf[i] == QQ else
+                 pcom[i].residue_class_degree() / pf[i].residue_class_degree()))
+               for i in range(nE)]
+    powcom = [lcm(ramdegE[i], ramdegf[i]) for i in range(nE)]
+    powE = [resdegE[i]*powcom[i] for i in range(nE)]
+    powf = [resdegE[i]*powcom[i] for i in range(nE)]
+    apE_ls = _init_traces(E, C, pE, prec_cap,
+                          (verbose - 1 if verbose > 0 else verbose))
+    apf = [nfs[i].trace_of_frobenius(pf[i], power=powf[i])
+           for i in range(nE)]
+    Lf = [nfs[i].coefficient_field() for i in range(nE)]
+    Lcom = [common_embedding_field(LE[i], Lf[i])
+            for i in range(nE)]
+    LphiE = [LE[i].embeddings(Lcom[i])[0] for i in range(nE)]
+    Lphif = [nfs[i].embedding(Lcom[i]) for i in range(nE)]
+    Bnew = ZZ(p * lcm(gcd([(phiE[i](apE[i]) - phif[i](apf[i])).absolute_norm()
+                           for i in range(nE)]) for apE in apE_ls))
+    Bnew = gcd(Bold, Bnew)
+    if B != 0:
+        Bnew = lcm(Bnew, ZZ(Bold / product(prime^(Bold.ord(prime))
+                                           for prime in B)))
+    return Bnew
+
+def _eliminate_by_trace(curves, newforms, prime, B, C, prec_cap,
+                        verbose):
     """An implementation of :func:`eliminate_by_trace`
 
     INPUT:
@@ -378,7 +464,7 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
 
     - ``newforms`` -- The newform list in the final format
 
-    - ``p`` -- The prime number
+    - ``prime`` -- The base prime over which to do elimination
 
     - ``B`` -- Zero or a list of prime numbers, the primes to be
       eliminated.
@@ -390,6 +476,8 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
     - ``verbose`` -- Verbosity argument
 
     """
+    p = (prime if prime in ZZ and ZZ(prime).is_prime()
+         else prime.smallest_integer())
     if len(newforms) == 0:
         return newforms
     if isinstance(newforms, ConditionalValue):
@@ -403,45 +491,19 @@ def _eliminate_by_trace(curves, newforms, p, B, C, prec_cap, verbose):
     if verbose > 0:
         print("Comparing traces of frobenius at " + str(p) + " for " +
                str(len(newforms)) + " cases.")
-    nE = len(curves)
-    fields = tuple((QQ if isinstance(curve, Qcurve) else curve.definition_field())
-                   for curve in curves)
-    fields2 = tuple((curve.splitting_image_field() if
-                     isinstance(curve, Qcurve) else
-                     curve.definition_field()) for curve in curves)
-    primes = tuple((p if K == QQ else K.prime_above(p)) for K in fields)
-    powers = tuple((1 if P in ZZ
-                    else P.residue_class_degree() * P.ramification_index())
-                   for P in primes)
-    apE_ls = _init_traces(curves, C, primes, prec_cap,
-                          (verbose - 1 if verbose > 0 else verbose))
+    KE = tuple((QQ if isinstance(curve, Qcurve) else curve.definition_field())
+               for curve in curves)
+    LE = tuple((curve.splitting_image_field() if isinstance(curve, Qcurve)
+                else QQ) for curve in curves)
+    pE = tuple((p if K == QQ else K.prime_above(p)) for K in fields)
     result = []
     Bprod = (B if B in ZZ else product(B))
     for nfs in newforms:
-        Bold = nfs[-1]
-        if (gcd(Bprod, Bold) != 1 and # Elimination might occur
-            # Elimination will result in a non-zero integer:
-            (B == 0 or Bold != 0) and
-            # Avoid primes dividing the level:
-            all(not p.divides(nfs[i].level()) for i in range(nE))):
-            apf = [nfs[i].trace_of_frobenius(p, power=powers[i])
-                   for i in range(nE)]
-            comp_fields = [common_embedding_field(fields2[i],
-                                                  nfs[i].coefficient_field())
-                           for i in range(nE)]
-            phiE = [fields2[i].embeddings(comp_fields[i])[0]
-                    for i in range(nE)]
-            phif = [nfs[i].embedding(comp_fields[i]) for i in range(nE)]
-            Bnew = ZZ(p * lcm(gcd([(phiE[i](apE[i]) - phif[i](apf[i])).absolute_norm()
-                                   for i in range(nE)]) for apE in apE_ls))
-            Bnew = gcd(Bold, Bnew)
-            if B != 0:
-                Bnew = lcm(Bnew, ZZ(Bold / product(prime^(Bold.ord(prime))
-                                                   for prime in B)))
-        else:
-            Bnew = Bold
+        Bnew = _single_elimination(E, KE, LE, nfs, p, prime, pE,
+                                   B, Bprod, C, prec_cap, verbose)
         if abs(Bnew) != 1:
             result.append(tuple([nfs[i] for i in range(nE)] + [Bnew]))
+    _init_traces.clear_cache()
     return result
 
 def eliminate_by_traces(curves, newforms, condition=None, primes=50,
@@ -508,15 +570,18 @@ def eliminate_by_traces(curves, newforms, condition=None, primes=50,
       considered. By default this will be set to the condition stored
       in the first given Frey curve.
 
-    - ``primes`` -- A list of prime numbers or a strictly positive
-      integer (default: 50). This list gives all the prime numbers
-      underlying the Frobenius elements for which traces of the galois
-      representations at that element should be compared. If set to a
-      strictly positive integer it will be initialized as the list of
-      all prime numbers less than the given number. If a Frobenius
-      element should be chosen in the absolute galois group of a
-      number field, it will be chosen as the Frobenius element
-      associated to a prime above the associated prime number.
+    - ``primes`` -- A list of finite primes of the field in which the
+      parameters of the Frey curves live or a strictly positive
+      integer (default: 50). The latter corresponds to all the finite
+      primes of that field above a prime number smaller than the given
+      integer. These will be the primes underlying the Frobenius
+      elements for which the traces of the galois representations at
+      that element should be compared. Each prime should be give as a
+      prime number if the field of the parameters is the rationals and
+      a prime ideal otherwise. Note that the Frobenius elements might
+      be chosen for primes lying above these primes if the base fields
+      of the Galois representations considered are larger than the
+      field of the parameters.
 
     - ``precision_cap`` -- A non-negative integer (default: 1) giving
       the maximal precision used to compute the reduction type of a
@@ -555,8 +620,16 @@ def eliminate_by_traces(curves, newforms, condition=None, primes=50,
     """
     curves, newforms, condition = _init_elimination_data(curves, newforms,
                                                          condition)
+    K = curves[0]._R.fraction_field()
     if primes in ZZ and primes > 0:
         primes = prime_range(primes)
+        if K != QQ:
+            primes = [P for p in primes for P in K.primes_above(p)]
+    if not (isinstance(primes, list) and
+            all((K == QQ and p in ZZ and p > 0 and p.is_prime()) or
+                (is_Ideal(p) and p in K.ideal_monoid() and p.is_prime())
+                for p in primes)):
+        raise ValueError("%s is not a list of valid primes"%(primes,))
     return apply_to_conditional_value(lambda nfs, con:
                                       _eliminate_by_traces(curves, nfs,
                                                            con & condition,
@@ -647,17 +720,20 @@ def kraus_method(curves, newforms, l, polynomials, primes=200, condition=None,
       variables of the given Frey curves, such that these polynomials
       are l-th powers in all possible values of the variables.
 
-    - ``primes`` -- A list of prime numbers or a strictly positive
-      integer (default: 200). This list gives all the prime numbers
-      underlying the Frobenius elements for which traces of the galois
-      representations at that element should be compared. If set to a
-      strictly positive integer it will be initialized as the list of
-      all prime numbers less than the given number. If a Frobenius
-      element should be chosen in the absolute galois group of a
-      number field, it will be chosen as the Frobenius element
-      associated to a prime above the associated prime number. Note
-      that only those primes are considered for which the associated
-      residue field can be 1 modulo $l$.
+    - ``primes`` -- A list of finite primes of the field in which the
+      parameters of the Frey curves live or a strictly positive
+      integer (default: 200). The latter corresponds to all the finite
+      primes of that field above a prime number smaller than the given
+      integer. These will be the primes underlying the Frobenius
+      elements for which the traces of the galois representations at
+      that element should be compared. Each prime should be give as a
+      prime number if the field of the parameters is the rationals and
+      a prime ideal otherwise. Note that the Frobenius elements might
+      be chosen for primes lying above these primes if the base fields
+      of the Galois representations considered are larger than the
+      field of the parameters. Note that only those primes are
+      considered for which the associated residue field has order 1
+      modulo $l$.
 
     - ``condition`` -- A Condition giving the restrictions on the
       variables of the given Frey curve(s) that should be
@@ -708,11 +784,16 @@ def kraus_method(curves, newforms, l, polynomials, primes=200, condition=None,
             polynomials = list(polynomials)
         else:
             polynomials = [polynomials]
+    K = curves[0]._R.fraction_field()
     if primes in ZZ and primes > 0:
-        primes = prime_range(l, primes)
-    if not (isinstance(primes, list) and all(p in ZZ and p > 0 and p.is_prime()
-                                             for p in primes)):
-        raise ValueError("%s is not a list of prime numbers"%(primes,))
+        primes = prime_range(primes)
+        if K != QQ:
+            primes = [P for p in primes for P in K.primes_above(p)]
+    if not (isinstance(primes, list) and
+            all((K == QQ and p in ZZ and p > 0 and p.is_prime()) or
+                (is_Ideal(p) and p in K.ideal_monoid() and p.is_prime())
+                for p in primes)):
+        raise ValueError("%s is not a list of valid primes"%(primes,))
     return apply_to_conditional_value(lambda nfs, con:
                                       _kraus_method(curves, nfs, l,
                                                     polynomials, primes,
