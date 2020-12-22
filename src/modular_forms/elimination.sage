@@ -72,6 +72,7 @@ from sage.rings.finite_rings.integer_mod import mod
 from sage.rings.fast_arith import prime_range
 from sage.rings.ideal import is_Ideal
 
+from sage.misc.cachefunc import cached_function
 from sage.misc.misc_c import prod as product
 
 from modular_method.padics.pAdic_base import pAdicBase
@@ -491,15 +492,16 @@ def _eliminate_by_trace(curves, newforms, prime, B, C, prec_cap,
     if verbose > 0:
         print("Comparing traces of frobenius at " + str(p) + " for " +
                str(len(newforms)) + " cases.")
+    nE = len(curves)
     KE = tuple((QQ if isinstance(curve, Qcurve) else curve.definition_field())
                for curve in curves)
     LE = tuple((curve.splitting_image_field() if isinstance(curve, Qcurve)
                 else QQ) for curve in curves)
-    pE = tuple((p if K == QQ else K.prime_above(p)) for K in fields)
+    pE = tuple((p if K == QQ else K.prime_above(p)) for K in KE)
     result = []
     Bprod = (B if B in ZZ else product(B))
     for nfs in newforms:
-        Bnew = _single_elimination(E, KE, LE, nfs, p, prime, pE,
+        Bnew = _single_elimination(curves, KE, LE, nfs, p, prime, pE,
                                    B, Bprod, C, prec_cap, verbose)
         if abs(Bnew) != 1:
             result.append(tuple([nfs[i] for i in range(nE)] + [Bnew]))
