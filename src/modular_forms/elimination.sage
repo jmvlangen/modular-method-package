@@ -178,8 +178,7 @@ def _init_traces(curves, condition, primes, powers, precision_cap, verbose):
                                                     else verbose))
               for i in range(len(curves))]
     traces = conditional_product(*traces)
-    traces = ConditionalValue([(val, con) for val, con in traces
-                               if not con.never()])
+    return [val for val, con in traces if not con.never()]
                                        
 def _init_newform_list(newforms, curves):
     """Initialize a list of newforms associated to given Frey curves
@@ -402,52 +401,50 @@ def _single_elimination(E, KE, LE, nfs, p, prime, pE, B, Bprod, C,
     """
     nE = len(E)
     Bold = nfs[-1]
-    if (gcd(Bprod, Bold) == 1 or (B == 0 or Bold != 0)):
+    if (gcd(Bprod, Bold) == 1 or (B != 0 and Bold == 0)):
         # Nothing to do
         return Bold
-    apf = [nfs[i].trace_of_frobenius(p, power=powers[i])
-           for i in range(nE)]
-    Kf = [nfs[i].base_field() for i in range(nE)]
-    Kcom = [common_embedding_field(KE[i], Kf[i], give_maps=True)
-            for i in range(nE)]
-    KphiE = [Kcom[i][1] for i in range(nE)]
-    Kphif = [Kcom[i][2] for i in range(nE)]
-    Kcom = [Kcom[i][0] for i in range(nE)]
-    pcom = [(QQ(pE[i]) if Kcom[i] == QQ
+    Kf = tuple(nfs[i].base_field() for i in range(nE))
+    Kcom = tuple(common_embedding_field(KE[i], Kf[i], give_maps=True)
+                 for i in range(nE))
+    KphiE = tuple(Kcom[i][1] for i in range(nE))
+    Kphif = tuple(Kcom[i][2] for i in range(nE))
+    Kcom = tuple(Kcom[i][0] for i in range(nE))
+    pcom = tuple((QQ(pE[i]) if Kcom[i] == QQ
              else Kcom[i].prime_above(KphiE[i](pE[i])))
-            for i in range(nE)]
-    pf = [(p if Kf[i] == QQ
-           else next(P for P in Kf[i].primes_above(pf[i])
-                     if Kcom[i].prime_above(Kphif[i](P)) == pcom[i]))
-           for i in range(nE)]
+            for i in range(nE))
+    pf = tuple((p if Kf[i] == QQ
+                else next(P for P in Kf[i].primes_above(pf[i])
+                          if Kcom[i].prime_above(Kphif[i](P)) == pcom[i]))
+               for i in range(nE))
     if any(pf[i].divides(nfs[i].level()) for i in range(nE)):
         # Can not do this prime, so skip
         return Bold
-    ramdegE = [(1 if Kcom[i] == QQ else KphiE[i](pE[i]).valuation(pcom[i]))
-               for i in range(nE)]
-    ramdegf = [(1 if Kcom[i] == QQ else Kphif[i](pf[i]).valuation(pcom[i]))
-               for i in range(nE)]
-    resdegE = [(1 if Kcom[i] == QQ else
-                (pcom[i].residue_class_degree() if KE[i] == QQ else
-                 pcom[i].residue_class_degree() / pE[i].residue_class_degree()))
-               for i in range(nE)]
-    resdegf = [(1 if Kcom[i] == QQ else
-                (pcom[i].residue_class_degree() if Kf[i] == QQ else
-                 pcom[i].residue_class_degree() / pf[i].residue_class_degree()))
-               for i in range(nE)]
-    powcom = [lcm(ramdegE[i], ramdegf[i]) for i in range(nE)]
-    powE = [resdegE[i]*powcom[i] for i in range(nE)]
-    powf = [resdegE[i]*powcom[i] for i in range(nE)]
-    apE_ls = _init_traces(E, C, pE, prec_cap,
+    ramdegE = tuple((1 if Kcom[i] == QQ else KphiE[i](pE[i]).valuation(pcom[i]))
+                    for i in range(nE))
+    ramdegf = tuple((1 if Kcom[i] == QQ else Kphif[i](pf[i]).valuation(pcom[i]))
+                    for i in range(nE))
+    resdegE = tuple((1 if Kcom[i] == QQ else
+                     (pcom[i].residue_class_degree() if KE[i] == QQ else
+                      pcom[i].residue_class_degree() / pE[i].residue_class_degree()))
+                    for i in range(nE))
+    resdegf = tuple((1 if Kcom[i] == QQ else
+                     (pcom[i].residue_class_degree() if Kf[i] == QQ else
+                      pcom[i].residue_class_degree() / pf[i].residue_class_degree()))
+                    for i in range(nE))
+    powcom = tuple(lcm(ramdegE[i], ramdegf[i]) for i in range(nE))
+    powE = tuple(resdegE[i]*powcom[i] for i in range(nE))
+    powf = tuple(resdegE[i]*powcom[i] for i in range(nE))
+    apE_ls = _init_traces(E, C, pE, powE, prec_cap,
                           (verbose - 1 if verbose > 0 else verbose))
-    apf = [nfs[i].trace_of_frobenius(pf[i], power=powf[i])
-           for i in range(nE)]
-    Lf = [nfs[i].coefficient_field() for i in range(nE)]
-    Lcom = [common_embedding_field(LE[i], Lf[i])
-            for i in range(nE)]
-    LphiE = [LE[i].embeddings(Lcom[i])[0] for i in range(nE)]
-    Lphif = [nfs[i].embedding(Lcom[i]) for i in range(nE)]
-    Bnew = ZZ(p * lcm(gcd([(phiE[i](apE[i]) - phif[i](apf[i])).absolute_norm()
+    apf = tuple(nfs[i].trace_of_frobenius(pf[i], power=powf[i])
+                for i in range(nE))
+    Lf = tuple(nfs[i].coefficient_field() for i in range(nE))
+    Lcom = tuple(common_embedding_field(LE[i], Lf[i])
+                 for i in range(nE))
+    LphiE = tuple(LE[i].embeddings(Lcom[i])[0] for i in range(nE))
+    Lphif = tuple(nfs[i].embedding(Lcom[i]) for i in range(nE))
+    Bnew = ZZ(p * lcm(gcd([(LphiE[i](apE[i]) - Lphif[i](apf[i])).absolute_norm()
                            for i in range(nE)]) for apE in apE_ls))
     Bnew = gcd(Bold, Bnew)
     if B != 0:
