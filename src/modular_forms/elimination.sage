@@ -136,7 +136,8 @@ def _init_elimination_data(curves, newforms, condition):
     return curves, newforms, condition
 
 @cached_function
-def _init_traces(curves, condition, primes, powers, precision_cap, verbose):
+def _init_traces(curves, condition, prime, primes, powers,
+                 precision_cap, verbose):
     r"""Initialize the traces of Frobenius of some Frey curves.
 
     INPUT:
@@ -171,6 +172,7 @@ def _init_traces(curves, condition, primes, powers, precision_cap, verbose):
     this function will be made.
 
     """
+    K = curves[0]._R.fraction_field()
     traces = [curves[i].trace_of_frobenius(primes[i], power=powers[i],
                                            condition=condition,
                                            precision_cap=precision_cap,
@@ -178,7 +180,9 @@ def _init_traces(curves, condition, primes, powers, precision_cap, verbose):
                                                     else verbose))
               for i in range(len(curves))]
     traces = conditional_product(*traces)
-    return [val for val, con in traces if not con.never()]
+    return [val for val, con in traces
+            if not (con.never() or
+                    con.pAdic_tree(pAdics=pAdicBase(K, prime)).is_empty())]
                                        
 def _init_newform_list(newforms, curves):
     """Initialize a list of newforms associated to given Frey curves
@@ -300,7 +304,7 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
       of the Frey curves live. This will be the prime underlying the
       Frobenius element for which the traces of the galois
       representations at that element should be compared. It should be
-      give as a prime number if the field of the parameters is the
+      given as a prime number if the field of the parameters is the
       rationals and a prime ideal otherwise. Note that the Frobenius
       elements might be chosen for primes lying above these primes if
       the base fields of the Galois representations considered are
@@ -435,7 +439,7 @@ def _single_elimination(E, KE, LE, nfs, p, prime, pE, B, Bprod, C,
     powcom = tuple(lcm(ramdegE[i], ramdegf[i]) for i in range(nE))
     powE = tuple(resdegE[i]*powcom[i] for i in range(nE))
     powf = tuple(resdegE[i]*powcom[i] for i in range(nE))
-    apE_ls = _init_traces(E, C, pE, powE, prec_cap,
+    apE_ls = _init_traces(E, C, prime, pE, powE, prec_cap,
                           (verbose - 1 if verbose > 0 else verbose))
     apf = tuple(nfs[i].trace_of_frobenius(pf[i], power=powf[i])
                 for i in range(nE))
