@@ -1615,9 +1615,6 @@ class FreyCurve(EllipticCurve_generic):
         parameters.
 
         """
-        if self.definition_field() != QQ:
-            raise ValueError("Can only find newforms associated to " +
-                             "Frey curves over the rationals.")
         if bad_primes is None and verbose >= 0:
             print("Warning: The bad primes chosen by default only take into "+
                    "account primes of additive reduction.")
@@ -1629,6 +1626,7 @@ class FreyCurve(EllipticCurve_generic):
             condition = self._condition
         return apply_to_conditional_value(lambda level:
                                           get_newforms(level,
+                                                       base_field=self.definition_field(),
                                                        algorithm=algorithm,
                                                        path=path), N)
 
