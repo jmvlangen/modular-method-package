@@ -418,8 +418,8 @@ def _single_elimination(E, KE, LE, nfs, p, prime, pE, B, Bprod, C,
              else Kcom[i].prime_above(KphiE[i](pE[i])))
             for i in range(nE))
     pf = tuple((p if Kf[i] == QQ
-                else next(P for P in Kf[i].primes_above(pf[i])
-                          if Kcom[i].prime_above(Kphif[i](P)) == pcom[i]))
+                else next(P for P in Kf[i].primes_above(pcom[i])
+                          if pcom[i].divides(Kcom[i].ideal([Kphif[i](g) for g in P.gens()]))))
                for i in range(nE))
     if any(pf[i].divides(nfs[i].level()) for i in range(nE)):
         # Can not do this prime, so skip
