@@ -120,14 +120,18 @@ def _init_elimination_data(curves, newforms, condition):
     else:
         curves = tuple(curve for curve in curves)
         parameters = None
+        ring = None
         if len(curves) == 0:
             raise ValueError("At least one curve should be provided.")            
         for curve in curves:
             if not isinstance(curve, FreyCurve):
                 raise ValueError("%s is not a Frey curve"%(curve,))
+            curveParameters = tuple(str(param) for param in curve.parameters())
             if parameters is None:
-                parameters = curve.parameters()
-            elif parameters != curve.parameters():
+                parameters = curveParameters
+                ring = curve._R
+            elif (parameters != curveParameters or
+                  ring != curve._R):
                 raise ValueError(str(curves[0]) + " and " + str(curve) +
                                  " don't have the same parameters")
     newforms = _init_newform_list(newforms, curves)
@@ -424,9 +428,11 @@ def _single_elimination(E, KE, LE, nfs, p, prime, pE, B, Bprod, C,
     if any(pf[i].divides(nfs[i].level()) for i in range(nE)):
         # Can not do this prime, so skip
         return Bold
-    ramdegE = tuple((1 if Kcom[i] == QQ else KphiE[i](pE[i]).valuation(pcom[i]))
+    ramdegE = tuple((1 if Kcom[i] == QQ else
+                     Kcom[i].ideal([KphiE[i](g) for g in pE[i].gens()]).valuation(pcom[i]))
                     for i in range(nE))
-    ramdegf = tuple((1 if Kcom[i] == QQ else Kphif[i](pf[i]).valuation(pcom[i]))
+    ramdegf = tuple((1 if Kcom[i] == QQ else
+                     Kcom[i].ideal([Kphif[i](g) for g in pf[i].gens()]).valuation(pcom[i]))
                     for i in range(nE))
     resdegE = tuple((1 if Kcom[i] == QQ else
                      (pcom[i].residue_class_degree() if KE[i] == QQ else

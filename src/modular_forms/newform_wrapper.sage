@@ -1183,6 +1183,8 @@ def _interpret_newform(element):
                                  " for newform.")
         else:
             raise ValueError("Unexpected element %s for newform."%(part,))
+    if basefield is None:
+        basefield = QQ # Included for backwards compatibility
     if (level is None or character is None or basefield is None or coefficientfield is None):
         raise ValueError("Not enough arguments to make a newform.")
     if basefield != QQ:
