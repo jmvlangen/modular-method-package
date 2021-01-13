@@ -2654,7 +2654,8 @@ class FreyQcurve(FreyCurve, Qcurve):
                 if isinstance(orbit, list):
                     for f in orbit:
                         Kf = f.coefficient_field()
-                        K = common_embedding_field(KE, Kf, give_maps=True)
+                        K, _, phi = common_embedding_field(KE, Kf,
+                                                           give_maps=True)
                         f = f.copy()
                         f.set_embedding(K, phi)
                         result.append(f)

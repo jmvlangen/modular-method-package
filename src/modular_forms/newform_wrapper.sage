@@ -230,7 +230,8 @@ def get_newforms(level, character=None, algorithm='sage',
                     raise ValueError("There is no dirichlet character in magma " +
                                      "matching %s"%(eps,))
             if conjugates:
-                result = [[WrappedNewform_magma(nf) for nf in orbit] for orbit in nfs]
+                result = [[WrappedNewform_magma(orbit[i]) for i in range(1, len(orbit)+1)]
+                          for orbit in nfs]
             else:
                 result = [WrappedNewform_magma(orbit[1]) for orbit in nfs]
         elif base_field.is_totally_real():
