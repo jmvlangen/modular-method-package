@@ -109,8 +109,9 @@ from modular_method.number_fields.field_constructors import composite_field
 
 from modular_method.polynomial.symmetric_polynomials import polynomial_to_symmetric
 
-def get_newforms(level, character=None, algorithm='sage', base_field=QQ,
-                 names='a', path=None):
+def get_newforms(level, character=None, algorithm='sage',
+                 base_field=QQ, names='a', path=None,
+                 conjugates=False):
     r"""Compute the newforms of weight 2 of a given level and character.
 
     INPUT:
@@ -145,6 +146,11 @@ def get_newforms(level, character=None, algorithm='sage', base_field=QQ,
     - ``path`` -- A string or None (default: None). Only used in case
       the algorithm is set to file, in which case it should be the
       path to the file from which to load the newforms as a string.
+
+    - ``conjugates`` -- A boolean value (default: False). Only used in
+      case `algorithm` is set to 'magma' and `base_field` is the
+      rationals, in which case it determines whether galois conjugates
+      as computed by magma should be returned as well.
     
     OUTPUT:
     
@@ -152,6 +158,11 @@ def get_newforms(level, character=None, algorithm='sage', base_field=QQ,
     newform in each galois orbit of newforms of level `level`,
     (parallel) weight 2, base field `base_field`, and character
     `character`.
+
+    If `algorithm` was set to 'magma', `base_field` was set to the
+    rationals, and `conjugates` was set to True, then the result will
+    contain all newforms in each galois orbit. Each galois orbit will
+    be its own list and the result is the list of all these orbits.
 
     EXAMPLES:
 
@@ -218,7 +229,10 @@ def get_newforms(level, character=None, algorithm='sage', base_field=QQ,
                 else:
                     raise ValueError("There is no dirichlet character in magma " +
                                      "matching %s"%(eps,))
-            result = [WrappedNewform_magma(orbit[1]) for orbit in nfs]
+            if conjugates:
+                result = [[WrappedNewform_magma(nf) for nf in orbit] for orbit in nfs]
+            else:
+                result = [WrappedNewform_magma(orbit[1]) for orbit in nfs]
         elif base_field.is_totally_real():
             if character != None:
                 raise NotImplementedError("Magma algorithm not implemented for " +

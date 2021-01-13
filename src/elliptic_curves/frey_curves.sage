@@ -2648,14 +2648,24 @@ class FreyQcurve(FreyCurve, Qcurve):
                 continue # Already computed, continue on with the next
             if verbose > 0:
                 print("Computing newforms of level %s and character %s"%(level, eps))
-            for f in get_newforms(level, character=eps,
-                                  algorithm=algorithm, path=path):
-                Kf = f.coefficient_field()
-                K = common_embedding_field(KE, Kf)
-                for phi in Kf.embeddings(K):
-                    f_phi = f.copy()
-                    f_phi.set_embedding(K, phi)
-                    result.append(f_phi)
+            for orbit in get_newforms(level, character=eps,
+                                      algorithm=algorithm, path=path,
+                                      conjugates=True):
+                if isinstance(orbit, list):
+                    for f in orbit:
+                        Kf = f.coefficient_field()
+                        K = common_embedding_field(KE, Kf, give_maps=True)
+                        f = f.copy()
+                        f.set_embedding(K, phi)
+                        result.append(f)
+                else:
+                    f = orbit
+                    Kf = f.coefficient_field()
+                    K = common_embedding_field(KE, Kf)
+                    for phi in Kf.embeddings(K):
+                        f_phi = f.copy()
+                        f_phi.set_embedding(K, phi)
+                        result.append(f_phi)
             done_levels.append((level, eps))
         return result
 
