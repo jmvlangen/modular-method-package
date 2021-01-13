@@ -2300,12 +2300,12 @@ class FreyQcurve(FreyCurve, Qcurve):
         INPUT:
 
         - ``additive_primes`` -- A list containing primes of the
-          definition field of this curve or None (default: None). The
-          primes in this list should be given as prime number if the
-          definition field is $\QQ$ or as maximal ideals
-          otherwise. This list should include all the primes at which
-          this curve could have additive reduction. If set to None
-          will compute this by using the method
+          decomposition field of this curve or None (default:
+          None). The primes in this list should be given as prime
+          number if the decomposition field is $\QQ$ or as maximal
+          ideals otherwise. This list should include all the primes at
+          which this curve could have additive reduction. If set to
+          None will compute this by using the method
           :meth:`primes_of_possible_additive_reduction`.
 
         - ``condition`` -- A Condition or None (default: None) giving
