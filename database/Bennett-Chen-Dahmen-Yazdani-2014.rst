@@ -115,40 +115,29 @@ article.
    10
 
 We will label the conjugacy classes of `nfs2` as was done in the
-article. We also do some checks that should hold if they are indeed
-conjugacy classes.
+article. We also check they are indeed conjugacy classes.
 
 ::
 
-   sage: F1 = nfs2[0:2]; all(nf.coefficient_field() == F1[0].coefficient_field() and
-   ....:                     nf._f.Degree() == len(F1) for nf in F1)
+   sage: F1 = nfs2[0:2]; all(nf._f == F1[0]._f for nf in F1)
    True
-   sage: F2 = nfs2[2:4]; all(nf.coefficient_field() == F2[0].coefficient_field() and
-   ....:                     nf._f.Degree() == len(F2) for nf in F2)
+   sage: F2 = nfs2[2:4]; all(nf._f == F2[0]._f for nf in F2)
    True
-   sage: F3 = nfs2[4:6]; all(nf.coefficient_field() == F3[0].coefficient_field() and
-   ....:                     nf._f.Degree() == len(F3) for nf in F3)
+   sage: F3 = nfs2[4:6]; all(nf._f == F3[0]._f for nf in F3)
    True
-   sage: F4 = nfs2[6:8]; all(nf.coefficient_field() == F4[0].coefficient_field() and
-   ....:                     nf._f.Degree() == len(F4) for nf in F4)
+   sage: F4 = nfs2[6:8]; all(nf._f == F4[0]._f for nf in F4)
    True
-   sage: F5 = nfs2[8:10]; all(nf.coefficient_field() == F5[0].coefficient_field() and
-   ....:                      nf._f.Degree() == len(F5) for nf in F5)
+   sage: F5 = nfs2[8:10]; all(nf._f == F5[0]._f for nf in F5)
    True
-   sage: F6 = nfs2[10:12]; all(nf.coefficient_field() == F6[0].coefficient_field() and
-   ....:                       nf._f.Degree() == len(F6) for nf in F6)
+   sage: F6 = nfs2[10:12]; all(nf._f == F6[0]._f for nf in F6)
    True
-   sage: F7 = nfs2[12:16]; all(nf.coefficient_field() == F7[0].coefficient_field() and
-   ....:                       nf._f.Degree() == len(F7) for nf in F7)
+   sage: F7 = nfs2[12:16]; all(nf._f == F7[0]._f for nf in F7)
    True
-   sage: F8 = nfs2[16:20]; all(nf.coefficient_field() == F8[0].coefficient_field() and
-   ....:                       nf._f.Degree() == len(F8) for nf in F8)
+   sage: F8 = nfs2[16:20]; all(nf._f == F8[0]._f for nf in F8)
    True
-   sage: F9 = nfs2[20:24]; all(nf.coefficient_field() == F9[0].coefficient_field() and
-   ....:                       nf._f.Degree() == len(F9) for nf in F9)
+   sage: F9 = nfs2[20:24]; all(nf._f == F9[0]._f for nf in F9)
    True
-   sage: F10 = nfs2[24:28]; all(nf.coefficient_field() == F10[0].coefficient_field() and
-   ....:                        nf._f.Degree() == len(F10) for nf in F10)
+   sage: F10 = nfs2[24:28]; all(nf._f == F10[0]._f for nf in F10)
    True
 
 We apply the multi-Frey method as in the article. First we do a trick
@@ -277,23 +266,17 @@ cases as in the article.
 
    sage: nfsc1 = eliminate_primes((E11, E21), nfsc1, 2*3*5*7*11)
    sage: nfsc2 = eliminate_primes((E12, E22), nfsc2, 2*3*5*7*11)
-   sage: F1 = nfs21[0:2]; all(nf.coefficient_field() == F1[0].coefficient_field() and
-   ....:                      nf._f.Degree() == len(F1) for nf in F1)
+   sage: F1 = nfs21[0:2]; all(nf._f == F1[0]._f for nf in F1)
    True
-   sage: F2 = nfs21[2:4]; all(nf.coefficient_field() == F2[0].coefficient_field() and
-   ....:                      nf._f.Degree() == len(F2) for nf in F2)
+   sage: F2 = nfs21[2:4]; all(nf._f == F2[0]._f for nf in F2)
    True
-   sage: F3 = nfs21[4:6]; all(nf.coefficient_field() == F3[0].coefficient_field() and
-   ....:                      nf._f.Degree() == len(F3) for nf in F3)
+   sage: F3 = nfs21[4:6]; all(nf._f == F3[0]._f for nf in F3)
    True
-   sage: F4 = nfs21[6:8]; all(nf.coefficient_field() == F4[0].coefficient_field() and
-   ....:                      nf._f.Degree() == len(F4) for nf in F4)
+   sage: F4 = nfs21[6:8]; all(nf._f == F4[0]._f for nf in F4)
    True
-   sage: F5 = nfs21[8:10]; all(nf.coefficient_field() == F5[0].coefficient_field() and
-   ....:                       nf._f.Degree() == len(F5) for nf in F5)
+   sage: F5 = nfs21[8:10]; all(nf._f == F5[0]._f for nf in F5)
    True
-   sage: F6 = nfs21[10:12]; all(nf.coefficient_field() == F6[0].coefficient_field() and
-   ....:                        nf._f.Degree() == len(F6) for nf in F6)
+   sage: F6 = nfs21[10:12]; all(nf._f == F6[0]._f for nf in F6)
    True
    sage: g11 = nfs11[0][0][0]
    sage: g12 = nfs11[1][0][1]
@@ -308,17 +291,13 @@ cases as in the article.
    ....:                 (g13, F3[0], 0), (g13, F3[1], 0),
    ....:                 (g13, F6[0], 0), (g13, F6[1], 0)]
    True
-   sage: F1 = nfs22[0:2]; all(nf.coefficient_field() == F1[0].coefficient_field() and
-   ....:                      nf._f.Degree() == len(F1) for nf in F1)
+   sage: F1 = nfs22[0:2]; all(nf._f == F1[0]._f for nf in F1)
    True
-   sage: F2 = nfs22[2:4]; all(nf.coefficient_field() == F2[0].coefficient_field() and
-   ....:                      nf._f.Degree() == len(F2) for nf in F2)
+   sage: F2 = nfs22[2:4]; all(nf._f == F2[0]._f for nf in F2)
    True
-   sage: F4 = nfs22[6:8]; all(nf.coefficient_field() == F4[0].coefficient_field() and
-   ....:                      nf._f.Degree() == len(F4) for nf in F4)
+   sage: F4 = nfs22[6:8]; all(nf._f == F4[0]._f for nf in F4)
    True
-   sage: F5 = nfs22[8:10]; all(nf.coefficient_field() == F5[0].coefficient_field() and
-   ....:                       nf._f.Degree() == len(F5) for nf in F5)
+   sage: F5 = nfs22[8:10]; all(nf._f == F5[0]._f for nf in F5)
    True
    sage: g11 = nfs12[0][0][0]
    sage: nfsc2[0][0] == [(g11, F1[0], 0), (g11, F1[1], 0),
@@ -360,23 +339,17 @@ check we indeed get the same cases as indicated.
    sage: nfsc1 = combine_newforms(nfsc1, nfs31e)
    sage: nfsc1 = eliminate_by_traces((E11, E21, E31), nfsc1, primes=[5, 7, 11])
    sage: nfsc1 = eliminate_primes((E11, E21, E31), nfsc1, 2*3*5*7*11)
-   sage: F3 = nfs21[4:6]; all(nf.coefficient_field() == F3[0].coefficient_field() and
-   ....:                      nf._f.Degree() == len(F3) for nf in F3)
+   sage: F3 = nfs21[4:6]; all(nf._f == F3[0]._f for nf in F3)
    True
-   sage: F6 = nfs21[10:12]; all(nf.coefficient_field() == F6[0].coefficient_field() and
-   ....:                        nf._f.Degree() == len(F6) for nf in F6)
+   sage: F6 = nfs21[10:12]; all(nf._f == F6[0]._f for nf in F6)
    True
-   sage: G5 = nfs31[8:10]; all(nf.coefficient_field() == G5[0].coefficient_field() and
-   ....:                       nf._f.Degree() == len(G5) for nf in G5)
+   sage: G5 = nfs31[8:10]; all(nf._f == G5[0]._f for nf in G5)
    True
-   sage: G6 = nfs31[10:12]; all(nf.coefficient_field() == G6[0].coefficient_field() and
-   ....:                        nf._f.Degree() == len(G6) for nf in G6)
+   sage: G6 = nfs31[10:12]; all(nf._f == G6[0]._f for nf in G6)
    True
-   sage: G7 = nfs31[12:14]; all(nf.coefficient_field() == G7[0].coefficient_field() and
-   ....:                        nf._f.Degree() == len(G7) for nf in G7)
+   sage: G7 = nfs31[12:14]; all(nf._f == G7[0]._f for nf in G7)
    True
-   sage: G8 = nfs31[14:16]; all(nf.coefficient_field() == G8[0].coefficient_field() and
-   ....:                        nf._f.Degree() == len(G8) for nf in G8)
+   sage: G8 = nfs31[14:16]; all(nf._f == G8[0]._f for nf in G8)
    True
    sage: g12 = nfs11[1][0][1]
    sage: g13 = nfs11[1][0][5]
