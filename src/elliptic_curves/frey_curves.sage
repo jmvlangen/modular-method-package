@@ -2496,12 +2496,12 @@ class FreyQcurve(FreyCurve, Qcurve):
         return apply_to_conditional_value(lambda Ni:
                                           Qcurve.newform_levels(self, N=Ni), N)
 
-    @cached_method(key=lambda self, add, c, alg, prec, v, path:
+    @cached_method(key=lambda self, add, c, conj, alg, prec, v, path:
                    ((self._condition if c is None else c),
                     (tuple(self.primes_of_possible_additive_reduction())
                      if add is None else tuple(add)),
-                    prec))
-    def newform_candidates(self, bad_primes=None, condition=None,
+                    conj, prec))
+    def newform_candidates(self, bad_primes=None, condition=None, conjugates=True,
                            algorithm='sage', verbose=False, precision_cap=20,
                            path=None):
         r"""Compute newforms that could be associated to this Frey Q-curve.
@@ -2572,6 +2572,17 @@ class FreyQcurve(FreyCurve, Qcurve):
           satisfy. If set to None will use the condition stored in
           this FreyCurve instead.
 
+        - ``conjugates`` -- A boolean (default: False) indicating
+          whether for each Galois orbit multiple newforms should be
+          returned. When set to True for each orbit this code will add
+          the same newform from the orbit multiple times but each one
+          with a different embedding into the common embedding field
+          of the `splitting_image_field` of this curve and the
+          `coefficient_field` of the newform. Note that when set to
+          False only one representative of each orbit is given meaning
+          that computations that depend on a specific newform in the
+          orbit can give wrong answers.
+
         - ``algorithm`` -- The algorithm that should be used to
           compute the newforms. For possible options look at the
           function :func:`get_newforms`.
@@ -2613,13 +2624,15 @@ class FreyQcurve(FreyCurve, Qcurve):
                                           self._newform_candidates(levelsi,
                                                                    con &
                                                                    condition,
+                                                                   conjugates,
                                                                    algorithm,
                                                                    path,
                                                                    verbose),
                                           levels, use_condition=True,
                                           default_condition=condition)
 
-    def _newform_candidates(self, levels, condition, algorithm, path, verbose):
+    def _newform_candidates(self, levels, condition, conjugates,
+                            algorithm, path, verbose):
         r"""Implementation of :meth:`newform_candidates`
 
         INPUT:
@@ -2651,8 +2664,14 @@ class FreyQcurve(FreyCurve, Qcurve):
             for f in get_newforms(level, character=eps,
                                   algorithm=algorithm, path=path):
                 Kf = f.coefficient_field()
-                K = common_embedding_field(KE, Kf)
-                for phi in Kf.embeddings(K):
+                if conjugates:
+                    K = common_embedding_field(KE, Kf)
+                    for phi in Kf.embeddings(K):
+                        f_phi = f.copy()
+                        f_phi.set_embedding(K, phi)
+                        result.append(f_phi)
+                else:
+                    K, _, phi = common_embedding_field(KE, Kf, give_maps=True)
                     f_phi = f.copy()
                     f_phi.set_embedding(K, phi)
                     result.append(f_phi)
