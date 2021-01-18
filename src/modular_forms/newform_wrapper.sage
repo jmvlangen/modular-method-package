@@ -225,7 +225,7 @@ def get_newforms(level, character=None, algorithm='sage', base_field=QQ,
                                           "Hilbert modular forms with character")
             K = magma(base_field)
             N = magma(level)
-            if not N.Parent().Ring().IsMaximal():
+            if not N.Parent().Ring().IsMaximal().sage():
                 raise ValueError("The given ideal is not of the ring of integers")
             cuspspace = K.HilbertCuspForms(N)
             newspace = cuspspace.NewSubspace()
