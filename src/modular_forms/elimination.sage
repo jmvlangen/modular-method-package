@@ -246,7 +246,8 @@ def _init_newform_list(newforms, curves):
     return newforms
 
 def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
-                       precision_cap=1, verbose=False):
+                       use_minpoly=False, precision_cap=1,
+                       verbose=False):
     r"""Eliminate newforms associated to Frey curves by the trace of
     frobenius at a given prime.
 
@@ -323,6 +324,14 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
       considered. By default this will be set to the condition stored
       in the first given Frey curve.
 
+    - ``use_minpoly`` -- A boolean (default: False) indicating whether
+      the minimal polynomial trick should be used to compare traces of
+      frobenius, i.e. evaluate the minimal polynomial of the trace of
+      frobenius of the newform in the trace of frobenius of the
+      elliptic curve rather than taking the difference in a common
+      field. Note that this trick can not distinguish between
+      different newforms in a Galois orbit.
+
     - ``precision_cap`` -- A non-negative integer (default: 1) giving
       the maximal precision used to compute the reduction type of a
       Frey curve at a prime. Note that setting this value to a value
@@ -369,10 +378,10 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
     if B != 0:
         B = B.prime_factors()
     return _eliminate_by_trace(curves, newforms, prime, B, condition,
-                               precision_cap, verbose)
+                               use_minpoly, precision_cap, verbose)
 
 def _single_elimination(E, KE, LE, nfs, p, prime, pE, B, Bprod, C,
-                        prec_cap, verbose):
+                        use_minpoly, prec_cap, verbose):
     r"""Perform the elimination for a single tuple of newforms
 
     INPUT:
@@ -405,6 +414,8 @@ def _single_elimination(E, KE, LE, nfs, p, prime, pE, B, Bprod, C,
     - ``prec_cap`` -- The precision cap on the variables
 
     - ``verbose`` -- Verbosity argument
+
+    - ``use_minpoly`` -- Whether to use the minimal polynomial trick
 
     """
     nE = len(E)
@@ -449,22 +460,26 @@ def _single_elimination(E, KE, LE, nfs, p, prime, pE, B, Bprod, C,
                           (verbose - 1 if verbose > 0 else verbose))
     apf = tuple(nfs[i].trace_of_frobenius(pf[i], power=powf[i])
                 for i in range(nE))
-    Lf = tuple(nfs[i].coefficient_field() for i in range(nE))
-    Lcom = tuple(common_embedding_field(LE[i], Lf[i], give_maps=True)
-                 for i in range(nE))
-    LphiE = tuple(Lcom[i][1] for i in range(nE))
-    Lcom = tuple(Lcom[i][0] for i in range(nE))
-    Lphif = tuple(nfs[i].embedding(Lcom[i]) for i in range(nE))
-    Bnew = ZZ(p * lcm(gcd([(LphiE[i](apE[i]) - Lphif[i](apf[i])).absolute_norm()
-                           for i in range(nE)]) for apE in apE_ls))
+    if use_minpoly:
+        Bnew = ZZ(p * lcm(gcd([(apf[i].minpoly()(apE[i])).absolute_norm()
+                               for i in range(nE)]) for apE in apE_ls))
+    else:
+        Lf = tuple(nfs[i].coefficient_field() for i in range(nE))
+        Lcom = tuple(common_embedding_field(LE[i], Lf[i], give_maps=True)
+                     for i in range(nE))
+        LphiE = tuple(Lcom[i][1] for i in range(nE))
+        Lcom = tuple(Lcom[i][0] for i in range(nE))
+        Lphif = tuple(nfs[i].embedding(Lcom[i]) for i in range(nE))
+        Bnew = ZZ(p * lcm(gcd([(LphiE[i](apE[i]) - Lphif[i](apf[i])).absolute_norm()
+                               for i in range(nE)]) for apE in apE_ls))
     Bnew = gcd(Bold, Bnew)
     if B != 0:
         Bnew = lcm(Bnew, ZZ(Bold / product(prime^(Bold.ord(prime))
                                            for prime in B)))
     return Bnew
 
-def _eliminate_by_trace(curves, newforms, prime, B, C, prec_cap,
-                        verbose):
+def _eliminate_by_trace(curves, newforms, prime, B, C, use_minpoly,
+                        prec_cap, verbose):
     """An implementation of :func:`eliminate_by_trace`
 
     INPUT:
@@ -493,6 +508,7 @@ def _eliminate_by_trace(curves, newforms, prime, B, C, prec_cap,
         return apply_to_conditional_value(lambda nfs, con:
                                           _eliminate_by_trace(curves, nfs, p,
                                                               B, con & C,
+                                                              use_minpoly,
                                                               prec_cap,
                                                               verbose),
                                           newforms, use_condition=True,
@@ -510,14 +526,16 @@ def _eliminate_by_trace(curves, newforms, prime, B, C, prec_cap,
     Bprod = (B if B in ZZ else product(B))
     for nfs in newforms:
         Bnew = _single_elimination(curves, KE, LE, nfs, p, prime, pE,
-                                   B, Bprod, C, prec_cap, verbose)
+                                   B, Bprod, C, use_minpoly, prec_cap,
+                                   verbose)
         if abs(Bnew) != 1:
             result.append(tuple([nfs[i] for i in range(nE)] + [Bnew]))
     _init_traces.clear_cache()
     return result
 
 def eliminate_by_traces(curves, newforms, condition=None, primes=50,
-                        precision_cap=1, verbose=False):
+                        use_minpoly=False, precision_cap=1,
+                        verbose=False):
     r"""Eliminate newforms associated to Frey curves by the traces of
     Frobenius.
 
@@ -593,6 +611,14 @@ def eliminate_by_traces(curves, newforms, condition=None, primes=50,
       of the Galois representations considered are larger than the
       field of the parameters.
 
+    - ``use_minpoly`` -- A boolean (default: False) indicating whether
+      the minimal polynomial trick should be used to compare traces of
+      frobenius, i.e. evaluate the minimal polynomial of the trace of
+      frobenius of the newform in the trace of frobenius of the
+      elliptic curve rather than taking the difference in a common
+      field. Note that this trick can not distinguish between
+      different newforms in a Galois orbit.
+
     - ``precision_cap`` -- A non-negative integer (default: 1) giving
       the maximal precision used to compute the reduction type of a
       Frey curve at a prime. Note that setting this value to a value
@@ -644,23 +670,26 @@ def eliminate_by_traces(curves, newforms, condition=None, primes=50,
                                       _eliminate_by_traces(curves, nfs,
                                                            con & condition,
                                                            primes,
+                                                           use_minpoly,
                                                            precision_cap,
                                                            verbose),
                                       newforms, use_condition=True,
                                       default_condition=condition)
         
-def _eliminate_by_traces(curves, newforms, condition, primes, precision_cap,
-                         verbose):
+def _eliminate_by_traces(curves, newforms, condition, primes,
+                         use_minpoly, precision_cap, verbose):
     r"""Implementation of :func:`eliminate_by_traces`.
 
     """
     for prime in primes:
-        newforms = _eliminate_by_trace(curves, newforms, prime, 0, condition,
+        newforms = _eliminate_by_trace(curves, newforms, prime, 0,
+                                       condition, use_minpoly,
                                        precision_cap, verbose)
     return newforms
 
-def kraus_method(curves, newforms, l, polynomials, primes=200, condition=None,
-                 precision_cap=1, verbose=False):
+def kraus_method(curves, newforms, l, polynomials, primes=200,
+                 condition=None, use_minpoly=False, precision_cap=1,
+                 verbose=False):
     r"""Eliminate newforms associated to Frey curves by Kraus's method.
 
     Let $E$ be a Frey curve, $f$ be a newform of which the mod $l$
@@ -750,6 +779,14 @@ def kraus_method(curves, newforms, l, polynomials, primes=200, condition=None,
       considered. By default this will be set to the condition stored
       in the first given Frey curve.
 
+    - ``use_minpoly`` -- A boolean (default: False) indicating whether
+      the minimal polynomial trick should be used to compare traces of
+      frobenius, i.e. evaluate the minimal polynomial of the trace of
+      frobenius of the newform in the trace of frobenius of the
+      elliptic curve rather than taking the difference in a common
+      field. Note that this trick can not distinguish between
+      different newforms in a Galois orbit.
+
     - ``precision_cap`` -- A non-negative integer (default: 1) giving
       the maximal precision used to compute the reduction type of a
       Frey curve at a prime. Note that setting this value to a value
@@ -808,12 +845,13 @@ def kraus_method(curves, newforms, l, polynomials, primes=200, condition=None,
                                       _kraus_method(curves, nfs, l,
                                                     polynomials, primes,
                                                     con & condition,
+                                                    use_minpoly,
                                                     precision_cap, verbose),
                                       newforms, use_condition=True,
                                       default_condition=condition)
 
 def _kraus_method(curves, newforms, l, polynomials, primes, condition,
-                  precision_cap, verbose):
+                  use_minpoly, precision_cap, verbose):
     r"""Implementation of :func:`kraus_method`.
 
     """
@@ -824,7 +862,8 @@ def _kraus_method(curves, newforms, l, polynomials, primes, condition,
             CP = [_init_kraus_condition(polynomials[i], P[i], l)
                   for i in range(len(P))]
             C = reduce(lambda x, y: x & y, CP, condition)
-            newforms = _eliminate_by_trace(curves, newforms, p, [l], C,
+            newforms = _eliminate_by_trace(curves, newforms, p, [l],
+                                           C, use_minpoly,
                                            precision_cap, verbose)
     return newforms
 
