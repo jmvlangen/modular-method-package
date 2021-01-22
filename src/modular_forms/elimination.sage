@@ -460,11 +460,11 @@ def _single_elimination(E, KE, LE, nfs, p, prime, pE, B, Bprod, C,
                           (verbose - 1 if verbose > 0 else verbose))
     apf = tuple(nfs[i].trace_of_frobenius(pf[i], power=powf[i])
                 for i in range(nE))
+    Lf = tuple(nfs[i].coefficient_field() for i in range(nE))
     if use_minpoly:
-        Bnew = ZZ(p * lcm(gcd([(apf[i].minpoly()(apE[i])).absolute_norm()
+        Bnew = ZZ(p * lcm(gcd([(Lf[i](apf[i]).minpoly()(LE[i](apE[i]))).absolute_norm()
                                for i in range(nE)]) for apE in apE_ls))
     else:
-        Lf = tuple(nfs[i].coefficient_field() for i in range(nE))
         Lcom = tuple(common_embedding_field(LE[i], Lf[i], give_maps=True)
                      for i in range(nE))
         LphiE = tuple(Lcom[i][1] for i in range(nE))
