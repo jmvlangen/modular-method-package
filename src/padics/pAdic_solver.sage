@@ -160,9 +160,9 @@ Using the `precision_cap` argument::
      p-adic node represented by (5, 2) with 9 children,
      p-adic node represented by (8, 2) with 9 children]
 
-The special output when using the argument `give_list`. Note that
-the first values are not, the second are only roots
-modulo 2 and the third are roots modulo 4::
+The special output when using the argument `give_list`. Note that the
+first values are not roots at all, the second are only roots modulo 2
+and the third are roots modulo 4::
 
     sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
     sage: R.<x,y> = QQ[]
@@ -480,8 +480,8 @@ def find_pAdic_roots(polynomial, pAdics=None, ring=None, prime=None,
          p-adic node represented by (8, 2) with 9 children]
 
     The special output when using the argument `give_list`. Note that
-    the first values are roots modulo 4, the second are only roots
-    modulo 2 and the third are not roots at all::
+    the first values are not roots at all, the second are only roots
+    modulo 2 and the third are roots modulo 4:
 
         sage: from modular_method.padics.pAdic_solver import find_pAdic_roots
         sage: R.<x,y> = QQ[]

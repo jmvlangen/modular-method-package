@@ -576,8 +576,8 @@ def _determine_level(poly_list, pAdics, T, max_value):
     return level
 
 def _get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
-                        verbose=False, precision=20, result=[],
-                        precision_cap=20, **kwds):
+                         verbose=False, precision=20, result=[],
+                         precision_cap=20, **kwds):
     r"""Determine the different valuations a polynomial can have.
 
     INPUT:
@@ -619,6 +619,26 @@ def _get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
     a p-adic tree containing those values in the given p-adic tree for
     which the corresponding valuation of the polynomial is attained.
 
+    TESTS:
+
+    In case the actual valuation is above the given precision, this
+    function should change the precision to find the valuation, only
+    stopping for the given precision_cap::
+
+        sage: from modular_method.elliptic_curves.tates_algorithm import _get_cases_invariant
+        sage: from modular_method.padics.pAdic_base import pAdicBase
+        sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+        sage: R.<x> = QQ[]
+        sage: T = CongruenceCondition(x, 2).pAdic_tree(pAdics=pAdicBase(QQ, 2))
+        sage: N = 2^18*x^8 + 2^24
+        sage: result = _get_cases_invariant(N, T.pAdics(), T.root(), 'Nval', {}, variables=[x])
+        sage: len(result)
+        1
+        sage: result[0]['Nval']
+        24
+        sage: result[0]['T'] == T.root()
+        True
+
     """
     Tlist, v_min = find_pAdic_roots(poly, pAdics=pAdics,
                                     variables=variables, value_tree=T,
@@ -627,6 +647,19 @@ def _get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
                                              else verbose),
                                     give_list=True,
                                     precision_cap=precision_cap)
+    while (v_min + len(Tlist) > precision and # Happens when precision was
+           not Tlist[-1].is_empty()):         # reached, should refine search
+        precision = precision + 10
+        Tlist_, v_min_ = find_pAdic_roots(poly, pAdics=pAdics,
+                                          variables=variables,
+                                          value_tree=Tlist.pop(),
+                                          precision=precision,
+                                          verbose=(verbose-1 if
+                                                   verbose > 0 else verbose),
+                                          give_list=True,
+                                          precision_cap=precision_cap)
+        i = v_min - v_min_ + len(Tlist)
+        Tlist.extend(Tlist_[i:])
     for i in range(len(Tlist)):
         if not Tlist[i].is_empty():
             case = general_case.copy()
