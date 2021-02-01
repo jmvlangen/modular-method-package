@@ -219,6 +219,9 @@ class pAdicNode(SageObject):
          p-adic node represented by (8,) with 3 children]
 
     """
+
+    __slots__ = ['_parent', '_pAdics', 'width', 'coefficients',
+                 'children', '_rep', '__weakref__']
     
     def __init__(self, parent=None, children=None, pAdics=None,
                  coefficients=None, full=False, width=1):
@@ -1719,6 +1722,8 @@ class pAdicNodeCollection(SageObject):
          p-adic node represented by (1, 1) with 4 children]
 
     """
+
+    __slots__ = ['_parent', '_pAdics', 'width', '_dict']
     
     def __init__(self, parent, pAdics=None, width=1):
         r"""Initialize a pAdicNodeCollection.
@@ -2604,6 +2609,8 @@ class pAdicNodeCollection_inverted(pAdicNodeCollection):
          p-adic node represented by (1, 1) with 4 children]
 
     """
+
+    __slots__ = ['_removed']
     
     def __init__(self, parent, pAdics=None, width=1):
         r"""Initialize a pAdicNodeCollection_inverted.
