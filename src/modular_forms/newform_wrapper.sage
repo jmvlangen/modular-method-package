@@ -231,6 +231,18 @@ def get_newforms(level, character=None, algorithm='sage', base_field=QQ,
             newspace = cuspspace.NewSubspace()
             newdecomp = newspace.NewformDecomposition()
             result = [WrappedNewform_magma_hilbert(newspace) for newspace in newdecomp]
+        elif base_field.degree() == 2:
+            if character != None:
+                raise NotImplementedError("Magma algorithm not implemented for " +
+                                          "Bianchi modular forms with character")
+            K = magma(base_field)
+            N = magma(level)
+            if not N.Parent().Ring().IsMaximal().sage():
+                raise ValueError("The given ideal is not of the ring of integers")
+            cuspspace = K.BianchiCuspForms(N)
+            newspace = cuspspace.NewSubspace()
+            newdecomp = newspace.NewformDecomposition()
+            result = [WrappedNewform_magma_bianchi(newspace) for newspace in newdecomp]
         else:
             raise NotImplementedError("Magma algorithm not implemented for " +
                                       "base field " + str(base_field))
@@ -3136,3 +3148,328 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
 
         """
         return WrappedNewform_magma_hilbert(self._M)
+
+class WrappedNewform_magma_bianchi(WrappedNewform):
+    r"""A wrapper class around a magma Bianchi modular newform of parallel
+    weight 2.
+
+    This acts as a common interface to work with a newform,
+    independent of its internal representation.
+
+    EXAMPLE::
+
+        sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+        sage: K = QuadraticField(-2)
+        sage: nf = get_newforms(K.ideal(11), base_field=K, algorithm='magma')[0]; nf
+        Element of Cuspidal newform space of Bianchi modular forms
+        sage: nf.level()
+        Fractional ideal (11)
+        sage: nf.base_field()
+        Number Field in a with defining polynomial x^2 + 2
+
+    """
+
+    def __init__(self, space):
+        r"""Initialize a wrapped newform
+
+        INPUT:
+
+        - ``newform`` -- A Bianchi modular newform as a magma object
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import WrappedNewform_magma_bianchi
+            sage: K = QuadraticField(-1)
+            sage: cfs = magma.BianchiCuspForms(K, K.ideal(18))
+            sage: nfs = cfs.NewSubspace()
+            sage: WrappedNewform_magma_bianchi(nfs.NewformDecomposition()[1])
+            Element of Cuspidal newform space of Bianchi modular forms
+
+        """
+        self._f = space.Eigenform()
+        self._M = space
+        WrappedNewform.__init__(self)
+
+    def level(self):
+        r"""Give the level of this newform.
+        
+        OUTPUT:
+
+        An ideal of the totally real number field associated to this
+        Hilbert modular form that describes the level of this newform.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.level()
+            19
+
+        """
+        return self._M.Level().sage()
+
+    @cached_method
+    def character(self):
+        r"""Give the character associated to this newform.
+
+        OUTPUT:
+
+        The dirichlet character associated to this newform as a
+        primitive character.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: eps = DirichletGroup(16).gens()[1]
+            sage: nf = get_newforms(16, character=eps)[0]
+            sage: nf.character()
+            Dirichlet character modulo 16 of conductor 16 mapping 15 |--> 1, 5 |--> zeta4
+
+        """
+        return DirichletGroup(1)[0]
+        
+    def coefficient(self, n):
+        r"""Give the n-th coefficient of this newform.
+
+        INPUT:
+        
+        - ``n`` -- A non-negative integer.
+
+        OUTPUT:
+        
+        The n-th coefficient of the q-expansion of this newform at
+        infinity.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.coefficient(19)
+            1
+            sage: nf.coefficient(27)
+            4
+
+        .. SEE_ALSO::
+
+            :meth:`coefficient_field`,
+            :meth:`q_expansion`
+
+        """
+        raise NotImplementedError();
+
+    def base_field(self):
+        r"""Give the base field for this newform.
+
+        For classical newforms this is always the rationals. For
+        Hilbert modular forms this is the totally real field for which
+        this is a Hilbert modular form. For Bianchi modular forms it
+        is the complex field for which this is a Bianchi modular form.
+
+        OUTPUT:
+
+        The rational field if this newform is a classical modular form.
+
+        The totally real field for which this newform is a Hilbert
+        modular form if it is a Hilbert modular form.
+
+        The complex field for which this newform is a Bianchi modular
+        form if it is a Bianchi modular form.
+
+        """
+        return self._M.BaseField().sage()
+
+    def coefficient_field(self):
+        r"""Give the field over which the coefficients of this newform are
+        defined.
+
+        OUTPUT:
+
+        The field over which the coefficients of the q-expansion of
+        this newform at infinity are defined.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: K = QuadraticField(-3)
+            sage: nf = get_newforms(K.ideal(52), base_field=K, algorithm='magma')[1]
+            sage: nf.coefficient_field()
+            Number Field in K1 with defining polynomial x^2 - 2*x - 4
+
+        .. SEE_ALSO::
+
+            :meth:`coefficient`,
+            :meth:`q_expansion`
+
+        """
+        return self._M.HeckeEigenvalueField().sage()
+
+    def has_cm(self, proof=True):
+        """Determine if this newform has complex multiplication.
+
+        INPUT:
+
+        - ``proof`` -- A boolean (default: True). If set to True the
+          answer will have been proven correct. If set to False may
+          use bounds that have not been proved.
+
+        OUTPUT:
+
+        True if the abelian variety corresponding to this newform has
+        complex multiplication. False in any other case.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.has_cm()
+            False
+
+        """
+        raise NotImplementedError()
+
+    def trace_of_frobenius(self, prime, power=1):
+        """Give the trace of frobenius under the galois representation
+        associated to this newform.
+
+        Will give a ValueError if the given prime divides the level of
+        this newform, since in that case all mentioned galois
+        representations are ramified.
+        
+        INPUT:
+
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
+
+        - ``power`` -- A non-negative number (default: 1). If set to
+          any value larger than 1, will compute the trace of the
+          frobenius element to the given power instead.
+
+        OUTPUT:
+
+        The trace of $\rho(F_p^n)$, where $\rho$ is the mod $l$ or
+        l-adic galois representation associated to this newform, $F_p$
+        is the frobenius element at the given prime, and $n$ is the
+        given argument `power`.
+
+        Since the result does not depend on the choice of $l$, this
+        result will be an element of the coefficient field of the
+        newform. The only condition is that $l$ and $p$ must be
+        coprime.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: K = QuadraticField(-3)
+            sage: nf = get_newforms(K.ideal(26), base_field=K, algorithm='magma')[0]
+            sage: Kf = nf.base_field()
+            sage: nf.trace_of_frobenius(Kf.prime_above(5))
+            -1
+            sage: nf.trace_of_frobenius(Kf.prime_above(7))
+            -1
+            sage: nf.trace_of_frobenius(Kf.prime_above(11))
+            14
+
+        .. SEE_ALSO::
+
+            :meth:`determinant_of_frobenius`,
+            :meth:`characteristic_polynomial`
+
+        """
+        F = self.base_field()
+        if not is_Ideal(prime):
+            prime = F.ideal(prime)
+        if not (prime in F.ideal_monoid()) or not prime.is_prime():
+            raise ValueError("%s is not a prime ideal."%(prime,))
+        if prime.divides(self.level()):
+            raise ValueError("%s divides the level: %s."%(prime, self.level()))
+        if power == 1:
+            F = self._M.BaseField()
+            OF = F.IntegerRing()
+            gens = [F(g.list()) for g in prime.gens()]
+            prime = None
+            for g in gens:
+                if prime is None:
+                    prime = g*OF
+                else:
+                    prime += g*OF
+            prime = prime.Support().Random()
+            return self._f.HeckeEigenvalue(prime).sage()
+        T = self.trace_of_frobenius(prime)
+        D = self.determinant_of_frobenius(prime)
+        K, T_map, D_map = composite_field(T.parent(), D.parent(),
+                                          give_maps=True)
+        return self._trace_power_formula(power)(T_map(T), D_map(D))
+
+    def determinant_of_frobenius(self, prime, power=1):
+        """Give the determinant of frobenius under the galois representation
+        associated to this newform.
+
+        Will give a ValueError if the given prime divides the level of
+        this newform, since in that case all mentioned galois
+        representations are ramified.
+        
+        INPUT:
+
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
+
+        - ``power`` -- A non-negative number (default: 1). If set to
+          any value larger than 1, will compute the trace of the
+          frobenius element to the given power instead.
+
+        OUTPUT:
+
+        The determinant of $\rho(F_p^n)$, where $\rho$ is the mod $l$
+        or $l$-adic galois representation associated to this newform,
+        $F_p$ is the frobenius element at the given prime, and $n$ is
+        the given argument `power`.
+
+        Since the result does not depend on the choice of $l$, this
+        result will be an element of the coefficient field of the
+        newform. The only condition is that $l$ and $p$ must be
+        coprime.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.determinant_of_frobenius(5)
+            5
+            sage: nf.determinant_of_frobenius(7)
+            7
+            sage: nf.determinant_of_frobenius(7, power=2)
+            49
+
+        .. SEE_ALSO::
+
+            :meth:`trace_of_frobenius`,
+            :meth:`characteristic_polynomial`
+
+        """
+        raise NotImplementedError()
+
+    def _repr_(self):
+        """Give a string representation of this newform"""
+        return str(self._f)
+
+    def _latex_(self):
+        """Give a latex representation of this newform."""
+        return latex(self._f)
+
+    def copy(self):
+        r"""Create a copy of this newform
+
+        The copy saves on memory as much as possible, but is not
+        completely shallow as the embeddings list is initialized
+        again.
+
+        OUTPUT:
+
+        A copy of this newform.
+
+        """
+        return WrappedNewform_magma_bianchi(self._M)
