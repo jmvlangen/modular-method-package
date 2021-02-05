@@ -50,7 +50,7 @@ modulo 4.
 
    sage: S1 = QQ[ap, cp]
    sage: C1 = (CoprimeCondition([ap, cp]) & CongruenceCondition(ap + 1, 4) &
-   ....:       PowerCondition(ap, 7) & PowerCondition(2*cp - ap, 7) & PowerCondition(cp, 7))
+   ....:       PowerCondition(ap, 4) & PowerCondition(2*cp - ap, 4) & PowerCondition(cp, 4))
    sage: E1 = FreyCurve([0, S1(-ap - 2*cp), 0, S1((-ap)*(-2*cp)), 0], condition=C1)
 
 For equation 2 the article introduces 2 different Frey curves, one for
@@ -66,11 +66,11 @@ for the conductor.
    sage: S2 = QQ[ap, c]
    sage: ap_ = 2^6 * ap
    sage: C21 = (CoprimeCondition([ap_, c]) & CongruenceCondition(c - 1, 4) &
-   ....:        PowerCondition(ap_, 7) & PowerCondition(c^2 - ap_, 7))
+   ....:        PowerCondition(ap_, 7) & PowerCondition(c^2 - ap_, 2))
    sage: E21 = FreyCurve([1, S2((c - 1)/4), 0, S2(ap), 0], condition=C21)
    sage: C22 = (CoprimeCondition([ap, c]) & ~CongruenceCondition(ap*(c^2 - ap), 2) &
-   ....:        CongruenceCondition(ap + 1, 4) & PowerCondition(ap, 7) &
-   ....:        PowerCondition(c^2 - ap, 7))
+   ....:        CongruenceCondition(ap + 1, 4) & PowerCondition(ap, 2) &
+   ....:        PowerCondition(c^2 - ap, 2))
    sage: E22 = FreyCurve([0, S2(2*c), 0, S2(ap), 0], condition=C22)
 
 For equation 3 the equation again introduces two Frey curves depending
@@ -80,15 +80,16 @@ generality that :math:`a` is odd and :math:`b` is even.
 
 ::
 
-   sage: S31 = QQ[bp, c0]
-   sage: C31 = (CoprimeCondition([bp, c0]) & ~CongruenceCondition(bp*((2*c0)^3 - bp), 2) &
-   ....:        PowerCondition(bp, 7) & PowerCondition((2*c0)^3 - bp, 7))
-   sage: E31 = FreyCurve([0, 0, S31(bp), S31(-3*(c0^3 + bp)*c0), S31(-c0^3*(2*c0^3 - 5*bp))],
+   sage: S3 = QQ[bp, c]
+   sage: C31 = (CoprimeCondition([bp, c]) & ~CongruenceCondition(bp*(c^3 - bp), 2) &
+   ....:        CongruenceCondition(c, 2) & PowerCondition(bp, 4) &
+   ....:        PowerCondition((2*c)^3 - bp, 4))
+   sage: E31 = FreyCurve([0, 0, S3(bp), S3(-3*((c/2)^3 + bp)*(c/2)),
+   ....:                  S3(-(c/2)^3*(2*(c/2)^3 - 5*bp))],
    ....:                 condition=C31)
-   sage: S32 = QQ[bp, c]
    sage: C32 = (CoprimeCondition([bp, c]) & CongruenceCondition(bp, 2) &
-   ....:        PowerCondition(bp, 7) & PowerCondition(c^3 - bp, 7))
-   sage: E32 = FreyCurve([S32(c), S32(-c^2), 0, S32(-3/2*c*bp), S32(bp*(c^3 + bp/4))],
+   ....:        PowerCondition(bp, 4) & PowerCondition(c^3 - bp, 4))
+   sage: E32 = FreyCurve([S3(c), S3(-c^2), 0, S3(-3/2*c*bp), S3(bp*(c^3 + bp/4))],
    ....:                 condition=C32)
 
 We check that the discriminants are indeed as listed in the article.
