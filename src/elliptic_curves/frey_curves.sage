@@ -1778,6 +1778,36 @@ class FreyCurve(EllipticCurve_generic):
 class FreyQcurve(FreyCurve, Qcurve):
     r"""A Frey-Hellegouarch curve that is also a Q-curve.
 
+    EXAMPLE:
+
+    We use the Frey curve for the equation $A^4 + B^2 = C^p$ from the
+    article "Galois representations attached to Q-curves and the
+    generalized Fermat equation $A^4 + B^2 = C^p$" by Jordan
+    S. Ellenberg (2004). We will let $(A, B, C)$ be a solution to this
+    equation for $p \ge 211$ prime with $ A B \ne 0 $ and $B
+    \not\equiv 1$ modulo 4. We will use `Cp` to denote $C^p$::
+
+        sage: from modular_method.diophantine_equations.conditions import CoprimeCondition
+        sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
+        sage: from modular_method.diophantine_equations.conditions import PowerCondition
+        sage: from modular_method.elliptic_curves.frey_curves import FreyQcurve
+        sage: R.<A, B> = QQ[]
+        sage: Cp = A^4 + B^2
+        sage: con = (CoprimeCondition([A, B]) & ~CongruenceCondition(B - 1, 4) &
+        ....:        PowerCondition(Cp, 3))
+        sage: K.<i> = QuadraticField(-1)
+        sage: a_invariants = [0, 2*(1+i)*A, 0, B + i*A^2, 0]
+        sage: E = FreyQcurve(a_invariants, condition=con, guessed_degrees=[2])
+        sage: E.discriminant().factor()
+        ((-64*i)) * (A^2 + (i)*B) * (A^2 + (-i)*B)^2
+        sage: E.decomposition_field()
+        Number Field in i with defining polynomial x^2 + 1 with i = 1*I
+        sage: E.does_decompose()
+        True
+        sage: E.newform_candidates(bad_primes=K.primes_above(2))
+        [q - 2*q^3 + O(q^6), q - 4*q^5 + O(q^6), q + 4*q^5 + O(q^6), q + 2*q^3 + O(q^6), q + 1/2*a4*q^3 + O(q^6), q + 1/2*a4*q^3 + O(q^6)] if ('A', 'B') == (1, 0) mod 2
+        [q - 2*q^5 + O(q^6)]                                                                                                               if ('A', 'B') == (0, 3), (2, 3) mod 4
+
     .. SEE_ALSO::
 
         :class:`FreyCurve`

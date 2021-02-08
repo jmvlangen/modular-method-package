@@ -102,7 +102,7 @@ We check that the discriminants are indeed as listed in the article.
    True
    sage: E22.discriminant() == 2^6*ap^2*(c^2 - ap)
    True
-   sage: E31.discriminant() == 3^3*((2*c0)^3 - bp)^3*bp
+   sage: E31.discriminant() == 3^3*(c^3 - bp)^3*bp
    True
    sage: E32.discriminant() == 3^3*(c^3 - bp)^3*bp
    True
@@ -120,18 +120,18 @@ Papadopoulus to exist in case 3 divides :math:`b` or the property
    2^n0*Rad_P( (64) * cp^2 * ap^2 * (ap - 2*cp)^2 )
     where 
    n0 = 5 if ('ap', 'cp') == (3, 1), (3, 3) mod 4
-        1 if ('ap', 'cp') is 1 of 32 possibilities mod 128
+        1 if ('ap', 'cp') is 1 of 4 possibilities mod 16
    sage: E21.conductor(additive_primes=[2])
    2*Rad_P( ap^2 * (c^2 - 64*ap) )
    sage: E22.conductor(additive_primes=[2])
    32*Rad_P( (64) * ap^2 * (c^2 - ap) )
-   sage: E31.conductor(additive_primes=[3])
+   sage: E31.conductor(additive_primes=[3]) # long time
    3^n0*Rad_P( (27) * bp * (8*c0^3 - bp)^3 )
     where 
    n0 = 2 if ('bp', 'c0') is 1 of 710046 possibilities mod 2187
         3 if ('bp', 'c0') is 1 of 24 possibilities mod 9
         1 if ('bp', 'c0') is 1 of 1458 possibilities mod 2187
-   sage: E32.conductor(additive_primes=[3])
+   sage: E32.conductor(additive_primes=[3]) # long time
    3^n0*Rad_P( (27) * bp * (c^3 - bp)^3 )
     where 
    n0 = 2 if ('bp', 'c') is 1 of 710046 possibilities mod 2187
@@ -145,15 +145,15 @@ different curves.
 
    sage: nfs1 = E1.newform_candidates(bad_primes=[2]); nfs1
    [q - 2*q^5 + O(q^6)] if ('ap', 'cp') == (3, 1), (3, 3) mod 4
-   []                   if ('ap', 'cp') is 1 of 32 possibilities mod 128
+   []                   if ('ap', 'cp') is 1 of 4 possibilities mod 16
    sage: nfs21 = E21.newform_candidates(bad_primes=[2]); nfs21
    []
    sage: nfs22 = E22.newform_candidates(bad_primes=[2]); nfs22
    [q - 2*q^5 + O(q^6)]
-   sage: nfs31 = E31.newform_candidates(bad_primes=[3]); nfs31
+   sage: nfs31 = E31.newform_candidates(bad_primes=[3]); nfs31 # long time
    []                   if ('bp', 'c0') is 1 of 711504 possibilities mod 2187
    [q - 2*q^4 + O(q^6)] if ('bp', 'c0') is 1 of 24 possibilities mod 9
-   sage: nfs32 = E32.newform_candidates(bad_primes=[3]); nfs32
+   sage: nfs32 = E32.newform_candidates(bad_primes=[3]); nfs32 # long time
    []                   if ('bp', 'c') is 1 of 711504 possibilities mod 2187
    [q - 2*q^4 + O(q^6)] if ('bp', 'c') is 1 of 24 possibilities mod 9
 
@@ -166,7 +166,7 @@ multiplication as claimed in the article.
    True
    sage: nfs22[0].has_cm()
    True
-   sage: nfs31[1][0][0].has_cm()
+   sage: nfs31[1][0][0].has_cm() # long time
    True
-   sage: nfs32[1][0][0].has_cm()
+   sage: nfs32[1][0][0].has_cm() # long time
    True
