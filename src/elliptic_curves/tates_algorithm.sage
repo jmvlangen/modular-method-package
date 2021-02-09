@@ -11,6 +11,7 @@ AUTHORS:
 
 - Joey van Langen (2019-02-27): initial version
 - Joey van Langen (2019-10-10): Added termination condition to step 7
+- Joey van Langen (2021-02-09): Switched to a queue implementation
 
 """
 
@@ -23,6 +24,8 @@ AUTHORS:
 # (at your option) any later version.
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
+
+from queue import Queue
 
 from sage.structure.sage_object import SageObject
 
@@ -182,329 +185,270 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
     """
     _check_elliptic_curve(elliptic_curve)
     coefficient_ring = _init_coefficient_ring(coefficient_ring,
-                                               elliptic_curve)
+                                              elliptic_curve)
     pAdics = _init_pAdics(pAdics, base_ring, prime, coefficient_ring)
     S = _init_polynomial_ring(coefficient_ring, pAdics)
     variables = _init_variables_tate(S)
     T = _init_initial_values(initial_values, pAdics, variables)
-    newCases, doneCases = _init_cases(T, elliptic_curve, verbose)
-    only_calculate = _init_str_list(only_calculate)
-    
-    #The main loop performing the different steps.
-    while len(newCases) > 0:
-        cases = newCases
-        newCases = []
-        for case in cases:
-            if 'next_step' in case:
-                if case['next_step'] == 1:
-                    if verbose > 0:
-                        printstr = "Performing step 1"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step1(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst'], case['urst0'],
-                                variables=variables, result=newCases,
-                                verbose=(verbose-1 if verbose>0 else verbose),
-                                precision_cap=precision_cap)
-                elif case['next_step'] == 2:         
-                    if verbose > 0:
-                        printstr = "Performing the transformation for step 2"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step2_t(case['E'], S, pAdics, case['T'], case['E0'],
-                                  case['urst'], case['urst0'],
-                                  variables=variables, result=newCases,
-                                  verbose=(verbose-1 if verbose>0 else verbose),
-                                  precision_cap=precision_cap)
-                elif case['next_step'] == 2 + 1/2:
-                    if verbose > 0:
-                        printstr = "Performing step 2"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step2(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst'], case['urst0'],
-                                variables=variables, result=newCases,
-                                verbose=(verbose-1 if verbose>0 else verbose),
-                                precision_cap=precision_cap)
-                elif case['next_step'] == 3:
-                    if verbose > 0:
-                        printstr = "Performing step 3"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step3(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst'], case['urst0'],
-                                variables=variables, result=newCases,
-                                verbose=(verbose-1 if verbose>0 else verbose),
-                                precision_cap=precision_cap)
-                elif case['next_step'] == 4:
-                    if verbose > 0:
-                        printstr = "Performing step 4"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step4(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst'], case['urst0'],
-                                variables=variables, result=newCases,
-                                verbose=(verbose-1 if verbose>0 else verbose),
-                                precision_cap=precision_cap)
-                elif case['next_step'] == 5:
-                    if verbose > 0:
-                        printstr = "Performing step 5"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step5(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst'], case['urst0'],
-                                variables=variables, result=newCases,
-                                verbose=(verbose-1 if verbose>0 else verbose),
-                                precision_cap=precision_cap)
-                elif case['next_step'] == 6:
-                    if verbose > 0:
-                        printstr = "Performing the transformation for step 6"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step6_t(case['E'], S, pAdics, case['T'], case['E0'],
-                                  case['urst'], case['urst0'],
-                                  variables=variables, result=newCases,
-                                  verbose=(verbose-1 if verbose>0 else verbose),
-                                  precision_cap=precision_cap)
-                elif case['next_step'] == 6 + 1/2:
-                    if verbose > 0:
-                        printstr = "Performing step 6"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step6(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst'], case['urst0'],
-                                variables=variables, result=newCases,
-                                verbose=(verbose-1 if verbose>0 else verbose),
-                                precision_cap=precision_cap)
-                elif case['next_step'] == 7:
-                    if verbose > 0:
-                        printstr = "Performing step 7"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step7(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst'], case['urst0'],
-                                case, only_calculate, variables=variables,
-                                result=newCases,
-                                verbose=(verbose-1 if verbose>0 else verbose),
-                                precision_cap=precision_cap)
-                elif case['next_step'] in QQ and case['next_step'] < 8:
-                    n , b = _decode_quotient( case['next_step'] - 7 )
-                    if b == 0:
-                        if verbose > 0:
-                            printstr = "Performing the transformation for step 7sub"
-                            if verbose > 1:
-                                printstr += (" for case " +
-                                             case['number'])
-                            print(printstr)
-                        _tate_step7sub_t(case['E'], S, pAdics,
-                                         case['T'], case['E0'],
-                                         case['urst'], case['urst0'],
-                                         n, variables=variables,
-                                         result=newCases,
-                                         verbose=(verbose-1 if verbose>0
-                                                  else verbose),
-                                         precision_cap=precision_cap)
-                    else:
-                        if verbose > 0:
-                            printstr = "Performing step 7sub"
-                            if verbose > 1:
-                                printstr += (" for case " +
-                                             case['number'])
-                            print(printstr)
-                        _tate_step7sub(case['E'], S, pAdics,
-                                       case['T'], case['E0'],
-                                       case['urst'], case['urst0'], n,
-                                       only_calculate,
-                                       variables=variables,
-                                       result=newCases,
-                                       verbose=(verbose-1 if verbose>0
-                                                else verbose),
-                                       precision_cap=precision_cap)
-                elif case['next_step'] == 8:
-                    if verbose > 0:
-                        printstr = "Performing the transformation for step 8"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step8_t(case['E'], S, pAdics, case['T'], case['E0'],
-                                  case['urst'], case['urst0'],
-                                  variables=variables, result=newCases,
-                                  verbose=(verbose-1 if verbose>0 else verbose),
-                                  precision_cap=precision_cap)
-                elif case['next_step'] == 8 + 1/2:
-                    if verbose > 0:
-                        printstr = "Performing step 8"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step8(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst'], case['urst0'],
-                                variables=variables, result=newCases,
-                                verbose=(verbose-1 if verbose>0 else verbose),
-                                precision_cap=precision_cap)
-                elif case['next_step'] == 9:
-                    if verbose > 0:
-                        printstr = "Performing the transformation for step 9"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step9_t(case['E'], S, pAdics, case['T'], case['E0'],
-                                  case['urst'], case['urst0'],
-                                  variables=variables, result=newCases,
-                                  verbose=(verbose-1 if verbose>0 else verbose),
-                                  precision_cap=precision_cap)
-                elif case['next_step'] == 9 + 1/2:
-                    if verbose > 0:
-                        printstr = "Performing step 9"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step9(case['E'], S, pAdics, case['T'], case['E0'],
-                                case['urst'], case['urst0'],
-                                variables=variables, result=newCases,
-                                verbose=(verbose-1 if verbose>0 else verbose),
-                                precision_cap=precision_cap)
-                elif case['next_step'] == 10:
-                    if verbose > 0:
-                        printstr = "Performing step 10"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step10(case['E'], S, pAdics, case['T'], case['E0'],
-                                 case['urst'], case['urst0'],
-                                 variables=variables, result=newCases,
-                                 verbose=(verbose-1 if verbose>0 else verbose),
-                                 precision_cap=precision_cap)
-                elif case['next_step'] == 11:
-                    if verbose > 0:
-                        printstr = "Performing step 11"
-                        if verbose > 1:
-                            printstr += (" for case " +
-                                         case['number'])
-                        print(printstr)
-                    _tate_step11(case['E'], S, pAdics, case['T'], case['E0'],
-                                 case['urst'], case['urst0'],
-                                 variables=variables, result=newCases,
-                                 verbose=(verbose-1 if verbose>0 else verbose),
-                                 precision_cap=precision_cap)
-                else:
-                    print("Unknown step number %s requested"%case['next_step'])
-            elif _should_calculate_vDelta(case, only_calculate):
-                if verbose > 0:
-                    printstr = "Calculating valuation of discriminant"
-                    if verbose > 1:
-                        printstr += (" for case " +
-                                     case['number'])
-                    print(printstr)
-                _tate_calculate_vDelta(case['E'], S, pAdics,
-                                       case['T'], case,
-                                       variables=variables,
-                                       result=newCases,
-                                       verbose=(verbose - 1
-                                                if verbose > 0
-                                                else verbose),
-                                       precision_cap=precision_cap)
-            elif _should_calculate_m(case, only_calculate):
-                if verbose > 0:
-                    printstr = "Calculating number of components of the special fiber"
-                    if verbose > 1:
-                        printstr += (" for case " +
-                                     case['number'])
-                    print(printstr)
-                _tate_calculate_m(case['E'], S, pAdics, case['T'],
-                                  case, variables=variables,
-                                  result=newCases,
-                                  verbose=(verbose-1 if verbose > 0
-                                           else verbose),
-                                  precision_cap=precision_cap)
-            elif _should_calculate_f(case, only_calculate):
-                if verbose > 0:
-                    printstr = "Calculating exponent of the conductor"
-                    if verbose > 1:
-                        printstr += (" for case " +
-                                     case['number'])
-                    print(printstr)
-                _tate_calculate_f(case['E'], S, pAdics, case['T'],
-                                  case, variables=variables,
-                                  result=newCases,
-                                  verbose=(verbose-1 if verbose > 0
-                                           else verbose),
-                                  precision_cap=precision_cap)
-            elif _should_calculate_n(case, only_calculate):
-                if verbose > 0:
-                    printstr = "Calculating the index of the Kodaira symbol"
-                    if verbose > 1:
-                        printstr += (" for case " +
-                                     case['number'])
-                    print(printstr)
-                _tate_calculate_n(case['E'], S, pAdics, case['T'],
-                                  case, variables=variables,
-                                  result=newCases,
-                                  verbose=(verbose-1 if verbose > 0
-                                           else verbose),
-                                  precision_cap=precision_cap)
-            elif _should_calculate_split(case, only_calculate):
-                if verbose > 0:
-                    printstr = "Calculating whether multiplicative reduction is split"
-                    if verbose > 1:
-                        printstr += (" for case " +
-                                     case['number'])
-                    print(printstr)
-                _tate_calculate_split(case['E'], S, pAdics, case['T'],
-                                      case, variables=variables,
-                                      result=newCases,
-                                      verbose=(verbose-1 if verbose > 0
-                                               else verbose),
-                                      precision_cap=precision_cap)
-            elif _should_calculate_c(case, only_calculate):
-                if verbose > 0:
-                    printstr = "Calculating the order of the group of components"
-                    if verbose > 1:
-                        printstr += (" for case " +
-                                     case['number'])
-                    print(printstr)
-                _tate_calculate_c(case['E'], S, pAdics, case['T'],
-                                  case, variables=variables,
-                                  result=newCases,
-                                  verbose=(verbose-1 if verbose > 0
-                                           else verbose),
-                                  precision_cap=precision_cap)
-            else:
-                if verbose > 0:
-                    if verbose > 1:
-                        print("Finishing case " +
-                              case['number'])
-                    else:
-                        print("Finishing a case")
-                _tate_finish(case, only_calculate, result=doneCases,
-                             verbose=(verbose-1 if verbose > 0
-                                      else verbose),
-                             variables=variables)
+    cases, doneCases = _init_cases(T, elliptic_curve, S, pAdics,
+                                   verbose)
+    only_calculate = _init_str_list(only_calculate)            
+
+    # Let's work through the queue
+    while not cases.empty():
+        case = cases.get()
+        _tate_step(case, variables, only_calculate, cases,
+                   doneCases, verbose, precision_cap)
+        cases.task_done()
+    # Should consider putting multiple threads on this,
+    # but should find a good way of raising exceptions first
         
     return _tate_cleanup(doneCases)
+
+def _tate_step(case, variables, only_calculate, cases,
+               doneCases, verbose, precision_cap):
+    r"""Perform a single step of Tate's algorithm on a given case."""
+    if 'next' in case:
+        if case['next'] == 'Step1':
+            if verbose > 0:
+                printstr = "Performing step 1"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step1(case, cases, variables=variables,
+                        verbose=(verbose and verbose-1),
+                        precision_cap=precision_cap)
+        elif case['next'] == 'Step2T':         
+            if verbose > 0:
+                printstr = "Performing the transformation for step 2"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step2_t(case, cases,
+                          verbose=(verbose and verbose-1))
+        elif case['next'] == 'Step2':
+            if verbose > 0:
+                printstr = "Performing step 2"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step2(case, cases,
+                        variables=variables,
+                        verbose=(verbose and verbose-1),
+                        precision_cap=precision_cap)
+        elif case['next'] == 'Step3':
+            if verbose > 0:
+                printstr = "Performing step 3"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step3(case, cases,
+                        variables=variables,
+                        verbose=(verbose and verbose-1),
+                        precision_cap=precision_cap)
+        elif case['next'] == 'Step4':
+            if verbose > 0:
+                printstr = "Performing step 4"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step4(case, cases,
+                        variables=variables,
+                        verbose=(verbose and verbose-1),
+                        precision_cap=precision_cap)
+        elif case['next'] == 'Step5':
+            if verbose > 0:
+                printstr = "Performing step 5"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step5(case, cases,
+                        variables=variables,
+                        verbose=(verbose and verbose-1),
+                        precision_cap=precision_cap)
+        elif case['next'] == 'Step6T':
+            if verbose > 0:
+                printstr = "Performing the transformation for step 6"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step6_t(case, cases,
+                          verbose=(verbose and verbose-1))
+        elif case['next'] == 'Step6':
+            if verbose > 0:
+                printstr = "Performing step 6"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step6(case, cases,
+                        variables=variables,
+                        verbose=(verbose and verbose-1),
+                        precision_cap=precision_cap)
+        elif case['next'] == 'Step7':
+            if verbose > 0:
+                printstr = "Performing step 7"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step7(case, cases, only_calculate,
+                        variables=variables,
+                        verbose=(verbose and verbose-1),
+                        precision_cap=precision_cap)
+        elif case['next'].startswith('Step7('):
+            if case['next'].endswith('T'):
+                n = int(case['next'][6:-2])
+                if verbose > 0:
+                    printstr = f"Performing the transformation for step 7({n})"
+                    if verbose > 1:
+                        printstr += (" for case " +
+                                     case['number'])
+                    print(printstr)
+                _tate_step7sub_t(n, case, cases,
+                                 verbose=(verbose and verbose-1))
+            else:
+                n = int(case['next'][6:-1])
+                if verbose > 0:
+                    printstr = f"Performing step 7({n})"
+                    if verbose > 1:
+                        printstr += (" for case " +
+                                     case['number'])
+                    print(printstr)
+                _tate_step7sub(n, case, cases, only_calculate,
+                               variables=variables,
+                               verbose=(verbose and verbose-1),
+                               precision_cap=precision_cap)
+        elif case['next'] == 'Step8T':
+            if verbose > 0:
+                printstr = "Performing the transformation for step 8"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step8_t(case, cases,
+                          verbose=(verbose and verbose-1))
+        elif case['next'] == 'Step8':
+            if verbose > 0:
+                printstr = "Performing step 8"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step8(case, cases, variables=variables,
+                        verbose=(verbose and verbose-1),
+                        precision_cap=precision_cap)
+        elif case['next'] == 'Step9T':
+            if verbose > 0:
+                printstr = "Performing the transformation for step 9"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step9_t(case, cases,
+                          verbose=(verbose and verbose-1))
+        elif case['next'] == 'Step9':
+            if verbose > 0:
+                printstr = "Performing step 9"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step9(case, cases, variables=variables,
+                        verbose=(verbose and verbose-1),
+                        precision_cap=precision_cap)
+        elif case['next'] == 'Step10':
+            if verbose > 0:
+                printstr = "Performing step 10"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step10(case, cases, variables=variables,
+                         verbose=(verbose and verbose-1),
+                         precision_cap=precision_cap)
+        elif case['next'] == 'Step11':
+            if verbose > 0:
+                printstr = "Performing step 11"
+                if verbose > 1:
+                    printstr += (" for case " +
+                                 case['number'])
+                print(printstr)
+            _tate_step11(case, cases,
+                         verbose=(verbose and verbose-1))
+        else:
+            print(f"Skipping case for unknown step: {case['next']}")
+    elif _should_calculate_vDelta(case, only_calculate):
+        if verbose > 0:
+            printstr = "Calculating valuation of discriminant"
+            if verbose > 1:
+                printstr += (" for case " +
+                             case['number'])
+            print(printstr)
+        _tate_calculate_vDelta(case, cases, variables=variables,
+                               verbose=(verbose and verbose-1),
+                               precision_cap=precision_cap)
+    elif _should_calculate_m(case, only_calculate):
+        if verbose > 0:
+            printstr = "Calculating number of components of the special fiber"
+            if verbose > 1:
+                printstr += (" for case " +
+                             case['number'])
+            print(printstr)
+        _tate_calculate_m(case, cases)
+    elif _should_calculate_f(case, only_calculate):
+        if verbose > 0:
+            printstr = "Calculating exponent of the conductor"
+            if verbose > 1:
+                printstr += (" for case " +
+                             case['number'])
+            print(printstr)
+        _tate_calculate_f(case, cases)
+    elif _should_calculate_n(case, only_calculate):
+        if verbose > 0:
+            printstr = "Calculating the index of the Kodaira symbol"
+            if verbose > 1:
+                printstr += (" for case " +
+                             case['number'])
+            print(printstr)
+        _tate_calculate_n(case, cases)
+    elif _should_calculate_split(case, only_calculate):
+        if verbose > 0:
+            printstr = "Calculating whether multiplicative reduction is split"
+            if verbose > 1:
+                printstr += (" for case " +
+                             case['number'])
+            print(printstr)
+        _tate_calculate_split(case, cases, variables=variables,
+                              verbose=(verbose and verbose-1),
+                              precision_cap=precision_cap)
+    elif _should_calculate_c(case, only_calculate):
+        if verbose > 0:
+            printstr = "Calculating the order of the group of components"
+            if verbose > 1:
+                printstr += (" for case " +
+                             case['number'])
+            print(printstr)
+        _tate_calculate_c(case, cases, variables=variables,
+                          verbose=(verbose and verbose-1),
+                          precision_cap=precision_cap)
+    else:
+        if verbose > 0:
+            if verbose > 1:
+                print("Finishing case " +
+                      case['number'])
+            else:
+                print("Finishing a case")
+        _tate_finish(case, only_calculate, result=doneCases,
+                     variables=variables)
+
 
 # An easy way to keep track of cases when printing verbose
 _case_number = 0
@@ -575,10 +519,17 @@ def _determine_level(poly_list, pAdics, T, max_value):
         level = 0
     return level
 
-def _get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
-                         verbose=False, precision=20, result=[],
+def _get_cases_invariant(poly, pAdics, T, name, general_case, result,
+                         variables=None, verbose=False, precision=20,
                          precision_cap=20, **kwds):
     r"""Determine the different valuations a polynomial can have.
+
+    For each possible valuation of the polynomial `poly`, puts a copy
+    of `general_case` in `result`. Each copy has two additional
+    entries: An entry with key `name` and value a possible valuation
+    of the polynomial and an entry with key 'T' and value the root of
+    a p-adic tree containing those values in the given p-adic tree for
+    which the corresponding valuation of the polynomial is attained.
 
     INPUT:
 
@@ -595,6 +546,9 @@ def _get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
     - ``general_case`` -- A dictionary that is a template for the
       cases to be returned.
 
+    - ``result`` -- A queue in which to put the different cases of
+      this computation
+
     - ``variables`` -- A list of the variables of the polynomial or
       None (default) for it to be initialized from the polynomial.
 
@@ -606,37 +560,27 @@ def _get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
     - ``precision_cap`` -- The largest precision to be used on the
       variables
 
-    - ``result`` -- A list (default: []) containing resulting cases to
-      which the different cases of this computations should be
-      appended
-
-    OUPUT:
-
-    The given list `result` appended with copies of the given
-    `general_case`. For each copy there was added an entry with as key
-    the given name and as value a possible valuation of the
-    polynomial; and an entry with as key 'T' and as value the root of
-    a p-adic tree containing those values in the given p-adic tree for
-    which the corresponding valuation of the polynomial is attained.
-
     TESTS:
 
     In case the actual valuation is above the given precision, this
     function should change the precision to find the valuation, only
     stopping for the given precision_cap::
 
+        sage: from queue import Queue
         sage: from modular_method.elliptic_curves.tates_algorithm import _get_cases_invariant
         sage: from modular_method.padics.pAdic_base import pAdicBase
         sage: from modular_method.diophantine_equations.conditions import CongruenceCondition
         sage: R.<x> = QQ[]
         sage: T = CongruenceCondition(x, 2).pAdic_tree(pAdics=pAdicBase(QQ, 2))
         sage: N = 2^18*x^8 + 2^24
-        sage: result = _get_cases_invariant(N, T.pAdics(), T.root(), 'Nval', {}, variables=[x])
-        sage: len(result)
-        1
-        sage: result[0]['Nval']
+        sage: queue = Queue()
+        sage: _get_cases_invariant(N, T.pAdics(), T.root(), 'Nval', {}, queue, variables=[x])
+        sage: result = queue.get_nowait()
+        sage: queue.empty()
+        True
+        sage: result['Nval']
         24
-        sage: result[0]['T'] == T.root()
+        sage: result['T'] == T.root()
         True
 
     """
@@ -664,8 +608,7 @@ def _get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
         if not Tlist[i].is_empty():
             case = general_case.copy()
             case[name] = v_min + i
-            case['T'] = Tlist[i]
-            result.append(case)            
+            case['T'] = Tlist[i]   
             if verbose > 0:
                 case['number'] = _get_case_number()
                 print("Added case " + str(case['number']) + ": valuation of")
@@ -678,13 +621,25 @@ def _get_cases_invariant(poly, pAdics, T, name, general_case, variables=None,
                 resultstr += ("modulo " + str(Tlist[i].pAdics().prime()) +
                            "^" + str(n))
                 print(resultstr)
-    return result
+            result.put(case)
 
-def _get_two_cases_invariant(poly, pAdics, T, bndry, case_big, case_small,
-                             variables=None, verbose=False, result=[],
-                             precision_cap=20, **kwds):
+def _get_two_cases_invariant(poly, pAdics, T, bndry, case_big,
+                             case_small, result, variables=None,
+                             verbose=False, precision_cap=20, **kwds):
     r"""Distinguish whether a polynomial has at least a certain valuation
     or not
+
+    In case there is possible values for the variables in which the
+    valuation of the polynomial is at least `bndry` then the case
+    `case_big` is put in `result` with an added entry with key 'T' and
+    value the root of a p-adic tree containing all those values for
+    which this is the case.
+
+    If there is possible values for the variables in which the
+    valuation of the polynomial is less then `bndry` then the case
+    `case_small` is put in `result` with and added entry with key 'T'
+    and value the root of a p-adic tree containing all those values
+    for which this is the case.
 
     INPUT:
 
@@ -704,32 +659,16 @@ def _get_two_cases_invariant(poly, pAdics, T, bndry, case_big, case_small,
     - ``case_small`` -- A dictionary that is a template for the case
       the valuation is less then `bndry`
 
+    - ``result`` -- A queue in which to put the different cases of
+      this computation
+
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from the polynomial
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
-
-    OUTPUT:
-
-    The given list `result` with some cases added.
-
-    In case there is possible values for the variables in which the
-    valuation of the polynomial is at least `bndry` then the case
-    `case_big` was added with an added entry with key `T` and value
-    the root of a p-adic tree containing all those values for which
-    this is the case.
-
-    If there is possible values for the variables in which the
-    valuation of the polynomial is less then `bndry` then the case
-    `case_small` was added with and added entry with key `T` and value
-    the root of a p-adic tree containing all those values for which
-    this is the case.
 
     """
     Tbig, Tsmall = find_pAdic_roots(poly, pAdics=pAdics, variables=variables,
@@ -739,7 +678,6 @@ def _get_two_cases_invariant(poly, pAdics, T, bndry, case_big, case_small,
                                     precision_cap=precision_cap)
     if not Tbig.is_empty():
         case_big['T'] = Tbig
-        result.append(case_big)
         if verbose > 0:
             case_big['number'] = _get_case_number()
             print("Added case " + str(case_big['number']) +
@@ -753,9 +691,9 @@ def _get_two_cases_invariant(poly, pAdics, T, bndry, case_big, case_small,
             resultstr += ("modulo " + str(Tbig.pAdics().prime()) +
                        "^" + str(n))
             print(resultstr)
+        result.put(case_big)
     if not Tsmall.is_empty():
         case_small['T'] = Tsmall
-        result.append(case_small)
         if verbose > 0:
             case_small['number'] = _get_case_number()
             print("Added case " + str(case_small['number']) +
@@ -769,12 +707,12 @@ def _get_two_cases_invariant(poly, pAdics, T, bndry, case_big, case_small,
             resultstr += ("modulo " + str(Tsmall.pAdics().prime()) +
                           "^" + str(n))
             print(resultstr)
-    return result
+        result.put(case_small)
         
-def _get_number_of_roots_cases(poly_list, pAdics, T, name, general_case,
-                              variables=None, verbose=False, result=[],
-                              **kwds):
-    r"""Determines the possible roots a polynomial with as coefficients
+def _get_number_of_roots_cases(poly_list, pAdics, T, name,
+                               general_case, result, variables=None,
+                               verbose=False, **kwds):
+    r"""Determine the possible roots a polynomial with as coefficients
     multivariate polynomials can have.
 
     Let $L / K$ be an extension of number fields and let $Q$ be a
@@ -790,6 +728,18 @@ def _get_number_of_roots_cases(poly_list, pAdics, T, name, general_case,
     polynomial over the residue field of $Q$. This function determines
     how many roots this polynomial has over that residue field and for
     which value that number of roots occurs.
+
+    For each possible number of roots of the polynomial $F$ over the
+    residue field of $Q$ a copy of the case `general_case` is put into
+    `result` with as additional entries:
+
+    - An entry with as key the string given by `name` and as value a
+      number of roots the polynomial $F$ has over the residue field of
+      $Q$.
+
+    - An entry with as key 'T' and as value the root of a p-adic tree
+      containing all those values for the variables in the given tree
+      for which this number of roots for $F$ is attained.
 
     INPUT:
 
@@ -808,28 +758,13 @@ def _get_number_of_roots_cases(poly_list, pAdics, T, name, general_case,
     - ``general_case`` -- A dictionary that is a template for the
       cases to be returned
 
+    - ``result`` -- A queue in which to put the different cases of
+      this computation
+
     - ``variables`` -- A list of the variables of the polynomials or
       None if it should be determined from the polynomials
 
     - ``verbose`` -- Verbosity argument
-
-    - ``result`` -- A list of resulting cases to which the results of
-      this function should be appended
-
-    OUTPUT:
-
-    The list of cases `result` with some cases appended. For each
-    possible number of roots of the polynomial $F$ over the residue
-    field of $Q$ a copy of the case `general_case` is appended with as
-    additional entries:
-
-    - An entry with as key the string given by `name` and as value a
-      number of roots the polynomial $F$ has over the residue field of
-      $Q$.
-
-    - An entry with as key 'T' and as value the root of a p-adic tree
-      containing all those values for the variables in the given tree
-      for which this number of roots for $F$ is attained.
 
     """
     Tdict = {}
@@ -853,7 +788,6 @@ def _get_number_of_roots_cases(poly_list, pAdics, T, name, general_case,
         case = general_case.copy()
         case[name] = m
         case['T'] = Tm
-        result.append(case)
         if verbose > 0:
             case['number'] = _get_case_number()
             print("Added case " + str(case['number']) + ":")
@@ -873,9 +807,9 @@ def _get_number_of_roots_cases(poly_list, pAdics, T, name, general_case,
             resultstr += ("modulo " + str(Tm.pAdics().prime()) +
                        "^" + str(nT))
             print(resultstr)
-    return result
+        result.put(case)
     
-def _tate_step1(E, S, pAdics, T, E0, urst, urst0, **kwds):
+def _tate_step1(case, result, **kwds):
     r"""Perform step 1 of Tate's algorithm.
 
     Stop if the valuation of the discriminant of the elliptic curve is
@@ -895,51 +829,34 @@ def _tate_step1(E, S, pAdics, T, E0, urst, urst0, **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at step 1 and the case we
-    continue onto step 2, but only if some value of the variables
-    would give such a case.
-
     """
-    case_big = dict(E=E, next_step=2, E0=E0, urst=urst, urst0=urst0)
-    case_small = dict(E=E, vDelta=0, m=1, f=0, c=1, KS="I0", E0=E0,
-                      urst=urst, urst0=urst0) 
-    return _get_two_cases_invariant(S(E.discriminant()), pAdics, T, 1,
-                                    case_big, case_small, **kwds)
+    case_big = case.copy()
+    case_big['next'] = 'Step2T'
+    case_small = case.copy()
+    del case_small['next']
+    case_small.update(dict(vDelta=0, m=1, f=0, c=1, KS="I0"))
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    _get_two_cases_invariant(S(E.discriminant()), pAdics, T, 1,
+                             case_big, case_small, result, **kwds)
     
-def _tate_step2_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
-                  result=[], **kwds):
+def _tate_step2_t(case, result, verbose=False, **kwds):
     r"""Perform the transformation necessary before step 2 of Tate's
     algorithm.
 
@@ -952,43 +869,20 @@ def _tate_step2_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
-
-    - ``variables`` -- A list of the variables of the polynomial or
-      None if it should be determined from `S`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
-    - ``precision_cap`` -- A cap on the precision used for the
-      variables
-
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    include the possible transformations to put the elliptic curve in
-    the described form with the appropiate values for the variables
-    for this to be the case.
-
     """
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    urst = case['urst']
     R = pAdics.order()
     P = pAdics.prime_ideal()
     F = pAdics.residue_field()
@@ -1072,12 +966,12 @@ def _tate_step2_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
         xn = F.lift(point[0])
         yn = F.lift(point[1])
         En = E.rst_transform(xn,0,yn)
-        case = dict(next_step=2+1/2, T=Tn, E=En, E0=E0,
-                    urst=_urst_combine(urst, (1, xn, 0, yn)),
-                    urst0=urst0)
+        newCase = case.copy()
+        newCase.update(dict(next='Step2', T=Tn, E=En,
+                            urst=_urst_combine(urst, (1, xn, 0, yn))))
         if verbose > 0:
-            case['number'] = _get_case_number()
-            print("Added case " + str(case['number']) + ":")
+            newCase['number'] = _get_case_number()
+            print("Added case " + str(newCase['number']) + ":")
             print("Transform curve into")
             print(En)
             print("for")
@@ -1088,10 +982,9 @@ def _tate_step2_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
             resultstr += ("modulo " + str(Tn.pAdics().prime()) +
                           "^" + str(nT))
             print(resultstr)
-        result.append(case)
-    return result
+        result.put(newCase)
     
-def _tate_step2(E, S, pAdics, T, E0, urst, urst0, **kwds):
+def _tate_step2(case, result, **kwds):
     r"""Perform step 2 of Tate's algorithm.
 
     Stop if the valuation of the invariant $b_2$ of the elliptic curve
@@ -1103,50 +996,34 @@ def _tate_step2(E, S, pAdics, T, E0, urst, urst0, **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at step 2 and the case we
-    continue onto step 3, but only if some value of the variables
-    would give such a case.
-
     """
-    case_big = dict(E=E, next_step=3, E0=E0, urst=urst, urst0=urst0)
-    case_small = dict(E=E, f=1, KS="In", E0=E0, urst=urst,
-                      urst0=urst0) 
-    return _get_two_cases_invariant(S(E.b2()), pAdics, T, 1, case_big,
-                                    case_small, **kwds)
+    case_big = case.copy()
+    case_big.update(dict(next='Step3'))
+    case_small = case.copy()
+    del case_small['next']
+    case_small.update(dict(f=1, KS="In"))
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    _get_two_cases_invariant(S(E.b2()), pAdics, T, 1, case_big,
+                             case_small, result, **kwds)
 
-def _tate_step3(E, S, pAdics, T, E0, urst, urst0, **kwds):
+def _tate_step3(case, result, **kwds):
     r"""Perform step 3 of Tate's algorithm.
 
     Stop if the valuation of the invariant $a_6$ of the elliptic curve
@@ -1162,54 +1039,38 @@ def _tate_step3(E, S, pAdics, T, E0, urst, urst0, **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at step 3 and the case we
-    continue onto step 4, but only if some value of the variables
-    would give such a case.
-
     """
-    case_big = dict(E=E, next_step=4, E0=E0, urst=urst, urst0=urst0)
-    case_small = dict(E=E, KS="II", m=1, c=1, E0=E0, urst=urst,
-                      urst0=urst0)
+    case_big = case.copy()
+    case_big.update(dict(next='Step4'))
+    case_small = case.copy()
+    del case_small['next']
+    case_small.update(dict(KS="II", m=1, c=1))
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
     char = pAdics.characteristic()
     if char != 2 and char != 3:
         case_small['vDelta'] = 2
         case_small['f'] = 2
-    return _get_two_cases_invariant(S(E.a6()), pAdics, T, 2, case_big,
-                                    case_small, **kwds)
+    _get_two_cases_invariant(S(E.a6()), pAdics, T, 2, case_big,
+                             case_small, result, **kwds)
     
-def _tate_step4(E, S, pAdics, T, E0, urst, urst0, **kwds):
+def _tate_step4(case, result, **kwds):
     r"""Perform step 4 of Tate's algorithm.
 
     Stop if the valuation of the invariant $b_8$ of the elliptic curve
@@ -1225,54 +1086,38 @@ def _tate_step4(E, S, pAdics, T, E0, urst, urst0, **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at step 4 and the case we
-    continue onto step 5, but only if some value of the variables
-    would give such a case.
-
     """
-    case_big = dict(E=E, next_step=5, E0=E0, urst=urst, urst0=urst0)
-    case_small = dict(E=E, KS="III", m=2, c=2, E0=E0, urst=urst,
-                      urst0=urst0)
+    case_big = case.copy()
+    case_big['next'] = 'Step5'
+    case_small = case.copy()
+    del case_small['next']
+    case_small.update(dict(KS="III", m=2, c=2))
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
     char = pAdics.characteristic()
     if char != 2:
         case_small['vDelta'] = 3
         case_small['f'] = 2
-    return _get_two_cases_invariant(S(E.b8()), pAdics, T, 3, case_big,
-                                    case_small, **kwds)
+    _get_two_cases_invariant(S(E.b8()), pAdics, T, 3, case_big,
+                             case_small, result, **kwds)
 
-def _tate_step5(E, S, pAdics, T, E0, urst, urst0, **kwds):
+def _tate_step5(case, result, **kwds):
     r"""Perform step 5 of Tate's algorithm.
 
     Stop if the valuation of the invariant $b_6$ of the elliptic curve
@@ -1286,55 +1131,38 @@ def _tate_step5(E, S, pAdics, T, E0, urst, urst0, **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at step 5 and the case we
-    continue onto step 6, but only if some value of the variables
-    would give such a case.
-
     """
-    case_big = dict(E=E, next_step=6, E0=E0, urst=urst, urst0=urst0)
-    case_small = dict(E=E, KS="IV", m=3, E0=E0, urst=urst,
-                      urst0=urst0)
+    case_big = case.copy()
+    case_big['next'] = 'Step6T'
+    case_small = case.copy()
+    del case_small['next']
+    case_small.update(dict(KS="IV", m=3))
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
     char = pAdics.characteristic()
     if char != 3:
         case_small['vDelta'] = 4
         case_small['f'] = 2
-    return _get_two_cases_invariant(S(E.b6()), pAdics, T, 3,
-                                   case_big, case_small, **kwds)
+    _get_two_cases_invariant(S(E.b6()), pAdics, T, 3, case_big,
+                             case_small, result, **kwds)
 
-def _tate_step6_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
-                  result=[], **kwds):
+def _tate_step6_t(case, result, verbose=False):
     r"""Perform the transformation necessary before step 6 of Tate's
     algorithm.
 
@@ -1349,43 +1177,20 @@ def _tate_step6_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
-
-    - ``variables`` -- A list of the variables of the polynomial or
-      None if it should be determined from `S`
-    
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
-    - ``precision_cap`` -- A cap on the precision used for the
-      variables
-
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    include the possible transformations to put the elliptic curve in
-    the described form with the appropiate values for the variables
-    for this to be the case.
-
     """
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    urst = case['urst']
     pi = pAdics.uniformizer()
     char = pAdics.characteristic()
     R = pAdics.order()
@@ -1444,12 +1249,12 @@ def _tate_step6_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
         s = F.lift(alphaBetaPair[0])
         t = F.lift(alphaBetaPair[1])*pi
         En = E.rst_transform(0, s, t)
-        case = dict(next_step=6+1/2, T=Tn, E=En, E0=E0,
-                    urst=_urst_combine(urst, (1, 0, s, t)),
-                    urst0=urst0)
+        newCase = case.copy()
+        newCase.update(dict(next='Step6', T=Tn, E=En,
+                            urst=_urst_combine(urst, (1, 0, s, t))))
         if verbose > 0:
-            case['number'] = _get_case_number()
-            print("Added case " + str(case['number']) + ":")
+            newCase['number'] = _get_case_number()
+            print("Added case " + str(newCase['number']) + ":")
             print("Transform curve into")
             print(En)
             print("for")
@@ -1460,10 +1265,9 @@ def _tate_step6_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
             resultstr += ("modulo " + str(Tn.pAdics().prime()) +
                           "^" + str(nT))
             print(resultstr)
-        result.append(case)
-    return result
+        result.put(newCase)
 
-def _tate_step6(E, S, pAdics, T, E0, urst, urst0, **kwds):
+def _tate_step6(case, result, **kwds):
     r"""Perform step 6 of Tate's algorithm.
 
     Stop if the polynomial .. MATH::
@@ -1489,57 +1293,40 @@ def _tate_step6(E, S, pAdics, T, E0, urst, urst0, **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at step 6 and the case we
-    continue onto step 7, but only if some value of the variables
-    would give such a case.
-
     """
-    case_big = dict(E=E, next_step=7, E0=E0, urst=urst, urst0=urst0)
-    case_small = dict(E=E, KS="I0*", m=5, E0=E0, urst=urst,
-                      urst0=urst0)
+    case_big = case.copy()
+    case_big['next'] = 'Step7'
+    case_small = case.copy()
+    del case_small['next']
+    case_small.update(dict(KS="I0*", m=5))
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
     char = pAdics.characteristic()
     if char != 2:
         case_small['vDelta'] = 6
         case_small['f'] = 2
     D = S(-4*E.a2()^3*E.a6() + E.a2()^2*E.a4()^2 - 4*E.a4()^3 - 27*E.a6()^2 +
           18*E.a2()*E.a4()*E.a6())
-    return _get_two_cases_invariant(D, pAdics, T, 7, case_big, case_small,
-                                    **kwds)
+    _get_two_cases_invariant(D, pAdics, T, 7, case_big, case_small,
+                             result, **kwds)
         
-def _tate_step7(E, S, pAdics, T, E0, urst, urst0, case, restrictions,
-                **kwds):
+def _tate_step7(case, result, restrictions, **kwds):
     r"""Perform step 7 of Tate's algorithm.
 
     Stop if the polynomial .. MATH::
@@ -1566,74 +1353,43 @@ def _tate_step7(E, S, pAdics, T, E0, urst, urst0, case, restrictions,
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
+    - ``restrictions`` -- A list of values to which the computation
+      should be limited. See the argument `only_calculate` in
+      :func:`tates_algorithm` for more information.
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at step 7, the case we
-    continue onto step 8 and the case we continue with the step 7
-    subalgorithm, but only if some value of the variables would give
-    such a case.
-
     """
-    case_big = dict(E=E, next_step=8, E0=E0, urst=urst, urst0=urst0)
-    if pAdics.characteristic() == 2 or \
-       'type' in restrictions or \
-       _should_calculate_c(case, restrictions):
-        case_small = dict(E=E, next_step=7+_encode_quotient(1,0),
-                          E0=E0, urst=urst, urst0=urst0)
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    case_big = case.copy()
+    case_big['next'] = 'Step8T'
+    case_small = case.copy()
+    if (pAdics.characteristic() == 2 or 'type' in restrictions or
+        _should_calculate_c(case, restrictions)):
+        case_small['next'] = 'Step7(1)T'
     else:
-        case_small = dict(E=E, KS="In*", f=2, E0=E0, urst=urst,
-                          urst0=urst0)
-    return _get_two_cases_invariant(S(3*E.a4() - (E.a2())^2), pAdics, T, 3,
-                                   case_big, case_small, **kwds)
-
-def _encode_quotient(n, b):
-    r"""An injective map $\N \times {0,1} \to \Q \cap (0,1)$"""
-    m = 2*n + b
-    return 1 / (m+1)
-
-def _decode_quotient(q):
-    r"""A left inverse of :func:`_encode_quotient`"""
-    m = ZZ(1/q) - 1
-    if is_even(m):
-        n = ZZ(m/2)
-        b = 0
-    else:
-        n = ZZ((m - 1)/2)
-        b = 1   
-    return n , b
+        del case_small['next']
+        case_small.update(dict(KS="In*", f=2))
+    _get_two_cases_invariant(S(3*E.a4() - (E.a2())^2), pAdics, T, 3,
+                             case_big, case_small, result,
+                             **kwds)
             
-def _tate_step7sub_t(E, S, pAdics, T, E0, urst, urst0, n,
-                     verbose=False, result=[], **kwds):
+def _tate_step7sub_t(n, case, result, verbose=False):
     r"""Perform the transformation necessary before a step in the
     subalgorithm of step 7 of Tate's algorithm.
 
@@ -1648,46 +1404,23 @@ def _tate_step7sub_t(E, S, pAdics, T, E0, urst, urst0, n,
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
-
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
-
     - ``n`` -- The number of the step in the subalgorithm that will be
       performed after this transformation.
 
-    - ``variables`` -- A list of the variables of the polynomial or
-      None if it should be determined from `S`
-    
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
+
+    - ``result`` -- A queue in which to put the different cases of
+      this step
+
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
-    - ``precision_cap`` -- A cap on the precision used for the
-      variables
-
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    include the possible transformations to put the elliptic curve in
-    the described form with the appropiate values for the variables
-    for this to be the case.
-
     """
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    urst = case['urst']
     R = pAdics.order()
     P = pAdics.prime_ideal()
     F = pAdics.residue_field()
@@ -1789,12 +1522,12 @@ def _tate_step7sub_t(E, S, pAdics, T, E0, urst, urst0, n,
             r = 0
             t = pi^k * F.lift(change)
         En = E.rst_transform(r, 0, t)
-        case = dict(next_step=7 + _encode_quotient(n ,1), T=Tn, E=En,
-                    E0=E0, urst0=urst0,
-                    urst=_urst_combine(urst, (1, r, 0, t)))
+        newCase = case.copy()
+        newCase.update(dict(next=f"Step7({n})", T=Tn, E=En,
+                            urst=_urst_combine(urst, (1, r, 0, t))))
         if verbose > 0:
-            case['number'] = _get_case_number()
-            print("Added case " + str(case['number']) + ":")
+            newCase['number'] = _get_case_number()
+            print("Added case " + str(newCase['number']) + ":")
             print("Transform curve into")
             print(En)
             print("for")
@@ -1805,11 +1538,9 @@ def _tate_step7sub_t(E, S, pAdics, T, E0, urst, urst0, n,
             resultstr += ("modulo " + str(Tn.pAdics().prime()) +
                           "^" + str(nT))
             print(resultstr)
-        result.append(case)
+        result.put(newCase)
         
-    return result
-        
-def _tate_step7sub(E, S, pAdics, T, E0, urst, urst0, n, restrictions, **kwds):
+def _tate_step7sub(n, case, result, restrictions, **kwds):
     r"""Perform a step in the subalgorithm of step 7 of Tate's algorithm.
 
     In step $n$ of this subalgorithm we have different stopping
@@ -1845,64 +1576,53 @@ def _tate_step7sub(E, S, pAdics, T, E0, urst, urst0, n, restrictions, **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
-
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
-
     - ``n`` -- The number of the step of the subalgorithm that will be
       performed
+
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
+
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at this step and the case
-    we continue onto the next step, but only if some value of the
-    variables would give such a case.
-
     """
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
     if (n > 4*pAdics.valuation(2) and
         len(restrictions) > 0):
-        case = dict(E=E, KS="In*", E0=E0)
-        return _get_cases_invariant(S(E.c4()), pAdics, T, 'f', case,
-                                    **kwds)
-    case_big = dict(E=E, next_step=7+_encode_quotient(n+1,0), E0=E0,
-                    urst=urst, urst0=urst0)
-    case_small = dict(E=E, KS="I"+str(n)+"*", m=5+n, E0=E0, urst=urst,
-                      urst0=urst0)
-    if is_odd(n):
-        return _get_two_cases_invariant(S(E.a3()^2 + 4*E.a6()), pAdics, T,
-                                        n + 4, case_big, case_small, **kwds)
+        newCase = case.copy()
+        del newCase['next']
+        newCase.update(dict(KS="In*"))
+        _get_cases_invariant(S(E.c4()), pAdics, T, 'f', newCase,
+                             result, **kwds)
     else:
-        return _get_two_cases_invariant(S(E.a4()^2 - 4*E.a2()*E.a6()), pAdics,
-                                        T, n + 5, case_big, case_small, **kwds)
+        case_big = case.copy()
+        case_big['next'] = f"Step7({n+1})T"
+        case_small = case.copy()
+        del case_small['next']
+        case_small.update(dict(KS=f"I{n}*", m=5+n))
+        if is_odd(n):
+            _get_two_cases_invariant(S(E.a3()^2 + 4*E.a6()), pAdics,
+                                     T, n + 4, case_big,
+                                     case_small, result,
+                                     **kwds)
+        else:
+            _get_two_cases_invariant(S(E.a4()^2 - 4*E.a2()*E.a6()),
+                                     pAdics, T, n + 5,
+                                     case_big, case_small,
+                                     result, **kwds)
      
-def _tate_step8_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
-                  result=[], **kwds):
+def _tate_step8_t(case, result, verbose=False):
     r"""Perform the transformation necessary before step 8 of Tate's
     algorithm.
 
@@ -1916,43 +1636,20 @@ def _tate_step8_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
-
-    - ``variables`` -- A list of the variables of the polynomial or
-      None if it should be determined from `S`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
-    - ``precision_cap`` -- A cap on the precision used for the
-      variables
-
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    include the possible transformations to put the elliptic curve in
-    the described form with the appropiate values for the variables
-    for this to be the case.
-
     """
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    urst = case['urst']
     R = pAdics.order()
     P = pAdics.prime_ideal()
     F = pAdics.residue_field()
@@ -1963,12 +1660,12 @@ def _tate_step8_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
         # the transformation is always the same
         r = -E.a2() * F.lift(F(3)^(-1))
         En = E.rst_transform(r, 0, 0)
-        case = dict(next_step=8+1/2, T=T, E0=E0, E=En,
-                    urst=_urst_combine(urst, (1, r, 0, 0)),
-                    urst0=urst0)
+        newCase = case.copy()
+        newCase.update(dict(next='Step8', E=En,
+                            urst=_urst_combine(urst, (1, r, 0, 0))))
         if verbose > 0:
-            case['number'] = _get_case_number()
-            print("Added case " + str(case['number']) + ":")
+            newCase['number'] = _get_case_number()
+            print("Added case " + str(newCase['number']) + ":")
             print("Transform curve into")
             print(En)
             print("for")
@@ -1979,7 +1676,7 @@ def _tate_step8_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
             resultstr += ("modulo " + str(T.pAdics().prime()) +
                           "^" + str(nT))
             print(resultstr)
-        result.append(case)
+        result.put(newCase)
     else:
         # In characteristic 3
         # Find the integer s such that a^s is the cube root of a
@@ -2009,12 +1706,12 @@ def _tate_step8_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
         for (change, Tn) in changeDict.items():
             r = -pi * F.lift(change)
             En = E.rst_transform(r, 0, 0)
-            case = dict(next_step=8+1/2, T=Tn, E=En, E0=E0,
-                        urst=_urst_combine(urst, (1, r, 0, 0)),
-                        urst0=urst0)
+            newCase = case.copy()
+            newCase.update(dict(next='Step8', T=Tn, E=En,
+                                urst=_urst_combine(urst, (1, r, 0, 0))))
             if verbose > 0:
-                case['number'] = _get_case_number()
-                print("Added case " + str(case['number']) + ":")
+                newCase['number'] = _get_case_number()
+                print("Added case " + str(newCase['number']) + ":")
                 print("Transform curve into")
                 print(En)
                 print("for")
@@ -2025,11 +1722,9 @@ def _tate_step8_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
                 resultstr += ("modulo " + str(Tn.pAdics().prime()) +
                               "^" + str(nT))
                 print(resultstr)
-            result.append(case)
-        
-    return result
+            result.put(newCase)
             
-def _tate_step8(E, S, pAdics, T, E0, urst, urst0, **kwds):
+def _tate_step8(case, result, **kwds):
     r"""Perform step 8 of Tate's algorithm.
 
     Stop if the polynomial .. MATH::
@@ -2050,55 +1745,39 @@ def _tate_step8(E, S, pAdics, T, E0, urst, urst0, **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at step 8 and the case we
-    continue onto step 9, but only if some value of the variables
-    would give such a case.
-
     """
-    case_big = dict(E=E, next_step=9, E0=E0, urst=urst, urst0=urst0)
-    case_small = dict(E=E, KS="IV*", m=7, E0=E0, urst=urst,
-                      urst0=urst0)
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    case_big = case.copy()
+    case_big['next'] = 'Step9T'
+    case_small = case.copy()
+    del case_small['next']
+    case_small.update(dict(KS="IV*", m=7))
     char = pAdics.characteristic()
     if char != 3:
         case_small['vDelta'] = 8
         case_small['f'] = 2
-    return _get_two_cases_invariant(S( ( E.a3() )^2 + 4 * E.a6() ), pAdics, T,
-                                   5, case_big, case_small, **kwds)
+    _get_two_cases_invariant(S( ( E.a3() )^2 + 4 * E.a6() ), pAdics,
+                             T, 5, case_big, case_small, result,
+                             **kwds)
         
-def _tate_step9_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
-                  result=[], **kwds):
+def _tate_step9_t(case, result, verbose=False):
     r"""Perform the transformation necessary before step 9 of Tate's
     algorithm.
 
@@ -2112,43 +1791,20 @@ def _tate_step9_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
-
-    - ``variables`` -- A list of the variables of the polynomial or
-      None if it should be determined from `S`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
-    - ``precision_cap`` -- A cap on the precision used for the
-      variables
-
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    include the possible transformations to put the elliptic curve in
-    the described form with the appropiate values for the variables
-    for this to be the case.
-
     """
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    urst = case['urst']
     R = pAdics.order()
     P = pAdics.prime_ideal()
     F = pAdics.residue_field()
@@ -2159,12 +1815,12 @@ def _tate_step9_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
         # the transformation is always the same
         t = -E.a3() * F.lift(F(2)^(-1))
         En = E.rst_transform(0, 0, t)
-        case = dict(next_step=9+1/2, T=T, E0=E0, E=En,
-                    urst=_urst_combine(urst, (1, 0, 0, t)),
-                    urst0=urst0)
+        newCase = case.copy()
+        newCase.update(dict(next='Step9', E=En,
+                            urst=_urst_combine(urst, (1, 0, 0, t))))
         if verbose > 0:
-            case['number'] = _get_case_number()
-            print("Added case " + str(case['number']) + ":")
+            newCase['number'] = _get_case_number()
+            print("Added case " + str(newCase['number']) + ":")
             print("Transform curve into")
             print(En)
             print("for")
@@ -2175,7 +1831,7 @@ def _tate_step9_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
             resultstr += ("modulo " + str(T.pAdics().prime()) +
                           "^" + str(nT))
             print(resultstr)
-        result.append(case)
+        result.put(newCase)
     else:
         # In characteristic 2
         # Determine the integers s such that a^s is the square root of a
@@ -2207,12 +1863,12 @@ def _tate_step9_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
         for (change, Tn) in changeDict.items():
             t = -pi^2 * F.lift(change)
             En = E.rst_transform(0, 0, t)
-            case = dict(next_step=9+1/2, T=Tn, E=En, E0=E0,
-                        urst=_urst_combine(urst, (1, 0, 0, t)),
-                        urst0=urst0)
+            newCase = case.copy()
+            newCase.update(dict(next='Step9', T=Tn, E=En,
+                                urst=_urst_combine(urst, (1, 0, 0, t))))
             if verbose > 0:
-                case['number'] = _get_case_number()
-                print("Added case " + str(case['number']) + ":")
+                newCase['number'] = _get_case_number()
+                print("Added case " + str(newCase['number']) + ":")
                 print("Transform curve into")
                 print(En)
                 print("for")
@@ -2223,11 +1879,9 @@ def _tate_step9_t(E, S, pAdics, T, E0, urst, urst0, verbose=False,
                 resultstr += ("modulo " + str(Tn.pAdics().prime()) +
                               "^" + str(nT))
                 print(resultstr)
-            result.append(case)
-        
-    return result
+            result.put(newCase)
             
-def _tate_step9(E, S, pAdics, T, E0, urst, urst0, **kwds):
+def _tate_step9(case, result, **kwds):
     r"""Perform step 9 of Tate's algorithm.
 
     Stop if the valuation of the invariant $a_4$ of the elliptic curve
@@ -2243,54 +1897,38 @@ def _tate_step9(E, S, pAdics, T, E0, urst, urst0, **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at step 9 and the case we
-    continue onto step 10, but only if some value of the variables
-    would give such a case.
-
     """
-    case_big = dict(E=E, next_step=10, E0=E0, urst=urst, urst0=urst0)
-    case_small = dict(E=E, KS="III*", m=8, c=2, E0=E0, urst=urst,
-                      urst0=urst0)
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    case_big = case.copy()
+    case_big['next'] = 'Step10'
+    case_small = case.copy()
+    del case_small['next']
+    case_small.update(dict(KS="III*", m=8, c=2))
     char = pAdics.characteristic()
     if char != 2:
         case_small['vDelta'] = 9
         case_small['f'] = 2
-    return _get_two_cases_invariant(S( E.a4() ), pAdics, T, 4, case_big,
-                                    case_small, **kwds)
+    _get_two_cases_invariant(S(E.a4()), pAdics, T, 4, case_big,
+                             case_small, result, **kwds)
             
-def _tate_step10(E, S, pAdics, T, E0, urst, urst0, **kwds):
+def _tate_step10(case, result, **kwds):
     r"""Perform step 10 of Tate's algorithm.
 
     Stop if the valuation of the invariant $a_6$ of the elliptic curve
@@ -2306,91 +1944,58 @@ def _tate_step10(E, S, pAdics, T, E0, urst, urst0, **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``urst`` -- The change in Weierstrass model to get from the
-      original curve to `E`
-    
-    - ``urst0`` -- The change in Weierstrass model to get from the
-      original curve to `E0`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. Added cases
-    could include the case in which we stop at step 10 and the case we
-    continue onto step 11, but only if some value of the variables
-    would give such a case.
-
     """
-    case_big = dict(E=E, next_step=11, E0=E0, urst=urst, urst0=urst0)
-    case_small = dict(E=E, KS="II*", m=9, c=1, E0=E0, urst=urst,
-                      urst0=urst0)
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    case_big = case.copy()
+    case_big['next'] = 'Step11'
+    case_small = case.copy()
+    del case_small['next']
+    case_small.update(dict(KS="II*", m=9, c=1))
     char = pAdics.characteristic()
     if char != 2 and char != 3:
         case_small['vDelta'] = 10
         case_small['f'] = 2
-    return _get_two_cases_invariant(S(E.a6()), pAdics, T, 6,
-                                   case_big, case_small, **kwds)
+    _get_two_cases_invariant(S(E.a6()), pAdics, T, 6, case_big,
+                             case_small, result, **kwds)
                                
-def _tate_step11(E, S, pAdics, T, E0, urst, urst0,
-                 verbose=False, result=[], **kwds):
-    r"""Perform step 1 of Tate's algorithm.
+def _tate_step11(case, result, verbose=False):
+    r"""Perform step 11 of Tate's algorithm.
 
     Rescale the curve and start over at step 1.
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``E0`` -- The current candidate of a minimal model for `E`
-
-    - ``variables`` -- A list of the variables of the polynomial or
-      None if it should be determined from `S`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
-    - ``precision_cap`` -- A cap on the precision used for the
-      variables
-
-    OUTPUT:
-
-    The list given by `result` with one additional case. This case
-    corresponds to the case in which we rescaled the curve and start
-    over at step 1.
-
     """
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    urst = case['urst']
     pi = pAdics.uniformizer()
     a1 = S(E.a1()/pi)
     a2 = S(E.a2()/(pi^2))
@@ -2399,11 +2004,12 @@ def _tate_step11(E, S, pAdics, T, E0, urst, urst0,
     a6 = S(E.a6()/(pi^6))
     E = EllipticCurve([a1,a2,a3,a4,a6])
     urst=_urst_combine(urst, (pi, 0, 0, 0))
-    case = dict(next_step=1, T=T, E=E, E0=E, urst=urst,
-                       urst0=urst)
+    newCase = case.copy()
+    newCase.update(dict(next='Step1', E=E, E0=E, urst=urst,
+                        urst0=urst))
     if verbose > 0:
-        case['number'] = _get_case_number()
-        print("Added case " + str(case['number']) + ":")
+        newCase['number'] = _get_case_number()
+        print("Added case " + str(newCase['number']) + ":")
         print("Transform curve into")
         print(E)
         print("for")
@@ -2414,8 +2020,7 @@ def _tate_step11(E, S, pAdics, T, E0, urst, urst0,
         resultstr += ("modulo " + str(T.pAdics().prime()) +
                       "^" + str(nT))
         print(resultstr)
-    result.append(case)
-    return result
+    result.put(newCase)
     
 def _should_calculate_vDelta(case, restrictions):
     r"""Determine whether one should calculate the valuation of the
@@ -2439,44 +2044,34 @@ def _should_calculate_vDelta(case, restrictions):
              _should_calculate_f(case, restrictions) or
              _should_calculate_n(case, restrictions)))
 
-def _tate_calculate_vDelta(E, S, pAdics, T, case, **kwds):
+def _tate_calculate_vDelta(case, result, **kwds):
     r"""Compute the valuation of the discriminant.
 
     Compute the valuation of the discriminant of the elliptic curve.
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. For each
-    possible valuation of the discriminant a case is added which
-    copies the given case but with the appropiate valuation and the
-    values for the variables for which this valuation is attained.
-
     """
-    return _get_cases_invariant(S(E.discriminant()), pAdics, T, 'vDelta', case,
-                                **kwds)
+    E = case['E']
+    T = case['T']
+    S = case['S']
+    pAdics = case['pAdics']
+    _get_cases_invariant(S(E.discriminant()), pAdics, T,
+                         'vDelta', case, result, **kwds)
 
 def _should_calculate_m(case, restrictions):
     r"""Determine whether one should calculate the number of components.
@@ -2497,7 +2092,7 @@ def _should_calculate_m(case, restrictions):
             (len(restrictions) == 0 or
              _should_calculate_f(case, restrictions)))
     
-def _tate_calculate_m(E, S, pAdics, T, case, result=[], **kwds):
+def _tate_calculate_m(case, result):
     r"""Compute the number of components.
 
     Compute the number of components of the elliptic curve over the
@@ -2506,33 +2101,11 @@ def _tate_calculate_m(E, S, pAdics, T, case, result=[], **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``variables`` -- A list of the variables of the polynomial or
-      None if it should be determined from `S`
-    
-    - ``verbose`` -- Verbosity argument
-
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
-    - ``precision_cap`` -- A cap on the precision used for the
-      variables
-
-    OUTPUT:
-
-    The list given by `result` with some added cases. For each
-    possible number of components a case is added which copies the
-    given case but with the appropiate valuation and the values for
-    the variables for which this number is attained.
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     """
     KS = case['KS']
@@ -2558,8 +2131,7 @@ def _tate_calculate_m(E, S, pAdics, T, case, result=[], **kwds):
             case['m'] = 1
         else: #In
             case['m'] = case['vDelta']
-    result.append(case)
-    return result
+    result.put(case)
 
 def _should_calculate_c(case, restrictions):
     r"""Determine whether one should calculate the order of the group of
@@ -2579,7 +2151,7 @@ def _should_calculate_c(case, restrictions):
     """
     return (not ('c' in case) and len(restrictions) == 0)
     
-def _tate_calculate_c(E, S, pAdics, T, case, result=[], **kwds):
+def _tate_calculate_c(case, result, **kwds):
     r"""Compute the order of the group of components.
 
     Compute the number of components of the special fiber of the
@@ -2588,101 +2160,99 @@ def _tate_calculate_c(E, S, pAdics, T, case, result=[], **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
     
     - ``verbose`` -- Verbosity argument
 
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. For each
-    possible order of the group of components a case is added which
-    copies the given case but with the appropiate valuation and the
-    values for the variables for which this order is attained.
-
     """
+    E = case['E']
+    T = case['T']
+    S = case['S']
     KS = case['KS']
+    pAdics = case['pAdics']
     pi = pAdics.uniformizer()
     if KS.endswith('*'):
         if KS.startswith('IV'): #IV*
             if 'roots' in case:
                 case['c'] = case['roots'] + 1
+                result.put(case)
             else:
-                return _get_number_of_roots_cases([S(1), S(E.a3()/(pi^2)),
-                                                   S(-E.a6()/(pi^4))], pAdics,
-                                                  T, 'roots', case,
-                                                  result=result, **kwds)
+                _get_number_of_roots_cases([S(1), S(E.a3()/(pi^2)),
+                                            S(-E.a6()/(pi^4))],
+                                           pAdics, T, 'roots', case,
+                                           result, **kwds)
         elif KS.startswith('III'): #III*
             case['c'] = 2
+            result.put(case)
         elif KS.startswith('II'): #II*
             case['c'] = 1
+            result.put(case)
         elif KS.startswith('I0'): #I0*
             if 'roots' in case:
                 case['c'] = case['roots'] + 1
+                result.put(case)
             else:
-                return _get_number_of_roots_cases([S(1), S(E.a2()/pi),
-                                                   S(E.a4()/(pi^2)),
-                                                   S(E.a6()/(pi^3))], pAdics,
-                                                  T, 'roots', case,
-                                                  result=result, **kwds)
+                _get_number_of_roots_cases([S(1), S(E.a2()/pi),
+                                            S(E.a4()/(pi^2)),
+                                            S(E.a6()/(pi^3))], pAdics,
+                                           T, 'roots', case, result,
+                                           **kwds)
         else: #In*
             if 'roots' in case:
                 case['c'] = case['roots'] + 2
+                result.put(case)
             else:
                 n = Integer(KS[1:-1])
                 if is_odd(n):
                     k = ZZ((n+3)/2)
-                    return _get_number_of_roots_cases([S(1),
-                                                       S(E.a3()/(pi^(k))),
-                                                       S(-E.a6()/(pi^(2*k)))],
-                                                      pAdics, T, 'roots', case,
-                                                      result=result, **kwds)
+                    _get_number_of_roots_cases([S(1),
+                                                S(E.a3()/(pi^(k))),
+                                                S(-E.a6()/(pi^(2*k)))],
+                                               pAdics, T, 'roots',
+                                               case, result, **kwds)
                 else:
                     k = ZZ((n+2)/2)
-                    return _get_number_of_roots_cases([S(E.a2()/pi),
-                                                       S(E.a4()/(pi^(k+1))),
-                                                       S(E.a6()/(pi^(2*k+1)))],
-                                                      pAdics, T, 'roots', case,
-                                                      result=result, **kwds)
+                    _get_number_of_roots_cases([S(E.a2()/pi),
+                                                S(E.a4()/(pi^(k+1))),
+                                                S(E.a6()/(pi^(2*k+1)))],
+                                               pAdics, T, 'roots',
+                                               case, result, **kwds)
     else:
         if KS.startswith('IV'): #IV
             if 'roots' in case:
                 case['c'] = case['roots'] + 1
+                result.put(case)
             else:
-                return _get_number_of_roots_cases([S(1), S(E.a3()/pi),
-                                                   S(-E.a6()/(pi^2))], pAdics,
-                                                  T, 'roots', case,
-                                                  result=result, **kwds)
+                _get_number_of_roots_cases([S(1), S(E.a3()/pi),
+                                            S(-E.a6()/(pi^2))],
+                                           pAdics, T, 'roots', case,
+                                           result, **kwds)
         elif KS.startswith('III'): #III
             case['c'] = 2
+            result.put(case)
         elif KS.startswith('II'): #II
             case['c'] = 1
+            result.put(case)
         elif KS.startswith('I0'): #II
             case['c'] = 1
+            result.put(case)
         else: #In
             if case['split']:
                 case['c'] = case['vDelta']
+                result.put(case)
             else:
                 case['c'] = (1 if is_odd(case['vDelta']) else 2)
-
-    result.append(case)
-    return result
+                result.put(case)
 
 def _should_calculate_f(case, restrictions):
     r"""Determine whether one should calculate the conductor exponent.
@@ -2703,7 +2273,7 @@ def _should_calculate_f(case, restrictions):
                                        'conductor' in restrictions or
                                        'reduction_type' in restrictions))
     
-def _tate_calculate_f(E, S, pAdics, T, case, result=[], **kwds):
+def _tate_calculate_f(case, result):
     r"""Compute the conductor exponent.
 
     Compute exponent of the conductor of the elliptic curve at the
@@ -2711,38 +2281,15 @@ def _tate_calculate_f(E, S, pAdics, T, case, result=[], **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``variables`` -- A list of the variables of the polynomial or
-      None if it should be determined from `S`
-    
-    - ``verbose`` -- Verbosity argument
-
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
-    - ``precision_cap`` -- A cap on the precision used for the
-      variables
-
-    OUTPUT:
-
-    The list given by `result` with some added cases. For each
-    possible exponent of the conductor a case is added which copies
-    the given case but with the appropiate valuation and the values
-    for the variables for which this exponent is attained.
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     """
     case['f'] = case['vDelta'] - case['m'] + 1
-    result.append(case)
-    return result
+    result.put(case)
 
 def _should_calculate_n(case, restrictions):
     r"""Determine whether one should calculate the number $n$ in the
@@ -2763,7 +2310,7 @@ def _should_calculate_n(case, restrictions):
     return (case['KS'].count('n') > 0 and (len(restrictions) == 0 or
                                            'type' in restrictions))
     
-def _tate_calculate_n(E, S, pAdics, T, case, result=[], **kwds):
+def _tate_calculate_n(case, result):
     r"""Compute the number $n$ in $I_n$ or $I_n^*$.
 
     Compute the number $n$ if the elliptic curve at the prime of the
@@ -2771,33 +2318,11 @@ def _tate_calculate_n(E, S, pAdics, T, case, result=[], **kwds):
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
-
-    - ``variables`` -- A list of the variables of the polynomial or
-      None if it should be determined from `S`
-    
-    - ``verbose`` -- Verbosity argument
-
-    - ``result`` -- A list of resulting cases to which the cases
-      determined by this function should be added.
-
-    - ``precision_cap`` -- A cap on the precision used for the
-      variables
-
-    OUTPUT:
-
-    The list given by `result` with some added cases. For each
-    possible $n$ a case is added which copies the given case but with
-    the appropiate valuation and the values for the variables for
-    which this $n$ is attained.
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     """
     KS = case['KS']
@@ -2805,8 +2330,7 @@ def _tate_calculate_n(E, S, pAdics, T, case, result=[], **kwds):
         case['KS'] = KS.replace('n', str(case['vDelta'] - 4 - case['f']))
     else: #In
         case['KS'] = KS.replace('n', str(case['vDelta']))
-    result.append(case)
-    return result
+    result.put(case)
 
 def _should_calculate_split(case, restrictions):
     r"""Determine whether one should calculate whether the reduction is
@@ -2829,25 +2353,19 @@ def _should_calculate_split(case, restrictions):
             (case['f'] == 1 and not ('split' in case)))
             
 
-def _tate_calculate_split(E, S, pAdics, T, case, result=[], **kwds):
+def _tate_calculate_split(case, result, **kwds):
     r"""Compute if split or non-split multiplicative reduction.
 
     INPUT:
 
-    - ``E`` -- The elliptic curve to work on
+    - ``case`` -- A dictionary containing the data of the case on
+      which to perform this step
 
-    - ``S`` -- The polynomial ring over which the coefficients of `E`
-      should live
-
-    - ``pAdics`` -- The p-adics to be used
-
-    - ``T`` -- The root of a p-adic tree containing the possible value
-      of the variables of `S`
+    - ``result`` -- A queue in which to put the different cases of
+      this step
 
     - ``variables`` -- A list of the variables of the polynomial or
       None if it should be determined from `S`
-    
-    - ``verbose`` -- Verbosity argument
 
     - ``result`` -- A list of resulting cases to which the cases
       determined by this function should be added.
@@ -2855,29 +2373,23 @@ def _tate_calculate_split(E, S, pAdics, T, case, result=[], **kwds):
     - ``precision_cap`` -- A cap on the precision used for the
       variables
 
-    OUTPUT:
-
-    The list given by `result` with some added cases. If the elliptic
-    curve can have split multiplicative reduction at the prime of the
-    p-adics, adds a case for that with the appropiate values for the
-    variables. If the elliptic curve can have non-split multiplicative
-    reduction at the prime of the p-adics, adds a case for that with
-    the appropiate values for the variables.
-
     """
     if 'roots' in case:
         if case['roots'] > 0:
             case['split'] = True
         else:
             case['split'] = False
-        result.append(case)
-        return result
+        result.put(case)
     else:
-        return _get_number_of_roots_cases([S(1), S(E.a1()), S(-E.a2())],
-                                          pAdics, T, 'roots', case,
-                                          result=result, **kwds)
+        E = case['E']
+        T = case['T']
+        S = case['S']
+        pAdics = case['pAdics']
+        _get_number_of_roots_cases([S(1), S(E.a1()), S(-E.a2())],
+                                   pAdics, T, 'roots', case, result,
+                                   **kwds)
     
-def _tate_finish(case, restrictions, result=[], variables=None, **kwds):
+def _tate_finish(case, restrictions, result=[], variables=None):
     r"""Turn a case into a final result
 
     INPUT:
@@ -3035,13 +2547,17 @@ def _init_initial_values(initial_values, pAdics, variables):
                          str(initial_values))
     return initial_values
     
-def _init_cases(T, E, verbose):
-    firstCase = dict(next_step=1, T=T.root(), E=E, E0=E,
-                     urst=(1, 0, 0, 0), urst0=(1, 0, 0, 0))
+def _init_cases(T, E, S, pAdics, verbose):
+    firstCase = dict(next='Step1', T=T.root(), E=E, E0=E,
+                     pAdics=pAdics, S=S,
+                     urst=(1, 0, 0, 0),
+                     urst0=(1, 0, 0, 0))
     if verbose > 1:
         _init_case_number()
         firstCase['number'] = "0"
-    return [firstCase], []
+    result = Queue()
+    result.put(firstCase)
+    return result, []
     
 def _init_str_list(str_list):
     if isinstance(str_list, str) or not hasattr(str_list, '__iter__'):
