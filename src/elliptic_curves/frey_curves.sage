@@ -148,6 +148,7 @@ from modular_method.elliptic_curves.Qcurves import Qcurve_base as Qcurve
 from modular_method.elliptic_curves.Qcurves import _rational_maps_of_urst
 from modular_method.elliptic_curves.Qcurves import _scalar_of_rational_maps
 from modular_method.elliptic_curves.tates_algorithm import tates_algorithm
+from modular_method.elliptic_curves.tates_algorithm import tates_algorithm_multiple
 from modular_method.elliptic_curves.twist import is_twist
 
 from modular_method.padics.pAdic_base import pAdicBase
@@ -2320,6 +2321,93 @@ class FreyQcurve(FreyCurve, Qcurve):
         return FreyQcurve(ainvs, isogenies=isogenies,
                           parameter_ring=self._R,
                           condition=self._condition).minimize_fields()
+    
+    @cached_method(key=(lambda self, p, c, v, pc:
+                        (p, (self._condition if c is None else c), pc)))
+    def conductor_exponent(self, prime, condition=None, verbose=False,
+                           precision_cap=20):
+        r"""Give the conductor exponent of this curve at a given prime.
+
+        INPUT:
+
+        - ``prime`` -- A prime of the definition field of this Frey
+          curve. This should be a prime number if the definition field
+          is $\QQ$ or a maximal ideal of the ring of integers
+          otherwise.
+
+        - ``condition`` -- A Condition or None (default: None) giving
+          the condition that the parameters of this Frey curve should
+          satisfy. If set to None will use the condition stored in
+          this FreyCurve instead.
+
+        - ``verbose`` -- A boolean value or an integer (default:
+          False). When set to True or any value larger then zero will
+          print comments to stdout about the computations being done
+          whilst busy. If set to False or 0 will not print such comments.
+          If set to any negative value will also prevent the printing of
+          any warnings.  A higher value will cause more messages to be
+          printed.
+
+        - ``precision_cap`` -- A strictly positive integer (default:
+          20) giving the maximal precision level to be used in p-Adic
+          arithmetic for the parameters.
+
+        OUTPUT:
+
+        The exponent of the conductor of this Frey curve at the given
+        prime for parameters satisfying the given condition. This
+        could be a conditional value as the conductor exponent might
+        depend on the value of the parameters in this Frey curve.
+
+        .. SEEALSO::
+
+            :meth:`local_data`,
+            :meth:`conductor`
+
+        """
+        if self.local_data.is_in_cache(prime, condition, verbose,
+                                       precision_cap):
+            local_data = self.local_data(prime, condition, verbose,
+                                         precision_cap)
+            return apply_to_conditional_value(lambda x:
+                                              x.conductor_valuation(),
+                                              local_data)
+
+        K = self.definition_field()
+        pAdics = pAdicBase(K, prime)
+        Tp = self._initial_tree(pAdics.prime_below(self._R),
+                                condition=condition,
+                                verbose=(verbose-1 if verbose>0 else verbose),
+                                precision_cap=precision_cap)
+        if K == self.complete_definition_field():
+            p = Tp.pAdics().prime()
+            Pls = K.primes_above(p)
+            pAdics = tuple(pAdicBase(K, P) for P in Pls)
+            Els = tuple(self for P in Pls)
+            rings = tuple(self.base() for P in Pls)
+            result = tates_algorithm_multiple(Els, initial_values=Tp,
+                                              coefficient_rings=rings,
+                                              pAdics=pAdics,
+                                              verbose=verbose,
+                                              precision_cap=precision_cap,
+                                              only_calculate=['conductor'])
+        else:
+            result = tates_algorithm(self, initial_values=Tp,
+                                     coefficient_ring=self.base(), pAdics=pAdics,
+                                     verbose=verbose, precision_cap=precision_cap,
+                                     only_calculate=['conductor'])
+        if(len(result) == 1):
+            result = result[0][0][0]
+        else:
+            result = ConditionalValue([(val[0], con) for val,con in result])
+        if K == self.complete_definition_field():
+            for P in Pls:
+                if P != prime:
+                    self.conductor_exponent.set_cache(result, P,
+                                                      condition=condition,
+                                                      verbose=verbose,
+                                                      precision_cap=precision_cap)
+        return result
     
     def conductor_restriction_of_scalars(self, additive_primes=None,
                                          condition=None, verbose=False,

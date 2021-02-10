@@ -190,8 +190,10 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
     S = _init_polynomial_ring(coefficient_ring, pAdics)
     variables = _init_variables_tate(S)
     T = _init_initial_values(initial_values, pAdics, variables)
-    cases, doneCases = _init_cases(T, elliptic_curve, S, pAdics,
-                                   verbose)
+    cases = Queue()
+    doneCases = []
+    case = _init_case(T, elliptic_curve, S, pAdics, verbose)
+    cases.put(case)
     only_calculate = _init_str_list(only_calculate)            
 
     # Let's work through the queue
@@ -205,8 +207,204 @@ def tates_algorithm(elliptic_curve, coefficient_ring=None, pAdics=None,
         
     return _tate_cleanup(doneCases)
 
-def _tate_step(case, variables, only_calculate, cases,
-               doneCases, verbose, precision_cap):
+def tates_algorithm_multiple(elliptic_curves, coefficient_rings=None,
+                             pAdics=None, base_rings=None, primes=None,
+                             initial_values=None, only_calculate=[],
+                             input_data=False, single_case=True,
+                             precision_cap=20, verbose=False):
+    r"""Perform Tate's Algorithm on multiple elliptic curves dependent on
+    parameters at once.
+
+    Given multiple elliptic curves $E$ as mentioned in
+    :func:`tates_algorithm` all depending on the same parameters, will
+    do the same computation as :func:`tates_algorithm` for each of
+    these at once. Note that the p-adics chosen for each curve may be
+    different as long as the p-adics on the parameters is the same for
+    each curve.
+
+    One would mainly use this function if for each possible value of
+    the parameters it is sufficient to compute the result of Tate's
+    algorithm for only one of the given curves.
+    
+    INPUT:
+    
+    - ``elliptic_curves`` -- A tuple of elliptic curves $E$
+      
+    - ``coefficient_rings`` -- A tuple of (multivariate) polynomial
+      rings, one for each given curve $E$. Each of these should be the
+      ring in which the coefficients of the corresponding curve $E$
+      live. By default each of these will be initialized as the base
+      ring of the corresponding curve $E$.
+      
+    - ``pAdics`` -- A tuple of pAdicBase objects, one for each given
+      curve $E$. Each entry should be the p-adics to be used for
+      Tate's algorithm for the corresponding curve $E$. By default
+      this will be initialized using the arguments `base_rings` and
+      `primes`.
+      
+    - ``base_rings`` -- A tuple of rings, one for each given curve
+      $E$. The field of fractions of each of these rings should be the
+      field over which $E$ is defined when the parameters are
+      evaluated. By default each entry will be initialized as the base
+      ring of the corresponding entry in `coefficient_rings`.
+      
+    - ``primes`` -- A tuple of primes, one corresponding to each given
+      curve $E$. Each primes should be a finite prime of the fraction
+      field of the corresponding entry in `base_ring`. Each prime may
+      be given as a prime ideal of the ring of integers or as a
+      generator thereof if it is principal. By default it will be
+      initialized using the p-adics given by the argument `pAdics`. It
+      must be set if that argument is set to None.
+      
+    - ``initial_values`` -- A p-adic tree or None (default:
+      None). This should be a tree containing the possible values for
+      the variables in the argument `coefficient_ring`. It should be
+      given as a pAdicTree that contains the same variables as all
+      rings in `coefficient_rings`. If set to None, will be
+      initialized as the full tree with these variables. Note that all
+      of the p-adics given by `pAdics` should extend the p-adics of
+      this tree.
+      
+    - ``only_calculate`` -- (default: []) When set to a specific value
+      or list of values, will ensure that the algorithm only
+      calculates a certain quantity or quantities. Possible values are
+
+        - 'conductor' -> Only calculate the conductor exponent
+
+        - 'reduction_type' -> Only calculate the reduction type, i.e.
+          good, split multiplicative, non-split multiplicative or
+          additive, returned as None, 1, -1 or 0 respectively.
+
+        - 'discriminant' -> Only calculate the valuation of the
+          minimal discriminant
+
+        - 'type' -> Only calculate the Kodaira Symbol
+
+        - 'minimal_model' -> Only calculate the minimal model for this
+          elliptic curve
+
+        - 'isomorphism' -> Only calculate the change in Weierstrass
+          model required to change the given curve into its minimal
+          model and the change in Weierstrass model to change the
+          minimal model into the given curve.
+
+      By default the function computes all these quantities, but in
+      this way they can be selected. The function will skip over all
+      computations that are not required to determine those quantities
+      so this might save time.
+
+    - ``input_data`` -- A boolean value (default: False). When set to
+      True the output returned will also contain the input data,
+      elliptic curve and p-adics, for each case returned by the
+      function.
+
+    - ``single_case`` -- A boolean value (default: True). When set to
+      True whenever a result is computed for one of the curves, the
+      corresponding parameter values are thereafter ignored for the
+      computation of all other curves. This ensures the output has a
+      unique value for each possible value of the parameters, but
+      means this function does not compute Tate's algorithm fully for
+      each given curve.
+
+    - ``precision_cap`` -- A non-negative integer (default: 20). This
+      argument determines the highest precision that will be used for
+      the values of the variables of `coefficient_ring`. Note that
+      setting this too low might result in inaccurate results, for
+      which a warning will appear if this is the case. Setting this
+      argument too high might result in endless and slow computations.
+    
+    - ``verbose`` -- A boolean value or an integer (default: False).
+      When set to True or any value larger then zero will print
+      comments to stdout about the computations being done whilst
+      busy. If set to False or 0 will not print such comments. If set
+      to any negative value will also prevent the printing of any
+      warnings. Will print more message if set to a higher value.
+    
+    OUTPUT:
+    
+    The output will be a FreyCurveLocalData object containing the
+    local data of one of the given curves $E$ at the corresponding
+    prime $Q$. If the argument `only_calculate` was not the empty list
+    will instead return a list consisting of the requested values to
+    be computed in the order they were requested in in
+    `only_calculate`.
+
+    If the argument `input_data` was set to `True` the output will be
+    a tuple consisting of the input data and the output listed
+    above. The input data in this case would be a tuple consisting of
+    the specific curve $E$ and the corresponding p-adics to which the
+    given output corresponds.
+
+    If the output depends on the specific values of the variables or
+    the given elliptic curve, will return a ConditionalValue with for
+    each case the value as mentioned above and the condition that
+    should hold on the variables for this value to be attained. Note
+    that if `single_case` was set to `False` this ConditionalValue
+    might have overlapping conditions as each given elliptic curve $E$
+    may have a different outcome.
+
+    """
+    n = len(elliptic_curves)
+    if coefficient_rings is None:
+        coefficient_rings = [None for i in range(n)]
+    else:
+        coefficient_rings = list(coefficient_rings)
+    if pAdics is None:
+        pAdics = [None for i in range(n)]
+    else:
+        pAdics = list(pAdics)
+    if base_rings is None:
+        base_rings = tuple(None for i in range(n))
+    if primes is None:
+        primes = tuple(None for i in range(n))
+    cases = Queue()
+    doneCases = []
+    for i in range(n):
+        _check_elliptic_curve(elliptic_curves[i])
+        coefficient_rings[i] = _init_coefficient_ring(coefficient_rings[i],
+                                                      elliptic_curves[i])
+        pAdics[i] = _init_pAdics(pAdics[i], base_rings[i], primes[i],
+                                 coefficient_rings[i])
+        S = _init_polynomial_ring(coefficient_rings[i], pAdics[i])
+        variables = _init_variables_tate(S)
+        initial_values = _init_initial_values(initial_values,
+                                              pAdics[i], variables[i])
+        case = _init_case(initial_values, elliptic_curves[i], S,
+                          pAdics[i], verbose)
+        case['disjoint'] = 0
+        if input_data:
+            case['Estart'] = case['E']
+        cases.put(case)
+    only_calculate = _init_str_list(only_calculate)            
+
+    # Let's work through the queue
+    while not cases.empty():
+        case = cases.get()
+        i = case['disjoint']
+        while (single_case and i < len(doneCases)):
+            case['T'].cut(doneCases[i][1]._root)
+            case['disjoint'] += 1
+            i = case['disjoint']
+            if case['T'].is_empty(): # Unnecessary, so skip
+                if verbose:
+                    if verbose > 1:
+                        print(f"Skipped the case {case['number']} as it is " +
+                              "not wanted for any parameter values anymore")
+                    else:
+                        print(f"Skipped a case as it is not wanted " +
+                              "for any parameter values anymore")
+                cases.task_done()
+                continue
+        _tate_step(case, variables, only_calculate, cases, doneCases,
+                   verbose, precision_cap, input_data=input_data)
+        cases.task_done()
+    # Should consider putting multiple threads on this,
+    # but should find a good way of raising exceptions first
+        
+    return _tate_cleanup(doneCases)
+
+def _tate_step(case, variables, only_calculate, cases, doneCases,
+               verbose, precision_cap, input_data=False):
     r"""Perform a single step of Tate's algorithm on a given case."""
     if 'next' in case:
         if case['next'] == 'Step1':
@@ -447,8 +645,7 @@ def _tate_step(case, variables, only_calculate, cases,
             else:
                 print("Finishing a case")
         _tate_finish(case, only_calculate, result=doneCases,
-                     variables=variables)
-
+                     variables=variables, input_data=input_data)
 
 # An easy way to keep track of cases when printing verbose
 _case_number = 0
@@ -2389,7 +2586,8 @@ def _tate_calculate_split(case, result, **kwds):
                                    pAdics, T, 'roots', case, result,
                                    **kwds)
     
-def _tate_finish(case, restrictions, result=[], variables=None):
+def _tate_finish(case, restrictions, result=[], variables=None,
+                 input_data=False):
     r"""Turn a case into a final result
 
     INPUT:
@@ -2460,6 +2658,8 @@ def _tate_finish(case, restrictions, result=[], variables=None):
                 urst_inv = tuple(R(x) for x in
                                  _urst_invert(case['urst0']))
                 myresult.append((urst, urst_inv))
+    if input_data:
+        my_result = ((case['Estart'], case['pAdics']), my_result)
     result.append((myresult, tree))
     return result
            
@@ -2547,7 +2747,7 @@ def _init_initial_values(initial_values, pAdics, variables):
                          str(initial_values))
     return initial_values
     
-def _init_cases(T, E, S, pAdics, verbose):
+def _init_case(T, E, S, pAdics, verbose):
     firstCase = dict(next='Step1', T=T.root(), E=E, E0=E,
                      pAdics=pAdics, S=S,
                      urst=(1, 0, 0, 0),
@@ -2555,9 +2755,7 @@ def _init_cases(T, E, S, pAdics, verbose):
     if verbose > 1:
         _init_case_number()
         firstCase['number'] = "0"
-    result = Queue()
-    result.put(firstCase)
-    return result, []
+    return firstCase
     
 def _init_str_list(str_list):
     if isinstance(str_list, str) or not hasattr(str_list, '__iter__'):
