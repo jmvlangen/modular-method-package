@@ -381,6 +381,7 @@ def tates_algorithm_multiple(elliptic_curves, coefficient_rings=None,
     while not cases.empty():
         case = cases.get()
         i = case['disjoint']
+        do_case = True
         while (single_case and i < len(doneCases)):
             case['T'].cut(doneCases[i][1]._root)
             case['disjoint'] += 1
@@ -393,10 +394,11 @@ def tates_algorithm_multiple(elliptic_curves, coefficient_rings=None,
                     else:
                         print(f"Skipped a case as it is not wanted " +
                               "for any parameter values anymore")
-                cases.task_done()
-                continue
-        _tate_step(case, variables, only_calculate, cases, doneCases,
-                   verbose, precision_cap, input_data=input_data)
+                do_case = False
+                break
+        if do_case:
+            _tate_step(case, variables, only_calculate, cases, doneCases,
+                       verbose, precision_cap, input_data=input_data)
         cases.task_done()
     # Should consider putting multiple threads on this,
     # but should find a good way of raising exceptions first
