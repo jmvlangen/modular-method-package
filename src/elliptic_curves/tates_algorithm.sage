@@ -368,7 +368,7 @@ def tates_algorithm_multiple(elliptic_curves, coefficient_rings=None,
         S = _init_polynomial_ring(coefficient_rings[i], pAdics[i])
         variables = _init_variables_tate(S)
         initial_values = _init_initial_values(initial_values,
-                                              pAdics[i], variables[i])
+                                              pAdics[i], variables)
         case = _init_case(initial_values, elliptic_curves[i], S,
                           pAdics[i], verbose)
         case['disjoint'] = 0
