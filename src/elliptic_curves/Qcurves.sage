@@ -2859,7 +2859,7 @@ class Qcurve_base(EllipticCurve_generic):
         return self.twist(self._decomposable_twist())
         # twist will do the minimization of the field!
 
-    def complete_definition_twist(self, roots):
+    def _complete_definition_twist(self, roots):
         r"""Give a twist of this curve completely defined over a given field.
 
         .. SEEALSO::
@@ -2875,10 +2875,10 @@ class Qcurve_base(EllipticCurve_generic):
         
         OUTPUT:
 
-        A Q-curve that is a twist of this curve and is defined over
-        the same definition field as this curve. Furthermore it is
-        completely defined over the definition field with all the
-        roots of the integers in the given list `roots` adjoined.
+        An element of the decomposition field such that twisting this
+        Q-curve by that element gives a Q-curve that is completely
+        defined over the definition field with all the roots of the
+        integers in the given list `roots` adjoined.
 
         EXAMPLE::
 
@@ -2947,9 +2947,50 @@ class Qcurve_base(EllipticCurve_generic):
             return new_to_big(mu(s))^2 / old_to_big(l(s))^2
 
         # The twist parameter
-        gamma = hilbert90(Kbig, alpha)
+        return hilbert90(Kbig, alpha)
 
-        return self.twist(gamma)
+    def complete_definition_twist(self, roots):
+        r"""Give a twist of this curve completely defined over a given field.
+
+        .. SEEALSO::
+
+            :meth:`degree_map_image`,
+            :meth:`twist`
+
+        INPUT:
+        
+        - ``roots`` -- A list of rational numbers such that up to sign
+          they form generators of the image of the degree map in
+          $\QQ^* / (\QQ^*)^2$.
+        
+        OUTPUT:
+
+        A Q-curve that is a twist of this curve and is defined over
+        the same definition field as this curve. Furthermore it is
+        completely defined over the definition field with all the
+        roots of the integers in the given list `roots` adjoined.
+
+        EXAMPLE::
+
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+            sage: K.<t> = QuadraticField(3)
+            sage: E = Qcurve([0, 12, 0, 18*(1 + t), 0], guessed_degrees=[2]); E
+            Q-curve defined by y^2 = x^3 + 12*x^2 + (18*t+18)*x over Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
+            sage: E.degree_map_image()
+            [1, 2]
+            sage: K1 = E.complete_definition_field(); K1
+            Number Field in lu with defining polynomial x^4 - 2*x^2 + 25
+            sage: K1(2).is_square()
+            False
+            sage: E2 = E.complete_definition_twist([2]); E2
+            Q-curve defined by y^2 = x^3 + (-6*lutsqrt_a00)*x^2 + (27*lutsqrt_a00+54)*x over Number Field in lutsqrt_a00 with defining polynomial x^2 - 12 with lutsqrt_a00 = -2*lutsqrt_a0^6 + 4*lutsqrt_a0^2
+            sage: K2 = E2.complete_definition_field(); K2
+            Number Field in lutsqrt_a000 with defining polynomial x^4 - 4*x^2 + 1
+            sage: K2(2).is_square()
+            True
+
+        """
+        return self.twist(self._complete_definition_twist(roots))
 
     def conductor_restriction_of_scalars(self):
         r"""Give the conductor of the restriction of scalars of this Q-curve.
