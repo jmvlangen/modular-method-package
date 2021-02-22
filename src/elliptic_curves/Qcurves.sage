@@ -2893,9 +2893,9 @@ class Qcurve_base(EllipticCurve_generic):
             sage: K1(2).is_square()
             False
             sage: E2 = E.complete_definition_twist([2]); E2
-            Q-curve defined by y^2 = x^3 + (-6*lutsqrt_a00)*x^2 + (27*lutsqrt_a00+54)*x over Number Field in lutsqrt_a00 with defining polynomial x^2 - 12 with lutsqrt_a00 = -2*lutsqrt_a0^6 + 4*lutsqrt_a0^2
+            Q-curve defined by y^2 = x^3 + (-6*lu0)*x^2 + (-27*lu0+54)*x over Number Field in lu0 with defining polynomial x^2 - 12 with lu0 = -1/5*lu^3 + 7/5*lu
             sage: K2 = E2.complete_definition_field(); K2
-            Number Field in lutsqrt_a000 with defining polynomial x^4 - 4*x^2 + 1
+            Number Field in agamma00 with defining polynomial x^4 - 88*x^2 + 400
             sage: K2(2).is_square()
             True
 
@@ -2933,6 +2933,7 @@ class Qcurve_base(EllipticCurve_generic):
                                                        base_to_new,
                                                        give_maps=True)
         base_to_big = _concat_maps(base_to_new, new_to_big)
+        _, phi = write_as_extension(base_to_big, give_map=True)
 
         # The map we want as scalars for the new curve
         d = self.degree_map
@@ -2947,7 +2948,12 @@ class Qcurve_base(EllipticCurve_generic):
             return new_to_big(mu(s))^2 / old_to_big(l(s))^2
 
         # The twist parameter
-        return hilbert90(Kbig, alpha)
+        gamma = phi(hilbert90(Kbig, alpha))
+        gammals = gamma.list()
+        if not all(gamma[i] == 0 for i in range(1, len(gammals))):
+            raise ValueError(f"Sought twist {gamma} is not defined " +
+                             "over the definition field")
+        return gammals[0]
 
     def complete_definition_twist(self, roots):
         r"""Give a twist of this curve completely defined over a given field.
@@ -2983,9 +2989,9 @@ class Qcurve_base(EllipticCurve_generic):
             sage: K1(2).is_square()
             False
             sage: E2 = E.complete_definition_twist([2]); E2
-            Q-curve defined by y^2 = x^3 + (-6*lutsqrt_a00)*x^2 + (27*lutsqrt_a00+54)*x over Number Field in lutsqrt_a00 with defining polynomial x^2 - 12 with lutsqrt_a00 = -2*lutsqrt_a0^6 + 4*lutsqrt_a0^2
+            Q-curve defined by y^2 = x^3 + (-6*lu0)*x^2 + (-27*lu0+54)*x over Number Field in lu0 with defining polynomial x^2 - 12 with lu0 = -1/5*lu^3 + 7/5*lu
             sage: K2 = E2.complete_definition_field(); K2
-            Number Field in lutsqrt_a000 with defining polynomial x^4 - 4*x^2 + 1
+            Number Field in agamma00 with defining polynomial x^4 - 88*x^2 + 400
             sage: K2(2).is_square()
             True
 
