@@ -3412,6 +3412,8 @@ class Qcurve(Qcurve_base, EllipticCurve_number_field):
                     if verbose > 0:
                         print("Degree %s isogeny found for"%degree, s)
                     E_s = self.galois_conjugate(s).change_ring(Kd)
+                    psi = Ed.isogeny(x - l)
+                    E_t = psi.codomain()
                     # Making sure the isomorphism is defined over Kd,
                     # extending Kd if necessary
                     c4s, c6s = E_s.c_invariants()
@@ -3423,8 +3425,6 @@ class Qcurve(Qcurve_base, EllipticCurve_number_field):
                     else:
                         m, um = 2, (c6t*c4s)/(c6s*c4t)
                     f_iso = (x^m - um).factor()[0][0]
-                    psi = Ed.isogeny(x - l)
-                    E_t = psi.codomain()
                     if f_iso.degree() > 1:
                         K_iso.<lu> = Kd.extension(f_iso)
                         Ed_iso = Ed.change_ring(K_iso)
