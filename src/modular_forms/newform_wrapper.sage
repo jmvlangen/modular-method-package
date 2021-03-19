@@ -2805,8 +2805,9 @@ class WrappedNewform_stored(WrappedNewform):
         A copy of this newform.
 
         """
-        return WrappedNewform_stored(self._level, self._eps, self._K,
-                                     self._coeffs, self._cm)
+        return WrappedNewform_stored(self._base, self._level,
+                                     self._eps, self._K, self._coeffs,
+                                     self._traces, self._cm)
     
     def _repr_(self):
         """Give a string representation of this newform"""
