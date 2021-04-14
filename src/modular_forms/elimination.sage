@@ -666,15 +666,8 @@ def eliminate_by_traces(curves, newforms, condition=None, primes=50,
                 (is_Ideal(p) and p in K.ideal_monoid() and p.is_prime())
                 for p in primes)):
         raise ValueError("%s is not a list of valid primes"%(primes,))
-    return apply_to_conditional_value(lambda nfs, con:
-                                      _eliminate_by_traces(curves, nfs,
-                                                           con & condition,
-                                                           primes,
-                                                           use_minpoly,
-                                                           precision_cap,
-                                                           verbose),
-                                      newforms, use_condition=True,
-                                      default_condition=condition)
+    return _eliminate_by_traces(curves, newforms, condition, primes,
+                                use_minpoly, precision_cap, verbose)
         
 def _eliminate_by_traces(curves, newforms, condition, primes,
                          use_minpoly, precision_cap, verbose):
