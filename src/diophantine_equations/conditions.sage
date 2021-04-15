@@ -58,6 +58,8 @@ from sage.rings.polynomial.multi_polynomial import is_MPolynomial
 from sage.rings.polynomial.polynomial_element import is_Polynomial
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 
+from sage.rings.ideal import is_Ideal
+
 from modular_method.padics.pAdic_tree import pAdicTree
 from modular_method.padics.pAdic_solver import find_pAdic_roots
 
@@ -1466,8 +1468,11 @@ class CongruenceCondition(PolynomialCondition):
             False
 
         """
-        return all(self._mod.divides(cf) for cf in
-                   self._f.coefficients())
+        if is_Ideal(self._mod):
+            return all(cf in self._mod for cf in self._f.coefficients())
+        else:
+            return all((cf / self._mod).is_integral()
+                       for cf in self._f.coefficients())
     
     def _repr_(self):
         mod = self.modulus()
