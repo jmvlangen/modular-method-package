@@ -76,6 +76,9 @@ from sage.misc.cachefunc import cached_function
 from sage.misc.misc_c import prod as product
 
 from modular_method.padics.pAdic_base import pAdicBase
+from modular_method.padics.pAdic_tree import pAdicNode
+from modular_method.padics.pAdic_tree import pAdicTree
+from modular_method.padics.pAdic_solver import find_pAdic_roots
 
 from modular_method.number_fields.field_constructors import common_embedding_field
 
@@ -848,17 +851,112 @@ def _kraus_method(curves, newforms, l, polynomials, primes, condition,
     r"""Implementation of :func:`kraus_method`.
 
     """
-    fields = tuple(poly.base_ring() for poly in polynomials)
+    base_field = curves[0]._R.fraction_field()
+    variables = curves[0].base().gens()
+    
     for p in primes:
-        Ps = [_primes_1_mod_l(K, p, l) for K in fields]
-        for P in itertools.product(*Ps):
-            CP = [_init_kraus_condition(polynomials[i], P[i], l)
-                  for i in range(len(P))]
-            C = reduce(lambda x, y: x & y, CP, condition)
+        try:
+            condition_p = kraus_condition(l, polynomials, variables,
+                                          base_field, p, error=True)
+        except ValueError:
+            continue
+        else:
+            if condition is not None:
+                condition_p = condition & condition_p
             newforms = _eliminate_by_trace(curves, newforms, p, [l],
-                                           C, use_minpoly,
+                                           condition_p, use_minpoly,
                                            precision_cap, verbose)
+            if len(newforms) == 0:
+                break
+            
     return newforms
+
+def kraus_condition(l, polynomials, variables, base_field,
+                     base_prime, error=False):
+    r"""The condition imposed modulo `base_prime` by assuming the given
+    `polynomials` are `l`-th powers.
+
+    INPUT:
+
+    - ``l`` -- A prime number
+
+    - ``polynomials`` -- A list of polynomials in common variables,
+      defined over a finite field extension of `base_field`.
+
+    - ``variables`` -- The common variables of the given `polynomials`
+
+    - ``base_field`` -- A number field or `QQ`
+
+    - ``base_prime`` -- A prime of ``base_field``
+
+    - ``error`` -- A boolean (default: `False`) value indicating
+      whether an error should be raised when the `polynomials` being
+      `l`-th powers is possible for all values of `variables` modulo
+      `base_prime`.
+
+    OUTPUT:
+
+    A condition on the `variables`. All the values in the `base_field`
+    that satisfy this condition are those for which the
+    ``polynomials`` are `l`-th powers modulo every prime above
+    `base_prime`.
+
+    If `error` was set to `True` this function will raise a
+    `ValueError` when for every polynomial in `polynomials` and every
+    prime $P$ of the field over which that polynomial is defined, the
+    residue field $F$ of $P$ does not have a cardinality that is 1
+    modulo `l`.
+
+    """
+    kraus_data = list(_kraus_data_iterator(l, polynomials, base_prime))
+
+    if len(kraus_data) == 0 and error:
+        raise ValueError(f"Kraus does not restrict the condition for {base_prime}")
+
+    pAdics = pAdicBase(base_field, base_prime)
+    T = pAdicNode(pAdics=pAdics, full=True, width=len(variables))
+
+    if len(kraus_data) > 0:
+        for N in T.children:
+            for poly, F, pows in kraus_data:
+                if F(poly(*N.representative())) not in pows:
+                    N.remove()
+                    break
+        
+    return TreeCondition(pAdicTree(variables, root=T))
+
+def _kraus_data_iterator(l, polynomials, base_prime):
+    r"""The data required to build the condition for Kraus' method
+
+    INPUT:
+
+    - ``l`` -- A prime number
+
+    - ``polynomials`` -- A list of polynomials that are known to be
+      `l`-th powers
+
+    - ``base_prime`` -- A prime of the field such that the variables
+      of the `polynomials` have values in its ring of integers.
+
+    OUTPUT:
+
+    A generator that for each polynomial $f$ in `polynomials` and each
+    prime $P$ of the field over which $f$ is defined such that the
+    cardinality of the residue field $F$ of $P$ is one modulo `l`, a
+    tuple consisting of: the polynomial $f$, the residue field $F$,
+    and a list of `l`-th powers in $F$.
+
+    """
+    for i in range(len(polynomials)):
+        poly = polynomials[i]
+        field = poly.base_ring()
+        for P in _primes_1_mod_l(field, base_prime, l):
+            F = Integers(P) if field == QQ else P.residue_field()
+            u = F.multiplicative_generator()
+            order_u = F.cardinality() - 1
+            order_ul = order_u / l
+            pows = [F(0)] + [F(u^(k*l)) for k in range(order_ul)]
+            yield poly, F, pows
 
 def _primes_1_mod_l(K, p, l):
     r"""Find the primes in $K$ above $p$ that are 1 mod $l$.
@@ -889,44 +987,6 @@ def _primes_1_mod_l(K, p, l):
     else:
         return [P for P in K.primes_above(p)
                 if mod(P.residue_field().cardinality(), l) == 1]
-                        
-def _init_kraus_condition(polynomial, prime, l):
-    r"""Get the condition on the variable given by Kraus's method.
-
-    INPUT:
-
-    - ``polynomial`` -- A polynomial whose possible values are $l$-th
-      powers.
-
-    - ``prime`` -- A finite prime of a number field.
-
-    - ``l`` -- The prime number $l$
-
-    OUTPUT:
-
-    The condition on the variables given by the fact that the values
-    of the polynomial in the residue field of the given prime should
-    be $l$-th powers.
-
-    """
-    if prime in ZZ:
-        F = Integers(prime)
-        u = F.unit_gens()[0]
-    else:
-        F = prime.residue_field()
-        u = F.primitive_element()
-    values = [F.lift(0)] + [F.lift(u^(n*l))
-                            for n in range((F.cardinality() - 1)/l)]
-    conditions = [CongruenceCondition(polynomial - val, prime)
-                  for val in values]
-    def combine_conditions(C1, C2):
-        if C1 is None:
-            return C2
-        elif C2 is None:
-            return C1
-        else:
-            return C1 | C2
-    return reduce(combine_conditions, conditions, None)
 
 def eliminate_cm_forms(curves, newforms, has_cm=False, condition=None):
     r"""Eliminate CM newforms associated to non-CM Frey curves.
