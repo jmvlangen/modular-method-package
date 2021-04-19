@@ -862,7 +862,7 @@ def _kraus_method(curves, newforms, l, polynomials, primes, condition,
             continue
         else:
             if condition is not None:
-                condition_p = condition & condition_p
+                condition_p = condition_p & condition
             newforms = _eliminate_by_trace(curves, newforms, p, [l],
                                            condition_p, use_minpoly,
                                            precision_cap, verbose)
