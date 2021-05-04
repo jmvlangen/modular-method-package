@@ -1994,13 +1994,13 @@ class Qcurve_base(EllipticCurve_generic):
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1  2 -2  1]
-            [ 1 -2 -2 -1]
+            [ 1 -2  2  1]
+            [ 1  2  2 -1]
             [ 1  1 -1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1  2 -2  1]
-            [ 1 -2 -2 -1]
+            [ 1 -2  2  1]
+            [ 1  2  2 -1]
             [ 1  1 -1 -1]
 
         """
@@ -2125,13 +2125,13 @@ class Qcurve_base(EllipticCurve_generic):
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1  2 -2  1]
-            [ 1 -2 -2 -1]
+            [ 1 -2  2  1]
+            [ 1  2  2 -1]
             [ 1  1 -1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1  2 -2  1]
-            [ 1 -2 -2 -1]
+            [ 1 -2  2  1]
+            [ 1  2  2 -1]
             [ 1  1 -1 -1]
 
         """
@@ -3090,7 +3090,7 @@ class Qcurve_base(EllipticCurve_generic):
             sage: E.number_of_splitting_maps(count_conjugates=False)
             2
             sage: E.newform_levels() # Inconsistency in .unit_group()
-            [(7200, 7200)]
+            [(14400, 14400)]
 
         The levels for each component might be distinct, in which case
         the list may contain multiple options of how the levels are

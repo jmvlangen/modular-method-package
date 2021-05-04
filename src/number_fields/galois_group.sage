@@ -336,8 +336,23 @@ def galois_field_change(sigma, K, L=None):
         :func:`composite_field`,
         :func:`intersection_field`,
 
+    TESTS:
+
+    No unnecessary errors are raised when the fields are equal, even
+    when this field is not abelian::
+
+        sage: from modular_method.number_fields.galois_group import galois_field_change
+        sage: R.<x> = QQ[]
+        sage: K.<a> = NumberField(x^6 + 3)
+        sage: G = K.galois_group()
+        sage: s = G[2]
+        sage: s == galois_field_change(s, K)
+        True
+
     """
     K1 = sigma.parent().number_field()
+    if K1 == K:
+        return sigma
     K0, K0_to_K1, K0_to_K = intersection_field(K1, K, give_maps=True, L=L)
     if K0 == QQ:
         return K.galois_group()[0]
