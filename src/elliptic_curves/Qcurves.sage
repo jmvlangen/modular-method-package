@@ -2136,7 +2136,7 @@ class Qcurve_base(EllipticCurve_generic):
 
         """
         if not self._is_cached('_beta'):
-            self.splitting_map(verbose=verbose);
+            self.splitting_map();
         return QQ(self._beta(sigma) * self._beta(tau) *
                   self._beta(sigma*tau)^(-1))
 
