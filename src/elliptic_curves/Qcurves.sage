@@ -2167,12 +2167,7 @@ class Qcurve_base(EllipticCurve_generic):
 
     def cyclotomic_order(self):
         r"""Return the smallest $N$ such that $\Q(\zeta_N)$ contains the
-        decomposition field.
-
-        .. NOTE::
-
-        For this $N$ to exist, the definition field of this Q-curve
-        should be abelian.
+        largest abelian subfield of the decomposition field.
 
         .. SEEALSO::
 
@@ -2184,7 +2179,7 @@ class Qcurve_base(EllipticCurve_generic):
         decomposition field of this Q-curve as given by
         :meth:`decomposition_field` is a subfield of $\Q(\zeta_N)$.
 
-        EXAMPLE::
+        EXAMPLES::
 
             sage: from modular_method.elliptic_curves.Qcurves import Qcurve
             sage: K.<t> = QuadraticField(5)
@@ -2196,10 +2191,24 @@ class Qcurve_base(EllipticCurve_generic):
             sage: len(L.gen().minpoly().change_ring(CyclotomicField(N)).roots()) > 0
             True
 
+        Also works when the decomposition field is not abelian::
+
+            sage: from modular_method.elliptic_curves.Qcurves import Qcurve
+            sage: R.<x> = QQ[]
+            sage: K.<a> = (x^4 - 2*x^2 - 2).splitting_field()
+            sage: E = Qcurve([0, 12, 0, 18*(1 + sqrt(K(3))), 0], guessed_degrees=[2])
+            sage: E.decomposition_field().is_abelian()
+            False
+            sage: E.cyclotomic_order()
+            24
+
         """
         if not self._is_cached('_N') or not self._is_cached('_ker'):
             K = self.decomposition_field()
-            N = K.conductor(check_abelian=True)
+            if not K.is_abelian():
+                G = K.galois_group()
+                K = fixed_field([s*t*s^(-1)*t^(-1) for s in G for t in G])
+            N = K.conductor(check_abelian=False)
             self._N = N
             L.<zeta> = CyclotomicField(N)
             a = K.gen().minpoly().change_ring(L).roots()[0][0]
