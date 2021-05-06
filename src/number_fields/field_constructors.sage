@@ -219,7 +219,7 @@ def fixed_field(H, map=False):
         sage: G = K.galois_group()
         sage: H = [G.identity()]
         sage: fixed_field(H)
-        Number Field in zeta120 with defining polynomial x^4 - x^2 + 1 with zeta120 = 0.866025403784439? + 0.500000000000000?*I
+        Cyclotomic Field of order 12 and degree 4
 
     H empty does not work::
 
@@ -240,6 +240,15 @@ def fixed_field(H, map=False):
         sage: fixed_field(G.gens())
         Rational Field
 
+    In the exceptional case of a number field of degree 1, the
+    rational field is preferred as an output::
+
+        sage: from modular_method.number_fields.field_constructors import fixed_field
+        sage: K = CyclotomicField(1)
+        sage: G = K.galois_group()
+        sage: fixed_field([G(1)])
+        Rational Field
+
     Maps can be returned in each of the above cases::
 
         sage: from modular_method.number_fields.field_constructors import fixed_field
@@ -253,26 +262,35 @@ def fixed_field(H, map=False):
            To:   Cyclotomic Field of order 12 and degree 4
            Defn: zeta120 |--> 2*zeta12^2)
         sage: fixed_field([G.identity()], map=True)
-        (Number Field in zeta120 with defining polynomial x^4 - x^2 + 1 with zeta120 = 0.866025403784439? + 0.500000000000000?*I,
-         Ring morphism:
-           From: Number Field in zeta120 with defining polynomial x^4 - x^2 + 1 with zeta120 = 0.866025403784439? + 0.500000000000000?*I
-           To:   Cyclotomic Field of order 12 and degree 4
-           Defn: zeta120 |--> zeta12)
+        (Cyclotomic Field of order 12 and degree 4,
+         Identity endomorphism of Cyclotomic Field of order 12 and degree 4)
         sage: fixed_field(G, map=True)
         (Rational Field, Coercion map:
            From: Rational Field
            To:   Cyclotomic Field of order 12 and degree 4)
+        sage: K = CyclotomicField(1)
+        sage: G = K.galois_group()
+        sage: fixed_field([G(1)], map=True)
+        (Rational Field, Coercion map:
+           From: Rational Field
+           To:   Cyclotomic Field of order 1 and degree 1)
 
     """
     if hasattr(H, '_ambient'):
         G = H._ambient
     else:
         G = H[0].parent()
-    if H == G:
+    if all(g in H for g in G):
         if map:
             return QQ, QQ.hom(G.number_field())
         else:
             return QQ
+    if all(g == G(1) for g in H):
+        K = G.number_field()
+        if map:
+            return K, K.hom(K)
+        else:
+            return K
     if hasattr(H, 'fixed_field'):
         result = H.fixed_field()
         if isinstance(result, tuple):

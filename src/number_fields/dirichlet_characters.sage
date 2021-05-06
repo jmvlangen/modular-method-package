@@ -84,7 +84,7 @@ def dirichlet_fixed_field(eps):
         sage: for eps in D.gens():
         ....:     print(dirichlet_fixed_field(eps))
         ....:     
-        Number Field in zeta0 with defining polynomial x^2 + 1 with zeta0 = 1*I
+        Cyclotomic Field of order 4 and degree 2
         Number Field in zeta0 with defining polynomial x^2 - 2 with zeta0 = 1.414213562373095?
 
     The trivial character has the rational field as its fixed field::
@@ -102,7 +102,7 @@ def dirichlet_fixed_field(eps):
         sage: eps = DirichletGroup(7).gen(); eps
         Dirichlet character modulo 7 of conductor 7 mapping 3 |--> zeta6
         sage: dirichlet_fixed_field(eps)
-        Number Field in zeta0 with defining polynomial x^6 + x^5 + x^4 + x^3 + x^2 + x + 1 with zeta0 = 0.6234898018587335? + 0.7818314824680299?*I
+        Cyclotomic Field of order 7 and degree 6
 
     """
     eps = eps.primitive_character()
@@ -178,7 +178,7 @@ def character_for_root(a):
         sage: eps = character_for_root(-3); eps
         Dirichlet character modulo 3 of conductor 3 mapping 2 |--> -1
         sage: K = dirichlet_fixed_field(eps); K
-        Number Field in zeta0 with defining polynomial x^2 + x + 1 with zeta0 = -0.50000000000000000? + 0.866025403784439?*I
+        Cyclotomic Field of order 3 and degree 2
         sage: K(-3).is_square()
         True
 

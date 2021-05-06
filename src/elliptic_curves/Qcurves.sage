@@ -889,7 +889,7 @@ class Qcurve_base(EllipticCurve_generic):
             sage: K.<t> = QuadraticField(3)
             sage: E = Qcurve([0, 12, 0, 18*(t + 1), 0], guessed_degrees=[2])
             sage: E.degree_field()
-            Number Field in t0 with defining polynomial x^2 - 3 with t0 = 1.732050807568878?
+            Number Field in t with defining polynomial x^2 - 3 with t = 1.732050807568878?
 
         The degree field is always a subfield of the definition field,
         but can be strictly smaller::
@@ -1663,7 +1663,7 @@ class Qcurve_base(EllipticCurve_generic):
             sage: E.splitting_field()
             Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5 with zeta0 = 1.902113032590308?
             sage: E.degree_field()
-            Number Field in t0 with defining polynomial x^2 - 5 with t0 = 2.236067977499790?
+            Number Field in t with defining polynomial x^2 - 5 with t = 2.236067977499790?
             sage: E.splitting_character_field()
             Number Field in zeta0 with defining polynomial x^4 - 5*x^2 + 5 with zeta0 = 1.902113032590308?
 
@@ -1719,9 +1719,9 @@ class Qcurve_base(EllipticCurve_generic):
             sage: E.complete_definition_field()
             Number Field in lu with defining polynomial x^4 + 10*x^2 + 1
             sage: E.splitting_field()
-            Number Field in t0zeta0 with defining polynomial x^4 + 36
+            Number Field in tzeta0 with defining polynomial x^4 + 36
             sage: E.decomposition_field()
-            Number Field in t0zeta0lu with defining polynomial x^8 - x^4 + 1
+            Number Field in tzeta0lu with defining polynomial x^8 - x^4 + 1
 
         """
         Ksplit = self.splitting_field()
@@ -1981,12 +1981,12 @@ class Qcurve_base(EllipticCurve_generic):
             [ 1 -1  1 -1 -1  1 -1  1]
             sage: matrix([[E.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1  1  1  1  1]
-            [ 1 -2  1  2 -2  1  2  1]
-            [ 1  1 -1 -1  1 -1 -1  1]
             [ 1  2 -1  2  2 -1  2  1]
-            [ 1 -2  1  2 -2  1  2  1]
-            [ 1  1 -1 -1  1 -1 -1  1]
+            [ 1 -1 -1  1 -1 -1  1  1]
+            [ 1  2  1 -2  2  1 -2  1]
             [ 1  2 -1  2  2 -1  2  1]
+            [ 1 -1 -1  1 -1 -1  1  1]
+            [ 1  2  1 -2  2  1 -2  1]
             [ 1  1  1  1  1  1  1  1]
             sage: E2 = E.decomposable_twist()
             sage: E2.does_decompose()
@@ -1994,14 +1994,14 @@ class Qcurve_base(EllipticCurve_generic):
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  1 -1 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  1 -1 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
 
         """
         if not isinstance(index, str) and hasattr(index, "__iter__"):
@@ -2112,12 +2112,12 @@ class Qcurve_base(EllipticCurve_generic):
             [ 1 -1  1 -1 -1  1 -1  1]
             sage: matrix([[E.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1  1  1  1  1]
-            [ 1 -2  1  2 -2  1  2  1]
-            [ 1  1 -1 -1  1 -1 -1  1]
             [ 1  2 -1  2  2 -1  2  1]
-            [ 1 -2  1  2 -2  1  2  1]
-            [ 1  1 -1 -1  1 -1 -1  1]
+            [ 1 -1 -1  1 -1 -1  1  1]
+            [ 1  2  1 -2  2  1 -2  1]
             [ 1  2 -1  2  2 -1  2  1]
+            [ 1 -1 -1  1 -1 -1  1  1]
+            [ 1  2  1 -2  2  1 -2  1]
             [ 1  1  1  1  1  1  1  1]
             sage: E2 = E.decomposable_twist()
             sage: E2.does_decompose()
@@ -2125,14 +2125,14 @@ class Qcurve_base(EllipticCurve_generic):
             sage: G = E2.decomposition_field().galois_group()
             sage: matrix([[E2.c(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  1 -1 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
             sage: matrix([[E2.c_splitting_map(s, t) for t in G] for s in G])
             [ 1  1  1  1]
-            [ 1 -2  2  1]
             [ 1  2  2 -1]
-            [ 1  1 -1 -1]
+            [ 1  2 -2  1]
+            [ 1 -1  1 -1]
 
         """
         if not self._is_cached('_beta'):
@@ -2187,7 +2187,7 @@ class Qcurve_base(EllipticCurve_generic):
             sage: N = E.cyclotomic_order(); N
             40
             sage: L = E.decomposition_field(); L
-            Number Field in zeta0lu with defining polynomial x^8 - 22*x^6 + 20*x^5 + 199*x^4 - 380*x^3 + 882*x^2 - 740*x + 1721
+            Number Field in zeta0lu with defining polynomial x^8 - 22*x^6 - 20*x^5 + 199*x^4 + 380*x^3 + 882*x^2 + 740*x + 1721
             sage: len(L.gen().minpoly().change_ring(CyclotomicField(N)).roots()) > 0
             True
 
@@ -3099,7 +3099,7 @@ class Qcurve_base(EllipticCurve_generic):
             sage: E.number_of_splitting_maps(count_conjugates=False)
             2
             sage: E.newform_levels() # Inconsistency in .unit_group()
-            [(14400, 14400)]
+            [(7200, 7200)]
 
         The levels for each component might be distinct, in which case
         the list may contain multiple options of how the levels are
