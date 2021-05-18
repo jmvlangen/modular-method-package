@@ -5,6 +5,17 @@ AUTHORS:
 - Joey van Langen (2020-12-12): initial version
 
 """
+
+# ****************************************************************************
+#       Copyright (C) 2020 Joey van Langen <j.m.van.langen@vu.nl>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#                  https://www.gnu.org/licenses/
+# ****************************************************************************
+
 from sage.all import Integer
 from sage.rings.ideal import Ideal
 
