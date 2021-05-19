@@ -4,7 +4,7 @@ and apply the modular method to them.
 
 ## Requirements
 This package requires [SageMath](http://ww.sagemath.org/). It was last
-tested on version 9.1, but should work on version 8.4 or newer.
+tested on version 9.1, but should work on version 9.0 or newer.
 
 The package has the option to do newform computations in
 [MAGMA](http://magma.maths.usyd.edu.au/magma) if it is installed. It
@@ -17,28 +17,25 @@ was last tested on version 2.24-8. MAGMA should be available through
 
 * **modular_method** directory containing the python package. Should
   be compiled first from the source, see "How to use" : "Setup"
-  
-* **database*** A directory containing examples from the
-  literature. Each example is written in a restructured text format,
-  which contains text explanation of what has to be computed and sage
-  examples of how it should be computed. These files can be
-  automatically tested using SageMath's automated doctests, see "How
-  to use" : "Testing".
-  
-* **examples** A directory containing examples as sage files. *deprecated*
 
-* **old_code** Code from previous iterations of the package. *deprecated*
+* **examples** A directory containing various examples for the
+  framework provided by the modular method package. Each example is
+  written in a restructured text format, which contains text
+  explanation of what has to be computed and sage examples of how it
+  should be computed. These files can be automatically tested using
+  SageMath's automated doctests, see "How to use" : "Testing".
 
-* **text** Old text files related to the package. *deprecated*
+    * **examples/literature** 
 
-* **index.org** An old overview of the contents of this package. *Not updated*
+    * **examples/thesis** A directory containing examples from Joey van
+      Langen's PhD thesis.
 
 * **compile.sh** A script to compile the sage source code to a python
-  package, see "How to use" : "Setup"
+  package, see [Setup](#Setup) below.
   
 * **test.sh** A script to easily use the SageMath automated doctest
-  system with the correct settings for this package, see "How to
-  use" : "Testing"
+  system with the correct settings for this package, see
+  [Testing](#Testing) below.
 
 * **load.sage** A sage code file to easily load important
   functionality from the package
@@ -97,7 +94,7 @@ variables you have to import them as global variables, e.g.
 	sage: from modular_method.elliptic_curves.frey_curves import FreyCurve
 	
 To directly import the most commonly used classes and functions of the
-package as global variables you can load the sage script *load.sage*
+package as global variables you can import * from modular_method
 
-	sage: load('load.sage')
+	sage: from modular_method import *
 
