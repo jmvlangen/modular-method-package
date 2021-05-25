@@ -1,4 +1,4 @@
-# Modular Method sage package
+# Modular Method SageMath Package
 This package provides tools to work with Frey curves and Frey Q-curves
 and apply the modular method to them.
 
