@@ -105,6 +105,7 @@ from sage.modular.dirichlet import is_DirichletCharacter, DirichletGroup
 
 from sage.modular.modform.constructor import Newforms
 
+from modular_method.number_fields.dirichlet_characters import dirichlet_product
 from modular_method.number_fields.field_constructors import composite_field
 
 from modular_method.polynomial.symmetric_polynomials import polynomial_to_symmetric
@@ -1616,9 +1617,7 @@ class WrappedNewform(SageObject):
         return QQ
         
     def coefficient(self, n):
-        r
-
-        """Give the n-th coefficient of this newform.
+        r"""Give the n-th coefficient of this newform.
 
         INPUT:
         
@@ -2033,6 +2032,23 @@ class WrappedNewform(SageObject):
 
         """
         return WrappedNewform()
+
+    def twist(self, character):
+        r"""Twist this newform with a character.
+
+        INPUT:
+
+        - ``character`` -- A Dirichlet character.
+
+        OUTPUT:
+
+        A newform that is this newform twisted by `character`.
+
+        """
+        if character.conductor() == 1:
+            return self
+        else:
+            return WrappedNewform_twisted(newform=self, twist=character)
 
     def _repr_(self):
 
@@ -3474,3 +3490,298 @@ class WrappedNewform_magma_bianchi(WrappedNewform):
 
         """
         return WrappedNewform_magma_bianchi(self._M)
+
+class WrappedNewform_twisted(WrappedNewform):
+    """A wrapper class representing another wrapped newform twisted by a
+    character.
+
+    """
+
+    def __init__(self, *, newform, twist):
+        r"""Initialize this object"""
+        super().__init__()
+        self.newform = newform
+        self.twist = twist
+        L1 = self.twist.base_ring()
+        L2 = self.newform.coefficient_field()
+        L, phi, psi = common_embedding_field(L1, L2)
+        self._coefficient_field = L
+        self._twist_embedding = phi
+        self._newform_embedding = psi
+
+    def character(self):
+        r"""Give the character associated to this newform.
+
+        OUTPUT:
+
+        The dirichlet character associated to this newform as a
+        primitive character.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: eps = DirichletGroup(16).gens()[1]
+            sage: nf = get_newforms(16, character=eps)[0]
+            sage: nf.character()
+            Dirichlet character modulo 16 of conductor 16 mapping 15 |--> 1, 5 |--> zeta4
+
+        """
+        return self.newform.character() * self.twist
+
+    def base_field(self):
+        r"""Give the base field for this newform.
+
+        For classical newforms this is always the rationals. For
+        Hilbert modular forms this is the totally real field for which
+        this is a Hilbert modular form. For Bianchi modular forms it
+        is the complex field for which this is a Bianchi modular form.
+
+        OUTPUT:
+
+        The rational field if this newform is a classical modular form.
+
+        The totally real field for which this newform is a Hilbert
+        modular form if it is a Hilbert modular form.
+
+        The complex field for which this newform is a Bianchi modular
+        form if it is a Bianchi modular form.
+
+        """
+        return self.newform.base_field()
+
+    def twist_galois(self, sigma):
+        r"""The twist character as a Galois character"""
+        pass
+
+    def coefficient(self, n):
+        r"""Give the n-th coefficient of this newform.
+
+        INPUT:
+        
+        - ``n`` -- A non-negative integer.
+
+        OUTPUT:
+        
+        The n-th coefficient of the q-expansion of this newform at
+        infinity.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.coefficient(19)
+            1
+            sage: nf.coefficient(27)
+            4
+
+        .. SEE_ALSO::
+
+            :meth:`coefficient_field`,
+            :meth:`q_expansion`
+
+        """
+        return (self._newform_embedding(self.newform.coefficient(n)) *
+                self.twist_embedding(self.twist(n)))
+
+    def coefficient_field(self):
+        r"""Give the field over which the coefficients of this newform are
+        defined.
+
+        OUTPUT:
+
+        The field over which the eigenvalues of the Hecke operators on
+        this newform are defined.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.coefficient_field()
+            Rational Field
+            sage: nf = get_newforms(31)[0]
+            sage: nf.coefficient_field()
+            Number Field in a0 with defining polynomial x^2 - x - 1
+
+        .. SEE_ALSO::
+
+            :meth:`coefficient`,
+            :meth:`q_expansion`
+
+        """
+        return self._coefficient_field
+
+    def trace_of_frobenius(self, prime, power=1):
+        """Give the trace of frobenius under the galois representation
+        associated to this newform.
+
+        Will give a ValueError if the given prime divides the level of
+        this newform, since in that case all mentioned galois
+        representations are ramified.
+        
+        INPUT:
+
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
+
+        - ``power`` -- A non-negative number (default: 1). If set to
+          any value larger than 1, will compute the trace of the
+          frobenius element to the given power instead.
+
+        OUTPUT:
+
+        The trace of $\rho(F_p^n)$, where $\rho$ is the mod $l$ or
+        l-adic galois representation associated to this newform, $F_p$
+        is the frobenius element at the given prime, and $n$ is the
+        given argument `power`.
+
+        Since the result does not depend on the choice of $l$, this
+        result will be an element of the coefficient field of the
+        newform. The only condition is that $l$ and $p$ must be
+        coprime.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.trace_of_frobenius(2)
+            0
+            sage: nf.trace_of_frobenius(7)
+            -1
+            sage: nf.trace_of_frobenius(7, power=2)
+            -13
+
+        .. SEE_ALSO::
+
+            :meth:`determinant_of_frobenius`,
+            :meth:`characteristic_polynomial`
+
+        """
+        if power == 1:
+            p = prime if prime in ZZ else self.base_field.ideal(prime).smallest_integer()
+            return (self._newform_embedding(self.newform.trace_of_frobenius(prime)) *
+                    self._twist_embedding(self.twist(p)))
+        T = self.trace_of_frobenius(prime)
+        D = self.determinant_of_frobenius(prime)
+        K, T_map, D_map = composite_field(T.parent(), D.parent(),
+                                          give_maps=True)
+        return self._trace_power_formula(power)(T_map(T), D_map(D))
+
+    def determinant_of_frobenius(self, prime, power=1):
+        """Give the determinant of frobenius under the galois representation
+        associated to this newform.
+
+        Will give a ValueError if the given prime divides the level of
+        this newform, since in that case all mentioned galois
+        representations are ramified.
+        
+        INPUT:
+
+        - ``prime`` -- A prime of the base field for this newform
+          indicating the Frobenius element to be used. This must be a
+          prime number if the base field is the rationals and a prime
+          ideal otherwise.
+
+        - ``power`` -- A non-negative number (default: 1). If set to
+          any value larger than 1, will compute the trace of the
+          frobenius element to the given power instead.
+
+        OUTPUT:
+
+        The determinant of $\rho(F_p^n)$, where $\rho$ is the mod $l$
+        or $l$-adic galois representation associated to this newform,
+        $F_p$ is the frobenius element at the given prime, and $n$ is
+        the given argument `power`.
+
+        Since the result does not depend on the choice of $l$, this
+        result will be an element of the coefficient field of the
+        newform. The only condition is that $l$ and $p$ must be
+        coprime.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.determinant_of_frobenius(5)
+            5
+            sage: nf.determinant_of_frobenius(7)
+            7
+            sage: nf.determinant_of_frobenius(7, power=2)
+            49
+
+        .. SEE_ALSO::
+
+            :meth:`trace_of_frobenius`,
+            :meth:`characteristic_polynomial`
+
+        """
+        D1 = self.newform.determinant_of_frobenius(prime)
+        p = prime if prime in ZZ else self.base_field().ideal(prime).smallest_integer()
+        D2 = self.twist(p)
+        K, D2_map, D1_map = composite_field(D2.parent(), D1.parent(), give_maps=True)
+        D = D1_map(D1) * D2_map(D2)
+        return D^power
+
+    def has_cm(self, proof=True):
+        """Determine if this newform has complex multiplication.
+
+        INPUT:
+
+        - ``proof`` -- A boolean (default: True). If set to True the
+          answer will have been proven correct. If set to False may
+          use bounds that have not been proved.
+
+        OUTPUT:
+
+        True if the abelian variety corresponding to this newform has
+        complex multiplication. False in any other case.
+
+        EXAMPLE::
+
+            sage: from modular_method.modular_forms.newform_wrapper import get_newforms
+            sage: nf = get_newforms(19)[0]
+            sage: nf.has_cm()
+            False
+
+        """
+        return self.newform.has_cm()
+
+    def twist(self, character):
+        r"""Twist this newform with a character.
+
+        INPUT:
+
+        - ``character`` -- A Dirichlet character.
+
+        OUTPUT:
+
+        A newform that is this newform twisted by `character`.
+
+        """
+        twist = dirichlet_product(self.twist, character)
+        if twist.conductor() == 1:
+            return self.newform
+        else:
+            return WrappedNewform_twisted(newform=self.newform,
+                                          twist=twist.primitive_character())
+
+    def copy(self):
+        r"""Create a copy of this newform
+
+        The copy saves on memory as much as possible, but is not
+        completely shallow as the embeddings list is initialized
+        again.
+
+        OUTPUT:
+
+        A copy of this newform.
+
+        """
+        return WrappedNewform_twisted(newform=self.newform, twist=self.twist)
+
+    def _repr_(self):
+        """Give a string representation of this newform"""
+        return (str(self.newform) +
+                " twisted by " +
+                str(self.twist))

@@ -154,6 +154,7 @@ from modular_method.elliptic_curves.twist import is_twist
 from modular_method.padics.pAdic_base import pAdicBase
 from modular_method.padics.pAdic_tree import pAdicTree, pAdicNode
 
+from modular_method.number_fields.dirichlet_characters import dirichlet_product
 from modular_method.number_fields.field_constructors import _write_as_im_gen_map
 from modular_method.number_fields.field_constructors import _concat_maps
 from modular_method.number_fields.field_constructors import write_as_extension
@@ -2614,130 +2615,125 @@ class FreyQcurve(FreyCurve, Qcurve):
         return apply_to_conditional_value(lambda Ni:
                                           Qcurve.newform_levels(self, N=Ni), N)
 
-    @cached_method(key=lambda self, add, c, conj, alg, prec, v, path:
+    @cached_method(key=lambda self, add, c, conj, alg, prec, v, path, beta:
                    ((self._condition if c is None else c),
                     (tuple(self.primes_of_possible_additive_reduction())
                      if add is None else tuple(add)),
-                    conj, prec))
+                    conj, prec, beta))
     def newform_candidates(self, bad_primes=None, condition=None, conjugates=True,
                            algorithm='sage', verbose=False, precision_cap=20,
-                           path=None):
-        r"""Compute newforms that could be associated to this Frey Q-curve.
+                           path=None, splitting_map=0):
+        r"""Compute newforms that could be associated to a splitting map.
 
-        Each non-CM Q-curve is the quotient of a $\Q$-simple variety
-        of GL_2-type, which in turn is isogenous to an abelian
-        varietyr associated to a newform. The $\lambda$-adic galois
-        representation of this newform is isomorphic to the $l$-adic
-        galois representation of the Q-curve when restricted to a
-        common subgroup of the absolute galois group of $\QQ$. Here
-        $\lambda$ is a prime dividing $l$ in the coefficient field of
-        the newform.
+        When the restriction of scalars of this Q-curve over the
+        :meth:`decomposition_field` is isogenous to a product of
+        $\QQ$-simple factors of $GL_2$-type (as determined by
+        :meth:`does_decompose`), then each of these factors is
+        isogenous to the Abelian variety associated with a
+        newform~$f$. These newforms have Galois representations
+        isomorphic to the Galois representations of the
+        :meth:`splitting_map` associated with the corresponding
+        $\QQ$-simple factor.
 
-        The conductor of an abelian variety associated to a newform is
-        $N^n$, where $N$ is the level of the newform and $n$ is the
-        dimension of the variety. If the Q-curve decomposes, the
-        factors of its restriction of scalars form abelian varieties
-        of associated newforms. These newforms are directly related to
-        the splitting maps of the Q-curves, in the sense that they are
-        twists of one another by the inverse of the twist characters
-        and their characters are the inverse of the splitting
-        characters. Using results about the change in level when
-        twisting a newform and the conductor of the restriction of
-        scalars, a guess for the levels of the newforms can be made.
+        This method does not compute the newforms $f$, but rather all
+        the newforms $g$ with the same character and level $N$. Here
+        $N$ is the largest divisor of the level of $f$ only divisible
+        by primes in `bad_primes`.
 
-        Let $E$ be an elliptic and $P$ be a prime of its decomposition
-        field for which the order of $P$ in the discriminant of $E$ is
-        divisible by a prime number $l$ and for which $E$ does not
-        have additive reduction. In that case is the mod $l$ galois
-        representation of $E$ unramified at $P$. In case $E$ is a
-        $\Q$-curve and $P$ is not ramified in the decomposition field,
-        this implies that the corresponding mod $\lambda$
-        representation of an associated newform is unramified at the
-        prime number $p$ below $P$. In this case we would be able to
-        find a newform of a lower level that has an isomorphic mod
-        $\lambda$ representation. To be precise the lower level is the
-        part of the level that is coprime to $p$.
+        When the primes in `bad_primes` are chosen correctly, the
+        newforms returned by this method correspond to the newforms in
+        the modular method after level lowering. A correct choice here
+        is determined by the level lowering results used, which are
+        not part of this framework.
 
-        In the case we have a Frey Q-curve $E$ and only a finite set
-        $S$ of bad primes of its decompisition field, i.e. primes $P$
-        for which the curve $E$ has additive reduction, that ramify in
-        the decomposition field or for which their order in the
-        discriminat of $E$ is not divisible by $l$, we know by level
-        lowering that the mod $l$ representation of $E$ is isomorphic
-        to the mod $\lambda$ galois representation of newforms with a
-        level only divisible by prime numbers below primes in the set
-        $S$. This function computes the possible levels and all
-        newforms at those levels for this curve given such a set $S$.
+        .. NOTE::
+
+        This method uses the method :meth:`newform_levels` to compute
+        the level $N$. Note that the method :meth:`newform_levels`
+        need not be conclusive, but might give a list of options. The
+        list of newforms returned by this method is the concatenation
+        of all these options.
 
         INPUT:
         
-        - ``bad_primes`` -- A list of primes of the decomposition
-          field of this curve or None (default: None). These primes
-          should be given as prime numbers if the decomposition field
-          is $\QQ$ or as prime ideal otherwise. This should be the
-          list of all the bad primes, i.e. primes for which this curve
-          has additive reduction, primes that ramify in the
-          decomposition field and primes of which the order in the
-          disriminant of this curve is not divisible by $l$. If set to
-          None will be initialized as the result of
-          :meth:`primes_of_possible_additive_reduction` together with
-          all primes that ramify in the decomposition field, which
-          might omit some primes for which the discriminant of this
-          curve is not an $l$-th power.
+        - ``bad_primes`` -- A list of primes of the
+          :meth:decomposition_field: or `None` (default:
+          `None`). These primes should be given as prime numbers if
+          the decomposition field is $\QQ$ or as prime ideal
+          otherwise. If set to None will be initialized as the result
+          of :meth:`primes_of_possible_additive_reduction` together
+          with all primes that ramify in the decomposition field,
+          which might omit some primes for which the discriminant of
+          this curve is not an $l$-th power.
 
-        - ``condition`` -- A Condition or None (default: None) giving
+        - ``condition`` -- A Condition or `None` (default: `None`) giving
           the condition that the parameters of this Frey curve should
           satisfy. If set to None will use the condition stored in
           this FreyCurve instead.
 
-        - ``conjugates`` -- A boolean (default: False) indicating
-          whether for each Galois orbit multiple newforms should be
-          returned. When set to True for each orbit this code will add
-          the same newform from the orbit multiple times but each one
-          with a different embedding into the common embedding field
-          of the `splitting_image_field` of this curve and the
-          `coefficient_field` of the newform. Note that when set to
-          False only one representative of each orbit is given meaning
-          that computations that depend on a specific newform in the
-          orbit can give wrong answers.
+        - ``conjugates`` -- A boolean (default: `False`) indicating
+          whether each Galois orbit of newforms should be given as all
+          (`True`) or only one (`False`) of the newforms in it. When
+          set to True the multiple newforms are created by adding a
+          copy of the same newform for each different embedding into
+          the common embedding field of the
+          :meth:`splitting_image_field` and the newform's
+          :meth:`WrappedNewform.coefficient_field`. Note that any
+          computations that depend on a specific newform in the orbit
+          can give wrong answers if this is set to `False`.
 
         - ``algorithm`` -- The algorithm that should be used to
           compute the newforms. For possible options look at the
           function :func:`get_newforms`.
 
         - ``verbose`` -- A boolean value or an integer (default:
-          False). When set to True or any value larger then zero will
-          print comments to stdout about the computations being done
-          whilst busy. If set to False or 0 will not print such comments.
-          If set to any negative value will also prevent the printing of
-          any warnings.  A higher value will cause more messages to be
-          printed.
+          `False`). When set to `True` or any value larger then zero
+          will print comments to stdout about the computations being
+          done whilst busy. If set to `False` or 0 will not print such
+          comments. If set to any negative value will also prevent the
+          printing of any warnings. A higher value will cause more
+          messages to be printed.
 
         - ``precision_cap`` -- A strictly positive integer (default:
           20) giving the maximal precision level to be used in p-Adic
           arithmetic for the parameters.
 
         - ``path`` -- An argument that might be required if the
-          argument algorithm is set to a particular value. See the
+          argument `algorithm` is set to a particular value. See the
           function :func:`get_newforms` for more explanation.
+
+        - ``splitting_map`` -- A non-negative integer (default: 0)
+          smaller than :meth:`number_of_splitting_maps`. This is the
+          index of the splitting map for which the newform candidates
+          should be computed.
 
         OUTPUT:
 
-        A list of newforms $f$ for which the mod $l$ galosi
-        representations of $f$ and this Frey curve might be
-        isomorphic. If this list depends on the values of the
-        parameters, returns a conditional value containing the
-        possible lists with the associated conditions on the
-        parameters.
+        A list of all newforms of levels $\{N_1, \ldots, N_r\}$ and
+        character $\varepsilon$. Here $\{N_1, \ldots, N_r\}$ are the
+        levels that correspond to the splitting map with index
+        `splitting_map`, as returned by :meth:`newform_levels` on the
+        same arguments `bad_primes`, `condition`, and
+        `precision_cap`. The character $\varepsilon$ is the inverse of
+        the :meth:`splitting_character` with index `spitting_map`.
+
+        If `conjugates` was set to `False` the list only contains one
+        newform for each Galois orbit. Otherwise for each newform in
+        the list returned, all its Galois conjugates are also in the
+        list.
+
+        If the output of :meth:`newform_levels` would be a conditional
+        value, then the output of this function is also a conditional
+        value.
 
         """
         if condition is None:
             condition = self._condition
         levels = self.newform_levels(bad_primes=bad_primes,
-                                      condition=condition,
-                                      verbose=(verbose - 1 if verbose > 0
-                                               else verbose),
-                                      precision_cap=precision_cap)
+                                     condition=condition,
+                                     verbose=(verbose - 1 if verbose > 0
+                                              else verbose),
+                                     precision_cap=precision_cap)
         return apply_to_conditional_value(lambda levelsi, con:
                                           self._newform_candidates(levelsi,
                                                                    con &
@@ -2745,12 +2741,13 @@ class FreyQcurve(FreyCurve, Qcurve):
                                                                    conjugates,
                                                                    algorithm,
                                                                    path,
-                                                                   verbose),
+                                                                   verbose,
+                                                                   splitting_map),
                                           levels, use_condition=True,
                                           default_condition=condition)
 
     def _newform_candidates(self, levels, condition, conjugates,
-                            algorithm, path, verbose):
+                            algorithm, path, verbose, splitting_map):
         r"""Implementation of :meth:`newform_candidates`
 
         INPUT:
@@ -2766,21 +2763,31 @@ class FreyQcurve(FreyCurve, Qcurve):
 
         - ``verbose`` -- Verbosity argument
 
+        - ``splitting_map`` -- Index of corresponding splitting map
+
         """
         result = []
-        done_levels = []
+        done_levels = {}
         characters = [(eps^(-1)).primitive_character()
                       for eps in self.splitting_character('conjugacy')]
-        KE = self.splitting_image_field()
+        twists = [dirichlet_product(self.twist_character(splitting_map)^(-1),
+                                    chi).primitive_character()
+                  for chi in self.twist_character('conjugacy')]
+        KE = self.splitting_image_field(splitting_map)
         for levelsi in levels:
-            level, eps = min(zip(levelsi, characters),
-                             key=lambda x: x[0])
-            if (level, eps) in done_levels:
-                continue # Already computed, continue on with the next
-            if verbose > 0:
-                print("Computing newforms of level %s and character %s"%(level, eps))
-            for f in get_newforms(level, character=eps,
-                                  algorithm=algorithm, path=path):
+            index = min(range(len(levelsi)),
+                        key=lambda x: levelsi[x])
+            level = levelsi[index]
+            eps = characters[index]
+            chi = twists[index]
+            if (level, eps) not in done_levels:
+                if verbose > 0:
+                    print("Computing newforms of level %s and character %s"%(level, eps))
+                done_levels[(level, eps)] = get_newforms(level, character=eps,
+                                                         algorithm=algorithm,
+                                                         path=path)
+            for f in done_levels[(level, eps)]:
+                f = f.twist(chi)
                 Kf = f.coefficient_field()
                 if conjugates:
                     K = common_embedding_field(KE, Kf)
@@ -2793,7 +2800,6 @@ class FreyQcurve(FreyCurve, Qcurve):
                     f_phi = f.copy()
                     f_phi.set_embedding(K, phi)
                     result.append(f_phi)
-            done_levels.append((level, eps))
         return result
 
     def trace_of_frobenius(self, prime, power=1, splitting_map=0,

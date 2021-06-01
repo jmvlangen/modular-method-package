@@ -53,7 +53,10 @@ AUTHORS:
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
+from functools import reduce
+
 from modular_method.number_fields.field_constructors import fixed_field
+from modular_method.number_fields.field_constructors import common_embedding_field
 from modular_method.number_fields.galois_group import cyclotomic_galois_isomorphism
 
 from sage.all import Integer, ZZ
@@ -249,3 +252,36 @@ def _character_for_2(a):
         if len(eps.kernel()) == 2 and b in eps.kernel():
             return eps
     raise Exception("No character found!")
+
+def _dirichlet_product(eps1, eps2):
+    """An implementation of :func:`dirichlet_product`"""
+    if eps1.modulus() != eps2.modulus():
+        N = lcm(eps1.modulus(), eps2.modulus())
+        eps1 = eps1.extend(N)
+        eps2 = eps2.extend(N)
+    if eps1.base_ring() != eps2.base_ring():
+        _, phi1, phi2 = common_embedding_field(eps1, eps2, give_maps=True)
+        eps1 = eps1.change_ring(phi1)
+        eps2 = eps2.change_ring(phi2)
+    return eps1 * eps2
+
+def dirichlet_product(*characters):
+    r"""Compute the product of Dirichlet characters
+
+    Convenience method for Dirichlet characters that do not
+    necessarily have the same modulus and definition field.
+
+    INPUT:
+
+    Multiple Dirichlet characters.
+
+    OUTPUT:
+
+    A Dirichlet character that is the product of the given Dirichlet
+    characters. The modulus of this character is the least common
+    multiple of the moduli of the given characters, and the field of
+    this character is a common embedding field of the field of the
+    given characters.
+
+    """
+    return reduce(_dirichlet_product, characters)
