@@ -61,6 +61,7 @@ from modular_method.number_fields.galois_group import cyclotomic_galois_isomorph
 
 from sage.all import Integer, ZZ
 from sage.rings.finite_rings.integer_mod import mod
+from sage.arith.functions import lcm
 
 from sage.modular.dirichlet import DirichletGroup
 

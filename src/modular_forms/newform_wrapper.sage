@@ -106,6 +106,7 @@ from sage.modular.dirichlet import is_DirichletCharacter, DirichletGroup
 from sage.modular.modform.constructor import Newforms
 
 from modular_method.number_fields.dirichlet_characters import dirichlet_product
+from modular_method.number_fields.field_constructors import common_embedding_field
 from modular_method.number_fields.field_constructors import composite_field
 
 from modular_method.polynomial.symmetric_polynomials import polynomial_to_symmetric
@@ -3504,7 +3505,7 @@ class WrappedNewform_twisted(WrappedNewform):
         self.twist = twist
         L1 = self.twist.base_ring()
         L2 = self.newform.coefficient_field()
-        L, phi, psi = common_embedding_field(L1, L2)
+        L, phi, psi = common_embedding_field(L1, L2, give_maps=True)
         self._coefficient_field = L
         self._twist_embedding = phi
         self._newform_embedding = psi
