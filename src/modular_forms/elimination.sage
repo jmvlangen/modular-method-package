@@ -125,7 +125,7 @@ def _init_elimination_data(curves, newforms, condition):
         parameters = None
         ring = None
         if len(curves) == 0:
-            raise ValueError("At least one curve should be provided.")            
+            raise ValueError("At least one curve should be provided.")
         for curve in curves:
             if not isinstance(curve, FreyCurve):
                 raise ValueError("%s is not a Frey curve"%(curve,))
@@ -190,7 +190,7 @@ def _init_traces(curves, condition, prime, primes, powers,
     return [val for val, con in traces
             if not (con.never() or
                     con.pAdic_tree(pAdics=pAdicBase(K, prime)).is_empty())]
-                                       
+
 def _init_newform_list(newforms, curves):
     """Initialize a list of newforms associated to given Frey curves
 
@@ -350,7 +350,7 @@ def eliminate_by_trace(curves, newforms, prime, B=0, condition=None,
       printed.
 
     OUTPUT:
-    
+
     A list of tuples, wherein each tuple contains:
 
     - for each frey curve given a corresponding newform for which an
@@ -439,7 +439,7 @@ def _single_elimination(E, KE, LE, nfs, p, prime, pE, B, Bprod, C,
                 else next(P for P in Kf[i].primes_above(pcom[i])
                           if pcom[i].divides(Kcom[i].ideal([Kphif[i](g) for g in P.gens()]))))
                for i in range(nE))
-    if any(pf[i].divides(nfs[i].level()) for i in range(nE)):
+    if not all(nfs[i].can_compute_frobenius(pf[i]) for i in range(nE)):
         # Can not do this prime, so skip
         return Bold
     ramdegE = tuple((1 if Kcom[i] == QQ else
@@ -637,7 +637,7 @@ def eliminate_by_traces(curves, newforms, condition=None, primes=50,
       printed.
 
     OUTPUT:
-    
+
     A list of tuples, wherein each tuple contains:
 
     - for each frey curve given a corresponding newform for which an
@@ -671,7 +671,7 @@ def eliminate_by_traces(curves, newforms, condition=None, primes=50,
         raise ValueError("%s is not a list of valid primes"%(primes,))
     return _eliminate_by_traces(curves, newforms, condition, primes,
                                 use_minpoly, precision_cap, verbose)
-        
+
 def _eliminate_by_traces(curves, newforms, condition, primes,
                          use_minpoly, precision_cap, verbose):
     r"""Implementation of :func:`eliminate_by_traces`.
@@ -798,7 +798,7 @@ def kraus_method(curves, newforms, l, polynomials, primes=200,
       printed.
 
     OUTPUT:
-    
+
     A list of tuples, wherein each tuple contains:
 
     - for each frey curve given a corresponding newform for which an
@@ -853,7 +853,7 @@ def _kraus_method(curves, newforms, l, polynomials, primes, condition,
     """
     base_field = curves[0]._R.fraction_field()
     variables = curves[0].base().gens()
-    
+
     for p in primes:
         try:
             condition_p = kraus_condition(l, polynomials, variables,
@@ -868,7 +868,7 @@ def _kraus_method(curves, newforms, l, polynomials, primes, condition,
                                            precision_cap, verbose)
             if len(newforms) == 0:
                 break
-            
+
     return newforms
 
 def kraus_condition(l, polynomials, variables, base_field,
@@ -922,7 +922,7 @@ def kraus_condition(l, polynomials, variables, base_field,
                 if F(poly(*N.representative())) not in pows:
                     N.remove()
                     break
-        
+
     return TreeCondition(pAdicTree(variables, root=T))
 
 def _kraus_data_iterator(l, polynomials, base_prime):
@@ -1046,7 +1046,7 @@ def eliminate_cm_forms(curves, newforms, has_cm=False, condition=None):
       newforms are not given yet.
 
     OUTPUT:
-    
+
     A list of tuples, wherein each tuple contains:
 
     - for each frey curve given a corresponding newform for which an
@@ -1152,7 +1152,7 @@ def eliminate_primes(curves, newforms, N, condition=None):
       if the newforms are not given yet.
 
     OUTPUT:
-    
+
     A list of tuples, wherein each tuple contains:
 
     - for each frey curve given a corresponding newform for which an
@@ -1199,7 +1199,7 @@ def _eliminate_primes(newforms, ls):
 def combine_newforms(*newforms):
     r"""Combine the output of different newform elimination methods into
     one.
-    
+
     Given multiple lists of newforms given as output by one of the
     functions :func:`eliminate_by_traces`, :func:`eliminate_by_trace`,
     :func:`kraus_method`, :func:`eliminate_cm_forms` or
@@ -1207,14 +1207,14 @@ def combine_newforms(*newforms):
     newforms that combines all this information.
 
     INPUT:
-    
+
     Any number of arguments, wherein each argument is a list of tuples
     of the form $(f_1, ..., f_m, N)$, where each $f_i$ is a newform
     and $N$ is an integer. The integer $m$ should be the same among
     all tuples in a list.
 
     OUTPUT:
-    
+
     A list of tuples, such that for each combination of tuples $(f_(1,
     1), ..., f_(1, m_1), N_1), ..., (f_(n, 1), ..., f_(n, m_n), N_n)$
     from the respective lists given, the tuple $(f_(1, 1), ..., f(1,
@@ -1229,7 +1229,7 @@ def combine_newforms(*newforms):
 
 def _combine_newforms(*newforms):
     r"""Implementation of :func:`combine_newforms`"""
-    return [nfs for nfs in (sum((item[:-1] for item in items), ()) + 
+    return [nfs for nfs in (sum((item[:-1] for item in items), ()) +
                             (gcd([item[-1] for item in items]),)
                             for items in itertools.product(*newforms))
             if abs(nfs[-1]) != 1]

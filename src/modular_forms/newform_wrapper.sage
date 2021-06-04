@@ -147,9 +147,9 @@ def get_newforms(level, character=None, algorithm='sage', base_field=QQ,
     - ``path`` -- A string or None (default: None). Only used in case
       the algorithm is set to file, in which case it should be the
       path to the file from which to load the newforms as a string.
-    
+
     OUTPUT:
-    
+
     A list of instances of WrappedNewform that contains exactly one
     newform in each galois orbit of newforms of level `level`,
     (parallel) weight 2, base field `base_field`, and character
@@ -281,7 +281,7 @@ class LabeledElement:
     def __init__(self, label, element):
         self.label = label
         self.element = element
-    
+
 def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
                   save_cm=True):
     r"""Save newforms to a file.
@@ -299,7 +299,7 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
 
     In the file in which the newforms are save we use the following
     notation, written here as regular expressions:
- 
+
     <list> := '[' ( <element> ( ',' <element> )* )? ']'
     <element> := ( '<' <identifier> '>' ':=' )? ( <list> | <rational> )
     <identifier> := <letter>+
@@ -416,7 +416,7 @@ def save_newforms(newforms, file_name, coefficients=50, repr_coefficients=True,
          q + q^2 - 3*q^3 + q^4 - q^5 - 3*q^6 + q^7 + q^8 + 6*q^9 - q^10 - 2*q^11 - 3*q^12 - q^13 + q^14 + 3*q^15 + q^16 - 3*q^17 + 6*q^18 + 6*q^19 + O(q^20)]
 
     One can store multiple newform lists in a single file::
-    
+
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs1 = get_newforms(26); nfs1
         [q - q^2 + q^3 + q^4 - 3*q^5 + O(q^6), q + q^2 - 3*q^3 + q^4 - q^5 + O(q^6)]
@@ -505,7 +505,7 @@ def _write_list(ls, f, coefficients, save_cm, indent=0, indent_start=True):
     - ``ls`` -- The list to be written
 
     - ``f`` -- The file to be written to
-    
+
     - ``coefficients`` -- The indices of coefficients of newforms to
       be saved
 
@@ -541,7 +541,7 @@ def _write_element(element, f, coefficients, save_cm, indent=0):
     - ``element`` -- The element to be written
 
     - ``f`` -- The file to be written to
-    
+
     - ``coefficients`` -- The indices of coefficients of newforms to
       be saved
 
@@ -582,7 +582,7 @@ def _write_newform(nf, f, coefficients, save_cm, indent=0):
     - ``nf`` -- The newform to be written
 
     - ``f`` -- The file to be written to
-    
+
     - ``coefficients`` -- The indices of coefficients of newforms to
       be saved
 
@@ -633,7 +633,7 @@ def _write_character(eps, f, coefficients, save_cm, indent=0):
     - ``eps`` -- The character to be written
 
     - ``f`` -- The file to be written to
-    
+
     - ``coefficients`` -- The indices of coefficients of newforms to
       be saved
 
@@ -686,7 +686,7 @@ def _write_field(field, f, coefficients, save_cm, indent=0):
     - ``field`` -- The field to be written
 
     - ``f`` -- The file to be written to
-    
+
     - ``coefficients`` -- The indices of coefficients of newforms to
       be saved
 
@@ -714,7 +714,7 @@ def _write_polynomial(poly, f, coefficients, save_cm, indent=0):
     - ``poly`` -- The polynomial to be written
 
     - ``f`` -- The file to be written to
-    
+
     - ``coefficients`` -- The indices of coefficients of newforms to
       be saved
 
@@ -763,7 +763,7 @@ def _write_labeled_element(element, f, coefficients, save_cm, indent=0):
     - ``element`` -- The labeled element to be written
 
     - ``f`` -- The file to be written to
-    
+
     - ``coefficients`` -- The indices of coefficients of newforms to
       be saved
 
@@ -795,7 +795,7 @@ def load_newforms(file_name):
 
     The file in which the newforms are stored should use the following
     notation, written here as regular expressions:
- 
+
     <list> := '[' ( <element> ( ',' <element> )* )? ']'
     <element> := ( '<' <identifier> '>' ':=' )? ( <list> | <rational> )
     <identifier> := <letter>+
@@ -890,7 +890,7 @@ def load_newforms(file_name):
          q + q^2 - 3*q^3 + q^4 - q^5 - 3*q^6 + q^7 + q^8 + 6*q^9 - q^10 - 2*q^11 - 3*q^12 - q^13 + q^14 + 3*q^15 + q^16 - 3*q^17 + 6*q^18 + 6*q^19 + O(q^20)]
 
     One can store multiple newform lists in a single file::
-    
+
         sage: from modular_method.modular_forms.newform_wrapper import get_newforms, save_newforms, load_newforms
         sage: nfs1 = get_newforms(26); nfs1
         [q - q^2 + q^3 + q^4 - 3*q^5 + O(q^6), q + q^2 - 3*q^3 + q^4 - q^5 + O(q^6)]
@@ -969,7 +969,7 @@ def _interpret_element(element, field=None):
                 for subelement in element]
     else:
         return element
-    
+
 def _interpret_labeled_element(element, field=None):
     r"""Recover a data structure from its file representation.
 
@@ -1445,7 +1445,7 @@ def _read_positive_integer(f):
     except ValueError:
         f.seek(f.tell()-1)
         return result
-        
+
 def _read_digit(f):
     r"""Read a digit from a file.
 
@@ -1465,7 +1465,7 @@ def _read_digit(f):
     if not s.isdigit():
         raise ValueError("Attempting to read a digit, but read %s"%(s,))
     return s
-    
+
 def _read_non_zero_digit(f):
     r"""Read a non-zero digit from a file.
 
@@ -1486,7 +1486,7 @@ def _read_non_zero_digit(f):
         return s
     else:
         raise ValueError("Attempting to read a non-zero digit, but read %s"%(s,))
-    
+
 def _read_zero(f):
     r"""Read the digit '0' from a file.
 
@@ -1506,7 +1506,7 @@ def _read_zero(f):
     if s != '0':
         raise ValueError("Attempting to read 0, but read %s"%(s,))
     return s
-    
+
 class WrappedNewform(SageObject):
     r"""A wrapper class around a newform of weight 2.
 
@@ -1562,7 +1562,7 @@ class WrappedNewform(SageObject):
 
     def level(self):
         r"""Give the level of this newform.
-        
+
         OUTPUT:
 
         A non-negative integer describing the level of this newform.
@@ -1576,6 +1576,26 @@ class WrappedNewform(SageObject):
 
         """
         raise NotImplementedError()
+
+    def can_compute_frobenius(self, prime):
+        r"""Determine whether the trace of Frobenius can be computed for `prime`.
+
+        INPUT:
+
+        - ``prime`` -- A finite prime of the :meth:`base_field`. If
+          :meth:`base_field` is the rationals it should be a prime
+          number, otherwise a prime ideal.
+
+        OUTPUT:
+
+        - `True`, if this wrapped newform can compute the trace of
+          frobenius at the prime `prime`. At least the `prime` should
+          then not divide the :meth:`level`.
+
+        - `False`, otherwise.
+
+        """
+        return prime.divides(self.level())
 
     def character(self):
         r"""Give the character associated to this newform.
@@ -1616,16 +1636,16 @@ class WrappedNewform(SageObject):
 
         """
         return QQ
-        
+
     def coefficient(self, n):
         r"""Give the n-th coefficient of this newform.
 
         INPUT:
-        
+
         - ``n`` -- A non-negative integer.
 
         OUTPUT:
-        
+
         The n-th coefficient of the q-expansion of this newform at
         infinity.
 
@@ -1726,7 +1746,7 @@ class WrappedNewform(SageObject):
 
     def embedding(self, field):
         r"""Give an embedding of the coefficient field into the given field
-        
+
         The given embedding is always the same and can be set using
         the method :meth:`set_embedding`.
 
@@ -1740,7 +1760,7 @@ class WrappedNewform(SageObject):
         given field. Raises a ValueError if no such embedding exists.
 
         .. SEEALSO:
-        
+
             :meth:`set_embedding`
             :meth:`coefficient_field`
 
@@ -1776,7 +1796,7 @@ class WrappedNewform(SageObject):
         """Give the q-expansion of this newform.
 
         INPUT:
-        
+
         - ``prec`` -- A non-negative integer (default: 20) giving a
           bound on the powers that should be present in this
           q-expansion.
@@ -1831,7 +1851,7 @@ class WrappedNewform(SageObject):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
@@ -1891,7 +1911,7 @@ class WrappedNewform(SageObject):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
@@ -1946,7 +1966,7 @@ class WrappedNewform(SageObject):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
@@ -2017,7 +2037,7 @@ class WrappedNewform(SageObject):
 
         """
         raise NotImplementedError()
-    
+
     qexp = q_expansion
 
     def copy(self):
@@ -2098,7 +2118,7 @@ class WrappedNewform_sage(WrappedNewform):
 
     def level(self):
         r"""Give the level of this newform.
-        
+
         OUTPUT:
 
         A non-negative integer describing the level of this newform.
@@ -2131,16 +2151,16 @@ class WrappedNewform_sage(WrappedNewform):
 
         """
         return self._f.character()
-        
+
     def coefficient(self, n):
         r"""Give the n-th coefficient of this newform.
 
         INPUT:
-        
+
         - ``n`` -- A non-negative integer.
 
         OUTPUT:
-        
+
         The n-th coefficient of the q-expansion of this newform at
         infinity.
 
@@ -2195,7 +2215,7 @@ class WrappedNewform_sage(WrappedNewform):
         """Give the q-expansion of this newform.
 
         INPUT:
-        
+
         - ``prec`` -- A non-negative integer (default: 20) giving a
           bound on the powers that should be present in this
           q-expansion.
@@ -2246,7 +2266,7 @@ class WrappedNewform_sage(WrappedNewform):
 
         """
         return self._f.has_cm()
-    
+
     def copy(self):
         r"""Create a copy of this newform
 
@@ -2310,7 +2330,7 @@ class WrappedNewform_magma(WrappedNewform):
 
     def level(self):
         r"""Give the level of this newform.
-        
+
         OUTPUT:
 
         A non-negative integer describing the level of this newform.
@@ -2352,16 +2372,16 @@ class WrappedNewform_magma(WrappedNewform):
             if all(eps(n) == eps_f(n).sage() for n in gens):
                 return eps
         raise ValueError("No sage character corresponds to %s"%(eps_f,))
-        
+
     def coefficient(self, n):
         r"""Give the n-th coefficient of this newform.
 
         INPUT:
-        
+
         - ``n`` -- A non-negative integer.
 
         OUTPUT:
-        
+
         The n-th coefficient of the q-expansion of this newform at
         infinity.
 
@@ -2543,7 +2563,7 @@ class WrappedNewform_stored(WrappedNewform):
 
     def level(self):
         r"""Give the level of this newform.
-        
+
         OUTPUT:
 
         A non-negative integer describing the level of this newform.
@@ -2557,6 +2577,26 @@ class WrappedNewform_stored(WrappedNewform):
 
         """
         return self._level
+
+    def can_compute_frobenius(self, prime):
+        r"""Determine whether the trace of Frobenius can be computed for `prime`.
+
+        INPUT:
+
+        - ``prime`` -- A finite prime of the :meth:`base_field`. If
+          :meth:`base_field` is the rationals it should be a prime
+          number, otherwise a prime ideal.
+
+        OUTPUT:
+
+        - `True`, if this wrapped newform can compute the trace of
+          frobenius at the prime `prime`. At least the `prime` should
+          then not divide the :meth:`level`.
+
+        - `False`, otherwise.
+
+        """
+        return prime in self._coeffs or prime in self._traces
 
     @cached_method
     def character(self):
@@ -2598,16 +2638,16 @@ class WrappedNewform_stored(WrappedNewform):
 
         """
         return self._base
-        
+
     def coefficient(self, n):
         r"""Give the n-th coefficient of this newform.
 
         INPUT:
-        
+
         - ``n`` -- A non-negative integer.
 
         OUTPUT:
-        
+
         The n-th coefficient of the q-expansion of this newform at
         infinity.
 
@@ -2665,7 +2705,7 @@ class WrappedNewform_stored(WrappedNewform):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
@@ -2734,7 +2774,7 @@ class WrappedNewform_stored(WrappedNewform):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
@@ -2825,7 +2865,7 @@ class WrappedNewform_stored(WrappedNewform):
         return WrappedNewform_stored(self._base, self._level,
                                      self._eps, self._K, self._coeffs,
                                      self._traces, self._cm)
-    
+
     def _repr_(self):
         """Give a string representation of this newform"""
         try:
@@ -2883,7 +2923,7 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
 
     def level(self):
         r"""Give the level of this newform.
-        
+
         OUTPUT:
 
         An ideal of the totally real number field associated to this
@@ -2918,16 +2958,16 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
 
         """
         return DirichletGroup(1)[0]
-        
+
     def coefficient(self, n):
         r"""Give the n-th coefficient of this newform.
 
         INPUT:
-        
+
         - ``n`` -- A non-negative integer.
 
         OUTPUT:
-        
+
         The n-th coefficient of the q-expansion of this newform at
         infinity.
 
@@ -3025,7 +3065,7 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
@@ -3102,7 +3142,7 @@ class WrappedNewform_magma_hilbert(WrappedNewform):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
@@ -3210,7 +3250,7 @@ class WrappedNewform_magma_bianchi(WrappedNewform):
 
     def level(self):
         r"""Give the level of this newform.
-        
+
         OUTPUT:
 
         An ideal of the totally real number field associated to this
@@ -3245,16 +3285,16 @@ class WrappedNewform_magma_bianchi(WrappedNewform):
 
         """
         return DirichletGroup(1)[0]
-        
+
     def coefficient(self, n):
         r"""Give the n-th coefficient of this newform.
 
         INPUT:
-        
+
         - ``n`` -- A non-negative integer.
 
         OUTPUT:
-        
+
         The n-th coefficient of the q-expansion of this newform at
         infinity.
 
@@ -3352,7 +3392,7 @@ class WrappedNewform_magma_bianchi(WrappedNewform):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
@@ -3427,7 +3467,7 @@ class WrappedNewform_magma_bianchi(WrappedNewform):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
@@ -3550,19 +3590,35 @@ class WrappedNewform_twisted(WrappedNewform):
         """
         return self.newform.base_field()
 
-    def twist_galois(self, sigma):
-        r"""The twist character as a Galois character"""
-        pass
+    def can_compute_frobenius(self, prime):
+        r"""Determine whether the trace of Frobenius can be computed for `prime`.
+
+        INPUT:
+
+        - ``prime`` -- A finite prime of the :meth:`base_field`. If
+          :meth:`base_field` is the rationals it should be a prime
+          number, otherwise a prime ideal.
+
+        OUTPUT:
+
+        - `True`, if this wrapped newform can compute the trace of
+          frobenius at the prime `prime`. At least the `prime` should
+          then not divide the :meth:`level`.
+
+        - `False`, otherwise.
+
+        """
+        return self.newform.can_compute_frobenius(prime) and not prime.divides(self.twist.modulus())
 
     def coefficient(self, n):
         r"""Give the n-th coefficient of this newform.
 
         INPUT:
-        
+
         - ``n`` -- A non-negative integer.
 
         OUTPUT:
-        
+
         The n-th coefficient of the q-expansion of this newform at
         infinity.
 
@@ -3618,7 +3674,7 @@ class WrappedNewform_twisted(WrappedNewform):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
@@ -3676,7 +3732,7 @@ class WrappedNewform_twisted(WrappedNewform):
         Will give a ValueError if the given prime divides the level of
         this newform, since in that case all mentioned galois
         representations are ramified.
-        
+
         INPUT:
 
         - ``prime`` -- A prime of the base field for this newform
