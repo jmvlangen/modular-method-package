@@ -1595,7 +1595,7 @@ class WrappedNewform(SageObject):
         - `False`, otherwise.
 
         """
-        return prime.divides(self.level())
+        return not prime.divides(self.level())
 
     def character(self):
         r"""Give the character associated to this newform.
