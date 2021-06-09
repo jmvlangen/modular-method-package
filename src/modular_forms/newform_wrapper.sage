@@ -3638,7 +3638,7 @@ class WrappedNewform_twisted(WrappedNewform):
 
         """
         return (self._newform_embedding(self.newform.coefficient(n)) *
-                self.twist_embedding(self.twist(n)))
+                self._twist_embedding(self.twist(n)))
 
     def coefficient_field(self):
         r"""Give the field over which the coefficients of this newform are
