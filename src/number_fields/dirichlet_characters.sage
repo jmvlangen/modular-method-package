@@ -261,7 +261,7 @@ def _dirichlet_product(eps1, eps2):
         eps1 = eps1.extend(N)
         eps2 = eps2.extend(N)
     if eps1.base_ring() != eps2.base_ring():
-        _, phi1, phi2 = common_embedding_field(eps1, eps2, give_maps=True)
+        _, phi1, phi2 = common_embedding_field(eps1.base_ring(), eps2.base_ring(), give_maps=True)
         eps1 = eps1.change_ring(phi1)
         eps2 = eps2.change_ring(phi2)
     return eps1 * eps2

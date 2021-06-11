@@ -3567,7 +3567,7 @@ class WrappedNewform_twisted(WrappedNewform):
             Dirichlet character modulo 16 of conductor 16 mapping 15 |--> 1, 5 |--> zeta4
 
         """
-        return self.newform.character() * self.twist
+        return dirichlet_product(self.newform.character(), self.twist)
 
     def base_field(self):
         r"""Give the base field for this newform.
