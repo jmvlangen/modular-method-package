@@ -34,8 +34,11 @@ computation as in the article.
    sage: G = K.galois_group()
    sage: s2 = next(s for s in G if s != G(1) and s(sqrtm2) == sqrtm2)
    sage: s3 = next(s for s in G if s != G(1) and s(sqrt3) == sqrt3)
-   sage: [E.isogeny_scalar(s)^2 for s in [G(1), s2, s3, s2*s3]]
-   [1, -2, 1, -2]
+   sage: (E.isogeny_scalar(G(1)) == 1 and
+   ....:  E.isogeny_scalar(s2) == sqrtm2 and
+   ....:  E.isogeny_scalar(s3) == 1 and
+   ....:  E.isogeny_scalar(s2*s3) == sqrtm2)
+   True
 
 Next we verify that the scalars of the corresponding isogenies are
 indeed as mentioned in the example.
