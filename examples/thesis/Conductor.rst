@@ -7,6 +7,12 @@ thesis.
 
 .. linkall
 
+The following import is required for all examples to work
+
+::
+
+   from modular_method import *
+
 Example 1.2.1
 -------------
 

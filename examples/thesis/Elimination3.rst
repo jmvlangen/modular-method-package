@@ -9,11 +9,16 @@ the corresponding article.
 .. _full example: ../literature/Bennett-Chen-2012.rst
 .. linkall
 
+The following import is required for the example to work
+
+::
+
+   from modular_method import *
+
 We first enter the conditions.
 
 ::
 
-   sage: from modular_method import *
    sage: R.<a, b> = QQ[]
    sage: cl = a^2 + b^6
    sage: coprime = CoprimeCondition([a, b])

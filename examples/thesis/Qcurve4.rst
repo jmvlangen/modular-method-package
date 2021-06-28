@@ -6,6 +6,12 @@ This file contains code that verifies the results from Example 2.7.11
 
 .. linkall
 
+The following import is required for the example to work
+
+::
+
+   from modular_method import *
+
 We start by constructing the Q-curve considered in the example.
 
 ::

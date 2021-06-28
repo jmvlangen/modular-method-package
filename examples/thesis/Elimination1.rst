@@ -9,11 +9,16 @@ the corresponding article.
 .. _full example: ../literature/Bugeaud-Mignotte-Siksek-2008.rst
 .. linkall
 
+The following import is required for the example to work
+
+::
+
+   from modular_method import *
+
 Entering the curves.
 
 ::
 
-   sage: from modular_method import *
    sage: R.<psi> = QQ[]
    sage: con1 = (CongruenceCondition(psi - 8, 16) &
    sage:         CongruenceCondition(psi + 1, 5))

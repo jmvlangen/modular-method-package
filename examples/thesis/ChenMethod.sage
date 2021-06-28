@@ -1,4 +1,5 @@
 ### Preliminaries
+from modular_method import *
 from modular_method.elliptic_curves.twist import twist_elliptic_curve
 from modular_method.diophantine_equations.conditions import ConditionalValue
 

@@ -7,6 +7,12 @@ Chapter 2.
 
 .. linkall
 
+The following import is required for all examples to work
+
+::
+
+   from modular_method import *
+
 Example 2.9.10
 --------------
 

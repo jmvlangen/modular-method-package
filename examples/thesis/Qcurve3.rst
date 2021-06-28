@@ -6,6 +6,12 @@ This file contains the code for the computations in Example 2.5.7.
 
 .. linkall
 
+The following import is required for the example to work
+
+::
+
+   from modular_method import *
+
 We start by introducing the Q-curve.
 
 ::

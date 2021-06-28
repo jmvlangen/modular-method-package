@@ -6,6 +6,12 @@ This file contains the code for Example 2.3.1.
 
 .. linkall
 
+The following import is required for the example to work
+
+::
+
+   from modular_method import *
+
 We verify the computations given in the example.
 
 ::
