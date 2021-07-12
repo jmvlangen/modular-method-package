@@ -13,7 +13,7 @@ The following import is required for the example to work
 
 ::
 
-   from modular_method import *
+   sage: from modular_method import *
 
 We enter the condition.
 
@@ -32,7 +32,8 @@ We construct the Frey curve and compute its newforms.
 
 ::
 
-   sage: Eab = FreyCurve([0, 0, 0, 3*a*b, b^3 - a^3], condition=condition)
+   sage: Eab = FreyCurve([0, 0, 0, 3*a*b, b^3 - a^3],
+   ....:                 condition=condition)
    sage: nfs = Eab.newform_candidates(); nfs
    Warning: Assuming that a and b are coprime.
    Warning: The bad primes chosen by default only take into account primes of additive reduction.

@@ -11,7 +11,7 @@ The following import is required for all examples to work
 
 ::
 
-   from modular_method import *
+   sage: from modular_method import *
 
 Example 2.1.4
 -------------
@@ -22,7 +22,7 @@ We enter the Q-curve in the framework.
 
    sage: _.<sqrt3> = QuadraticField(3)
    sage: E = Qcurve([0, 12, 0, 18*(1 + sqrt3), 0],
-   ....:            guessed_degrees=[2])
+   ....:            guessed_degrees=[2]); E
    Q-curve defined by y^2 = x^3 + 12*x^2 + (18*sqrt3+18)*x over Number Field in sqrt3 with defining polynomial x^2 - 3 with sqrt3 = 1.732050807568878?
 
 Example 2.2.3
@@ -91,6 +91,7 @@ We verify the results mentioned in this example.
    ....:             if eps.conductor() == 12)
    True
    sage: beta = E.splitting_map()
+   Warning: The restriction of scalars of this Q-curve over the decomposition field does not decompose into abelian varieties of GL_2-type. Use the method decomposable_twist to find a twist that does.
    sage: [beta(s)^2 for s in [G(1), s2, s3, s2*s3]]
    [1, -2, 1, -2]
 
@@ -270,7 +271,7 @@ Next we compute the twist of the curve discussed in the example.
 ::
 
    sage: E.decomposable_twist()
-   Frey Q-curve defined by y^2 = x^3 + ((-6*lu0-12)*a)*x^2 + ((18*lu0+72)*a^2+(36*lu0+108)*b)*x over Number Field in lu0 with defining polynomial x^2 - 12 with lu0 = -1/5*lu^3 + 7/5*lu with parameters (a, b)
+   Q-curve defined by y^2 = x^3 + (-6*lu0-12)*x^2 + (-18*lu0-36)*x over Number Field in lu0 with defining polynomial x^2 - 12 with lu0 = -1/5*lu^3 + 7/5*lu
 
 Example 2.9.3
 -------------
@@ -340,8 +341,8 @@ We verify the invariants of the isogenies in the example are correct.
    ....:  Egood.isogeny_x_map(s3) == F)
    True
 
-We compute the polynomial :math:`R` and verify :math:`c_1` and
-:math:`c_2` are correct by computing the numerator and denominator of
+We compute the polynomial :math:`R` and verify :math:`f_1` and
+:math:`f_2` are correct by computing the numerator and denominator of
 both :math:`F(x)` and :math:`F'(x) R`.
 
 ::
@@ -368,11 +369,11 @@ Finally we verify all the values in Table 2.1.
    ....:         print(p, "ramifies/splits, trace:", trace)
    ....:     if len(Kgood.primes_above(p)) == 1:
    ....:         # The case sigma not in G_K
-   ....:         c1_ = 2*x^(p + 1) - (2 - sqrt3)*f
-   ....:         c2_ = 2^p * (1 + sqrt3) * x^((p + 3)/2) * f^((p - 1)/2) + (2 - sqrt3) * (x^2 + 1 + sqrt3)
-   ....:         c1_ = c1_.change_ring(FP)
-   ....:         c2_ = c2_.change_ring(FP)
-   ....:         trace = sqrtm2 * (gcd(c1_, c2_).radical().degree() - (p + 1)/2)
+   ....:         f1_ = 2*x^(p + 1) - (2 - sqrt3)*f
+   ....:         f2_ = 2^p * (1 + sqrt3) * x^((p + 3)/2) * f^((p - 1)/2) + (2 - sqrt3) * (x^2 + 1 + sqrt3)
+   ....:         f1_ = f1_.change_ring(FP)
+   ....:         f2_ = f2_.change_ring(FP)
+   ....:         trace = sqrtm2 * (gcd(f1_, f2_).radical().degree() - (p + 1)/2)
    ....:         print(p, "ramifies/inert, trace:", trace)
    3 ramifies/splits, trace: -2
    3 ramifies/inert, trace: 2*sqrtm2

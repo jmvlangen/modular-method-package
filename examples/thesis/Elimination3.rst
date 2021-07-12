@@ -13,7 +13,7 @@ The following import is required for the example to work
 
 ::
 
-   from modular_method import *
+   sage: from modular_method import *
 
 We first enter the conditions.
 
@@ -55,7 +55,7 @@ We eliminate all those newforms with CM.
 
 ::
 
-   sage: nfs = eliminate_cm_form(E, nfs)
+   sage: nfs = eliminate_cm_forms(E, nfs)
 
 Introduce the second Frey curve and compute its corresponding
 newforms.

@@ -11,7 +11,7 @@ The following import is required for all examples to work
 
 ::
 
-   from modular_method import *
+   sage: from modular_method import *
 
 Example 2.9.10
 --------------
@@ -98,7 +98,7 @@ We show that 3 does not ramify in the extension
    sage: G = L.galois_group()
    sage: iota = K.embeddings(L)[0]
    sage: sqrtgamma = sqrt(iota(gamma))
-   sage: Q3 = Kext.prime_above(iota(P3))
+   sage: Q3 = L.prime_above(iota(P3))
    sage: Q3.ramification_index()
    1
 
@@ -112,7 +112,7 @@ same for all primes above 3.
    True
 
 Now we perform the computation described in Theorem 2.10.7 and find
-the results as mentioned in the article.
+the results as mentioned in the example.
 
 ::
 

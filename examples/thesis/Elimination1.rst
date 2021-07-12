@@ -13,7 +13,7 @@ The following import is required for the example to work
 
 ::
 
-   from modular_method import *
+   sage: from modular_method import *
 
 Entering the curves.
 
@@ -21,7 +21,7 @@ Entering the curves.
 
    sage: R.<psi> = QQ[]
    sage: con1 = (CongruenceCondition(psi - 8, 16) &
-   sage:         CongruenceCondition(psi + 1, 5))
+   ....:         CongruenceCondition(psi + 1, 5))
    sage: F1 = FreyCurve([0, 2*psi + 1, 0, psi^2 + psi, 0],
    ....:                condition=con1)
    sage: G2 = FreyCurve([0, 1, 0, -psi/4, 0],
@@ -45,7 +45,7 @@ Computing the corresponding newforms.
    ....:        for g in G2.newform_candidates(bad_primes=S)]; nfs
    [(q + q^5 + O(q^6), q - 2*q^3 - q^5 + O(q^6)),
     (q + q^5 + O(q^6), q + 2*q^3 - q^5 + O(q^6)),
-    (q + q^5 + O(q^6), q - a2*q^3 + q^5 + O(q^6))]
+    (q + q^5 + O(q^6), q + 1/2*a2*q^3 + q^5 + O(q^6))]
 
 Eliminating newforms with Frobenius element at 3.
 
@@ -54,7 +54,7 @@ Eliminating newforms with Frobenius element at 3.
    sage: nfs = eliminate_by_trace((F1, G2), nfs, 3); nfs
    [(q + q^5 + O(q^6), q - 2*q^3 - q^5 + O(q^6), 0),
     (q + q^5 + O(q^6), q + 2*q^3 - q^5 + O(q^6), 12),
-    (q + q^5 + O(q^6), q - a2*q^3 + q^5 + O(q^6), 12)]
+    (q + q^5 + O(q^6), q + 1/2*a2*q^3 + q^5 + O(q^6), 12)]
 
 Eliminating newforms with Frobenius element at 7.
 
@@ -63,7 +63,7 @@ Eliminating newforms with Frobenius element at 7.
    sage: nfs = eliminate_by_trace((F1, G2), nfs, 7); nfs
    [(q + q^5 + O(q^6), q - 2*q^3 - q^5 + O(q^6), 56),
     (q + q^5 + O(q^6), q + 2*q^3 - q^5 + O(q^6), 12),
-    (q + q^5 + O(q^6), q - a2*q^3 + q^5 + O(q^6), 4)]
+    (q + q^5 + O(q^6), q + 1/2*a2*q^3 + q^5 + O(q^6), 4)]
 
 Second case of newforms.
 

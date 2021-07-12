@@ -220,12 +220,13 @@ case the finite set was chosen as :math:`{ 2 }` by the default method.
    sage: E.primes_of_possible_additive_reduction()
    [2]
 
-Note that the \verb|Rad_P| part is not explicitly computed. It just
-displays the factorisation of the discriminant~${ \Delta }$. It
+Note that the `Rad_P` part is not explicitly computed. It just
+displays the factorisation of the discriminant :math:`\Delta`. It
 indicates that the remaining part of the conductor is just the product
-of all primes dividing~${ \Delta }$ that are not in~${ \{ 2 \} }$.
+of all primes dividing :math:`\Delta` that are not in :math:`\\{ 2
+\\}`.
 
-We can also change the set~${ \{ 2 \} }$ to compute more conductor
+We can also change the set :math:`\\{ 2 \\}` to compute more conductor
 exponents explicitly.
    
 ::
@@ -250,13 +251,14 @@ the conductor exponent at :math:`2` as in Example 1.5.5.
 
 ::
 
-   sage: con2 = CongruenceCondition(A*B, 8) & CongruenceCondition(A - B - 1, 4)
+   sage: con2 = (CongruenceCondition(A*B, 8) &
+   ....:         CongruenceCondition(A - B - 1, 4))
    sage: E.conductor_exponent(2, condition=con2)
    4
 
-Note that \verb|E| is also the Frey curve associated with Fermat's
-Last Theorem in case we take~${ A }$,~${ B }$ and~${ A + B }$ to be~${
-l }$-th powers with~${ l \ge 3 }$. We also compute the conductor
+Note that `E` is also the Frey curve associated with Fermat's Last
+Theorem in case we take :math:`A`, :math:`B` and :math:`A + B` to be
+l-th powers with :math:`l \ge 3`. We also compute the conductor
 imposing these additional conditions.
 
 ::

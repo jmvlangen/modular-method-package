@@ -10,7 +10,7 @@ The following import is required for the example to work
 
 ::
 
-   from modular_method import *
+   sage: from modular_method import *
 
 We start by introducing the Q-curve.
 
@@ -30,8 +30,10 @@ definition field and the matrix of :math:`c_E c_\beta^{-1}`.
    sage: K.is_isomorphic(QQ[sqrtm2, sqrt17])
    True
    sage: G = K.galois_group()
-   sage: s2 = next(s for s in G if s != G(1) and s(sqrtm2) == sqrtm2)
-   sage: s17 = next(s for s in G if s != G(1) and s(sqrt17) == sqrt17)
+   sage: s2 = next(s for s in G if s != G(1) and
+   ....:           s(sqrtm2) == sqrtm2)
+   sage: s17 = next(s for s in G if s != G(1) and
+   ....:            s(sqrt17) == sqrt17)
    sage: matrix([[E.c(s, t) / E.c_splitting_map(s, t)
    ....:          for t in [G(1), s2, s17, s2*s17]]
    ....:         for s in [G(1), s2, s17, s2*s17]])
@@ -50,7 +52,49 @@ We compute the generators of the unit group.
    True
    sage: u0, u1 = u0, u1^(-1)
 
-TODO: verify the inconsistent system of equations
+To verify the inconsistent system we first compute for each Galois
+element :math:`\sigma` a matrix :math:`M_{\sigma}`, such that if
+:math:`(x, y) M_{\sigma} = (a, b)` then :math:`\sigma` maps
+:math:`u_0^x u_1^y` to :math:`u_0^a u_1^b`.
+
+::
+
+   sage: def find_exps(u):
+   ....:     return next([a, b] for a in range(2)
+   ....:                 for b in range(-2, 2)
+   ....:                 if u == u0^a * u1^b)
+   sage: M = {s: matrix([find_exps(s(u0)), find_exps(s(u1))]) for s in [G(1), s2, s17, s2*s17]}
+
+Next we define variables for each of the values of the functions
+:math:`x` and :math:`y` and define a dictionary that gives the
+corresponding exponents of :math:`\alpha` as a tuple.
+
+::
+
+   sage: _.<x1, xs2, xs17, xs2s17, y1, ys2, ys17, ys2s17> = ZZ[]
+   sage: alpha_exps = {G(1): vector((x1, y1)),
+   ....:               s2: vector((xs2, ys2)),
+   ....:               s17: vector((xs17, ys17)),
+   ....:               s2*s17: vector((xs2s17, ys2s17))}
+Now we define a function that can compute the exponents of
+:math:`\partial \alpha(\sigma, \tau)` and compute it at the elements
+mentioned in the example.
+
+::
+
+   sage: def delta_alpha_exps(s, t):
+   ....:     return alpha_exps[s] + (alpha_exps[t] * M[s]) - alpha_exps[s*t]
+   sage: s, t = s2, s2; delta_alpha_exps(s, t), find_exps(E.c(s, t) / E.c_splitting_map(s, t))
+   ((-x1 + 2*xs2 + ys2, -y1), [1, 0])
+   sage: s, t = s2*s17, s2*s17; delta_alpha_exps(s, t), find_exps(E.c(s, t) / E.c_splitting_map(s, t))
+   ((-x1 + 2*xs2s17 + ys2s17, -y1), [0, 0])
+   sage: s, t = s17, s17; delta_alpha_exps(s, t), find_exps(E.c(s, t) / E.c_splitting_map(s, t))
+   ((-x1 + 2*xs17, -y1 + 2*ys17), [0, 0])
+   sage: s, t = s17, s2; delta_alpha_exps(s, t), find_exps(E.c(s, t) / E.c_splitting_map(s, t))
+   ((xs2 + xs17 - xs2s17, ys2 + ys17 - ys2s17), [1, 0])
+   
+Noting that the exponent of :math:`u_0` can be taken modulo 2, we thus
+find the equations mentioned in the example.
 
 We verify the computation of :math:`S` in the example.
 

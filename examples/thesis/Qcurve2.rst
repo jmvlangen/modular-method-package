@@ -10,7 +10,7 @@ The following import is required for the example to work
 
 ::
 
-   from modular_method import *
+   sage: from modular_method import *
 
 We verify the computations given in the example.
 
