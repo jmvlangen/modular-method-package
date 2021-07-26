@@ -187,6 +187,8 @@ def _init_traces(curves, condition, prime, primes, powers,
                                                     else verbose))
               for i in range(len(curves))]
     traces = conditional_product(*traces)
+    if not isinstance(traces, ConditionalValue):
+        traces = ConditionalValue([(traces, condition)])
     return [val for val, con in traces
             if not (con.never() or
                     con.pAdic_tree(pAdics=pAdicBase(K, prime)).is_empty())]
