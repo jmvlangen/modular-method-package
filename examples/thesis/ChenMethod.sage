@@ -131,21 +131,21 @@ Ebeta = E.twist(gamma)
 E_ = FreyCurve([0, 0, 0, 3*b^2, 2*a], condition=coprime)
 print("Conductor of Ebeta from BennettChen at P2")
 P2 = Ebeta.definition_field().prime_above(2)
-%time ans1 = chenMethod(Ebeta, 2, P2, 8, lambda a, b: not (2.divides(a) and 2.divides(b))) # 4.14 s
-%time ans2 = Ebeta.conductor_exponent(P2) # 6 min 25 s
+%time ans1 = chenMethod(Ebeta, 2, P2, 8, lambda a, b: not (2.divides(a) and 2.divides(b))) # 4.09 s
+%time ans2 = Ebeta.conductor_exponent(P2) # 6 min 6 s
 print(same_answer(ans1, ans2)) # True
 print("Conductor of Ebeta from BennettChen at P3")
 P3 = Ebeta.definition_field().prime_above(3)
-%time ans1 = chenMethod(Ebeta, 2, P3, 6, lambda a, b: not (3.divides(a) and 3.divides(b))) # 7.63 s
-%time ans2 = Ebeta.conductor_exponent(P3) # 146 ms
+%time ans1 = chenMethod(Ebeta, 2, P3, 6, lambda a, b: not (3.divides(a) and 3.divides(b))) # 7.45 s
+%time ans2 = Ebeta.conductor_exponent(P3) # 148 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E' from BennettChen at 2")
-%time ans1 = chenMethod(E_, 2, 2, 8, lambda a, b: not (2.divides(a) and 2.divides(b))) # 18.1 s
-%time ans2 = E_.conductor_exponent(2) # 13.9 ms
+%time ans1 = chenMethod(E_, 2, 2, 4, lambda a, b: not (2.divides(a) and 2.divides(b))) # 108 ms
+%time ans2 = E_.conductor_exponent(2) # 15.3 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E' from BennettChen at 3")
-%time ans1 = chenMethod(E_, 2, 3, 8, lambda a, b: not (3.divides(a) and 3.divides(b))) # 4h 1min 5s
-%time ans2 = E_.conductor_exponent(3) # 137 ms
+%time ans1 = chenMethod(E_, 2, 3, 4, lambda a, b: not (3.divides(a) and 3.divides(b))) # 2.19 s
+%time ans2 = E_.conductor_exponent(3) # 33.4 ms
 print(same_answer(ans1, ans2)) # True
 
 ### Examples from BennettChenDahmenYazdani
@@ -163,17 +163,17 @@ E2 = FreyQcurve([0, 2*(sqrt3 - 1)*(s - t), 0,
                   (2 - sqrt3)*((s - t)^2 - 2*sqrt3*s*t), 0],
                  condition=C1, guessed_degrees=[2])
 print("Conductor of E1 (case c odd) from BennettChenYazdani at 2")
-%time ans1 = chenMethod(E1, 2, 2, 6, lambda s, t: not (2.divides(s - t))) # 4.58 s
-%time ans2 = E1.conductor_exponent(2) # 8.19 ms
+%time ans1 = chenMethod(E1, 2, 2, 6, lambda s, t: not (2.divides(s - t))) # 862 ms
+%time ans2 = E1.conductor_exponent(2) # 22.5 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E1 (case c odd) from BennettChenYazdani at 3")
-%time ans1 = chenMethod(E1, 2, 3, 6, lambda s, t: not (3.divides(s - t))) # 2min 29s
-%time ans2 = E1.conductor_exponent(3) # 9.74 ms
+%time ans1 = chenMethod(E1, 2, 3, 6, lambda s, t: not (3.divides(s - t))) # 2min 33s
+%time ans2 = E1.conductor_exponent(3) # 11.3 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E2 (case c odd) from BennettChenYazdani at P2")
 P2 = E2.definition_field().prime_above(2)
-%time ans1 = chenMethod(E2, 2, P2, 6, lambda s, t: not (2.divides(s - t))) # 214 ms
-%time ans2 = E2.conductor_exponent(P2) # 25.9 ms
+%time ans1 = chenMethod(E2, 2, P2, 6, lambda s, t: not (2.divides(s - t))) # 238 ms
+%time ans2 = E2.conductor_exponent(P2) # 13.3 ms
 print(same_answer(ans1, ans2)) # True
 # For the case c even
 E1a = FreyCurve([0, 0, 0,
@@ -197,37 +197,37 @@ E3b = FreyQcurve([0, 12*(sqrt3 - 1)*s, 0,
                   3*sqrt3*(sqrt3 - 1)^2*(t^2 + (2*sqrt3 - 3)*s^2), 0],
                  condition=C2, guessed_degrees=[2])
 print("Conductor of E1a (case c even) from BennettChenYazdani at 2")
-%time ans1 = chenMethod(E1a, 2, 2, 6, lambda s, t: not (2.divides(s - t))) # 818 ms
-%time ans2 = E1a.conductor_exponent(2) # 19.9 ms
+%time ans1 = chenMethod(E1a, 2, 2, 6, lambda s, t: not (2.divides(s - t))) # 832 ms
+%time ans2 = E1a.conductor_exponent(2) # 13.3 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E1b (case c even) from BennettChenYazdani at 2")
-%time ans1 = chenMethod(E1b, 2, 2, 6, lambda s, t: not (2.divides(s - t))) # 817 ms
-%time ans2 = E1b.conductor_exponent(2) # 19.9 ms
+%time ans1 = chenMethod(E1b, 2, 2, 6, lambda s, t: not (2.divides(s - t))) # 839 ms
+%time ans2 = E1b.conductor_exponent(2) # 20.5 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E1a (case c even) from BennettChenYazdani at 3")
-%time ans1 = chenMethod(E1a, 2, 3, 6, lambda s, t: not (3.divides(t))) # 2 min 27 s
-%time ans2 = E1a.conductor_exponent(3) # 9.72 ms
+%time ans1 = chenMethod(E1a, 2, 3, 6, lambda s, t: not (3.divides(t))) # 2 min 32 s
+%time ans2 = E1a.conductor_exponent(3) # 10.8 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E1b (case c even) from BennettChenYazdani at 3")
-%time ans1 = chenMethod(E1b, 2, 3, 6, lambda s, t: not (3.divides(t))) # 2 min 29 s
-%time ans2 = E1b.conductor_exponent(3) # 10.06 ms
+%time ans1 = chenMethod(E1b, 2, 3, 6, lambda s, t: not (3.divides(t))) # 2 min 32 s
+%time ans2 = E1b.conductor_exponent(3) # 10.4 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E2a (case c even) from BennettChenYazdani at P2")
 P2 = E2a.definition_field().prime_above(2)
-%time ans1 = chenMethod(E2a, 2, P2, 6, lambda s, t: not (2.divides(s - t))) # 451 ms
-%time ans2 = E2a.conductor_exponent(P2) # 40.7 ms
+%time ans1 = chenMethod(E2a, 2, P2, 6, lambda s, t: not (2.divides(s - t))) # 434 ms
+%time ans2 = E2a.conductor_exponent(P2) # 40.9 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E2b (case c even) from BennettChenYazdani at P2")
 P2 = E2b.definition_field().prime_above(2)
-%time ans1 = chenMethod(E2b, 2, P2, 6, lambda s, t: not (2.divides(s - t))) # 383 ms
-%time ans2 = E2b.conductor_exponent(P2) # 38.5 ms
+%time ans1 = chenMethod(E2b, 2, P2, 6, lambda s, t: not (2.divides(s - t))) # 386 ms
+%time ans2 = E2b.conductor_exponent(P2) # 38 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E3a (case c even) from BennettChenYazdani at P2")
-%time ans1 = chenMethod(E3a, 2, P2, 6, lambda s, t: not (2.divides(s - t))) # 382 ms
-%time ans2 = E3a.conductor_exponent(P2) # 38.6 ms
+%time ans1 = chenMethod(E3a, 2, P2, 6, lambda s, t: not (2.divides(s - t))) # 397 ms
+%time ans2 = E3a.conductor_exponent(P2) # 38.4 ms
 print(same_answer(ans1, ans2)) # True
 print("Conductor of E3b (case c even) from BennettChenYazdani at P2")
 P2 = E3b.definition_field().prime_above(2)
-%time ans1 = chenMethod(E3b, 2, P2, 6, lambda s, t: not (2.divides(s - t))) # 382 ms
-%time ans2 = E3b.conductor_exponent(P2) # 39 ms
+%time ans1 = chenMethod(E3b, 2, P2, 6, lambda s, t: not (2.divides(s - t))) # 396 ms
+%time ans2 = E3b.conductor_exponent(P2) # 37.7 ms
 print(same_answer(ans1, ans2)) # True
