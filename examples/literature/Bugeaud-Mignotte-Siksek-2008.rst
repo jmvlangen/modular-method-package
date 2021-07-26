@@ -13,8 +13,8 @@ issue 3. The article can be found at `Samir Siksek's website`_
 
 The article considers Diophantine equations of the form :math:`\alpha
 x^p - 2^r \beta y^p = 1` with :math:`\alpha, \beta, x` odd and
-:math:`y` non-zero. They furthermore assume that :math:`alpha` and
-:math:`beta` are :math:`p` th power free, and that :math:`p \ge
+:math:`y` non-zero. They furthermore assume that :math:`\alpha` and
+:math:`\beta` are :math:`p` th power free, and that :math:`p \ge
 7`. Throughout the paper they use :math:`\psi = 2^r \beta y^p` as a
 parameter for Frey curves which they assume to be unequal to
 :math:`\pm 2`.
@@ -139,7 +139,8 @@ mistakes in the original article.
 
 Now we do the newform computations for the curves obtained in the
 first example of Section 6. First we determine all the appropriate
-cases
+cases. Here `N1` and `N2` will be the levels of the associated
+newforms as mentioned in the article.
 
 ::
 
@@ -154,11 +155,12 @@ conditions and skipping the empty ones.
 ::
 
    sage: from modular_method.padics.pAdic_base import pAdicBase
+   sage: from modular_method.diophantine_equations.conditions import TreeCondition
    sage: pAdics = pAdicBase(QQ, 2)
    sage: cases = [(val, TreeCondition(con.pAdic_tree(pAdics=pAdics))) for val, con in cases
    ....:          if not con.pAdic_tree(pAdics=pAdics).is_empty()]
 
-Now we do all the cases at once
+Now we compute the newforms and do the elimination for all the cases at once.
 
 ::
 
@@ -190,9 +192,9 @@ Now we do all the cases at once
         q - 2*q^3 - q^5 + O(q^6) | q + 2*q^3 - q^5 + O(q^6) | 2
         q - 2*q^3 - q^5 + O(q^6) | q + 2*q^3 + q^5 + O(q^6) | 2
         q - 2*q^3 - q^5 + O(q^6) | q - 1/2*a8*q^3 - q^5 + O(q^6) | 2
-        q - 2*q^3 - q^5 + O(q^6) | q + 1/2*a9*q^3 + q^5 + O(q^6) | 2
-        q - 2*q^3 - q^5 + O(q^6) | q + 1/2*a10*q^3 - q^5 + O(q^6) | 2
-        q - 2*q^3 - q^5 + O(q^6) | q + 1/2*a11*q^3 + q^5 + O(q^6) | 2
+        q - 2*q^3 - q^5 + O(q^6) | q + a9*q^3 + q^5 + O(q^6) | 2
+        q - 2*q^3 - q^5 + O(q^6) | q - 1/2*a10*q^3 - q^5 + O(q^6) | 2
+        q - 2*q^3 - q^5 + O(q^6) | q - a11*q^3 + q^5 + O(q^6) | 2
         q + 2*q^3 - q^5 + O(q^6) | q - 2*q^3 - q^5 + O(q^6) | 2
         q + 2*q^3 - q^5 + O(q^6) | q - 2*q^3 + q^5 + O(q^6) | 2
         q + 2*q^3 - q^5 + O(q^6) | q - q^5 + O(q^6) | 6
@@ -202,9 +204,9 @@ Now we do all the cases at once
         q + 2*q^3 - q^5 + O(q^6) | q + 2*q^3 - q^5 + O(q^6) | 2
         q + 2*q^3 - q^5 + O(q^6) | q + 2*q^3 + q^5 + O(q^6) | 2
         q + 2*q^3 - q^5 + O(q^6) | q - 1/2*a8*q^3 - q^5 + O(q^6) | 2
-        q + 2*q^3 - q^5 + O(q^6) | q + 1/2*a9*q^3 + q^5 + O(q^6) | 2
-        q + 2*q^3 - q^5 + O(q^6) | q + 1/2*a10*q^3 - q^5 + O(q^6) | 2
-        q + 2*q^3 - q^5 + O(q^6) | q + 1/2*a11*q^3 + q^5 + O(q^6) | 2
+        q + 2*q^3 - q^5 + O(q^6) | q + a9*q^3 + q^5 + O(q^6) | 2
+        q + 2*q^3 - q^5 + O(q^6) | q - 1/2*a10*q^3 - q^5 + O(q^6) | 2
+        q + 2*q^3 - q^5 + O(q^6) | q - a11*q^3 + q^5 + O(q^6) | 2
         q + 1/2*a2*q^3 + q^5 + O(q^6) | q - 2*q^3 - q^5 + O(q^6) | 4
         q + 1/2*a2*q^3 + q^5 + O(q^6) | q - 2*q^3 + q^5 + O(q^6) | 4
         q + 1/2*a2*q^3 + q^5 + O(q^6) | q - q^5 + O(q^6) | 4
@@ -214,9 +216,9 @@ Now we do all the cases at once
         q + 1/2*a2*q^3 + q^5 + O(q^6) | q + 2*q^3 - q^5 + O(q^6) | 4
         q + 1/2*a2*q^3 + q^5 + O(q^6) | q + 2*q^3 + q^5 + O(q^6) | 4
         q + 1/2*a2*q^3 + q^5 + O(q^6) | q - 1/2*a8*q^3 - q^5 + O(q^6) | 4
-        q + 1/2*a2*q^3 + q^5 + O(q^6) | q + 1/2*a9*q^3 + q^5 + O(q^6) | 4
-        q + 1/2*a2*q^3 + q^5 + O(q^6) | q + 1/2*a10*q^3 - q^5 + O(q^6) | 4
-        q + 1/2*a2*q^3 + q^5 + O(q^6) | q + 1/2*a11*q^3 + q^5 + O(q^6) | 4
+        q + 1/2*a2*q^3 + q^5 + O(q^6) | q + a9*q^3 + q^5 + O(q^6) | 4
+        q + 1/2*a2*q^3 + q^5 + O(q^6) | q - 1/2*a10*q^3 - q^5 + O(q^6) | 4
+        q + 1/2*a2*q^3 + q^5 + O(q^6) | q - a11*q^3 + q^5 + O(q^6) | 4
 
 We see that indeed only for :math:`\psi \equiv 4` modulo 16 (case VII
 in the article) we can not eliminate all newforms for primes :math:`p
@@ -255,8 +257,8 @@ whether N3 is divisible by 2.
    ....:          if not con.pAdic_tree(pAdics=pAdics2).is_empty()
    ....:          and not con.pAdic_tree(pAdics=pAdics3).is_empty()]
 
-Again we now do all the cases at once and obtain similar results as in
-the article
+Again we now compute newforms and perform the elimination for all the
+cases at once, and obtain similar results as in the article
 
 ::
 
@@ -324,7 +326,9 @@ The last example of Section 6 works similar to the first.
    sage: cases = [(val, TreeCondition(con.pAdic_tree(pAdics=pAdics))) for val, con in cases
    ....:          if not con.pAdic_tree(pAdics=pAdics).is_empty()]
 
-Now we do all the cases at once
+Now we compute newforms and eliminate them for all the cases at
+once. Note that this time around we only print a number divisible by
+the exponents `l` for which not all newforms are eliminated.
 
 ::
 

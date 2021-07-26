@@ -1,9 +1,9 @@
-=========================================================================
- Multi-Frey Q-curve and the Diophantine equation :math:`a^2 + b^6 = c^n`
-=========================================================================
+==========================================================================
+ Multi-Frey Q-curves and the Diophantine equation :math:`a^2 + b^6 = c^n`
+==========================================================================
 
 We run the computations for some results in the article "Multi-Frey
-Q-curve and the Diophantine equation :math:`a^2 + b^6 = c^n`" written
+Q-curves and the Diophantine equation :math:`a^2 + b^6 = c^n`" written
 by Michael A. Bennett and Imin Chen and published in Algebra & Number
 Theory, volume 6 (2012), no. 4. The article can be found at `Imin
 Chen's website`_
@@ -14,12 +14,12 @@ Chen's website`_
 This article considers the equation :math:`a^2 + b^6 = c^l` for
 coprime integers :math:`a` and :math:`b` and a prime number
 :math:`l`. We will use the notation ``cl`` to denote the
-:math:`l^{th}` power of :math:`c`. Furthermore the article assumes
+l-th power of :math:`c`. Furthermore the article assumes
 that :math:`l` is at least 3.
 
 ::
 
-   sage: load('load.sage')
+   sage: from modular_method import *
    sage: R.<a,b> = QQ[]
    sage: cl = a^2 + b^6
    sage: C = (CoprimeCondition([a,b]) &
@@ -40,7 +40,7 @@ Q-curve.
    sage: E = FreyQcurve(a_invariants, condition=C, guessed_degrees=[3])
 
 According to the article the j-invariant of the curve is equal to
-:math:`432 i \frac{b^3 (4 a - 5 i b^3)^3}{(a - i b^3) (a + i b^3)^3}`
+:math:`432 i \frac{b^3 (4 a - 5 i b^3)^3}{(a - i b^3) (a + i b^3)^3}`.
       
 ::
 
@@ -140,7 +140,7 @@ The conductor of ``Eb`` can be computed and agrees with the article.
 ::
 
    sage: N = Eb.conductor(additive_primes=[q2, q3]); N
-   (4)*(1/8*lu0^3 + 5/4*lu0 + 3/2)^n0*Rad_P( (-186624) * (b^3 + (1/4*lu0^3 + 3/2*lu0)*a) * (b^3 + (-1/4*lu0^3 - 3/2*lu0)*a)^3 )
+   (4)*(1/8*lu^3 + 5/4*lu + 3/2)^n0*Rad_P( (-186624) * (b^3 + (1/4*lu^3 + 3/2*lu)*a) * (b^3 + (-1/4*lu^3 - 3/2*lu)*a)^3 )
     where 
    n0 = 0 if ('a', 'b') is 1 of 24 possibilities mod 9
         4 if ('a', 'b') is 1 of 48 possibilities mod 9
@@ -158,20 +158,26 @@ article.
 ::
 
    sage: NR = Eb.conductor_restriction_of_scalars(additive_primes=[q2, q3]); NR
-   65536*3^(2*n0+4)*Norm(Rad_P( (-186624) * (b^3 + (1/4*lu0^3 + 3/2*lu0)*a) * (b^3 + (-1/4*lu0^3 - 3/2*lu0)*a)^3 ))
+   65536*3^(2*n0+4)*Norm(Rad_P( (-186624) * (b^3 + (1/4*lu^3 + 3/2*lu)*a) * (b^3 + (-1/4*lu^3 - 3/2*lu)*a)^3 ))
     where 
    n0 = 0 if ('a', 'b') is 1 of 24 possibilities mod 9
         4 if ('a', 'b') is 1 of 48 possibilities mod 9
+   sage: NR.left().left() == 2^16
+   True
+   sage: NR.left().right() == 3^(2*eps + 4)
+   True
 
 According to the article the restriction of scalars is itself a
-:math:`\QQ` simple variety of GL_2-type.
+:math:`\QQ` simple variety of GL_2-type, which we verify by showing
+there is only one conjugacy class of splitting maps.
 
 ::
 
    sage: Eb.number_of_splitting_maps(count_conjugates=False)
    1
 
-Furthermore we can associate to it newforms of level 48 or 432.
+Furthermore we verify Theorem 11, by checking that the level of
+associated newforms must be 48 or 432.
 
 ::
 

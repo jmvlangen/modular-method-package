@@ -116,7 +116,10 @@ and 10000. The lower bound on the prime :math:`p` seems to arise from
 the irreducibility result used in Lemme 5.2. We will assume that the
 representation associated with `Eab` is irreducible for all primes
 :math:`p \ge 5` and do the kraus method for all primes :math:`p`
-between 4 and 50
+between 4 and 50, as this already takes a while for the framework. The
+article can go beyond this by going from two to one parameter. The
+framework can not do this automatically so we stick to the part it can
+do automatically.
 
 ::
 

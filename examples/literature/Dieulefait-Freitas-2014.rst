@@ -18,20 +18,21 @@ for the quantity :math:`d c^l`
 
 ::
 
-   sage: load('load.sage')
+   sage: from modular_method import *
    sage: R.<a, b> = QQ[]
    sage: dcl = a^5 + b^5
    sage: C = CoprimeCondition([a, b])
 
 Furthermore, the article makes use of the factorization of
 :math:`x^5 + y^5` over the field :math:`\QQ(\sqrt{5})`. In particular
-writing ``w`` for the root of the polynomial :math:`x^2 + x - 1` it
-uses the following factors.
+writing :math:`\omega = \frac{-1 + \sqrt{5}}{2}` the article presents
+the following factors.
 
 ::
 
    sage: S.<x> = QQ[]
-   sage: K.<w> = NumberField(x^2 + x - 1)
+   sage: K.<sqrt5> = NumberField(x^2 - 5)
+   sage: w = (-1 + sqrt5) / 2
    sage: G.<sigma> = K.galois_group()
    sage: phi1 = a^2 + w*a*b + b^2
    sage: phi2 = phi1.change_ring(sigma.as_hom())
@@ -72,15 +73,9 @@ curve :math:`L` and define the elements :math:`\sigma` and
    sage: L = E.complete_definition_field()
    sage: L.is_isomorphic(QQ[sqrt(5), sqrt(-2)])
    True
-   sage: G.<sigma, tau> = L.galois_group()
-   sage: sigma(sqrt(L(5))) == sqrt(L(5))
-   True
-   sage: sigma(sqrt(L(-2))) == -sqrt(L(-2))
-   True
-   sage: tau(sqrt(L(5))) == -sqrt(L(5))
-   True
-   sage: tau(sqrt(L(-2))) == sqrt(L(-2))
-   True
+   sage: G = L.galois_group()
+   sage: sigma = next(s for s in G if s(sqrt(L(5))) == sqrt(L(5)) and s(sqrt(L(-2))) == -sqrt(L(-2)))
+   sage: tau = next(t for t in G if t(sqrt(L(5))) == -sqrt(L(5)) and t(sqrt(L(-2))) == sqrt(L(-2)))
 
 Next we compute the values of the associated cocycle, which agrees
 with table 2 in the article.
@@ -109,7 +104,7 @@ splitting character.
 The fixed field of the splitting character is :math:`\QQ` adjoint
 :math:`\theta = \sqrt{\frac{1}{2}(5 + \sqrt{5})}`, which is a root of
 :math:`x^4 - 5 x^2 + 5`. According to the article this is also the
-fixed field of the splitting map.
+fixed field of the splitting map, which we check.
 
 ::
 
@@ -119,11 +114,12 @@ fixed field of the splitting map.
    sage: E.splitting_field().is_isomorphic(Ke)
    True
 
-According to the article this curve does not decompose over the
-decomposition field, but if we twist with the element :math:`\gamma =
-2 \theta^2 - \theta - 5` it does. The latter even decomposes over the
-field :math:`\QQ(\theta)`. Furthermore it decomposes as the the
-product of two non-isogenous abelian surfaces of GL_2-type.
+According to the article the restriction of scalars of this curve over
+the decomposition field does not decompose, but if its twist by the
+element :math:`\gamma = 2 \theta^2 - \theta - 5` does. For the latter
+the restriction of scalars even decomposes over the field
+:math:`\QQ(\theta)`. Furthermore it decomposes as the the product of
+two non-isogenous abelian surfaces of GL_2-type.
 
 ::
 
@@ -142,13 +138,12 @@ product of two non-isogenous abelian surfaces of GL_2-type.
     Number Field in zeta80 with defining polynomial x^2 + 2*x + 2 with zeta80 = -1 - 1*I)
 
 Now we again check that ``Ec`` has the invariants as mentioned in
-section 3.1 of the article. Note that the invariant :math:`c_4` as
-printed in the article is wrong, as the second - should be a +.
+section 3.1 of the article.
 
 ::
 
    sage: iota = K.embeddings(Ke)[0]
-   sage: iso = Ec.definition_field().embeddings(Ke)[1]
+   sage: iso = Ec.definition_field().embeddings(Ke)[3]
    sage: bar = K.galois_group().gen()
    sage: Ec.discriminant().change_ring(iso) == gamma^6 * 2^6 * (bar(w) * phi1^2 * phi2).change_ring(iota)
    True
@@ -207,7 +202,7 @@ proposion 4.1 and proposition 4.2.
 
    sage: Pbad = Ec.decomposition_field().primes_above(2*5)
    sage: Ec.conductor_restriction_of_scalars(additive_primes=Pbad)
-   5^(n0+6)*2^(2*n1+8)*Norm(Rad_P( ((-6160*lutheta0^3 - 106480*lutheta0^2 - 535360*lutheta0 - 620800)) * (a^2 + (-1/4*lutheta0^2 - 2*lutheta0 - 2)*a*b + b^2) * (a^2 + (1/4*lutheta0^2 + 2*lutheta0 + 1)*a*b + b^2)^2 ))
+   5^(n0+6)*2^(2*n1+8)*Norm(Rad_P( ((13280*lutheta0^3 + 191920*lutheta0^2 + 713920*lutheta0 + 194880)) * (a^2 + (1/4*lutheta0^2 + 2*lutheta0 + 1)*a*b + b^2) * (a^2 + (-1/4*lutheta0^2 - 2*lutheta0 - 2)*a*b + b^2)^2 ))
     where 
    n0 =  2 if ('a', 'b') is 1 of 20 possibilities mod 5
          0 if ('a', 'b') is 1 of 4 possibilities mod 5
@@ -254,9 +249,9 @@ field :math:`\QQ(i)`.
 
   sage: S1 = apply_to_conditional_value(lambda ls: [nf for nf in ls if nf.has_cm()], nfs)
   sage: S2 = apply_to_conditional_value(lambda ls: [nf for nf in ls if not nf.has_cm() and
-  ....: nf.coefficient_field().absolute_degree() > 2], nfs)
+  ....:      nf.coefficient_field().absolute_degree() > 2], nfs)
   sage: S3 = apply_to_conditional_value(lambda ls: [nf for nf in ls if not nf.has_cm() and
-  ....: nf.coefficient_field().is_isomorphic(QQ[sqrt(-1)])], nfs)
+  ....:      nf.coefficient_field().is_isomorphic(QQ[sqrt(-1)])], nfs)
 
 Case 2 divides d
 ----------------
@@ -297,7 +292,7 @@ mentioned in the article.
    ....: for nf in S2[0][0] + S2[2][0] + S2[3][0] for t in range(-2, 3)).prime_factors()
    [2, 3, 5, 7, 29]
 
-As claimed in the article we check there is 10 newforms in ``S3``.
+As claimed in the article we check there are 10 newforms in ``S3``.
 
 ::
 
@@ -398,7 +393,7 @@ Q-curve.
 
 ::
 
-   sage: a_invariants2 = [0, 2*(a - b), 0, (-3/10*sqrt(K(5)) + 1/2)*phi1, 0]
+   sage: a_invariants2 = [0, 2*(a - b), 0, ((-3/10*sqrt5) + 1/2)*phi1, 0]
    sage: F = FreyQcurve(a_invariants2, condition=C, guessed_degrees=[2])
 
 The article claims that :math:`F` has the same splitting behaviour as
@@ -435,15 +430,15 @@ a + b`, which we check.
    [(100, 100)]               if ('a', 'b') is 1 of 4 possibilities mod 8 and ('a', 'b') is 1 of 4 possibilities mod 5
 
 Our code produces some lower levels than the levels mentioned in the
-article, hence to stick to the levels mentioned in the article we
-omit the newform_candidates method.
+article, hence to stick to the levels mentioned in the article by
+omitting the `newform_candidates` method.
 
 ::
 
    sage: levels2 = apply_to_conditional_value(lambda ls: ls[0][1], Fc.newform_levels())
    sage: char2 = Fc.splitting_character('conjugacy')[1]^(-1)
    sage: nfs2 = apply_to_conditional_value(lambda lvl: get_newforms(lvl, character=char,
-   ....: algorithm='sage'), levels2)
+   ....:         algorithm='sage'), levels2)
 
 The article remarks that all the pairs :math:`(f, g)` of newforms, one
 for ``Ec`` and one for ``Fc`` respectively, for which :math:`f` does
@@ -455,15 +450,15 @@ comparison of traces at 3, 7, 13 and 17.
 ::
 
    sage: nfs22 = apply_to_conditional_value(lambda ls: [nf for nf in ls
-   ....: if nf.coefficient_field().absolute_degree() == 2], nfs2)
+   ....:          if nf.coefficient_field().absolute_degree() == 2], nfs2)
    sage: S12 = apply_to_conditional_value(lambda ls: [nf for nf in ls
-   ....: if nf.coefficient_field().absolute_degree() == 2], S1)
+   ....:        if nf.coefficient_field().absolute_degree() == 2], S1)
    sage: from modular_method.diophantine_equations.conditions import conditional_product
    sage: from modular_method.diophantine_equations.conditions import ConditionalValue
    sage: from modular_method.padics.pAdic_base import pAdicBase
    sage: nfs_big = conditional_product(S1, nfs22)
    sage: nfs_big = ConditionalValue([(val, con) for val, con in nfs_big
-   ....: if not con.pAdic_tree(pAdics=pAdicBase(QQ, 2)).is_empty()])
+   ....:            if not con.pAdic_tree(pAdics=pAdicBase(QQ, 2)).is_empty()])
    sage: nfs_big = eliminate_by_traces((Ec, Fc), nfs_big, primes=[3, 7, 13, 17])
 
 According to the article we should only have 8 newforms remaining if
@@ -475,4 +470,4 @@ we remove all cases in which only a prime :math:`p \le 13` would work.
    sage: sum(len(nfs_big[i][0]) for i in range(len(nfs_big)))
    0
 
-We however find there is no newforms remaining at all.
+We however find there are no newforms remaining at all.

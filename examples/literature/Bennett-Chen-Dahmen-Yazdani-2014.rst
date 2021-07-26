@@ -16,7 +16,7 @@ coprime integers :math:`a`, :math:`b` and :math:`c` and prime number
 
 ::
 
-   sage: load('load.sage')
+   sage: from modular_method import *
 
 First of all the article determines three different parametrizations
 for the equation :math:`x^3 + y^3 = z^2` into coprime integers
@@ -92,6 +92,8 @@ the results in the article.
    sage: E2.conductor()
    Warning: Assuming that s and t are coprime.
    (64)*Rad_P( ((-960*sqrt3 + 1664)) * (s^2 + (2*sqrt3 - 2)*s*t + t^2) * (s^2 + (-2*sqrt3 - 2)*s*t + t^2)^2 )
+   sage: E2.conductor().left() == E2.definition_field().prime_above(2)^12
+   True
    
 The article computes the conductor of the galois representation
 attached to the splitting map of this curve which is the square root
@@ -102,6 +104,8 @@ field as this is in itself an abelian variety of GL_2 type.
 
    sage: E2.conductor_restriction_of_scalars()
    589824*Norm(Rad_P( ((-960*sqrt3 + 1664)) * (s^2 + (2*sqrt3 - 2)*s*t + t^2) * (s^2 + (-2*sqrt3 - 2)*s*t + t^2)^2 ))
+   sage: E2.conductor_restriction_of_scalars().left() == 2^16 * 3^2
+   True
 
 We compute the newforms after level lowering, for which there are 10
 conjugacy classes associated to the second curve according to the
@@ -223,9 +227,13 @@ to the article is the same as computed here.
    sage: E21.conductor()
    Warning: Assuming that s and t are coprime.
    (64)*Rad_P( ((39936*sqrt3 - 69120)) * (s^2 + (2/3*sqrt3 - 1)*t^2) * (s^2 + (-2/3*sqrt3 - 1)*t^2)^2 )
+   sage: E21.conductor().left() == E21.definition_field().prime_above(2)^12
+   True
    sage: E22.conductor()
    Warning: Assuming that s and t are coprime.
    (64)*Rad_P( ((39936*sqrt3 - 69120)) * (s^2 + (2/3*sqrt3 + 1)*t^2) * (s^2 + (-2/3*sqrt3 + 1)*t^2)^2 )
+   sage: E22.conductor().left() == E22.definition_field().prime_above(2)^12
+   True
 
 Furthermore both curve have a restriction of scalar that is an abelian
 variety of GL_2-type. In the article they compute the conductor of a
@@ -237,8 +245,12 @@ agrees with the following computation.
 
    sage: E21.conductor_restriction_of_scalars()
    589824*Norm(Rad_P( ((39936*sqrt3 - 69120)) * (s^2 + (2/3*sqrt3 - 1)*t^2) * (s^2 + (-2/3*sqrt3 - 1)*t^2)^2 ))
+   sage: E21.conductor_restriction_of_scalars().left() == 2^16 * 3^2
+   True
    sage: E22.conductor_restriction_of_scalars()
    589824*Norm(Rad_P( ((39936*sqrt3 - 69120)) * (s^2 + (2/3*sqrt3 + 1)*t^2) * (s^2 + (-2/3*sqrt3 + 1)*t^2)^2 ))
+   sage: E22.conductor_restriction_of_scalars().left() == 2^16 * 3^2
+   True
 
 As in the article we now apply the multi-Frey method to these two/four
 Frey curves first.

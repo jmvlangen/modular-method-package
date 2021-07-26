@@ -31,15 +31,16 @@ article however remarks that the method discussed in the article will
 only have to work for :math:`n = p \ge 7` prime, due to previous
 results.
 
-The article denotes a non-trivial primite solution to any of the three
-equations by :math:`(a, b, c)`. We will also introduce the notation
-``ap``, ``bp`` and ``cp`` to denote the respective variable to the
-:math:`p^{th}` power. The variable ``c0`` is an auxiliary variable the
-article introduces for one of the Frey curves for equation 3.
+The article denotes a non-trivial primitive solution to any of the
+three equations by :math:`(a, b, c)`. We will also introduce the
+notation ``ap``, ``bp`` and ``cp`` to denote the respective variable
+to the :math:`p` th power. The variable ``c0`` is an auxiliary
+variable the article introduces for one of the Frey curves for
+equation 3.
 
 ::
 
-   sage: load('load.sage')
+   sage: from modular_method import *
    sage: R.<a, b, c, ap, bp, cp, c0> = QQ[]
    
 For equation 1 the article introduces a single Frey curve. Furthermore
@@ -83,7 +84,7 @@ generality that :math:`a` is odd and :math:`b` is even.
    sage: S3 = QQ[bp, c]
    sage: C31 = (CoprimeCondition([bp, c]) & ~CongruenceCondition(bp*(c^3 - bp), 2) &
    ....:        CongruenceCondition(c, 2) & PowerCondition(bp, 4) &
-   ....:        PowerCondition((2*c)^3 - bp, 4))
+   ....:        PowerCondition(c^3 - bp, 4))
    sage: E31 = FreyCurve([0, 0, S3(bp), S3(-3*((c/2)^3 + bp)*(c/2)),
    ....:                  S3(-(c/2)^3*(2*(c/2)^3 - 5*bp))],
    ....:                 condition=C31)
@@ -138,22 +139,22 @@ Papadopoulus to exist in case 3 divides :math:`b` or the property
         3 if ('bp', 'c') is 1 of 24 possibilities mod 9
         1 if ('bp', 'c') is 1 of 1458 possibilities mod 2187
 
-We verify collary 3.2 by computing the newforms associated to the
+We verify Corollary 3.2 by computing the newforms associated to the
 different curves.
 
 ::
 
-   sage: nfs1 = E1.newform_candidates(bad_primes=[2]); nfs1
-   [q - 2*q^5 + O(q^6)] if ('ap', 'cp') == (3, 1), (3, 3) mod 4
-   []                   if ('ap', 'cp') is 1 of 4 possibilities mod 16
-   sage: nfs21 = E21.newform_candidates(bad_primes=[2]); nfs21
+   sage: nfs1 = E1.newform_candidates(bad_primes=[2], algorithm='magma'); nfs1
+   [q - 2*q^5 - 3*q^9 + O(q^12)] if ('ap', 'cp') == (3, 1), (3, 3) mod 4
+   []                            if ('ap', 'cp') is 1 of 4 possibilities mod 16
+   sage: nfs21 = E21.newform_candidates(bad_primes=[2], algorithm='magma'); nfs21
    []
-   sage: nfs22 = E22.newform_candidates(bad_primes=[2]); nfs22
-   [q - 2*q^5 + O(q^6)]
-   sage: nfs31 = E31.newform_candidates(bad_primes=[3]); nfs31 # long time
+   sage: nfs22 = E22.newform_candidates(bad_primes=[2], algorithm='magma'); nfs22
+   [q - 2*q^5 - 3*q^9 + O(q^12)]
+   sage: nfs31 = E31.newform_candidates(bad_primes=[3], algorithm='magma'); nfs31 # long time
    []                   if ('bp', 'c0') is 1 of 711504 possibilities mod 2187
    [q - 2*q^4 + O(q^6)] if ('bp', 'c0') is 1 of 24 possibilities mod 9
-   sage: nfs32 = E32.newform_candidates(bad_primes=[3]); nfs32 # long time
+   sage: nfs32 = E32.newform_candidates(bad_primes=[3], algorithm='magma'); nfs32 # long time
    []                   if ('bp', 'c') is 1 of 711504 possibilities mod 2187
    [q - 2*q^4 + O(q^6)] if ('bp', 'c') is 1 of 24 possibilities mod 9
 
@@ -163,9 +164,9 @@ multiplication as claimed in the article.
 ::
 
    sage: nfs1[0][0][0].has_cm()
-   True
+   true
    sage: nfs22[0].has_cm()
-   True
+   true
    sage: nfs31[1][0][0].has_cm() # long time
    True
    sage: nfs32[1][0][0].has_cm() # long time

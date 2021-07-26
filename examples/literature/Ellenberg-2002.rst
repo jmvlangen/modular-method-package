@@ -1,7 +1,6 @@
-========================================================================
- Galois representations attached to Q-curves and the generalized Fermat
- equation :math:`A^4 + B^2 = C^p`
-========================================================================
+=========================================================================================================
+ Galois representations attached to Q-curves and the generalized Fermat equation :math:`A^4 + B^2 = C^p`
+=========================================================================================================
 
 We run the computations for some results in the article "Galois
 representations attached to Q-curves and the generalized Fermat
@@ -71,5 +70,6 @@ possible bad prime is the prime above 2.
    [(256,)] if ('A', 'B') == (1, 0) mod 2
    [(32,)]  if ('A', 'B') == (0, 3), (2, 3) mod 4
 
-The article now proves that none of these newforms could be associated
-if :math:`p` is at least 211.
+The article now uses properties not available in the framework to
+prove that these newforms can not be associated with the Frey curve
+when :math:`p \ge 211`.

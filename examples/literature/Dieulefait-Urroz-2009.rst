@@ -27,7 +27,7 @@ denote ``Cp`` for the quantity :math:`C^p`.
 
 ::
 
-   sage: load('load.sage')
+   sage: from modular_method import *
    sage: R.<A, B> = QQ[]
    sage: Cp = A^4 + 2*B^2
    sage: con = (CoprimeCondition([A, B]) & ~CongruenceCondition(A, 2) &
@@ -94,7 +94,7 @@ in the article.
    [(256,)] if ('A', 'B') == (1, 0) mod 2
 
 We compute the newforms at these levels and verify that there are
-indeed 22 of them as the article states. Here we count all galois
+indeed 22 of them as the article states. Here we count all Galois
 conjugates.
 
 ::
@@ -212,15 +212,20 @@ primes can be above 2 and 3.
    [(96,)]  if ('A', 'B') is 1 of 4 possibilities mod 8
 
 As in the article we compute all newforms of these levels and first
-eliminate all those newforms that have complex multiplication. We
-check that the only newforms remaining are those of level 192 with
-fifth coefficient squared equal to 12 and those of level 384 with
-seventh coefficient squared equal to -24 or -8.
+eliminate all those newforms that have complex multiplication.
 
 ::
 
    sage: nfs = Ec.newform_candidates(bad_primes=Pbad)
    sage: nfs = eliminate_cm_forms(Ec, nfs)
+
+The article claims there are newforms without CM remaining of level
+192 and level 384. We will show that only newforms without CM remain
+of level 384 and that all of them have a seventh coefficient equal to
+:math:`\pm 2 \sqrt{2}`
+   
+::
+      
    sage: all(nf[0].level() == 384 and nf[0].coefficient(7)^2 == -8
    ....:     for nfsi in nfs for nf in nfsi[0])
    True
@@ -234,7 +239,7 @@ the different differences.
 ::
 
    sage: lcm(ZZ((nf[0].coefficient(3) - z*sqrt(nf[0].coefficient_field()(-1))).absolute_norm())
-   ....: for nf in nfs[0][0] + nfs[1][0] for z in range(-5, 6)).prime_factors()
+   ....:     for nfsi in nfs for nf in nfsi[0] + nfs[1][0] for z in range(-5, 6)).prime_factors()
    [2, 3, 11, 19]
 
-This shows the last result of the article.
+This confirms the last result of the article.

@@ -1,9 +1,18 @@
 =======================================================
- On the equation :math:`(x-y)^4 + x^4 + (x+y)^4 = z^n`
+ On the sum of fourth powers in arithmetic progression
 =======================================================
 
-In this document we give all the computations done for the paper.
+In this document we give all the computations done for the paper "On
+the sum of fourth powers in arithmetic progression" written by
+Joey M. van Langen and published in International Journal of Number
+Theory, Volume 17, Number 1 (2021).
 
+This is a modified version of the file `calculations.rst`_ that is
+mentioned in the original article. It was updated to reflect the
+changes in the framework compared to the code referenced in the
+article.
+
+.. _calculations.rst: https://github.com/jmvlangen/three_fourth_powers_code/blob/master/calculations.rst
 .. linkall
 
 Throughout :math:`(a, b, c)` will be a primitive solution to
@@ -12,7 +21,7 @@ number. We will also use the variable ``cl`` to denote :math:`c^l`.
 
 ::
 
-   sage: load('load.sage')
+   sage: from modular_method import *
    sage: R.<a, b> = ZZ[]
    sage: cl = (a-b)^4 + a^4 + (a+b)^4; cl
    3*a^4 + 12*a^2*b^2 + 2*b^4
@@ -45,8 +54,8 @@ the splitting field of :math:`3 x^4 + 12 x^2 + 2`. We also let
    sage: v = cl(x, 1).change_ring(L).roots()[0][0]
    sage: h = a + v*b
 
-We verify that ``cl`` factors as in equation (5) and that the factors
-are indeed galois conjugates of :math:`h`.
+We verify that ``cl`` factors as in equation (2.3) and that the factors
+are indeed Galois conjugates of :math:`h`.
 
 ::
 
@@ -88,7 +97,7 @@ power 4 is 3, which we also verify here.
    True
 
 We check that over the subfield :math:`K = \QQ(\sqrt{30})` of
-:math:`L` the polynomial ``cl`` factors as in equation (8), and that
+:math:`L` the polynomial ``cl`` factors as in equation (2.5), and that
 both factors are indeed the product of two galois conjugates of
 :math:`h`.
 
@@ -162,7 +171,7 @@ by 3 times the coefficients of :math:`g_1`.
    sage: Q3.integral_basis()
    [3, w]
 
-Now we compute the formulas given in equation (9) for each possible
+Now we compute the formulas given in equation (3.1) for each possible
 choice of :math:`j` and check they match the given description.
 
 ::
@@ -321,7 +330,7 @@ again does not divide the order of the class group.
    sage: 5.divides(Qv.class_number())
    False
 
-We quickly verify that :math:`\QQ(v)` has degree 4 and parametrize the
+We verify that :math:`\QQ(v)` has degree 4 and parametrize the
 elements of its ring of integers.
 
 ::
@@ -407,7 +416,7 @@ We take the automorphism :math:`\sigma` of :math:`\QQ(v)` that sends
 
 We will construct the parametrizations as described in the article for
 the remaining cases. First we parametrize what is called
-:math:`\gamma'` and what we shall call ``gamma`` again here.
+:math:`\gamma'` and what we shall call ``gamma`` here.
 
 ::
 
@@ -432,7 +441,7 @@ coefficients of ``g1``.
    sage: B = g1.coefficients()
    sage: valsB = [polynomial_split_on_basis(val, B) for val in vals]
 
-We verify the validity of equation (10). Note that to compute the
+We verify the validity of equation (3.2). Note that to compute the
 formula for :math:`c` we need that the conjugate of :math:`u'` is its
 inverse in each case.
    
@@ -754,7 +763,7 @@ We turn our two curves into :math:`\QQ` curves.
 Basic invariants
 ----------------
 
-We compute all the data mentioned in Proposition 6.2. First of all the
+We compute all the data mentioned in Proposition 6.3. First of all the
 degree map.
 
 ::
@@ -869,13 +878,11 @@ these curves both differs differ by minus a square from the
    sage: f_gamma = x^8 - 40*x^7 - 550*x^6 - 1840*x^5 - 285*x^4 + 3600*x^3 - 1950*x^2 + 200*x + 25
    sage: gamma = f_gamma.change_ring(Kdec).roots()[0][0]
    sage: iota = K.embeddings(E1.decomposition_field())[0]
-   sage: E1t = E1.decomposable_twist()
-   sage: ((E1t.a2() / E1.a2().change_ring(iota)).numerator().constant_coefficient()
-   ....:   / (-1)*Kdec.embeddings(E1.decomposition_field())[0](gamma)).is_square()
+   sage: gamma_ = E1._decomposable_twist()
+   sage: ((-1)*Kdec.embeddings(E1.decomposition_field())[0](gamma) / gamma_).is_square()
    True
-   sage: E2t = E2.decomposable_twist()
-   sage: ((E2t.a2() / E2.a2().change_ring(iota)).numerator().constant_coefficient()
-   ....:   / (-1)*Kdec.embeddings(E2.decomposition_field())[0](gamma)).is_square()
+   sage: gamma_ = E2._decomposable_twist()
+   sage: ((-1)*Kdec.embeddings(E2.decomposition_field())[0](gamma) / gamma_).is_square()
    True
 
 Since we work with the twists by :math:`\gamma` we define those twists
@@ -919,7 +926,7 @@ to the twisted curve are indeed different.
    sage: Kbeta.is_isomorphic(Kdec.subfield(gamma)[0])
    True
 
-We compute the last data needed to prove Theorem 6.4. That is we
+We compute the last data needed to prove Theorem 6.7. That is we
 compute the image fields of one splitting map in each galois conjugacy
 class of splitting maps. This tells us that the decomposition is as
 mentioned in the article.
@@ -936,7 +943,7 @@ mentioned in the article.
 Modularity of Q-curves
 ----------------------
 
-For Theorem 6.6 we first compute a splitting character for each
+For Theorem 6.12 we first compute a splitting character for each
 conjugacy class, giving us the characters for the newforms
 
 ::
@@ -964,7 +971,7 @@ mentioned in the proof.
    1936465405881733890441216000000000000*Norm(Rad_P( ((44698303687939139000000/59141881469*azeta1500^7 + 1423918818418416273000000/59141881469*azeta1500^6 + 1839106906899769044000000/59141881469*azeta1500^5 - 222582279024493161848000000/59141881469*azeta1500^4 - 257110099679430707040000000/59141881469*azeta1500^3 + 12076274070960888949056000000/59141881469*azeta1500^2 - 29182994669013966651872000000/59141881469*azeta1500 - 3504323932587416153088000000/59141881469)) * (a^2 + (1/1001088*azeta1500^7 + 1/111232*azeta1500^6 - 21/27808*azeta1500^5 - 1163/125136*azeta1500^4 + 249/3476*azeta1500^3 + 578/869*azeta1500^2 - 111719/31284*azeta1500 + 8884/2607)*b^2) * (a^2 + (-1/1001088*azeta1500^7 - 1/111232*azeta1500^6 + 21/27808*azeta1500^5 + 1163/125136*azeta1500^4 - 249/3476*azeta1500^3 - 578/869*azeta1500^2 + 111719/31284*azeta1500 + 1544/2607)*b^2)^2 ))
 
 We check that this is indeed the same as the expression given in the
-proof of Proposition 4.9. For the left side this is an easy check.
+proof of Theorem 6.12. For the left side this is an easy check.
 
 ::
 
@@ -1059,7 +1066,7 @@ the proof to be valid.
 Level lowering
 --------------
     
-We now perform the computational part of Theorem 6.7. We check for
+We now perform the computational part of Theorem 6.14. We check for
 :math:`l = 7, 13` that the curve :math:`X_0(2l)` has no :math:`K`
 point corresponding to a :math:`\QQ` point on :math:`X_0(2l) / w_2`.
 
@@ -1126,7 +1133,7 @@ come from :math:`\QQ(\sqrt{-7})` points and not from :math:`K` points.
    false
 
 We now perform the same procedure for the case :math:`l = 13`, only in
-this case the curve :math:`X_0(26)` we start with has genus 2.
+this case the curve :math:`X_0(26)` has genus 2.
 
 ::
 
@@ -1186,13 +1193,17 @@ Newform elimination
 Now we perform the computation as mentioned in the last part of
 Section 6.5 of the article.
 
-First we load all the newforms corresponding to ``E1c`` and ``E2c``
-from the files "tmp/E1.nfs" and "tmp/E2.nfs" respectively. 
+First we compute all the newforms corresponding to ``E1c`` and
+``E2c``. Note that this takes approximately 6 hours to do. Also note
+that the article does not use the Galois representation over the
+absolute Galois group of Q (as they were added later to the
+framework), so it suffices to compute only one newform per conjugacy
+class.
 
 ::
 
-   sage: nfs1 = E1c.newform_candidates(algorithm='file', path='tmp/E1.nfs') # todo: fix for new framework setup
-   sage: nfs2 = E2c.newform_candidates(algorithm='file', path='tmp/E2.nfs') # todo: fix for new framework setup
+   sage: nfs1 = E1c.newform_candidates(algorithm='magma', conjugates=False)
+   sage: nfs2 = E2c.newform_candidates(algorithm='magma', conjugates=False)
 
 Now we verify the table of data about these newforms. For each
 computed set of newforms we compute in this order: The level of the
@@ -1203,51 +1214,57 @@ total number of newforms among all conjugacy classes.
 
 ::
 
-   sage: eps_m = magma.FullDirichletGroup(15).Elements()[4] # todo: fix for new framework setup
-   sage: nfs1[1][0][0].level() # todo: fix for new framework setup
-   11520
-   sage: eps = nfs1[1][0][0].character(); eps # todo: fix for new framework setup
-   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
-   sage: eps(11) == eps_m(11) and eps(7) == eps_m(7) # todo: fix for new framework setup
+   sage: eps_m = magma.FullDirichletGroup(15).Elements()[4]
+   sage: all(nf.level() == 11520 for nf in nfs1[1][0])
    True
-   sage: magma.DimensionNewCuspForms(magma.DirichletGroup(nfs1[1][0][0].level(), # todo: fix for new framework setup
-   ....: eps_m.CoefficientRing())(eps_m), 2) # todo: fix for new framework setup
+   sage: eps = nfs1[1][0][0].character(); eps
+   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
+   sage: all(nf.character() == eps for nf in nfs[1][0])
+   True
+   sage: eps(11) == eps_m(11) and eps(7) == eps_m(7)
+   True
+   sage: magma.DimensionNewCuspForms(magma.DirichletGroup(11520,
+   ....:     eps_m.CoefficientRing())(eps_m), 2)
    192
-   sage: len(nfs1[1][0]) # todo: fix for new framework setup
+   sage: len(nfs1[1][0])
    30
-   sage: set(nf.coefficient_field().degree() for nf in nfs1[1][0]) # todo: fix for new framework setup
+   sage: set(nf.coefficient_field().degree() for nf in nfs1[1][0])
    {4, 8, 16, 24, 32, 48}
-   sage: sum(nf.coefficient_field().degree() for nf in nfs1[1][0]) # todo: fix for new framework setup
+   sage: sum(nf.coefficient_field().degree() for nf in nfs1[1][0])
    384
-   sage: nfs1[0][0][0].level() # todo: fix for new framework setup
-   23040
-   sage: eps = nfs1[0][0][0].character(); eps # todo: fix for new framework setup
-   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
-   sage: eps(11) == eps_m(11) and eps(7) == eps_m(7) # todo: fix for new framework setup
+   sage: all(nf.level() == 23040 for nf in nfs1[0][0])
    True
-   sage: magma.DimensionNewCuspForms(magma.DirichletGroup(nfs1[0][0][0].level(), # todo: fix for new framework setup
-   ....: eps_m.CoefficientRing())(eps_m), 2) # todo: fix for new framework setup
+   sage: eps = nfs1[0][0][0].character(); eps
+   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
+   sage: all(nf.character() == eps for nf in nfs1[0][0])
+   True
+   sage: eps(11) == eps_m(11) and eps(7) == eps_m(7)
+   True
+   sage: magma.DimensionNewCuspForms(magma.DirichletGroup(23040,
+   ....:     eps_m.CoefficientRing())(eps_m), 2)
    384
-   sage: len(nfs1[0][0]) # todo: fix for new framework setup
+   sage: len(nfs1[0][0])
    20
-   sage: set(nf.coefficient_field().degree() for nf in nfs1[0][0]) # todo: fix for new framework setup
+   sage: set(nf.coefficient_field().degree() for nf in nfs1[0][0])
    {8, 40, 48}
-   sage: sum(nf.coefficient_field().degree() for nf in nfs1[0][0]) # todo: fix for new framework setup
+   sage: sum(nf.coefficient_field().degree() for nf in nfs1[0][0])
    768
-   sage: nfs2[0].level() # todo: fix for new framework setup
-   15360
-   sage: eps = nfs2[0].character(); eps # todo: fix for new framework setup
-   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
-   sage: eps(11) == eps_m(11) and eps(7) == eps_m(7) # todo: fix for new framework setup
+   sage: all(nf.level() == 15360 for nf in nfs2)
    True
-   sage: magma.DimensionNewCuspForms(magma.DirichletGroup(nfs2[0].level(), # todo: fix for new framework setup
-   ....: eps_m.CoefficientRing())(eps_m), 2) # todo: fix for new framework setup
+   sage: eps = nfs2[0].character(); eps
+   Dirichlet character modulo 15 of conductor 15 mapping 11 |--> -1, 7 |--> zeta4
+   sage: all(nf.character() == eps for nf in nfs2)
+   True
+   sage: eps(11) == eps_m(11) and eps(7) == eps_m(7)
+   True
+   sage: magma.DimensionNewCuspForms(magma.DirichletGroup(15360,
+   ....:     eps_m.CoefficientRing())(eps_m), 2)
    752
-   sage: len(nfs2) # todo: fix for new framework setup
+   sage: len(nfs2)
    14
-   sage: set(nf.coefficient_field().degree() for nf in nfs2) # todo: fix for new framework setup
+   sage: set(nf.coefficient_field().degree() for nf in nfs2)
    {16, 64, 80, 96, 128, 176, 192}
-   sage: sum(nf.coefficient_field().degree() for nf in nfs2) # todo: fix for new framework setup
+   sage: sum(nf.coefficient_field().degree() for nf in nfs2)
    1504
 
 As we can see the newforms for ``E2c`` have quite large coefficient
@@ -1259,50 +1276,54 @@ field of the character.
 
 ::
 
-   sage: for i in range(len(nfs2)): # todo: fix for new framework setup
-   ....:     f = nfs2[i] # todo: fix for new framework setup
-   ....:     Kf = f.coefficient_field() # todo: fix for new framework setup
-   ....:     Lf = f.character().base_ring() # todo: fix for new framework setup
-   ....:     mapK = Kf.hom(Kf) # todo: fix for new framework setup
-   ....:     mapL = Lf.embeddings(Kf)[0] # todo: fix for new framework setup
-   ....:     composite_field.cache[((Kf, Lf, True),())] = (Kf, mapK, mapL) # todo: fix for new framework setup
-   ....:     composite_field.cache[((Lf, Kf, True),())] = (Kf, mapL, mapK) # todo: fix for new framework setup
-   ....:     composite_field.cache[((Kf, Lf, False),())] = Kf # todo: fix for new framework setup
-   ....:     composite_field.cache[((Lf, Kf, False),())] = Kf # todo: fix for new framework setup
+   sage: for i in range(len(nfs2)):
+   ....:     f = nfs2[i]
+   ....:     Kf = f.coefficient_field()
+   ....:     Lf = f.character().base_ring()
+   ....:     mapK = Kf.hom(Kf)
+   ....:     mapL = Lf.embeddings(Kf)[0]
+   ....:     composite_field.cache[((Kf, Lf, True),())] = (Kf, mapK, mapL)
+   ....:     composite_field.cache[((Lf, Kf, True),())] = (Kf, mapL, mapK)
+   ....:     composite_field.cache[((Kf, Lf, False),())] = Kf
+   ....:     composite_field.cache[((Lf, Kf, False),())] = Kf
    ....: 
 
 Now we perform the elimination process described in the article for
-both curves separately.
+both curves separately. To ensure we use the Galois representation
+over the absolute Galois group of `Kb` as in the article, we replace
+`E1c` and `E2c` by Frey curves.
 
 ::
-   
-   sage: nfs1 = eliminate_by_traces(E1c, nfs1, condition=coprime, primes=prime_range(7, 40)) # todo: fix for new framework setup
-   sage: nfs2 = eliminate_by_traces(E2c, nfs2, condition=coprime, primes=prime_range(7, 40)) # todo: fix for new framework setup
+
+   sage: E1c_ = FreyCurve(E1c, condition=E1c._condition)
+   sage: E2c_ = FreyCurve(E2c, condition=E2c._condition)
+   sage: nfs1 = eliminate_by_traces(E1c_, nfs1, condition=coprime, primes=prime_range(7, 40))
+   sage: nfs2 = eliminate_by_traces(E2c_, nfs2, condition=coprime, primes=prime_range(7, 40))
 
 Next we eliminate for each newform :math:`g` the prime factors 2, 3,
 and 5 from the number :math:`M_g` described in the article.
 
 ::
 
-   sage: nfs1 = eliminate_primes(E1c, nfs1, 2*3*5) # todo: fix for new framework setup
-   sage: nfs2 = eliminate_primes(E2c, nfs2, 2*3*5) # todo: fix for new framework setup
+   sage: nfs1 = eliminate_primes(E1c_, nfs1, 2*3*5)
+   sage: nfs2 = eliminate_primes(E2c_, nfs2, 2*3*5)
 
 We check that the number of newforms now remaining matches the claim
 in the article.
 
 ::
 
-   sage: nfs1[1][0][0][0].level() # todo: fix for new framework setup
+   sage: nfs1[1][0][0][0].level()
    11520
-   sage: len(nfs1[1][0]) # todo: fix for new framework setup
+   sage: len(nfs1[1][0])
    14
-   sage: nfs1[0][0][0][0].level() # todo: fix for new framework setup
+   sage: nfs1[0][0][0][0].level()
    23040
-   sage: len(nfs1[0][0]) # todo: fix for new framework setup
+   sage: len(nfs1[0][0])
    12
-   sage: nfs2[0][0].level() # todo: fix for new framework setup
+   sage: nfs2[0][0].level()
    15360
-   sage: len(nfs2) # todo: fix for new framework setup
+   sage: len(nfs2)
    7
 
 Lastly we combine all remaining newforms and perform the multi-Frey
@@ -1310,7 +1331,7 @@ elimination resulting in no newforms remaining.
 
 ::
 
-   sage: nfs = combine_newforms(nfs1, nfs2) # todo: fix for new framework setup
-   sage: nfs = eliminate_by_traces((E1c, E2c), nfs, condition=coprime, primes=prime_range(7, 50)) # todo: fix for new framework setup
-   sage: nfs # todo: fix for new framework setup
+   sage: nfs = combine_newforms(nfs1, nfs2)
+   sage: nfs = eliminate_by_traces((E1c_, E2c_), nfs, condition=coprime, primes=prime_range(7, 50))
+   sage: nfs
    []
