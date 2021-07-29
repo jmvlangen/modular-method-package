@@ -30,6 +30,10 @@ was last tested on version 2.25-7. Magma should be available through
 
     * **examples/thesis** A directory containing examples from Joey van
       Langen's PhD thesis.
+      
+    * **examples/EDS** A directory containing the examples for the yet
+      to be published article that is Chapter 5 of Joey van Langen's
+      PhD thesis.
 
 * **compile.sh** A script to compile the SageMath source code to a
   python package, see [Setup](#Setup). Should work on Linux based
