@@ -20,7 +20,7 @@ the tests from by editing the code below. Note that the file
 ::
 
    sage: from modular_method.diophantine_equations.conditions import apply_to_conditional_value
-   sage: load('frey_curves.sage')
+   sage: load("examples/EDS/frey_curves.sage")
 
 First of all we construct the elliptic curve :math:`E_3` and compute
 generators for the abelian group :math:`E_3(\QQ)`. We also precompute
