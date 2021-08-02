@@ -70,7 +70,7 @@ We compute the conductor exponent of this Frey curve at 2.
 
 ::
 
-   sage: e2 = apply_to_conditional_value(lambda E: E.conductor_exponent(2, verbose=True), E1zw)
+   sage: e2 = apply_to_conditional_value(lambda E: E.conductor_exponent(2), E1zw)
 
 We know that `B` is at least a square, hence we can apply some
 additional conditions.
@@ -155,7 +155,6 @@ exponents `l` not equal to 2, 3, or 7.
    ....:         Enfs[1],
    ....:         primes=trace_primes,
    ....:         condition=CoprimeCondition([z, w]),
-   ....:         verbose=True,
    ....:     )),
    ....:     Enfs1,
    ....: )
@@ -241,7 +240,6 @@ the primes in `trace_primes`.
    ....:     nfs3,
    ....:     condition=CoprimeCondition([z, w]),
    ....:     primes=trace_primes,
-   ....:     verbose=True,
    ....: )
 
 Next we list how many newforms can not be eliminated in every
@@ -286,8 +284,7 @@ whenever :math:`l > 17`.
 
    sage: nfs3P = eliminate_by_trace(E3zwg, nfs3, 11,
    ....:                              condition=(CoprimeCondition([z, w]) &
-   ....:                                         CongruenceCondition(w^2 - a*z^4, 11)),
-   ....:                              verbose=True)
+   ....:                                         CongruenceCondition(w^2 - a*z^4, 11)))
    sage: apply_to_conditional_value(
    ....:     lambda nfs: lcm(nf[-1] for nf in nfs).prime_factors(),
    ....:     nfs3P

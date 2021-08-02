@@ -70,7 +70,7 @@ We compute the conductor exponent of this Frey curve at 2.
 
 ::
 
-   sage: e2 = apply_to_conditional_value(lambda E: E.conductor_exponent(2, verbose=True), E1zw)
+   sage: e2 = apply_to_conditional_value(lambda E: E.conductor_exponent(2), E1zw)
 
 We know that `B` is at least a square, hence we can apply some
 additional conditions.
@@ -168,7 +168,6 @@ the primes in `trace_primes`.
    ....:     nfsm1,
    ....:     condition=CoprimeCondition([z, w]),
    ....:     primes=trace_primes,
-   ....:     verbose=True,
    ....: )
 
 Next we list how many newforms can not be eliminated in every
@@ -211,9 +210,8 @@ whenever :math:`l > 13`.
    ....:     13,
    ....:     condition=(CoprimeCondition([z, w]) &
    ....:                CongruenceCondition(w^2 - a*z^4, 13)),
-   ....:     verbose=True,
    ....: )
-   sage: assert apply_to_conditional_value(
+   sage: apply_to_conditional_value(
    ....:     lambda nfs: lcm(nf[-1] for nf in nfs).prime_factors(),
    ....:     nfsm1P
    ....: )
@@ -244,7 +242,6 @@ newforms are eliminated when :math:`l > 2`.
    ....:     37,
    ....:     condition=(CoprimeCondition([z, w]) &
    ....:                CongruenceCondition(w^2 - a*z^4, 37)),
-   ....:     verbose=True,
    ....: )
    sage: nfsm1P = eliminate_by_trace(
    ....:     Em1zwg,
@@ -252,9 +249,8 @@ newforms are eliminated when :math:`l > 2`.
    ....:     41,
    ....:     condition=(CoprimeCondition([z, w]) &
    ....:                CongruenceCondition(w^2 - a*z^4, 41)),
-   ....:     verbose=True,
    ....: )
-   sage: assert apply_to_conditional_value(
+   sage: apply_to_conditional_value(
    ....:     lambda nfs: lcm(nf[-1] for nf in nfs).prime_factors(),
    ....:     nfsm1P
    ....: )
@@ -301,7 +297,6 @@ the primes in `trace_primes`.
    ....:     nfs2,
    ....:     condition=CoprimeCondition([z, w]),
    ....:     primes=trace_primes,
-   ....:     verbose=True,
    ....: )
 
 Next we list how many newforms can not be eliminated in every
@@ -318,7 +313,7 @@ exponents `l` for which they were not yet eliminated.
    sage: apply_to_conditional_value(
    ....:     lambda nfs: lcm(nf[-1] for nf in nfs if nf[-1] != 0).prime_factors(),
    ....:     nfs2,
-   sage: )
+   ....: )
    [2]
 
 Now we limit ourself to all points which are multiples of `5*P + T`.
@@ -344,7 +339,6 @@ whenever :math:`l \neq 2, 5, 79`.
    ....:     17,
    ....:     condition=(CoprimeCondition([z, w]) &
    ....:                CongruenceCondition(w^2 - a*z^4, 17)),
-   ....:     verbose=True,
    ....: )
    sage: nfs2P = eliminate_by_trace(
    ....:     E2zwg,
@@ -352,7 +346,6 @@ whenever :math:`l \neq 2, 5, 79`.
    ....:     79,
    ....:     condition=(CoprimeCondition([z, w]) &
    ....:                CongruenceCondition(w^2 - a*z^4, 79)),
-   ....:     verbose=True,
    ....: )
    sage: apply_to_conditional_value(
    ....:     lambda nfs: lcm(nf[-1] for nf in nfs).prime_factors(),
@@ -387,7 +380,7 @@ compute how many there are for each of the possible cases.
 ::
 
    sage: nfsm2 = Em2zwg.newform_candidates(bad_primes=K.primes_above(2*D), algorithm='magma')
-   sage: assert apply_to_conditional_value(len, nfsm2)
+   sage: apply_to_conditional_value(len, nfsm2)
    28
 
 Now we eliminate the newforms by comparing traces of Frobenius at all
@@ -402,7 +395,6 @@ the primes in `trace_primes`.
    ....:     nfsm2,
    ....:     condition=CoprimeCondition([z, w]),
    ....:     primes=trace_primes,
-   ....:     verbose=True,
    ....: )
 
 Next we list how many newforms can not be eliminated in every
@@ -445,12 +437,11 @@ whenever :math:`l > 7`.
    ....:     3,
    ....:     condition=(CoprimeCondition([z, w]) &
    ....:                CongruenceCondition(w^2 - a*z^4, 3)),
-   ....:     verbose=True,
    ....: )
    sage: apply_to_conditional_value(
    ....:     lambda nfs: lcm(nf[-1] for nf in nfs).prime_factors(),
-   ....:     nfsm2P
-   sage: )
+   ....:     nfsm2P,
+   ....: )
    [2, 3, 7]
 
 Note that if `B` were to be an l-th power with :math:`l > 2`, then
@@ -479,7 +470,6 @@ are eliminated when :math:`l > 3`.
    ....:     11,
    ....:     condition=(CoprimeCondition([z, w]) &
    ....:                CongruenceCondition(w^2 - a*z^4, 11)),
-   ....:     verbose=True,
    ....: )
    sage: apply_to_conditional_value(
    ....:     lambda nfs: lcm(nf[-1] for nf in nfs).prime_factors(),

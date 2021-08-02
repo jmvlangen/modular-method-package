@@ -46,7 +46,7 @@ them later from our computations.
    sage: compare = [
    ....:     P,
    ....:     T,
-   sage: ]
+   ....: ]
    sage: compare += [-P for P in compare]
    sage: assert set(S_integral_points) == set(compare)
 
@@ -65,7 +65,7 @@ We compute the conductor exponent of this Frey curve at 2.
 
 ::
 
-   sage: e2 = apply_to_conditional_value(lambda E: E.conductor_exponent(2, verbose=True), E1zw)
+   sage: e2 = apply_to_conditional_value(lambda E: E.conductor_exponent(2), E1zw)
 
 We know that `B` is at least a square, hence we can apply some
 additional conditions.
@@ -111,7 +111,7 @@ points `m*P` with `m` an integer for :math:`l > 2` prime.
 ::
 
    sage: nfs1 = apply_to_conditional_value(
-   ....:     lambda E: E.newform_candidates(bad_primes=[2,5], verbose=2),
+   ....:     lambda E: E.newform_candidates(bad_primes=[2,5]),
    ....:     E1zw,
    ....: )
    sage: nfs1 = ConditionalValue([
@@ -138,6 +138,7 @@ splitting character.
 ::
 
    sage: E125zw.complete_definition_field().is_isomorphic(QQ[sqrt(2), sqrt(5)])
+   True
    sage: eps = E125zw.splitting_character(); eps
    Dirichlet character modulo 20 of conductor 20 mapping 11 |--> -1, 17 |--> zeta4
    sage: eps.order()
@@ -204,18 +205,19 @@ the claimed coboundary.
    ....:     -9: (zeta40^3 + zeta40^(-3))*(zeta40^9 + zeta40^(-9)),
    ....:     11: (zeta40^3 + zeta40^(-3))*(zeta40^9 + zeta40^(-9)),
    ....:     -11: (zeta40^3 + zeta40^(-3))*(zeta40^9 + zeta40^(-9)),
-   sage: }
+   ....: }
    sage: alpha = {cyclotomic_galois_isomorphism(key, N=40): value for key, value in alpha_val.items()}
    sage: assert all(alpha[s] * s(alpha[t]) * alpha[s*t]^(-1) == E125zw.c(s, t) / E125zw.c_splitting_map(s, t)
    ....:            for t in L.galois_group() for s in L.galois_group())
 
-Next we confirm that the element :math:`\gamma` given in Section 5.5.1
-indeed has coboundary :math:`\alpha^2`.
+Next we confirm that a square times the element :math:`\gamma` given
+in Section 5.5.1 indeed has coboundary :math:`\alpha^2`.
 
 ::
 
    sage: gamma = product(zeta40^k + zeta40^(-k) for k in [1, 2, 3])
-   sage: assert all(s(gamma) == alpha[s]^2 * gamma for s in L.galois_group())
+   sage: gamma_ = product(zeta40^k + zeta40^(-k) for k in [5, 6, 6, 7])^2 * gamma
+   sage: assert all(s(gamma_) == alpha[s]^2 * gamma_ for s in L.galois_group())
 
 Finally we confirm that twisting `E125zw` by :math:`\gamma` gives a
 Q-curve for which the restriction of scalars does decompose over the
@@ -286,7 +288,7 @@ check that the 24 remaining newforms each have coefficient field
 
    sage: primes = [p for p in prime_range(50) if p != 2 and p != 5]
    sage: nfs125 = eliminate_by_traces(E125zwg, nfs125, condition=CoprimeCondition([z, w]),
-   ....:                              primes=primes, verbose=True)
+   ....:                              primes=primes)
    sage: assert sum(1 for nf in nfs125 if nf[-1] == 0) == 24
    sage: assert lcm(nf[-1] for nf in nfs125 if nf[-1] != 0).prime_factors() == [2, 3, 5, 13, 17]
    sage: assert all(nf[0].coefficient_field().is_isomorphic(QuadraticField(-1))
@@ -310,7 +312,6 @@ whenever :math:`l > 3` and :math:`l \neq 11`.
 
    sage: nfs125P = eliminate_by_trace(E125zwg, nfs125, 11,
    ....:                              condition=(CoprimeCondition([z, w]) &
-   ....:                                         CongruenceCondition(w^2 - a*z^4, 11)),
-   ....:                              verbose=True)
+   ....:                                         CongruenceCondition(w^2 - a*z^4, 11)))
    sage: lcm(nf[-1] for nf in nfs125P).prime_factors()
    [2, 3, 11]

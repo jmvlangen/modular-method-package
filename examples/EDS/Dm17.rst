@@ -79,17 +79,17 @@ of these points. Note that they are all squares.
    ....:     -2*Q + T,
    ....: ])
    sage: sqrt((2*P).xy()[0].denominator())
-   2^2
+   4
    sage: sqrt((-2*P).xy()[0].denominator())
-   2^2
+   4
    sage: sqrt((2*Q).xy()[0].denominator())
-   2^2
+   4
    sage: sqrt((-2*Q).xy()[0].denominator())
-   2^2
+   4
    sage: sqrt((2*Q + T).xy()[0].denominator())
-   3^2
+   9
    sage: sqrt((-2*Q + T).xy()[0].denominator())
-   3^2
+   9
 
 The case a = 1
 --------------
@@ -184,10 +184,9 @@ primes :math:`p < 50` with :math:`p \neq 2, 17`.
    ....:         Enfs[1],
    ....:         condition=CoprimeCondition([z, w]),
    ....:         primes=[p for p in prime_range(50) if not p.divides(2*17)],
-   ....:         verbose=True,
    ....:     )),
    ....:     Enfs1,
-   sage: )
+   ....: )
 
 We check that the number of newforms that could not be eliminated
 agrees with the result in Section 5.5.2. Furthermore we check that all
@@ -279,7 +278,6 @@ additional information all newforms can be elimination when :math:`l >
    ....:         Enfs[1],
    ....:         condition=CoprimeCondition([z, w]) & C3 & C7,
    ....:         primes=[3, 7],
-   ....:         verbose=True,
    ....:     )),
    ....:     Enfs1P,
    ....: )
@@ -426,7 +424,7 @@ conjugacy class we need to do this for the correct result.
 
    sage: primes = [3, 5, 7, 11, 13, 19, 29, 31, 37, 41, 43, 47, 59, 67, 73, 97, 113]
    sage: nfsm17 = eliminate_by_traces(Em17zwg, nfsm17, condition=CoprimeCondition([z, w]),
-   ....:                              primes=primes, verbose=True, use_minpoly=True)
+   ....:                              primes=primes, use_minpoly=True)
 
 We check that after this elimination there remain 10 newforms and the
 others are eliminated for all prime exponents :math:`l > 31`.
@@ -447,7 +445,7 @@ denominator of `P + Q + T`, which in this case is only 7.
 ::
 
    sage: P1 = P + Q + T
-   sage: assert P1.xy()[0].denominator().prime_factors()
+   sage: P1.xy()[0].denominator().prime_factors()
    [7]
 
 We perform the elimination again at 7, using this additional
@@ -459,7 +457,7 @@ whenever :math:`l > 17` or :math:`l = 3, 11`.
    sage: nfsm17P = eliminate_by_trace(Em17zwg, nfsm17, 7,
    ....:                              condition=(CoprimeCondition([z, w]) &
    ....:                                         CongruenceCondition(w^2 - a*z^4, 7)),
-   ....:                              verbose=True, use_minpoly=True )
+   ....:                              use_minpoly=True )
    sage: apply_to_conditional_value(lambda nfs: product(nf[-1] for nf in nfs).prime_factors(), nfsm17P)
    [2, 5, 7, 13, 17] if ('z', 'w') == (1, 0), (3, 0) mod 4
    [2, 7, 17]        if ('z', 'w') is 1 of 8 possibilities mod 8
