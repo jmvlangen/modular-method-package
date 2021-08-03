@@ -1,0 +1,289 @@
+r"""Code for using dirichlet characters as galois characters.
+
+Since the galois group of the cyclotomicfield $\Q(\zeta_N)$ is
+naturally isomorphic to $(\Z / N\Z)^*$ there is a natural
+correspondence between galois characters of such fields and Dirichlet
+characters. By the Kronecker-Weber theorem this can be exended to all
+abelian extension of $\Q$.
+
+This file provides methods to work with Dirichlet characters as galois
+characters. For example there is a method to convert them into galois
+characters, a method to compute the fixed field of their kernel as a
+galois character and there is a method to compute the quadratic
+Dirichlet character corresponding to the quadratic galois character of
+a quadratic field.
+
+EXAMPLES:
+
+We can interpret a Dirichlet character as a galois character over the
+fixed field of its kernel::
+
+    sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field, dirichlet_to_galois
+    sage: eps = DirichletGroup(24)[5]; eps
+    Dirichlet character modulo 24 of conductor 12 mapping 7 |--> -1, 13 |--> 1, 17 |--> -1
+    sage: K = dirichlet_fixed_field(eps); K
+    Number Field in zeta0 with defining polynomial x^2 - 3 with zeta0 = 1.732050807568878?
+    sage: G = K.galois_group()
+    sage: eps_gal = dirichlet_to_galois(eps)
+    sage: [eps_gal(s) for s in G]
+    [1, -1]
+
+Conversely we can find the dirichlet character corresponding to a
+quadratic galois character::
+
+    sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field, character_for_root
+    sage: eps = character_for_root(-5); eps
+    Dirichlet character modulo 20 of conductor 20 mapping 11 |--> -1, 17 |--> -1
+    sage: dirichlet_fixed_field(eps)
+    Number Field in zeta0 with defining polynomial x^2 + 5 with zeta0 = 2.236067977499790?*I
+
+AUTHORS:
+
+- Joey van Langen (2019-02-15): initial version
+
+"""
+
+# ****************************************************************************
+#       Copyright (C) 2019 Joey van Langen <j.m.van.langen@vu.nl>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#                  https://www.gnu.org/licenses/
+# ****************************************************************************
+
+from functools import reduce
+
+from modular_method.number_fields.field_constructors import fixed_field
+from modular_method.number_fields.field_constructors import common_embedding_field
+from modular_method.number_fields.galois_group import cyclotomic_galois_isomorphism
+
+from sage.all import Integer, ZZ
+from sage.rings.finite_rings.integer_mod import mod
+from sage.arith.functions import lcm
+
+from sage.modular.dirichlet import DirichletGroup
+
+def dirichlet_fixed_field(eps):
+    r"""Give the fixed field of the kernel of a Dirichlet chracter.
+
+    INPUT:
+    
+    - ``eps`` -- A Dirichlet character.
+
+    OUTPUT:
+    
+    A subfield $K$ of $\Q(\zeta_N)$ where $N$ is the conductor of eps.
+    For each $n$ in the kernel of eps, $K$ is invariant under the map
+    $ \zeta_N \mapsto \zeta_N^n $.
+
+    EXAMPLES:
+
+    Generators of the Dirichlet group of modulus 8 have quadratic
+    fixed fields::
+
+        sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field
+        sage: D = DirichletGroup(8)
+        sage: for eps in D.gens():
+        ....:     print(dirichlet_fixed_field(eps))
+        ....:     
+        Cyclotomic Field of order 4 and degree 2
+        Number Field in zeta0 with defining polynomial x^2 - 2 with zeta0 = 1.414213562373095?
+
+    The trivial character has the rational field as its fixed field::
+
+        sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field
+        sage: eps = DirichletGroup(5)[0]; eps
+        Dirichlet character modulo 5 of conductor 1 mapping 2 |--> 1
+        sage: dirichlet_fixed_field(eps)
+        Rational Field
+    
+    A primitive character with a prime modulus has the entire
+    cyclotomic field as a fixed field::
+    
+        sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field
+        sage: eps = DirichletGroup(7).gen(); eps
+        Dirichlet character modulo 7 of conductor 7 mapping 3 |--> zeta6
+        sage: dirichlet_fixed_field(eps)
+        Cyclotomic Field of order 7 and degree 6
+
+    """
+    eps = eps.primitive_character()
+    N = eps.conductor()
+    return fixed_field([cyclotomic_galois_isomorphism(s, N) for s in eps.kernel()])
+    # H = [cyclotomic_galois_isomorphism(s, N) for s in eps.kernel()]
+    # G = CyclotomicField(N).galois_group()
+    # H = G.subgroup(H)
+    # if H == G:
+    #     return QQ
+    # result = H.fixed_field()
+    # if isinstance(result, tuple):
+    #     return result[0]
+    # else:
+    #     return result
+
+def dirichlet_to_galois(eps):
+    r"""Give the galois character associated to a Dirichlet character.
+
+    INPUT:
+    
+    - ``eps`` -- A Dirichlet character $\varepsilon$.
+
+    OUTPUT:
+    
+    A function $f$ that is the galois version of the Dirichlet character
+    $\varepsilon$, e.g. we have ..MATH:
+    
+        f( \zeta_N \mapsto \zeta_N^n ) = \varepsilon(n)
+
+    where $N$ is any number divisible by the conductor of
+    $\varepsilon$. This function takes any element of a galois group
+    of a number field and returns the appropiate value on a galois
+    homomorphism of $\Q(\zeta_N)$ that has a common extension to the
+    absolute galois group of~$\Q$.
+
+    EXAMPLE::
+
+        sage: from modular_method.number_fields.dirichlet_characters import dirichlet_to_galois
+        sage: eps = DirichletGroup(5).gen(); eps
+        Dirichlet character modulo 5 of conductor 5 mapping 2 |--> zeta4
+        sage: eps_gal = dirichlet_to_galois(eps)
+        sage: for g in CyclotomicField(5).galois_group():
+        ....:     print(eps_gal(g))
+        ....:     
+        1
+        zeta4
+        -1
+        -zeta4
+
+    """
+    eps = eps.primitive_character()
+    N = eps.conductor()
+    def eps_galois(sigma):
+        return eps(cyclotomic_galois_isomorphism(sigma, N=N))
+    return eps_galois
+
+def character_for_root(a):
+    r"""Give the Kronecker character of a given number.
+
+    INPUT:
+
+    - ``a`` -- A non-zero integer.
+
+    OUTPUT:
+
+    A Dirichlet character eps such that the associated galois
+    character has fixed field $ \Q(\sqrt{a}) $
+
+    EXAMPLES::
+
+        sage: from modular_method.number_fields.dirichlet_characters import dirichlet_fixed_field, character_for_root
+        sage: eps = character_for_root(-3); eps
+        Dirichlet character modulo 3 of conductor 3 mapping 2 |--> -1
+        sage: K = dirichlet_fixed_field(eps); K
+        Cyclotomic Field of order 3 and degree 2
+        sage: K(-3).is_square()
+        True
+
+    ::
+
+        sage: eps = character_for_root(6); eps
+        Dirichlet character modulo 24 of conductor 24 mapping 7 |--> -1, 13 |--> -1, 17 |--> -1
+        sage: K = dirichlet_fixed_field(eps); K
+        Number Field in zeta0 with defining polynomial x^2 - 6 with zeta0 = 2.449489742783178?
+
+    .. SEEALSO::
+
+        :func:`dirichlet_fixed_field`
+
+    """
+    a = a.squarefree_part()
+    ls = a.prime_factors()
+    ls.append(a.sign())
+    N = Integer(1) 
+    eps = DirichletGroup(Integer(1) )[Integer(0) ]
+    for i in range(len(ls)-Integer(1) ):
+        m = mod(ls[i],Integer(4) )
+        if m != Integer(2) :
+            D = DirichletGroup(ls[i])
+        if m == Integer(1) :
+            N *= ls[i]
+            eps = eps.extend(N) * (D.gen()**ZZ(D.order()/Integer(2) )).extend(N)
+        elif m == Integer(2) :
+            N *= Integer(8) 
+            eps = eps.extend(N) * _character_for_2(Integer(2) ).extend(N)
+        elif m == Integer(3) :
+            N *= ls[i]
+            ls[-Integer(1) ] *= -Integer(1) 
+            eps = eps.extend(N) * (D.gen()**ZZ(D.order()/Integer(2) )).extend(N)
+        else:
+            raise Exception("Invalid prime factor %s"%ls[i])
+    if ls[-Integer(1) ] == -Integer(1) :
+        if not Integer(4) .divides(N):
+            N *= Integer(4) 
+        D = DirichletGroup(Integer(4) )
+        eps = eps.extend(N) * D.gen().extend(N)
+    return eps
+
+def _character_for_2(a):
+    r"""Give the Kronecker character of some numbers that have to do with
+    2.
+
+    INPUT:
+
+    - ``a`` -- An integer from the list [-1, 2, -2]
+
+    OUTPUT:
+
+    A Dirichlet character eps such that the associated galois
+    character has fixed field $ \Q(\sqrt{a}) $
+
+    """
+    D = DirichletGroup(Integer(8) )
+    if a == -Integer(1) :
+        b = Integer(5) 
+    elif a == Integer(2) :
+        b = Integer(7) 
+    elif a == -Integer(2) :
+        b = Integer(3) 
+    else:
+        raise Exception("Value %s not accepted"%a)
+    for eps in D:
+        if len(eps.kernel()) == Integer(2)  and b in eps.kernel():
+            return eps
+    raise Exception("No character found!")
+
+def _dirichlet_product(eps1, eps2):
+    """An implementation of :func:`dirichlet_product`"""
+    if eps1.modulus() != eps2.modulus():
+        N = lcm(eps1.modulus(), eps2.modulus())
+        eps1 = eps1.extend(N)
+        eps2 = eps2.extend(N)
+    if eps1.base_ring() != eps2.base_ring():
+        _, phi1, phi2 = common_embedding_field(eps1.base_ring(), eps2.base_ring(), give_maps=True)
+        eps1 = eps1.change_ring(phi1)
+        eps2 = eps2.change_ring(phi2)
+    return eps1 * eps2
+
+def dirichlet_product(*characters):
+    r"""Compute the product of Dirichlet characters
+
+    Convenience method for Dirichlet characters that do not
+    necessarily have the same modulus and definition field.
+
+    INPUT:
+
+    Multiple Dirichlet characters.
+
+    OUTPUT:
+
+    A Dirichlet character that is the product of the given Dirichlet
+    characters. The modulus of this character is the least common
+    multiple of the moduli of the given characters, and the field of
+    this character is a common embedding field of the field of the
+    given characters.
+
+    """
+    return reduce(_dirichlet_product, characters)
+

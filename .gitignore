@@ -3,4 +3,5 @@
 tests/code/*
 tests/results/*
 tmp/*
-/modular_method/
+# /modular_method/
+__pycache__/
