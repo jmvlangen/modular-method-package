@@ -35,7 +35,7 @@ The easiest way to install the **modular_method** package is to use
 the version of pip that comes with your distribution of SageMath. To
 do this execute the following in a command line.
 
-    > sage -pip install --upgrade git+https://github.com/jmvlangen/modular-method-package.git@release
+    sage -pip install --upgrade git+https://github.com/jmvlangen/modular-method-package.git@release
 
 This will install the latest version of the package directly from
 GitHub. Note that this does not download the files in the **examples**
@@ -66,19 +66,19 @@ examples in the **examples** directory.
 To get the raw code instead of the installation you can simply clone
 the master branch of the GitHub repository.
 
-    > git clone https://github.com/jmvlangen/modular-method-package.git
+    git clone https://github.com/jmvlangen/modular-method-package.git
 
 If you want to turn this source code into a Python package, you can
-use the compile scripts in the root directory. The compile script
-requires both *SageMath* and the *sed* command to be installed. Use
-the compile script inside the top directory (the directory this README
-is in), e.g.
+use the compile scripts `compile.sh` and `compile-mac.sh`. The compile
+script requires both *SageMath* and the *sed* command to be
+installed. Use the compile script inside the top directory (the
+directory this README is in), e.g.
 
-    > ./compile.sh
+    ./compile.sh
 
 On Mac systems the standard compile script might give an error. Use
 
-    > ./compile-mac.sh
+    ./compile-mac.sh
 
 instead. Both scripts have not been tested on Windows based systems.
 
@@ -117,11 +117,11 @@ regardless of whether they were changed.
       PhD thesis.
 
 * **compile.sh** A script to compile the SageMath source code to a
-  python package, see [Setup](#Source code). Should work on Linux based
+  python package, see [Source code](#source-code). Should work on Linux based
   systems.
 
 * **compile-mac.sh** A modified version of **compile.sh** that works
-  on Mac based systems, see [Setup](#Source code).
+  on Mac based systems, see [Source code](#source-code).
 
 * **test.sh** A script to easily use the SageMath automated doctest
   system with the correct settings for this package, see
@@ -148,18 +148,18 @@ convenience the script *test.sh* has been added that sets all these
 options automatically when executed in the top level directory.
 
 For example to test the entire Python package -- after it was compiled
-as explained in [Source code](#Source code) -- you could type
+as explained in [Source code](#source-code) -- you could type
 
-    > ./test.sh modular_method
+    ./test.sh modular_method
 
 You can also test a single file
 
-    > ./test.sh modular_method/elliptic_curves/Qcurves.py
+    ./test.sh modular_method/elliptic_curves/Qcurves.py
 
 It is also possible to test all the examples at once
 
-	> ./test.sh examples/
+	./test.sh examples/
 
 or test a single one of them
 
-	> ./test.sh examples/literature/Dieulefait-Freitas-2014.rst
+	./test.sh examples/literature/Dieulefait-Freitas-2014.rst
