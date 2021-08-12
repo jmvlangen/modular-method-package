@@ -61,18 +61,18 @@ package as global variables you can use
 To see how most classes and functions can be used, have a look at the
 examples in the **examples** directory.
 
-### Source code
+### Source code and examples
 
-To get the raw code instead of the installation you can simply clone
-the master branch of the GitHub repository.
+To get the source code or the examples, you can simply clone the
+master branch of the GitHub repository.
 
     git clone https://github.com/jmvlangen/modular-method-package.git
 
-If you want to turn this source code into a Python package, you can
-use the compile scripts `compile.sh` and `compile-mac.sh`. The compile
-script requires both *SageMath* and the *sed* command to be
-installed. Use the compile script inside the top directory (the
-directory this README is in), e.g.
+If you want to turn the source code into a Python package after
+cloning the repository, you can use the compile scripts `compile.sh`
+and `compile-mac.sh`. The compile script requires both *SageMath* and
+the *sed* command to be installed. Use the compile script inside the
+top directory (the directory this README is in), e.g.
 
     ./compile.sh
 
@@ -97,7 +97,8 @@ regardless of whether they were changed.
 * **src** directory containing all SageMath source files
 
 * **modular_method** directory containing the Python package. Should
-  be compiled first from the source files, see [Setup](#Setup).
+  be compiled first from the source files, see [Source code and
+  examples](#source-code-and-examples).
 
 * **examples** A directory containing various examples for the
   framework provided by the modular method package. Most examples are
@@ -117,11 +118,13 @@ regardless of whether they were changed.
       PhD thesis.
 
 * **compile.sh** A script to compile the SageMath source code to a
-  python package, see [Source code](#source-code). Should work on Linux based
+  python package, see [Source code and
+  examples](#source-code-and-examples). Should work on Linux based
   systems.
 
 * **compile-mac.sh** A modified version of **compile.sh** that works
-  on Mac based systems, see [Source code](#source-code).
+  on Mac based systems, see [Source code and
+  examples](#source-code-and-examples).
 
 * **test.sh** A script to easily use the SageMath automated doctest
   system with the correct settings for this package, see
@@ -136,6 +139,15 @@ Using the SageMath automated doctesting you can verify:
  - All examples and tests in the documentation of the code
 
  - The output of all the examples in the *examples* directory
+ 
+To obtain the code and examples for testing, you have to clone the
+repository as explained in [Source code and
+examples](#source-code-and-examples). For testing to work you need to
+have the `modular_method` package installed. This can be done by
+following the instructions in [Installation](#installation), or by
+having the compiled `modular_method` package in your current directory
+or Python path, as explained in [Source code and
+examples](#source-code-and-examples).
 
 Note that some of the examples take significantly more time and memory
 than the SageMath doctesting framework allows by default. It is
@@ -147,14 +159,13 @@ is in) as the Python path for cross references to work correctly. For
 convenience the script *test.sh* has been added that sets all these
 options automatically when executed in the top level directory.
 
-For example to test the entire Python package -- after it was compiled
-as explained in [Source code](#source-code) -- you could type
+For example to test all examples in the code you could type
 
-    ./test.sh modular_method
+    ./test.sh src
 
 You can also test a single file
 
-    ./test.sh modular_method/elliptic_curves/Qcurves.py
+    ./test.sh src/elliptic_curves/Qcurves.sage
 
 It is also possible to test all the examples at once
 
@@ -163,3 +174,6 @@ It is also possible to test all the examples at once
 or test a single one of them
 
 	./test.sh examples/literature/Dieulefait-Freitas-2014.rst
+
+Note that some of the examples require a long time or a lot of memory
+to test, so testing them all at once is not advised.

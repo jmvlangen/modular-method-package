@@ -51,7 +51,7 @@ compile_file() {
 	echo "Compiling ${name}.sage"
 	sage -preparse "${name}.sage"
 	mv "${name}.sage.py" "${name}.py"
-	sed -f commands.sed "${name}.py" > "${name}.py"
+	sed -i '' -f commands.sed "${name}.py"
     fi
     rm "${name}.sage"
 }
