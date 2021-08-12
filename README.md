@@ -21,7 +21,7 @@ be found in Joey van Langen's PhD thesis (link will be added when
 published by the VU university library).
 
 ## Requirements
-This package requires [SageMath](http://ww.sagemath.org/). It was last
+This package requires [SageMath](https://www.sagemath.org/). It was last
 tested on version 9.1, but should work on version 9.0 or newer.
 
 The package has the option to do newform computations in
