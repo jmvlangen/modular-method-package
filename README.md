@@ -21,8 +21,13 @@ be found in Joey van Langen's PhD thesis (link will be added when
 published by the VU university library).
 
 ## Requirements
-This package requires [SageMath](https://www.sagemath.org/). It was last
-tested on version 9.1, but should work on version 9.0 or newer.
+This package requires [SageMath](https://www.sagemath.org/). It was
+tested to work on version 9.1, but requires at least version 9.0 to
+work. It has been confirmed that version 9.3 causes some of the
+doctests included with the code (see [Testing](#testing)) to fail. The
+code is still usable on this version as the failures seem to not
+correspond to mathematical errors, but changes like the text printed
+and the ordering of generators.
 
 The package has the option to do newform computations in
 [Magma](http://magma.maths.usyd.edu.au/magma) if it is installed. It
@@ -156,8 +161,14 @@ therefore advised to run the doctests with the options *-T 0* and *-m
 respectively. Furthermore most examples require the testing to be
 executed with the top level directory (the directory this README file
 is in) as the Python path for cross references to work correctly. For
-convenience the script *test.sh* has been added that sets all these
+convenience the script `test.sh` has been added that sets all these
 options automatically when executed in the top level directory.
+
+Note that the optione *-m* has been removed from recent versions of
+SageMath. If the `./test.sh` script fails in the examples below,
+replace it with `sage -t -T 0` instead. Further note that some of the
+tests are known to fail in SageMath version 9.3 due to changes in
+printing and the ordering of generators.
 
 For example to test all examples in the code you could type
 
